@@ -111,6 +111,22 @@ func TestCommandListJSONMarksServiceStubs(t *testing.T) {
 	}
 }
 
+func TestCommandListJSONMarksIdentityReadsImplemented(t *testing.T) {
+	stdout, stderr, err := executeForTest("command", "list", "-f", "json", "--group", "openstack.identity.v3")
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if stderr != "" {
+		t.Fatalf("expected empty stderr, got %q", stderr)
+	}
+	if !strings.Contains(stdout, `"project list"`) {
+		t.Fatalf("expected project list to be marked implemented, got:\n%s", stdout)
+	}
+	if strings.Contains(stdout, `"project list (Not Implemented Yet)"`) {
+		t.Fatalf("expected project list without not-implemented suffix, got:\n%s", stdout)
+	}
+}
+
 func TestModuleListUsesPluginRegistry(t *testing.T) {
 	stdout, stderr, err := executeForTest("module", "list", "-f", "json")
 	if err != nil {

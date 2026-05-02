@@ -27,6 +27,15 @@ type Options struct {
 	MaxWidth   int
 	FitWidth   bool
 	PrintEmpty bool
+	NoIndent   bool
+	Columns    []string
+	Prefix     string
+	Quote      string
+
+	SortColumns    []string
+	SortAscending  bool
+	SortDescending bool
+	CommandFlags   map[string]string
 
 	Cloud                       string
 	AuthURL                     string
@@ -87,6 +96,7 @@ func NewRootCommand(stdout io.Writer, stderr io.Writer) *cobra.Command {
 		if opts.Pretty {
 			opts.Format = "pretty"
 		}
+		opts.CommandFlags = commandFlagValues(cmd)
 		return nil
 	}
 
@@ -104,6 +114,13 @@ func addGlobalFlags(flags *pflag.FlagSet, opts *Options) {
 	flags.IntVar(&opts.MaxWidth, "max-width", opts.MaxWidth, "maximum display width, <1 to disable")
 	flags.BoolVar(&opts.FitWidth, "fit-width", opts.FitWidth, "fit table output to the display width")
 	flags.BoolVar(&opts.PrintEmpty, "print-empty", false, "print empty table if there is no data to show")
+	flags.BoolVar(&opts.NoIndent, "noindent", false, "disable indenting JSON and YAML output")
+	flags.StringArrayVarP(&opts.Columns, "column", "c", nil, "specify the column(s) to include")
+	flags.StringVar(&opts.Prefix, "prefix", "", "add a prefix to shell variable names")
+	flags.StringVar(&opts.Quote, "quote", "nonnumeric", "when to include quotes in CSV output")
+	flags.StringArrayVar(&opts.SortColumns, "sort-column", nil, "specify the column(s) to sort the data")
+	flags.BoolVar(&opts.SortAscending, "sort-ascending", false, "sort the column(s) in ascending order")
+	flags.BoolVar(&opts.SortDescending, "sort-descending", false, "sort the column(s) in descending order")
 
 	flags.StringVar(&opts.Cloud, "os-cloud", "", "cloud name in clouds.yaml")
 	flags.StringVar(&opts.AuthURL, "os-auth-url", "", "authentication URL")
@@ -123,6 +140,16 @@ func addGlobalFlags(flags *pflag.FlagSet, opts *Options) {
 	flags.StringVar(&opts.ApplicationCredentialID, "os-application-credential-id", "", "application credential ID")
 	flags.StringVar(&opts.ApplicationCredentialName, "os-application-credential-name", "", "application credential name")
 	flags.StringVar(&opts.ApplicationCredentialSecret, "os-application-credential-secret", "", "application credential secret")
+}
+
+func commandFlagValues(cmd *cobra.Command) map[string]string {
+	values := map[string]string{}
+	cmd.Flags().VisitAll(func(flag *pflag.Flag) {
+		if flag.Changed {
+			values[flag.Name] = flag.Value.String()
+		}
+	})
+	return values
 }
 
 func envInt(name string) int {

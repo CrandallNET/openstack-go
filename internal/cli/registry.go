@@ -27,6 +27,19 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 	registry.implemented["command list"] = runCommandList(groups, stdout, opts, registry.implemented)
 	registry.implemented["module list"] = runModuleList(stdout, opts)
 	registry.implemented["token issue"] = runTokenIssue(stdout, opts)
+	for _, path := range []string{
+		"catalog list", "catalog show",
+		"domain list", "domain show",
+		"endpoint list", "endpoint show",
+		"group list", "group show",
+		"project list", "project show",
+		"region list", "region show",
+		"role list", "role show",
+		"service list", "service show",
+		"user list", "user show",
+	} {
+		registry.implemented[path] = runIdentityRead(path, stdout, opts)
+	}
 	return registry
 }
 
@@ -79,6 +92,7 @@ func (r *commandRegistry) configureLeaf(cmd *cobra.Command, path string) {
 
 	if handler, ok := r.implemented[path]; ok {
 		cmd.RunE = handler
+		addImplementedCommandFlags(cmd, path)
 		if path == "command list" {
 			cmd.Flags().String("group", "", "filter by command group")
 		}
@@ -93,6 +107,56 @@ func (r *commandRegistry) configureLeaf(cmd *cobra.Command, path string) {
 		}
 		_, err := fmt.Fprintln(r.stdout, notImplementedExitCodeText)
 		return err
+	}
+}
+
+func addImplementedCommandFlags(cmd *cobra.Command, path string) {
+	if isIdentityReadCommand(path) && strings.HasSuffix(path, " list") {
+		cmd.Flags().Bool("long", false, "list additional fields")
+		cmd.Flags().String("domain", "", "filter by domain")
+		cmd.Flags().Bool("enabled", false, "list enabled resources")
+		cmd.Flags().Bool("disabled", false, "list disabled resources")
+		cmd.Flags().String("service", "", "filter by service")
+		cmd.Flags().String("interface", "", "filter by interface")
+		cmd.Flags().String("region", "", "filter by region")
+		cmd.Flags().String("parent-region", "", "filter by parent region")
+		cmd.Flags().String("tags", "", "filter by tags")
+		cmd.Flags().String("tags-any", "", "filter by any tags")
+		cmd.Flags().String("not-tags", "", "exclude tags")
+		cmd.Flags().String("not-tags-any", "", "exclude any tags")
+	}
+	switch path {
+	case "project show", "user show", "group show", "role show", "domain show":
+		cmd.Flags().String("domain", "", "domain name or ID")
+	case "project list":
+		cmd.Flags().String("parent", "", "filter by parent")
+		cmd.Flags().String("user", "", "filter by user")
+		cmd.Flags().Bool("my-projects", false, "list projects for the authenticated user")
+		cmd.Flags().StringArray("sort", nil, "sort by key")
+	case "user list":
+		cmd.Flags().String("group", "", "filter by group")
+		cmd.Flags().String("project", "", "filter by project")
+	case "endpoint list":
+		cmd.Flags().String("endpoint", "", "endpoint group")
+		cmd.Flags().String("project", "", "filter by project")
+		cmd.Flags().String("project-domain", "", "project domain")
+	}
+}
+
+func isIdentityReadCommand(path string) bool {
+	switch path {
+	case "catalog list", "catalog show",
+		"domain list", "domain show",
+		"endpoint list", "endpoint show",
+		"group list", "group show",
+		"project list", "project show",
+		"region list", "region show",
+		"role list", "role show",
+		"service list", "service show",
+		"user list", "user show":
+		return true
+	default:
+		return false
 	}
 }
 

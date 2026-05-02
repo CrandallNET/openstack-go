@@ -166,7 +166,63 @@ func newCommandEntry(group string, command string) commandEntry {
 		entry.Tests = []string{"unit: injected token issuer", "live: cloud6 token issue"}
 		entry.Notes = "Implemented through Gophercloud auth/config and Identity v3 token extraction. JSON smoke passed on cloud6; broader formatter and auth precedence parity still need oracle tests."
 	}
+	if packagePath, ok := identityReadPackages()[command]; ok {
+		entry.Status = "implemented"
+		entry.SDKPackage = packagePath
+		entry.ImplementedIn = "internal/cli"
+		entry.Tests = []string{"unit: command registry", "live: cloud6 identity read smoke"}
+		entry.Notes = "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, sorting, and oracle parity coverage still need completion."
+		if identityCloudVerified()[command] {
+			entry.Status = "cloud-verified"
+		}
+	}
 	return entry
+}
+
+func identityReadPackages() map[string]string {
+	base := "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/"
+	return map[string]string{
+		"catalog list":  base + "catalog",
+		"catalog show":  base + "catalog",
+		"domain list":   base + "domains",
+		"domain show":   base + "domains",
+		"endpoint list": base + "endpoints",
+		"endpoint show": base + "endpoints",
+		"group list":    base + "groups",
+		"group show":    base + "groups",
+		"project list":  base + "projects",
+		"project show":  base + "projects",
+		"region list":   base + "regions",
+		"region show":   base + "regions",
+		"role list":     base + "roles",
+		"role show":     base + "roles",
+		"service list":  base + "services",
+		"service show":  base + "services",
+		"user list":     base + "users",
+		"user show":     base + "users",
+	}
+}
+
+func identityCloudVerified() map[string]bool {
+	return map[string]bool{
+		"catalog list":  true,
+		"catalog show":  true,
+		"domain list":   true,
+		"domain show":   true,
+		"endpoint list": true,
+		"endpoint show": true,
+		"group list":    true,
+		"project list":  true,
+		"project show":  true,
+		"region list":   true,
+		"region show":   true,
+		"role list":     true,
+		"role show":     true,
+		"service list":  true,
+		"service show":  true,
+		"user list":     true,
+		"user show":     true,
+	}
 }
 
 func serviceForGroup(group string) (string, string) {

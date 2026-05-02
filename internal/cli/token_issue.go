@@ -7,11 +7,9 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"time"
 
 	"github.com/gophercloud/gophercloud/v2"
 	"github.com/gophercloud/gophercloud/v2/openstack"
-	"github.com/gophercloud/gophercloud/v2/openstack/config"
 	"github.com/gophercloud/gophercloud/v2/openstack/config/clouds"
 	tokens3 "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/tokens"
 	"github.com/spf13/cobra"
@@ -37,22 +35,12 @@ func runTokenIssue(stdout io.Writer, opts *Options) commandHandler {
 }
 
 func issueTokenWithGophercloud(ctx context.Context, opts *Options) (tokenIssueRow, error) {
-	if ctx == nil {
-		ctx = context.Background()
-	}
-	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
-	defer cancel()
-
-	authOptions, _, tlsConfig, err := resolveAuthOptions(opts)
+	clients, err := newOpenStackClients(ctx, opts)
 	if err != nil {
 		return tokenIssueRow{}, err
 	}
 
-	provider, err := config.NewProviderClient(ctx, authOptions, config.WithTLSConfig(tlsConfig))
-	if err != nil {
-		return tokenIssueRow{}, err
-	}
-
+	provider := clients.Provider
 	authResult := provider.GetAuthResult()
 	if authResult == nil {
 		return tokenIssueRow{ID: provider.Token()}, nil
