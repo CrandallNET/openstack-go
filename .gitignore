@@ -1,0 +1,14 @@
+.DS_Store
+
+# Local OpenStack credentials and test configuration.
+clouds.yaml
+clouds-public.yaml
+
+# Local build outputs.
+bin/
+dist/
+
+# Test logs and diagnostics may contain cloud data unless explicitly sanitized.
+*.log
+test-output/
+artifacts/
