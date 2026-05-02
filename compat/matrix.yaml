@@ -5546,13 +5546,15 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/tokens"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: injected token issuer"
+      - "live: cloud6 token issue"
+    notes: "Implemented through Gophercloud auth/config and Identity v3 token extraction. JSON smoke passed on cloud6; broader formatter and auth precedence parity still need oracle tests."
   - command: "token revoke"
     group: "openstack.identity.v3"
     service: "identity"

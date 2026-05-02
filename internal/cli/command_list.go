@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"strings"
 
 	"github.com/crandallnet/golang-osc/compat/osc"
 	"github.com/spf13/cobra"
@@ -36,7 +35,7 @@ func runCommandList(groups []osc.CommandGroup, stdout io.Writer, opts *Options, 
 			}
 			return nil
 		default:
-			return renderCommandListTable(stdout, rows)
+			return renderCommandListTable(stdout, opts, rows)
 		}
 	}
 }
@@ -60,42 +59,16 @@ func commandListRows(groups []osc.CommandGroup, implemented map[string]bool, gro
 	return rows
 }
 
-func renderCommandListTable(stdout io.Writer, rows []osc.CommandGroup) error {
-	if _, err := fmt.Fprintln(stdout, "+---------------------------+--------------------------------+"); err != nil {
-		return err
-	}
-	if _, err := fmt.Fprintln(stdout, "| Command Group             | Commands                       |"); err != nil {
-		return err
-	}
-	if _, err := fmt.Fprintln(stdout, "+---------------------------+--------------------------------+"); err != nil {
-		return err
-	}
+func renderCommandListTable(stdout io.Writer, opts *Options, rows []osc.CommandGroup) error {
+	tableRows := make([][]string, 0, len(rows))
 	for _, row := range rows {
-		commands := strings.Join(row.Commands, "\n")
-		lines := strings.Split(commands, "\n")
-		if len(lines) == 0 {
-			lines = []string{""}
-		}
-		for i, line := range lines {
+		for i, command := range row.Commands {
 			group := ""
 			if i == 0 {
 				group = row.CommandGroup
 			}
-			if _, err := fmt.Fprintf(stdout, "| %-25s | %-30s |\n", truncate(group, 25), truncate(line, 30)); err != nil {
-				return err
-			}
+			tableRows = append(tableRows, []string{group, command})
 		}
 	}
-	_, err := fmt.Fprintln(stdout, "+---------------------------+--------------------------------+")
-	return err
-}
-
-func truncate(value string, width int) string {
-	if len(value) <= width {
-		return value
-	}
-	if width <= 3 {
-		return value[:width]
-	}
-	return value[:width-3] + "..."
+	return renderTable(stdout, opts, []string{"Command Group", "Commands"}, tableRows, 8, opts.PrintEmpty)
 }

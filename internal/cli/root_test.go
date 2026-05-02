@@ -2,6 +2,8 @@ package cli
 
 import (
 	"bytes"
+	"context"
+	"io"
 	"strings"
 	"testing"
 )
@@ -122,6 +124,46 @@ func TestModuleListUsesPluginRegistry(t *testing.T) {
 	}
 }
 
+func TestMaxWidthWrapsTableOutput(t *testing.T) {
+	stdout, stderr, err := executeForTest("module", "list", "--max-width", "52")
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if stderr != "" {
+		t.Fatalf("expected empty stderr, got %q", stderr)
+	}
+	if got := maxOutputLineLength(stdout); got > 52 {
+		t.Fatalf("expected all table lines to fit within 52 columns, longest was %d:\n%s", got, stdout)
+	}
+}
+
+func TestCliffFitWidthEnvUsesDetectedTerminalWidth(t *testing.T) {
+	t.Setenv("CLIFF_FIT_WIDTH", "1")
+	previousWidth := tableTerminalWidth
+	previousTTY := tableWriterIsTerminal
+	tableTerminalWidth = func(stdout io.Writer) (int, bool) {
+		return 52, true
+	}
+	tableWriterIsTerminal = func(stdout io.Writer) bool {
+		return false
+	}
+	defer func() {
+		tableTerminalWidth = previousWidth
+		tableWriterIsTerminal = previousTTY
+	}()
+
+	stdout, stderr, err := executeForTest("module", "list")
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if stderr != "" {
+		t.Fatalf("expected empty stderr, got %q", stderr)
+	}
+	if got := maxOutputLineLength(stdout); got > 52 {
+		t.Fatalf("expected CLIFF_FIT_WIDTH table lines to fit within 52 columns, longest was %d:\n%s", got, stdout)
+	}
+}
+
 func TestCompleteUsesOracleSnapshot(t *testing.T) {
 	stdout, stderr, err := executeForTest("complete")
 	if err != nil {
@@ -146,4 +188,40 @@ func TestPrettyFlagParses(t *testing.T) {
 	if got, want := strings.TrimSpace(stdout), notImplementedExitCodeText; got != want {
 		t.Fatalf("stub output mismatch: got %q want %q", got, want)
 	}
+}
+
+func TestTokenIssueUsesInjectedIssuer(t *testing.T) {
+	previous := issueToken
+	issueToken = func(ctx context.Context, opts *Options) (tokenIssueRow, error) {
+		return tokenIssueRow{
+			Expires:   "2026-05-03T00:00:00+0000",
+			ID:        "token-id",
+			ProjectID: "project-id",
+			UserID:    "user-id",
+		}, nil
+	}
+	defer func() {
+		issueToken = previous
+	}()
+
+	stdout, stderr, err := executeForTest("token", "issue", "-f", "json")
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if stderr != "" {
+		t.Fatalf("expected empty stderr, got %q", stderr)
+	}
+	for _, want := range []string{`"expires": "2026-05-03T00:00:00+0000"`, `"id": "token-id"`, `"project_id": "project-id"`, `"user_id": "user-id"`} {
+		if !strings.Contains(stdout, want) {
+			t.Fatalf("token issue output missing %q:\n%s", want, stdout)
+		}
+	}
+}
+
+func maxOutputLineLength(output string) int {
+	longest := 0
+	for _, line := range strings.Split(strings.TrimRight(output, "\n"), "\n") {
+		longest = max(longest, len([]rune(line)))
+	}
+	return longest
 }

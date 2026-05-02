@@ -34,26 +34,7 @@ func runModuleList(stdout io.Writer, opts *Options) commandHandler {
 			}
 			return nil
 		default:
-			return renderFieldValueTable(stdout, modules)
+			return renderFieldValueTable(stdout, opts, modules)
 		}
 	}
-}
-
-func renderFieldValueTable(stdout io.Writer, fields map[string]string) error {
-	if _, err := fmt.Fprintln(stdout, "+-------------------------------+-----------------------------+"); err != nil {
-		return err
-	}
-	if _, err := fmt.Fprintln(stdout, "| Field                         | Value                       |"); err != nil {
-		return err
-	}
-	if _, err := fmt.Fprintln(stdout, "+-------------------------------+-----------------------------+"); err != nil {
-		return err
-	}
-	for _, field := range sortedKeys(fields) {
-		if _, err := fmt.Fprintf(stdout, "| %-29s | %-27s |\n", truncate(field, 29), truncate(fields[field], 27)); err != nil {
-			return err
-		}
-	}
-	_, err := fmt.Fprintln(stdout, "+-------------------------------+-----------------------------+")
-	return err
 }

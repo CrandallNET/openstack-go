@@ -3,6 +3,8 @@ package cli
 import (
 	"fmt"
 	"io"
+	"os"
+	"strconv"
 
 	"github.com/crandallnet/golang-osc/compat/osc"
 	_ "github.com/crandallnet/golang-osc/internal/plugins/local"
@@ -21,6 +23,29 @@ type Options struct {
 	Format string
 	Pretty bool
 	Debug  bool
+
+	MaxWidth   int
+	FitWidth   bool
+	PrintEmpty bool
+
+	Cloud                       string
+	AuthURL                     string
+	ProjectName                 string
+	ProjectID                   string
+	ProjectDomainName           string
+	ProjectDomainID             string
+	Username                    string
+	UserID                      string
+	UserDomainName              string
+	UserDomainID                string
+	Password                    string
+	Token                       string
+	RegionName                  string
+	Interface                   string
+	Insecure                    bool
+	ApplicationCredentialID     string
+	ApplicationCredentialName   string
+	ApplicationCredentialSecret string
 }
 
 func Execute(args []string, stdout io.Writer, stderr io.Writer) error {
@@ -30,7 +55,11 @@ func Execute(args []string, stdout io.Writer, stderr io.Writer) error {
 }
 
 func NewRootCommand(stdout io.Writer, stderr io.Writer) *cobra.Command {
-	opts := &Options{Format: defaultOutputFormat}
+	opts := &Options{
+		Format:   defaultOutputFormat,
+		MaxWidth: envInt("CLIFF_MAX_TERM_WIDTH"),
+		FitWidth: envBoolInt("CLIFF_FIT_WIDTH"),
+	}
 	groups, err := osc.Commands()
 	if err != nil {
 		panic(fmt.Sprintf("load embedded OSC command catalog: %v", err))
@@ -72,22 +101,44 @@ func addGlobalFlags(flags *pflag.FlagSet, opts *Options) {
 	flags.StringVarP(&opts.Format, "format", "f", defaultOutputFormat, "the output format")
 	flags.BoolVar(&opts.Pretty, "pretty", false, "use enhanced human-readable output")
 	flags.BoolVar(&opts.Debug, "debug", false, "show tracebacks on errors")
+	flags.IntVar(&opts.MaxWidth, "max-width", opts.MaxWidth, "maximum display width, <1 to disable")
+	flags.BoolVar(&opts.FitWidth, "fit-width", opts.FitWidth, "fit table output to the display width")
+	flags.BoolVar(&opts.PrintEmpty, "print-empty", false, "print empty table if there is no data to show")
 
-	flags.String("os-cloud", "", "cloud name in clouds.yaml")
-	flags.String("os-auth-url", "", "authentication URL")
-	flags.String("os-project-name", "", "project name")
-	flags.String("os-project-id", "", "project ID")
-	flags.String("os-project-domain-name", "", "project domain name")
-	flags.String("os-project-domain-id", "", "project domain ID")
-	flags.String("os-username", "", "username")
-	flags.String("os-user-id", "", "user ID")
-	flags.String("os-user-domain-name", "", "user domain name")
-	flags.String("os-user-domain-id", "", "user domain ID")
-	flags.String("os-password", "", "password")
-	flags.String("os-token", "", "token")
-	flags.String("os-region-name", "", "region name")
-	flags.String("os-interface", "", "interface type")
-	flags.Bool("os-insecure", false, "disable TLS certificate verification")
+	flags.StringVar(&opts.Cloud, "os-cloud", "", "cloud name in clouds.yaml")
+	flags.StringVar(&opts.AuthURL, "os-auth-url", "", "authentication URL")
+	flags.StringVar(&opts.ProjectName, "os-project-name", "", "project name")
+	flags.StringVar(&opts.ProjectID, "os-project-id", "", "project ID")
+	flags.StringVar(&opts.ProjectDomainName, "os-project-domain-name", "", "project domain name")
+	flags.StringVar(&opts.ProjectDomainID, "os-project-domain-id", "", "project domain ID")
+	flags.StringVar(&opts.Username, "os-username", "", "username")
+	flags.StringVar(&opts.UserID, "os-user-id", "", "user ID")
+	flags.StringVar(&opts.UserDomainName, "os-user-domain-name", "", "user domain name")
+	flags.StringVar(&opts.UserDomainID, "os-user-domain-id", "", "user domain ID")
+	flags.StringVar(&opts.Password, "os-password", "", "password")
+	flags.StringVar(&opts.Token, "os-token", "", "token")
+	flags.StringVar(&opts.RegionName, "os-region-name", "", "region name")
+	flags.StringVar(&opts.Interface, "os-interface", "", "interface type")
+	flags.BoolVar(&opts.Insecure, "os-insecure", false, "disable TLS certificate verification")
+	flags.StringVar(&opts.ApplicationCredentialID, "os-application-credential-id", "", "application credential ID")
+	flags.StringVar(&opts.ApplicationCredentialName, "os-application-credential-name", "", "application credential name")
+	flags.StringVar(&opts.ApplicationCredentialSecret, "os-application-credential-secret", "", "application credential secret")
+}
+
+func envInt(name string) int {
+	value := os.Getenv(name)
+	if value == "" {
+		return 0
+	}
+	parsed, err := strconv.Atoi(value)
+	if err != nil {
+		return 0
+	}
+	return parsed
+}
+
+func envBoolInt(name string) bool {
+	return envInt(name) != 0
 }
 
 func newHelpCommand(root *cobra.Command, stdout io.Writer) *cobra.Command {

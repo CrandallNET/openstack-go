@@ -121,7 +121,14 @@ func renderCommandMatrix(groups []commandGroup) string {
 		fmt.Fprintf(&b, "    shim: %t\n", entry.Shim)
 		fmt.Fprintf(&b, "    plugin_scope: %t\n", entry.PluginScope)
 		fmt.Fprintf(&b, "    implemented_in: %s\n", yamlString(entry.ImplementedIn))
-		b.WriteString("    tests: []\n")
+		if len(entry.Tests) == 0 {
+			b.WriteString("    tests: []\n")
+		} else {
+			b.WriteString("    tests:\n")
+			for _, test := range entry.Tests {
+				fmt.Fprintf(&b, "      - %s\n", yamlString(test))
+			}
+		}
 		fmt.Fprintf(&b, "    notes: %s\n", yamlString(entry.Notes))
 	}
 	return b.String()
@@ -152,6 +159,12 @@ func newCommandEntry(group string, command string) commandEntry {
 		entry.Status = "implemented"
 		entry.ImplementedIn = "internal/cli"
 		entry.Notes = "Initial implementation lists golang-osc module and command-provider state through the Caddy-backed plugin registry."
+	case "token issue":
+		entry.Status = "cloud-verified"
+		entry.SDKPackage = "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/tokens"
+		entry.ImplementedIn = "internal/cli"
+		entry.Tests = []string{"unit: injected token issuer", "live: cloud6 token issue"}
+		entry.Notes = "Implemented through Gophercloud auth/config and Identity v3 token extraction. JSON smoke passed on cloud6; broader formatter and auth precedence parity still need oracle tests."
 	}
 	return entry
 }

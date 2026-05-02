@@ -55,6 +55,7 @@ Run basic smoke checks:
 ./bin/openstack --version
 ./bin/openstack command list -f json --group openstack.cli
 ./bin/openstack server list --help
+./bin/openstack module list --max-width 52
 ```
 
 Regenerate compatibility artifacts after changing the local Python OSC oracle or matrix generator:
@@ -78,7 +79,7 @@ Generated compatibility artifacts should be committed under `compat/` once gener
 * `compat/test-clouds.yaml`
 * `compat/gophercloud/<version>/packages.json`
 
-Do not commit `clouds.yaml`, tokens, passwords, application credentials, unsanitized debug logs, or sensitive cloud response data.
+Do not commit `clouds.yaml`, tokens, passwords, application credentials, unsanitized debug logs, or sensitive cloud response data. Commands such as `token issue` print live tokens, so do not paste their raw output into docs, commits, issues, or chat.
 
 ## Testing Clouds
 
@@ -93,4 +94,6 @@ Live tests should use a structured cloud capability config so additional clouds 
 
 ## Implementation Status
 
-The repository now contains the initial Go module, `cmd/openstack` entry point, Cobra/pflag root command, global flag parsing skeleton, Caddy-backed command-provider registry, embedded OSC 9.0.0 compatibility catalog, generated command stubs, captured help/completion snapshots, catalog-backed `command list`, and plugin-backed `module list`. See the plan for the current progress table and next work items.
+The repository now contains the initial Go module, `cmd/openstack` entry point, Cobra/pflag root command, global flag parsing skeleton, Caddy-backed command-provider registry, embedded OSC 9.0.0 compatibility catalog, generated command stubs, captured help/completion snapshots, catalog-backed `command list`, plugin-backed `module list`, a Cliff-style width-aware table renderer, and the first Gophercloud-backed live command: `token issue`.
+
+The table renderer accepts `--max-width`, `--fit-width`, `CLIFF_MAX_TERM_WIDTH`, and `CLIFF_FIT_WIDTH=1`. The enhanced human output remains opt-in through `--format=pretty` or `--pretty`.

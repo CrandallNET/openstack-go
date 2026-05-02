@@ -26,6 +26,7 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 	}
 	registry.implemented["command list"] = runCommandList(groups, stdout, opts, registry.implemented)
 	registry.implemented["module list"] = runModuleList(stdout, opts)
+	registry.implemented["token issue"] = runTokenIssue(stdout, opts)
 	return registry
 }
 
