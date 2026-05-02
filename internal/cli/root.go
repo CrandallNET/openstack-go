@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/crandallnet/golang-osc/compat/osc"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -29,6 +30,10 @@ func Execute(args []string, stdout io.Writer, stderr io.Writer) error {
 
 func NewRootCommand(stdout io.Writer, stderr io.Writer) *cobra.Command {
 	opts := &Options{Format: defaultOutputFormat}
+	groups, err := osc.Commands()
+	if err != nil {
+		panic(fmt.Sprintf("load embedded OSC command catalog: %v", err))
+	}
 
 	root := &cobra.Command{
 		Use:           "openstack",
@@ -56,10 +61,8 @@ func NewRootCommand(stdout io.Writer, stderr io.Writer) *cobra.Command {
 	}
 
 	root.AddCommand(newHelpCommand(root, stdout))
-	root.AddCommand(newCommandListCommand(stdout))
 	root.AddCommand(newCompleteCommand(stdout))
-	root.AddCommand(newModuleListCommand(stdout))
-	root.AddCommand(newConfigurationShowCommand(stdout))
+	newCommandRegistry(groups, stdout, opts).addCatalogCommands(root)
 
 	return root
 }
@@ -105,45 +108,16 @@ func newHelpCommand(root *cobra.Command, stdout io.Writer) *cobra.Command {
 	}
 }
 
-func newCommandListCommand(stdout io.Writer) *cobra.Command {
-	return &cobra.Command{
-		Use:   "command list",
-		Short: "List recognized commands",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			_, err := fmt.Fprintln(stdout, "command list (Not Implemented Yet)")
-			return err
-		},
-	}
-}
-
 func newCompleteCommand(stdout io.Writer) *cobra.Command {
 	return &cobra.Command{
 		Use:   "complete",
 		Short: "Print shell completion functions",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			_, err := fmt.Fprintln(stdout, notImplementedExitCodeText)
-			return err
-		},
-	}
-}
-
-func newModuleListCommand(stdout io.Writer) *cobra.Command {
-	return &cobra.Command{
-		Use:   "module list",
-		Short: "List loaded modules",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			_, err := fmt.Fprintln(stdout, notImplementedExitCodeText)
-			return err
-		},
-	}
-}
-
-func newConfigurationShowCommand(stdout io.Writer) *cobra.Command {
-	return &cobra.Command{
-		Use:   "configuration show",
-		Short: "Show current configuration",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			_, err := fmt.Fprintln(stdout, notImplementedExitCodeText)
+			completion, err := osc.Completion()
+			if err != nil {
+				return err
+			}
+			_, err = fmt.Fprint(stdout, completion)
 			return err
 		},
 	}

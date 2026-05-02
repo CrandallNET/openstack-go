@@ -56,4 +56,4 @@ Live tests should use a structured cloud capability config so additional clouds 
 
 ## Implementation Status
 
-The repository now contains the initial Go module, `cmd/openstack` entry point, Cobra/pflag root command, global flag parsing skeleton, and CLI-local command stubs. See the plan for the current progress table and next work items.
+The repository now contains the initial Go module, `cmd/openstack` entry point, Cobra/pflag root command, global flag parsing skeleton, embedded OSC 9.0.0 compatibility catalog, generated command stubs, captured help/completion snapshots, and a catalog-backed `command list`. See the plan for the current progress table and next work items.
