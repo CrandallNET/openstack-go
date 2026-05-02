@@ -1,0 +1,55 @@
+# Non-secret cloud capability config. Credentials live in clouds.yaml, not here.
+clouds:
+  - name: "cloud6"
+    access_profile: "local admin cloud"
+    admin: true
+    default_risks:
+      - "read"
+      - "write-cleanup"
+      - "destructive"
+      - "admin-write"
+    destructive_project: "golang-osc-testing"
+    resource_prefix: "golang-osc-test-"
+    notes: "Full admin access, but not all services are present. Missing services are environment gaps, not product gaps."
+  - name: "flex-sjc"
+    access_profile: "remote project cloud"
+    admin: false
+    default_risks:
+      - "read"
+      - "write-cleanup"
+    destructive_project: ""
+    resource_prefix: "golang-osc-test-"
+    notes: "Broader service coverage, no admin-level access. Project-level writes may run only on test-created resources."
+  - name: "flex-dfw"
+    access_profile: "remote project cloud"
+    admin: false
+    default_risks:
+      - "read"
+      - "write-cleanup"
+    destructive_project: ""
+    resource_prefix: "golang-osc-test-"
+    notes: "Broader service coverage, no admin-level access. Project-level writes may run only on test-created resources."
+  - name: "flex-iad"
+    access_profile: "remote project cloud"
+    admin: false
+    default_risks:
+      - "read"
+      - "write-cleanup"
+    destructive_project: ""
+    resource_prefix: "golang-osc-test-"
+    notes: "Broader service coverage, no admin-level access. Project-level writes may run only on test-created resources."
+fixture_discovery:
+  required_before_lifecycle_tests: true
+  record_selected_values: true
+  examples:
+    - "images"
+    - "flavors"
+    - "networks"
+    - "volume types"
+    - "external networks"
+    - "quotas"
+    - "extensions"
+cleanup_policy:
+  delete_only_test_created_resources: true
+  retain_diagnostics_on_failure: true
+  never_mutate_existing_resources: true

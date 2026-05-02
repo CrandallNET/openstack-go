@@ -39,6 +39,7 @@ Generated compatibility artifacts should be committed under `compat/` once gener
 * `compat/osc/9.0.0/metadata.json`
 * `compat/matrix.yaml`
 * `compat/test-matrix.yaml`
+* `compat/test-clouds.yaml`
 * `compat/gophercloud/<version>/packages.json`
 
 Do not commit `clouds.yaml`, tokens, passwords, application credentials, unsanitized debug logs, or sensitive cloud response data.
