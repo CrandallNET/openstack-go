@@ -1,6 +1,6 @@
-# openstack-gocli
+# golang-osc
 
-`openstack-gocli` is a planned Go implementation of an `openstack` CLI built on [Gophercloud](https://github.com/gophercloud/gophercloud). The goal is command compatibility with `python-openstackclient` where the OpenStack API is supported through Gophercloud or documented service-scoped extras plugins.
+`golang-osc` is a planned Go implementation of an `openstack` CLI built on [Gophercloud](https://github.com/gophercloud/gophercloud). The goal is command compatibility with `python-openstackclient` where the OpenStack API is supported through Gophercloud or documented service-scoped extras plugins.
 
 The first compatibility oracle is the local Python OpenStackClient binary at `/Users/ken/.local/bin/openstack`, currently recorded as `openstack 9.0.0`. The Go binary should be built as `bin/openstack` so the Python CLI remains available as the reference oracle.
 
@@ -17,8 +17,10 @@ The project diary is [docs/openstack-cli-plan-diary.md](docs/openstack-cli-plan-
 The planned Go module path is:
 
 ```text
-github.com/crandallnet/openstack-gocli
+github.com/crandallnet/golang-osc
 ```
+
+The current git remote may be a staging remote, but the Go module path should remain `github.com/crandallnet/golang-osc` because that is the intended long-term public import path.
 
 The CLI parser decision is [Cobra](https://pkg.go.dev/github.com/spf13/cobra) with [pflag](https://github.com/spf13/pflag). Cobra and pflag are a parsing substrate only; compatibility behavior such as help text, completion, error text, command sorting, command stubs, and global option placement must be owned by this project and tested against the Python oracle.
 
@@ -50,7 +52,7 @@ Known test clouds:
 * `cloud6`: local cloud with full admin access, but not all services.
 * `flex-sjc`, `flex-dfw`, and `flex-iad`: remote clouds with broader service coverage, but no admin-level access.
 
-Live tests should use a structured cloud capability config so additional clouds can be added later. Project-level read/write tests may run on flex clouds, but tests must only delete or mutate resources they created themselves. Admin and destructive tests may run on `cloud6`, using unique names such as `gocloud-test-UUID` and a dedicated project named `gocli-testing` where applicable.
+Live tests should use a structured cloud capability config so additional clouds can be added later. Project-level read/write tests may run on flex clouds, but tests must only delete or mutate resources they created themselves. Admin and destructive tests may run on `cloud6`, using unique names such as `golang-osc-test-UUID` and a dedicated project named `golang-osc-testing` where applicable.
 
 ## Implementation Status
 

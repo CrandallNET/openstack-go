@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This repository is for building `openstack-gocli`, a Go `openstack` CLI intended to be compatible with `python-openstackclient` where API coverage exists through Gophercloud or documented extras plugins.
+This repository is for building `golang-osc`, a Go `openstack` CLI intended to be compatible with `python-openstackclient` where API coverage exists through Gophercloud or documented extras plugins.
 
 ## Working Rule
 
@@ -63,6 +63,6 @@ The local `clouds.yaml` may be used for live tests. Normal CLI config discovery 
 
 Project-level read/write tests may run on flex clouds, but tests must only delete or mutate resources they created themselves. Existing networks, images, servers, keys, volumes, and other resources must be respected.
 
-Admin and destructive tests may run on `cloud6`, using unique names such as `gocloud-test-UUID`, cleanup, retained diagnostics on failure, and the dedicated `gocli-testing` project where applicable.
+Admin and destructive tests may run on `cloud6`, using unique names such as `golang-osc-test-UUID`, cleanup, retained diagnostics on failure, and the dedicated `golang-osc-testing` project where applicable.
 
 Before lifecycle tests run, dynamically query the target cloud for currently available fixtures such as images, flavors, networks, volume types, external networks, quotas, and extensions. Record selected fixture values for diagnostics.

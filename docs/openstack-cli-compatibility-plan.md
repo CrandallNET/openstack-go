@@ -1,10 +1,10 @@
-# Golang OpenStack CLI Compatibility Plan
+# golang-osc OpenStack CLI Compatibility Plan
 
 Status: living plan and progress tracker, with an initial gap catalog, ordered workplan, and cloud test matrix.
 
 This plan targets a Go `openstack` CLI built on [Gophercloud](https://github.com/gophercloud/gophercloud) that can replace `python-openstackclient` command-for-command where coverage exists. The default behavior must match Python OpenStackClient, including command names, flag names, exit behavior, stdout/stderr behavior, and default output. The new enhanced human output is opt-in via `--format=pretty` or `--pretty`; those two flags are synonymous.
 
-This document is the active execution tracker. It should show what needs to be done, the dependency order, current progress, and known blockers. Decisions, experiments, rejected alternatives, and research notes belong in the [plan diary](/Users/ken/Dev/openstack-go/docs/openstack-cli-plan-diary.md).
+This document is the active execution tracker. It should show what needs to be done, the dependency order, current progress, and known blockers. Decisions, experiments, rejected alternatives, and research notes belong in the [plan diary](openstack-cli-plan-diary.md).
 
 The current local oracle is `/Users/ken/.local/bin/openstack`, which reports `openstack 9.0.0`. The current online docs also expose a development command list for OpenStack Command Line Client `9.1.0.dev71`; that is useful for drift tracking but should not silently replace the pinned local oracle. PyPI lists `python-openstackclient 9.0.0` as released on February 17, 2026, so the first generated catalog should be pinned to `9.0.0`, with an explicit upgrade process for later versions.
 
@@ -114,7 +114,7 @@ Gaps to validate are consistency groups, consistency group snapshots, volume gro
 
 ## Parser Decision
 
-Use [Cobra](https://pkg.go.dev/github.com/spf13/cobra) with [pflag](https://github.com/spf13/pflag) for command parsing and dispatch. The decision record, alternatives considered, and local parser experiments live in the [plan diary](/Users/ken/Dev/openstack-go/docs/openstack-cli-plan-diary.md).
+Use [Cobra](https://pkg.go.dev/github.com/spf13/cobra) with [pflag](https://github.com/spf13/pflag) for command parsing and dispatch. The decision record, alternatives considered, and local parser experiments live in the [plan diary](openstack-cli-plan-diary.md).
 
 This is a compatibility substrate, not a license to accept Cobra defaults. The project should generate a Cobra command tree from the pinned OSC catalog, attach root persistent flags for global options, attach command-local flags from generated command metadata, and keep command implementations independent of Cobra internals. Custom compatibility layers must own help text, completion output, error formatting, command sorting, suggestions, global option placement, and `openstack complete` behavior until Python-oracle tests prove the behavior matches.
 
@@ -124,7 +124,7 @@ Use Caddy's module system as the existing plugin framework for CLI plugin-scope 
 
 The CLI should define OpenStack-specific module namespaces, such as `openstack.commands.core`, `openstack.commands.plugins`, and `openstack.commands.extras`. Plugin packages should register command providers in those namespaces. The command registry generator should load registered modules, assert them to project-defined command-provider interfaces, and add their command metadata and handlers to the Cobra/pflag tree.
 
-Do not use Caddy's server/runtime behavior for OpenStack CLI execution. Use only the module registration and loading model unless a later decision explicitly expands the scope. The decision record and rejected alternatives are in the [plan diary](/Users/ken/Dev/openstack-go/docs/openstack-cli-plan-diary.md).
+Do not use Caddy's server/runtime behavior for OpenStack CLI execution. Use only the module registration and loading model unless a later decision explicitly expands the scope. The decision record and rejected alternatives are in the [plan diary](openstack-cli-plan-diary.md).
 
 ## Decision And Question Register
 
@@ -145,11 +145,11 @@ This register keeps implementation-defining decisions reviewable. Status values 
 | Q-009 | `decided` | May tests read the provided `clouds.yaml` from the standard OpenStack config location or configured path? | Yes. Use the local `clouds.yaml` for tests, never commit or log secrets, and make normal Go CLI config discovery follow the same XDG/config precedence used by Python OSC/openstacksdk. | Controls whether live cloud testing can proceed without synthetic credentials and keeps normal config lookup compatible with Python behavior. |
 | Q-010 | `decided` | May the implementation ever shell out to Python/OpenStackClient in production behavior? | No. Python CLI is only a reference/oracle for generation and tests. The Go CLI must be self-contained and must not shell out to the OS for production behavior, preserving macOS, Linux, and Windows support. | Controls architecture, runtime dependency guarantees, and cross-platform support. |
 | Q-011 | `decided` | May read-only live tests run against `cloud6`, `flex-sjc`, `flex-dfw`, and `flex-iad`? | Yes. Create a structured cloud test capability config documenting which clouds are usable for which tests so future clouds can be added without redesigning the test harness. | Controls cloud discovery, non-destructive compatibility verification, and extensibility of live test coverage. |
-| Q-012 | `decided` | May destructive and admin lifecycle tests run on `cloud6`? | Yes, with unique test prefixes such as `gocloud-test-UUID`, cleanup, and retained diagnostics on failure. | Controls whether admin and write behavior can be fully verified. |
+| Q-012 | `decided` | May destructive and admin lifecycle tests run on `cloud6`? | Yes, with unique test prefixes such as `golang-osc-test-UUID`, cleanup, and retained diagnostics on failure. | Controls whether admin and write behavior can be fully verified. |
 | Q-013 | `decided` | Should remote flex clouds remain read-only unless explicitly opted in for a run? | No. Project-level read/write tests may run on flex clouds, but tests must only delete resources they created themselves and must respect existing networks, images, servers, keys, and other resources. Admin-level tests are not available on flex clouds. | Protects shared remote environments while allowing project-scope lifecycle coverage. |
-| Q-014 | `decided` | Is there a disposable project or tenant on `cloud6` for destructive tests, or should tests create one when policy allows? | Use admin-level commands on `cloud6` to create or use a dedicated test project named `gocli-testing` for destructive and CRUD-level test isolation. | Controls cleanup isolation and test safety. |
+| Q-014 | `decided` | Is there a disposable project or tenant on `cloud6` for destructive tests, or should tests create one when policy allows? | Use admin-level commands on `cloud6` to create or use a dedicated test project named `golang-osc-testing` for destructive and CRUD-level test isolation. | Controls cleanup isolation and test safety. |
 | Q-015 | `decided` | Are there preferred fixture resources for image, flavor, network, volume type, external network, and keypair tests? | Discover safe defaults dynamically and record them before lifecycle tests. Before starting a test, query the target cloud for currently available images, flavors, networks, volume types, external networks, and other required fixtures; use only options available on that specific cloud for that test. | Controls reliable server, volume, floating IP, and image lifecycle tests in changing cloud environments. |
-| Q-016 | `decided` | What Go module path should `go.mod` use? | `github.com/crandallnet/openstack-gocli`. | Controls import paths and generated package names. |
+| Q-016 | `decided` | What Go module path should `go.mod` use? | `github.com/crandallnet/golang-osc`. | Controls import paths and generated package names. |
 | Q-017 | `decided` | What local binary name and path should be used? | Build `bin/openstack`; do not replace the existing Python `openstack`. | Protects the oracle binary and makes comparisons explicit. |
 | Q-018 | `decided` | What minimum Go version should be supported? | Use the current local Go toolchain for now, then lower only if needed. | Controls dependency versions, CI setup, and language features. |
 | Q-019 | `decided` | Are small dependencies beyond Gophercloud, Cobra, and pflag acceptable for YAML, table rendering, color, and golden-test helpers? | Yes. Prefer established, popular, maintained Go libraries when available. Document every dependency choice and its reasoning in the diary so it can be revisited later. | Controls build footprint, maintainability, and whether compatibility helpers are hand-rolled. |
@@ -175,16 +175,16 @@ This register keeps implementation-defining decisions reviewable. Status values 
 | A-018 | `decided` | Live tests may use the local `clouds.yaml`; normal CLI config discovery must follow Python OSC/openstacksdk XDG/config precedence. | Answered Q-009. |
 | A-019 | `decided` | Production CLI behavior must be self-contained Go code and cross-platform across macOS, Linux, and Windows; it must not shell out to the OS for Python/OpenStackClient behavior. | Answered Q-010. |
 | A-020 | `decided` | Read-only live tests may run against `cloud6`, `flex-sjc`, `flex-dfw`, and `flex-iad`, governed by a structured cloud test capability config that can include future clouds. | Answered Q-011. |
-| A-021 | `decided` | Destructive and admin lifecycle tests may run on `cloud6` using unique names such as `gocloud-test-UUID`, cleanup, and retained diagnostics on failure. | Answered Q-012. |
-| A-022 | `decided` | `cloud6` admin tests may create or use a dedicated project named `gocli-testing` for isolated CRUD/destructive test coverage. | Answered Q-014. |
+| A-021 | `decided` | Destructive and admin lifecycle tests may run on `cloud6` using unique names such as `golang-osc-test-UUID`, cleanup, and retained diagnostics on failure. | Answered Q-012 and updated by the project rename. |
+| A-022 | `decided` | `cloud6` admin tests may create or use a dedicated project named `golang-osc-testing` for isolated CRUD/destructive test coverage. | Answered Q-014 and updated by the project rename. |
 | A-023 | `decided` | Lifecycle tests must dynamically discover fixture resources per cloud immediately before running and record the selected values for diagnostics. | Answered Q-015. |
-| A-024 | `decided` | The Go module path is `github.com/crandallnet/openstack-gocli`. | Answered Q-016. |
+| A-024 | `decided` | The Go module path is `github.com/crandallnet/golang-osc`. | Answered Q-016 and updated by the project rename. |
 | A-025 | `decided` | Use the current local Go toolchain as the initial Go version baseline, lowering it later only if needed. | Answered Q-018. |
 | A-026 | `decided` | Prefer established, popular, maintained Go libraries for supporting functionality, and record dependency choices and rationale in the diary. | Answered Q-019. |
 | A-027 | `decided` | Use Caddy's module system as the existing plugin framework for statically linked, in-process CLI plugins. | Answered Q-021. |
 | A-008 | `assumed` | Use static and mocked tests as mandatory gates before live cloud tests. | Reopen only if test runtime becomes impractical. |
 | A-009 | `decided` | Run project-level read/write tests on remote flex clouds when safe, but delete only test-created resources and never run admin-level tests there. | Answered Q-013. |
-| A-010 | `decided` | Use `cloud6` for admin and destructive tests where services exist, with a dedicated `gocli-testing` project for isolated CRUD/destructive coverage. | Answered Q-012 and Q-014. |
+| A-010 | `decided` | Use `cloud6` for admin and destructive tests where services exist, with a dedicated `golang-osc-testing` project for isolated CRUD/destructive coverage. | Answered Q-012 and Q-014; project name updated by the rename. |
 | A-011 | `decided` | Commit generated compatibility data under `compat/`. | Answered Q-020. |
 | A-012 | `decided` | Build the Go binary at `bin/openstack` and preserve the Python `openstack` as the oracle. | Answered Q-017. |
 
@@ -225,7 +225,7 @@ Progress states are `not-started`, `in-progress`, `done`, `blocked`, and `deferr
 | Generate OSC command catalog | Python OSC oracle | `not-started` | Required artifacts are listed, but files are not generated yet. | Add a generator for `commands.json`, `global-help.txt`, per-command help, and completion output. |
 | Seed command compatibility matrix | OSC command catalog | `not-started` | Matrix schema is described, but `compat/matrix.yaml` does not exist yet. | Generate one row per local command with status `unknown`. |
 | Seed cloud test matrix | Cloud test matrix in this plan | `in-progress` | Test eligibility is documented in this plan, but `compat/test-matrix.yaml` and cloud capability config do not exist yet. | Convert the Markdown matrix into structured YAML with risk, role, setup, cleanup, skip metadata, and per-cloud capability mappings. |
-| Create Go module and package skeleton | None | `not-started` | No `go.mod` or `cmd/openstack` entry point exists yet. | Create `go.mod` with module path `github.com/crandallnet/openstack-gocli`, `cmd/openstack`, internal packages, and test harness directories. |
+| Create Go module and package skeleton | None | `not-started` | No `go.mod` or `cmd/openstack` entry point exists yet. | Create `go.mod` with module path `github.com/crandallnet/golang-osc`, `cmd/openstack`, internal packages, and test harness directories. |
 | Generate Cobra/pflag command registry | OSC command catalog; Go module skeleton | `not-started` | Parser decision is accepted, but no generated registry exists. | Generate nested Cobra commands from the catalog with canonical command paths, aliases, and intermediate nodes. |
 | Select CLI plugin framework | Dependency policy; plugin architecture decisions | `done` | Caddy's module system is selected for statically linked, in-process CLI plugins; rationale and rejected alternatives are documented in the diary. | Revisit only if dependency footprint or integration prototype shows it is unsuitable. |
 | Implement parser compatibility layer | Cobra/pflag registry | `not-started` | Compatibility requirements are documented only. | Override help, usage, errors, command sorting, suggestions, option placement behavior, and `openstack complete`. |
@@ -238,7 +238,7 @@ Progress states are `not-started`, `in-progress`, `done`, `blocked`, and `deferr
 | Implement CLI-local commands | Parser layer; renderers | `not-started` | Command list is identified, but no Go commands exist yet. | Implement `--version`, `--help`, `help`, `command list`, `complete`, `module list`, and compatible `configuration show` behavior. |
 | Implement Identity read bootstrap | Auth/config; client factories; renderers | `not-started` | Identity coverage is cataloged, but no commands exist yet. | Implement `token issue`, catalog, project, domain, user, group, role, service, and endpoint read commands. |
 | Roll out service read commands | Identity bootstrap; lookup/error helpers | `not-started` | Service gaps are cataloged by area. | Implement Compute, Network, Volume, Image, Object Store, and Placement list/show commands in that order. |
-| Implement write lifecycle framework | Service read commands; lookup/error helpers | `not-started` | Cleanup requirements are documented only. | Add unique `gocloud-test-UUID` naming, setup, teardown, idempotent cleanup, wait loops, timeouts, and failure artifacts. |
+| Implement write lifecycle framework | Service read commands; lookup/error helpers | `not-started` | Cleanup requirements are documented only. | Add unique `golang-osc-test-UUID` naming, setup, teardown, idempotent cleanup, wait loops, timeouts, and failure artifacts. |
 | Implement service write commands | Write lifecycle framework | `not-started` | Write command order is documented only. | Add low-risk project lifecycle commands first, then admin/destructive commands by service. |
 | Close Gophercloud SDK gaps with shims | Command matrix; service implementations | `not-started` | Expected shim backlogs are documented, but direct module inventory is not complete. | For each gap, record endpoint, request/response shape, microversion, tests, and upstreamability before adding a shim. |
 | Add OSC version drift workflow | Generated catalogs | `not-started` | Version policy is documented only. | Add regeneration and diff workflow for command, option, help, output, and SDK coverage drift. |
@@ -382,7 +382,7 @@ Use `Yes` when a suite should run by default, `Conditional` when it depends on s
 | Placement read | Mocked | Conditional | Conditional | Conditional | Conditional | Run where Placement exists. Covers resource providers, traits, resource classes, allocation candidates, inventories, usages, and allocations as policy allows. |
 | Placement admin writes | Mocked | Conditional | No | No | No | Includes resource class, trait, inventory, aggregate, and allocation mutation behavior that normally requires admin. |
 | Common read commands | Mocked | Conditional | Conditional | Conditional | Conditional | Covers `availability zone list`, `extension list/show`, `limits show`, `quota show`, and `versions show` where backing services exist. |
-| Common admin/destructive commands | Mocked | Conditional | No | No | No | Covers `quota set/delete` and `project cleanup`. `project cleanup` must use the dedicated `gocli-testing` project on `cloud6`. |
+| Common admin/destructive commands | Mocked | Conditional | No | No | No | Covers `quota set/delete` and `project cleanup`. `project cleanup` must use the dedicated `golang-osc-testing` project on `cloud6`. |
 | Name-or-ID lookup and ambiguity | Yes | Conditional | Conditional | Conditional | Conditional | Ambiguity tests often need duplicate names. Prefer mocked tests, then create duplicate test-owned names only; existing resources must not be modified or deleted. |
 | Microversion negotiation | Mocked | Conditional | Conditional | Conditional | Conditional | Static and mocked tests are mandatory. Live tests run only where the service exposes the relevant microversion range. |
 | Wait, async, and timeout behavior | Mocked | Conditional | Conditional | Conditional | Conditional | Server, volume, image, stack-like, and delete wait tests can consume resources. Remote variants may run only on test-created resources after cleanup policy is proven. |
