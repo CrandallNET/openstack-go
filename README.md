@@ -56,4 +56,4 @@ Live tests should use a structured cloud capability config so additional clouds 
 
 ## Implementation Status
 
-No Go module or CLI code exists yet. The current work is planning, decision capture, and compatibility-scope definition. See the plan for the current progress table and next work items.
+The repository now contains the initial Go module, `cmd/openstack` entry point, Cobra/pflag root command, global flag parsing skeleton, and CLI-local command stubs. See the plan for the current progress table and next work items.

@@ -5,6 +5,7 @@ clouds.yaml
 clouds-public.yaml
 
 # Local build outputs.
+.cache/
 bin/
 dist/
 
