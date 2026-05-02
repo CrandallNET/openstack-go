@@ -57,7 +57,7 @@ func TestStubCommand(t *testing.T) {
 }
 
 func TestGeneratedStubCommandIgnoresCommandFlags(t *testing.T) {
-	stdout, stderr, err := executeForTest("server", "list", "--long")
+	stdout, stderr, err := executeForTest("server", "start", "--wait")
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -106,8 +106,26 @@ func TestCommandListJSONMarksServiceStubs(t *testing.T) {
 	if stderr != "" {
 		t.Fatalf("expected empty stderr, got %q", stderr)
 	}
-	if !strings.Contains(stdout, `"server list (Not Implemented Yet)"`) {
-		t.Fatalf("expected server list to be marked unimplemented, got:\n%s", stdout)
+	if !strings.Contains(stdout, `"server start (Not Implemented Yet)"`) {
+		t.Fatalf("expected server start to be marked unimplemented, got:\n%s", stdout)
+	}
+}
+
+func TestCommandListJSONMarksCoreReadsImplemented(t *testing.T) {
+	stdout, stderr, err := executeForTest("command", "list", "-f", "json", "--group", "openstack.compute.v2")
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if stderr != "" {
+		t.Fatalf("expected empty stderr, got %q", stderr)
+	}
+	for _, want := range []string{`"server list"`, `"server show"`, `"flavor list"`, `"flavor show"`} {
+		if !strings.Contains(stdout, want) {
+			t.Fatalf("expected %s to be marked implemented, got:\n%s", want, stdout)
+		}
+	}
+	if strings.Contains(stdout, `"server list (Not Implemented Yet)"`) {
+		t.Fatalf("expected server list without not-implemented suffix, got:\n%s", stdout)
 	}
 }
 

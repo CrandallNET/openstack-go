@@ -176,6 +176,13 @@ func newCommandEntry(group string, command string) commandEntry {
 			entry.Status = "cloud-verified"
 		}
 	}
+	if packagePath, ok := coreReadPackages()[command]; ok {
+		entry.Status = "cloud-verified"
+		entry.SDKPackage = packagePath
+		entry.ImplementedIn = "internal/cli"
+		entry.Tests = []string{"unit: command registry", "live: cloud6 core read smoke"}
+		entry.Notes = "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
+	}
 	return entry
 }
 
@@ -222,6 +229,21 @@ func identityCloudVerified() map[string]bool {
 		"service show":  true,
 		"user list":     true,
 		"user show":     true,
+	}
+}
+
+func coreReadPackages() map[string]string {
+	return map[string]string{
+		"flavor list":  "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/flavors",
+		"flavor show":  "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/flavors",
+		"image list":   "github.com/gophercloud/gophercloud/v2/openstack/image/v2/images",
+		"image show":   "github.com/gophercloud/gophercloud/v2/openstack/image/v2/images",
+		"network list": "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/networks",
+		"network show": "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/networks",
+		"server list":  "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servers",
+		"server show":  "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servers",
+		"volume list":  "github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/volumes",
+		"volume show":  "github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/volumes",
 	}
 }
 

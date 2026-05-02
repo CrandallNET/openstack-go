@@ -40,6 +40,15 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 	} {
 		registry.implemented[path] = runIdentityRead(path, stdout, opts)
 	}
+	for _, path := range []string{
+		"flavor list", "flavor show",
+		"image list", "image show",
+		"network list", "network show",
+		"server list", "server show",
+		"volume list", "volume show",
+	} {
+		registry.implemented[path] = runCoreRead(path, stdout, opts)
+	}
 	return registry
 }
 
@@ -125,6 +134,13 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().String("not-tags", "", "exclude tags")
 		cmd.Flags().String("not-tags-any", "", "exclude any tags")
 	}
+	if isCoreReadCommand(path) && strings.HasSuffix(path, " list") {
+		cmd.Flags().Bool("long", false, "list additional fields")
+		cmd.Flags().Bool("all-projects", false, "include all projects")
+		cmd.Flags().String("project", "", "filter by project")
+		cmd.Flags().String("status", "", "filter by status")
+		cmd.Flags().String("name", "", "filter by name")
+	}
 	switch path {
 	case "project show", "user show", "group show", "role show", "domain show":
 		cmd.Flags().String("domain", "", "domain name or ID")
@@ -154,6 +170,19 @@ func isIdentityReadCommand(path string) bool {
 		"role list", "role show",
 		"service list", "service show",
 		"user list", "user show":
+		return true
+	default:
+		return false
+	}
+}
+
+func isCoreReadCommand(path string) bool {
+	switch path {
+	case "flavor list", "flavor show",
+		"image list", "image show",
+		"network list", "network show",
+		"server list", "server show",
+		"volume list", "volume show":
 		return true
 	default:
 		return false

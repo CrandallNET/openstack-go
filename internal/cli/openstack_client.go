@@ -36,3 +36,19 @@ func newOpenStackClients(ctx context.Context, opts *Options) (*openStackClients,
 func (clients *openStackClients) identityV3() (*gophercloud.ServiceClient, error) {
 	return openstack.NewIdentityV3(clients.Provider, clients.EndpointOpts)
 }
+
+func (clients *openStackClients) computeV2() (*gophercloud.ServiceClient, error) {
+	return openstack.NewComputeV2(clients.Provider, clients.EndpointOpts)
+}
+
+func (clients *openStackClients) imageV2() (*gophercloud.ServiceClient, error) {
+	return openstack.NewImageV2(clients.Provider, clients.EndpointOpts)
+}
+
+func (clients *openStackClients) networkV2() (*gophercloud.ServiceClient, error) {
+	return openstack.NewNetworkV2(clients.Provider, clients.EndpointOpts)
+}
+
+func (clients *openStackClients) blockStorageV3() (*gophercloud.ServiceClient, error) {
+	return openstack.NewBlockStorageV3(clients.Provider, clients.EndpointOpts)
+}
