@@ -1,0 +1,99 @@
+usage: openstack volume type create [-h] [-f {json,shell,table,value,yaml}]
+                                    [-c COLUMN] [--noindent] [--prefix PREFIX]
+                                    [--max-width <integer>] [--fit-width]
+                                    [--print-empty]
+                                    [--description <description>]
+                                    [--public | --private]
+                                    [--property <key=value>] [--multiattach]
+                                    [--cacheable] [--replicated]
+                                    [--availability-zone AVAILABILITY_ZONES]
+                                    [--project <project>]
+                                    [--project-domain <project-domain>]
+                                    [--encryption-provider <provider>]
+                                    [--encryption-cipher <cipher>]
+                                    [--encryption-key-size <key-size>]
+                                    [--encryption-control-location <control-location>]
+                                    <name>
+
+Create new volume type
+
+positional arguments:
+  <name>                Volume type name
+
+options:
+  -h, --help            show this help message and exit
+  --description <description>
+                        Volume type description
+  --public              Volume type is accessible to the public
+  --private             Volume type is not accessible to the public
+  --property <key=value>
+                        Set a property on this volume type (repeat option to
+                        set multiple properties)
+  --multiattach         Enable multi-attach for this volume type (this is an
+                        alias for '--property multiattach=<is> True')
+                        (requires driver support)
+  --cacheable           Enable caching for this volume type (this is an alias
+                        for '--property cacheable=<is> True') (requires driver
+                        support)
+  --replicated          Enabled replication for this volume type (this is an
+                        alias for '--property replication_enabled=<is> True')
+                        (requires driver support)
+  --availability-zone AVAILABILITY_ZONES
+                        Set an availability zone for this volume type (this is
+                        an alias for '--property
+                        RESKEY:availability_zones:<az>') (repeat option to set
+                        multiple availability zones)
+  --project <project>   Allow <project> to access private type (name or ID)
+                        (must be used with --private option)
+  --project-domain <project-domain>
+                        Domain the project belongs to (name or ID). This can
+                        be used in case collisions between project names
+                        exist.
+  --encryption-provider <provider>
+                        Set the encryption provider format for this volume
+                        type (e.g "luks" or "plain") (admin only) (this option
+                        is required when setting encryption type of a volume;
+                        consider using other encryption options such as: "--
+                        encryption-cipher", "--encryption-key-size" and "--
+                        encryption-control-location")
+  --encryption-cipher <cipher>
+                        Set the encryption algorithm or mode for this volume
+                        type (e.g "aes-xts-plain64") (admin only)
+  --encryption-key-size <key-size>
+                        Set the size of the encryption key of this volume type
+                        (e.g "128" or "256") (admin only)
+  --encryption-control-location <control-location>
+                        Set the notional service where the encryption is
+                        performed ("front-end" or "back-end") (admin only)
+                        (The default value for this option is "front-end" when
+                        setting encryption type of a volume. Consider using
+                        other encryption options such as: "--encryption-
+                        cipher", "--encryption-key-size" and "--encryption-
+                        provider")
+
+output formatters:
+  output formatter options
+
+  -f {json,shell,table,value,yaml}, --format {json,shell,table,value,yaml}
+                        the output format, defaults to table
+  -c COLUMN, --column COLUMN
+                        specify the column(s) to include, can be repeated to
+                        show multiple columns
+
+json formatter:
+  --noindent            whether to disable indenting the JSON
+
+shell formatter:
+  a format a UNIX shell can parse (variable="value")
+
+  --prefix PREFIX       add a prefix to all variable names
+
+table formatter:
+  --max-width <integer>
+                        Maximum display width, <1 to disable. You can also use
+                        the CLIFF_MAX_TERM_WIDTH environment variable, but the
+                        parameter takes precedence.
+  --fit-width           Fit the table to the display width. Implied if --max-
+                        width greater than 0. Set the environment variable
+                        CLIFF_FIT_WIDTH=1 to always enable
+  --print-empty         Print empty table if there is no data to show.

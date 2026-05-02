@@ -1,0 +1,12 @@
+usage: openstack image metadef object update [-h] [--name NAME]
+                                             <namespace> <object>
+
+Update a metadef object
+
+positional arguments:
+  <namespace>  Metadef namespace name
+  <object>     Metadef object to be updated
+
+options:
+  -h, --help   show this help message and exit
+  --name NAME  New name of the object

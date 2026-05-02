@@ -1,0 +1,10 @@
+usage: openstack address group delete [-h]
+                                      <address-group> [<address-group> ...]
+
+Delete address group(s)
+
+positional arguments:
+  <address-group>  Address group(s) to delete (name or ID)
+
+options:
+  -h, --help       show this help message and exit

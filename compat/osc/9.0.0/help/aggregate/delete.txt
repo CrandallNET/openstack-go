@@ -1,0 +1,9 @@
+usage: openstack aggregate delete [-h] <aggregate> [<aggregate> ...]
+
+Delete existing aggregate(s)
+
+positional arguments:
+  <aggregate>  Aggregate(s) to delete (name or ID)
+
+options:
+  -h, --help   show this help message and exit

@@ -1,0 +1,10 @@
+usage: openstack volume qos delete [-h] [--force] <qos-spec> [<qos-spec> ...]
+
+Delete QoS specification
+
+positional arguments:
+  <qos-spec>  QoS specification(s) to delete (name or ID)
+
+options:
+  -h, --help  show this help message and exit
+  --force     Allow to delete in-use QoS specification(s)

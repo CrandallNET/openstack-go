@@ -1,0 +1,20 @@
+usage: openstack role set [-h] [--description <description>]
+                          [--domain <domain>] [--name <name>]
+                          [--immutable | --no-immutable]
+                          <role>
+
+Set role properties
+
+positional arguments:
+  <role>                Role to modify (name or ID)
+
+options:
+  -h, --help            show this help message and exit
+  --description <description>
+                        Add description about the role
+  --domain <domain>     Domain the role belongs to (name or ID)
+  --name <name>         Set role name
+  --immutable           Make resource immutable. An immutable project may not
+                        be deleted or modified except to remove the immutable
+                        flag
+  --no-immutable        Make resource mutable (default)

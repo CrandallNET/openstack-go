@@ -1,0 +1,19 @@
+usage: openstack block storage log level set [-h] [--host <host>]
+                                             [--service <service>]
+                                             [--log-prefix <log-prefix>]
+                                             <log-level>
+
+Set log level of block storage service Supported by --os-volume-api-version
+3.32 or greater.
+
+positional arguments:
+  <log-level>           Desired log level
+
+options:
+  -h, --help            show this help message and exit
+  --host <host>         Set block storage service log level of specified host
+                        (name only)
+  --service <service>   Set block storage service log level of specified
+                        service (name only)
+  --log-prefix <log-prefix>
+                        Prefix for the log, e.g. 'sqlalchemy'

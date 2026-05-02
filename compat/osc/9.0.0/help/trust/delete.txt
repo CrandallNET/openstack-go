@@ -1,0 +1,9 @@
+usage: openstack trust delete [-h] <trust> [<trust> ...]
+
+Delete trust(s)
+
+positional arguments:
+  <trust>     Trust(s) to delete
+
+options:
+  -h, --help  show this help message and exit

@@ -1,0 +1,11 @@
+usage: openstack user password set [-h] [--password <new-password>]
+                                   [--original-password <original-password>]
+
+Change current user password
+
+options:
+  -h, --help            show this help message and exit
+  --password <new-password>
+                        New user password
+  --original-password <original-password>
+                        Original user password

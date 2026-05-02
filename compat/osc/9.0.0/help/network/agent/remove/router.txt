@@ -1,0 +1,11 @@
+usage: openstack network agent remove router [-h] [--l3] <agent-id> <router>
+
+Remove router from an agent
+
+positional arguments:
+  <agent-id>  Agent from which router will be removed (ID only)
+  <router>    Router to be removed from an agent (name or ID)
+
+options:
+  -h, --help  show this help message and exit
+  --l3        Remove router from an L3 agent

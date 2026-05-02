@@ -1,0 +1,48 @@
+usage: openstack server add fixed ip [-h] [-f {json,shell,table,value,yaml}]
+                                     [-c COLUMN] [--noindent]
+                                     [--prefix PREFIX] [--max-width <integer>]
+                                     [--fit-width] [--print-empty]
+                                     [--fixed-ip-address <ip-address>]
+                                     [--tag <tag>]
+                                     <server> <network>
+
+Add fixed IP address to server
+
+positional arguments:
+  <server>              Server to receive the fixed IP address (name or ID)
+  <network>             Network to allocate the fixed IP address from (name or
+                        ID)
+
+options:
+  -h, --help            show this help message and exit
+  --fixed-ip-address <ip-address>
+                        Requested fixed IP address
+  --tag <tag>           Tag for the attached interface. (supported by --os-
+                        compute-api-version 2.49 or above)
+
+output formatters:
+  output formatter options
+
+  -f {json,shell,table,value,yaml}, --format {json,shell,table,value,yaml}
+                        the output format, defaults to table
+  -c COLUMN, --column COLUMN
+                        specify the column(s) to include, can be repeated to
+                        show multiple columns
+
+json formatter:
+  --noindent            whether to disable indenting the JSON
+
+shell formatter:
+  a format a UNIX shell can parse (variable="value")
+
+  --prefix PREFIX       add a prefix to all variable names
+
+table formatter:
+  --max-width <integer>
+                        Maximum display width, <1 to disable. You can also use
+                        the CLIFF_MAX_TERM_WIDTH environment variable, but the
+                        parameter takes precedence.
+  --fit-width           Fit the table to the display width. Implied if --max-
+                        width greater than 0. Set the environment variable
+                        CLIFF_FIT_WIDTH=1 to always enable
+  --print-empty         Print empty table if there is no data to show.

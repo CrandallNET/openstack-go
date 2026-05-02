@@ -1,0 +1,12 @@
+usage: openstack volume backup unset [-h] [--property <key>] <backup>
+
+Unset volume backup properties. This command requires ``--os-volume-api-
+version`` 3.43 or greater.
+
+positional arguments:
+  <backup>          Backup to modify (name or ID)
+
+options:
+  -h, --help        show this help message and exit
+  --property <key>  Property to remove from this backup (repeat option to
+                    unset multiple values)

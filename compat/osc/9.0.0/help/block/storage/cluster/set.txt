@@ -1,0 +1,20 @@
+usage: openstack block storage cluster set [-h] [--binary <binary>]
+                                           [--enable | --disable]
+                                           [--disable-reason <reason>]
+                                           <cluster>
+
+Set block storage cluster properties. This command requires ``--os-volume-api-
+version`` 3.7 or greater.
+
+positional arguments:
+  <cluster>             Name of block storage cluster to update (name only)
+
+options:
+  -h, --help            show this help message and exit
+  --binary <binary>     Name of binary to filter by; defaults to 'cinder-
+                        volume' (optional)
+  --enable              Enable cluster
+  --disable             Disable cluster
+  --disable-reason <reason>
+                        Reason for disabling the cluster (should be used with
+                        --disable option)

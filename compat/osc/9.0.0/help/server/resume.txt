@@ -1,0 +1,9 @@
+usage: openstack server resume [-h] <server> [<server> ...]
+
+Resume server(s)
+
+positional arguments:
+  <server>    Server(s) to resume (name or ID)
+
+options:
+  -h, --help  show this help message and exit

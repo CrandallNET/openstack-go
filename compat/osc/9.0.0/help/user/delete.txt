@@ -1,0 +1,10 @@
+usage: openstack user delete [-h] [--domain <domain>] <user> [<user> ...]
+
+Delete user(s)
+
+positional arguments:
+  <user>             User(s) to delete (name or ID)
+
+options:
+  -h, --help         show this help message and exit
+  --domain <domain>  Domain owning <user> (name or ID)

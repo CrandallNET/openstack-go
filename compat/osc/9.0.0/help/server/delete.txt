@@ -1,0 +1,14 @@
+usage: openstack server delete [-h] [--force] [--all-projects] [--wait]
+                               <server> [<server> ...]
+
+Delete server(s)
+
+positional arguments:
+  <server>        Server(s) to delete (name or ID)
+
+options:
+  -h, --help      show this help message and exit
+  --force         Force delete server(s)
+  --all-projects  Delete server(s) in another project by name (admin only)(can
+                  be specified using the ALL_PROJECTS envvar)
+  --wait          Wait for delete to complete

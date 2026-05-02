@@ -1,0 +1,17 @@
+usage: openstack volume service set [-h] [--enable | --disable]
+                                    [--disable-reason <reason>]
+                                    <host> <service>
+
+Set volume service properties
+
+positional arguments:
+  <host>                Name of host
+  <service>             Name of service (Binary name)
+
+options:
+  -h, --help            show this help message and exit
+  --enable              Enable volume service
+  --disable             Disable volume service
+  --disable-reason <reason>
+                        Reason for disabling the service (should be used with
+                        --disable option)

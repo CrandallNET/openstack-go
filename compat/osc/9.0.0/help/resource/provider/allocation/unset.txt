@@ -1,0 +1,84 @@
+usage: openstack resource provider allocation unset [-h]
+                                                    [-f {csv,json,table,value,yaml}]
+                                                    [-c COLUMN]
+                                                    [--quote {all,minimal,none,nonnumeric}]
+                                                    [--noindent]
+                                                    [--max-width <integer>]
+                                                    [--fit-width]
+                                                    [--print-empty]
+                                                    [--sort-column SORT_COLUMN]
+                                                    [--sort-ascending | --sort-descending]
+                                                    [--provider provider_uuid]
+                                                    [--resource-class resource_class]
+                                                    <consumer_uuid>
+
+Removes one or more sets of provider allocations for a consumer. Note that
+omitting both the ``--provider`` and the ``--resource-class`` option is
+equivalent to removing all allocations for the given consumer. This command
+requires ``--os-placement-api-version 1.12`` or greater. Use ``openstack
+resource provider allocation set`` for older versions.
+
+positional arguments:
+  <consumer_uuid>       UUID of the consumer. It is strongly recommended to
+                        use ``--os-placement-api-version 1.28`` or greater
+                        when using this option to ensure the other allocation
+                        information is retained.
+
+options:
+  -h, --help            show this help message and exit
+  --provider provider_uuid
+                        UUID of a specific resource provider from which to
+                        remove allocations for the given consumer. This is
+                        useful when the consumer has allocations on more than
+                        one provider, for example after evacuating a server to
+                        another compute node and you want to cleanup
+                        allocations on the source compute node resource
+                        provider in order to delete it. Specify multiple times
+                        to remove allocations against multiple resource
+                        providers. Omit this option to remove all allocations
+                        for the consumer, or to remove all allocationsof a
+                        specific resource class from all the resource provider
+                        with the ``--resource_class`` option.
+  --resource-class resource_class
+                        Name of a resource class from which to remove
+                        allocations for the given consumer. This is useful
+                        when the consumer has allocations on more than one
+                        resource class. By default, this will remove
+                        allocations for the given resource class from all the
+                        providers. If ``--provider`` option is also specified,
+                        allocations to remove will be limited to that resource
+                        class of the given resource provider.
+
+output formatters:
+  output formatter options
+
+  -f {csv,json,table,value,yaml}, --format {csv,json,table,value,yaml}
+                        the output format, defaults to table
+  -c COLUMN, --column COLUMN
+                        specify the column(s) to include, can be repeated to
+                        show multiple columns
+  --sort-column SORT_COLUMN
+                        specify the column(s) to sort the data (columns
+                        specified first have a priority, non-existing columns
+                        are ignored), can be repeated
+  --sort-ascending      sort the column(s) in ascending order
+  --sort-descending     sort the column(s) in descending order
+
+CSV Formatter:
+  --quote {all,minimal,none,nonnumeric}
+                        when to include quotes, defaults to nonnumeric
+
+json formatter:
+  --noindent            whether to disable indenting the JSON
+
+table formatter:
+  --max-width <integer>
+                        Maximum display width, <1 to disable. You can also use
+                        the CLIFF_MAX_TERM_WIDTH environment variable, but the
+                        parameter takes precedence.
+  --fit-width           Fit the table to the display width. Implied if --max-
+                        width greater than 0. Set the environment variable
+                        CLIFF_FIT_WIDTH=1 to always enable
+  --print-empty         Print empty table if there is no data to show.
+
+This command is provided by the osc-placement plugin.

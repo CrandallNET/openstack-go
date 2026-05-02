@@ -1,0 +1,9 @@
+usage: openstack network delete [-h] <network> [<network> ...]
+
+Delete network(s)
+
+positional arguments:
+  <network>   Network(s) to delete (name or ID)
+
+options:
+  -h, --help  show this help message and exit

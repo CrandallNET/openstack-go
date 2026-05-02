@@ -1,0 +1,9 @@
+usage: openstack volume attachment complete [-h] <attachment>
+
+Complete an attachment for a volume.
+
+positional arguments:
+  <attachment>  ID of volume attachment to mark as completed
+
+options:
+  -h, --help    show this help message and exit

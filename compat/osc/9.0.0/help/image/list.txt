@@ -1,0 +1,84 @@
+usage: openstack image list [-h] [-f {csv,json,table,value,yaml}] [-c COLUMN]
+                            [--quote {all,minimal,none,nonnumeric}]
+                            [--noindent] [--max-width <integer>] [--fit-width]
+                            [--print-empty] [--sort-column SORT_COLUMN]
+                            [--sort-ascending | --sort-descending]
+                            [--public | --private | --community | --shared | --all]
+                            [--property <key=value>] [--name <name>]
+                            [--status <status>]
+                            [--member-status <member-status>]
+                            [--project <project>]
+                            [--project-domain <project-domain>] [--tag <tag>]
+                            [--hidden] [--long] [--sort <key>[:<direction>]]
+                            [--limit <limit>] [--marker <marker>]
+
+List available images
+
+options:
+  -h, --help            show this help message and exit
+  --public              List only public images
+  --private             List only private images
+  --community           List only community images (requires --os-image-api-
+                        version 2.5 or later)
+  --shared              List only shared images (requires --os-image-api-
+                        version 2.5 or later)
+  --all                 List all images
+  --property <key=value>
+                        Filter output based on property (repeat option to
+                        filter on multiple properties)
+  --name <name>         Filter images based on name.
+  --status <status>     Filter images based on status.
+  --member-status <member-status>
+                        Filter images based on member status. The supported
+                        options are: accepted, pending, rejected, all.
+  --project <project>   Search by project (admin only) (name or ID)
+  --project-domain <project-domain>
+                        Domain the project belongs to (name or ID). This can
+                        be used in case collisions between project names
+                        exist.
+  --tag <tag>           Filter images based on tag. (repeat option to filter
+                        on multiple tags)
+  --hidden              List hidden images
+  --long                List additional fields in output
+  --sort <key>[:<direction>]
+                        Sort output by selected keys and directions (asc or
+                        desc) (default: name:asc), multiple keys and
+                        directions can be specified separated by comma
+  --limit <limit>       The maximum number of entries to return. If the value
+                        exceeds the server-defined maximum, then the maximum
+                        value will be used.
+  --marker <marker>     The first position in the collection to return results
+                        from. This should be a value that was returned in a
+                        previous request.
+
+output formatters:
+  output formatter options
+
+  -f {csv,json,table,value,yaml}, --format {csv,json,table,value,yaml}
+                        the output format, defaults to table
+  -c COLUMN, --column COLUMN
+                        specify the column(s) to include, can be repeated to
+                        show multiple columns
+  --sort-column SORT_COLUMN
+                        specify the column(s) to sort the data (columns
+                        specified first have a priority, non-existing columns
+                        are ignored), can be repeated
+  --sort-ascending      sort the column(s) in ascending order
+  --sort-descending     sort the column(s) in descending order
+
+CSV Formatter:
+  --quote {all,minimal,none,nonnumeric}
+                        when to include quotes, defaults to nonnumeric
+
+json formatter:
+  --noindent            whether to disable indenting the JSON
+
+table formatter:
+  --max-width <integer>
+                        Maximum display width, <1 to disable. You can also use
+                        the CLIFF_MAX_TERM_WIDTH environment variable, but the
+                        parameter takes precedence.
+  --fit-width           Fit the table to the display width. Implied if --max-
+                        width greater than 0. Set the environment variable
+                        CLIFF_FIT_WIDTH=1 to always enable
+  --print-empty         Print empty table if there is no data to show.

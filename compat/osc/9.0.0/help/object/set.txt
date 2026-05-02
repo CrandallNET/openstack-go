@@ -1,0 +1,13 @@
+usage: openstack object set [-h] --property <key=value> <container> <object>
+
+Set object properties
+
+positional arguments:
+  <container>           Modify <object> from <container>
+  <object>              Object to modify
+
+options:
+  -h, --help            show this help message and exit
+  --property <key=value>
+                        Set a property on this object (repeat option to set
+                        multiple properties)

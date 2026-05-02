@@ -1,0 +1,15 @@
+usage: openstack network agent set [-h] [--description <description>]
+                                   [--enable | --disable]
+                                   <network-agent>
+
+Set network agent properties
+
+positional arguments:
+  <network-agent>       Network agent to modify (ID only)
+
+options:
+  -h, --help            show this help message and exit
+  --description <description>
+                        Set network agent description
+  --enable              Enable network agent
+  --disable             Disable network agent

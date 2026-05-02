@@ -1,0 +1,16 @@
+usage: openstack volume qos set [-h] [--no-property] [--property <key=value>]
+                                <qos-spec>
+
+Set QoS specification properties
+
+positional arguments:
+  <qos-spec>            QoS specification to modify (name or ID)
+
+options:
+  -h, --help            show this help message and exit
+  --no-property         Remove all properties from <qos-spec> (specify both
+                        --no-property and --property to remove the current
+                        properties before setting new properties)
+  --property <key=value>
+                        Property to add or modify for this QoS specification
+                        (repeat option to set multiple properties)

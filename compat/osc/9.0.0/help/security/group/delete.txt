@@ -1,0 +1,9 @@
+usage: openstack security group delete [-h] <group> [<group> ...]
+
+Delete security group(s)
+
+positional arguments:
+  <group>     Security group(s) to delete (name or ID)
+
+options:
+  -h, --help  show this help message and exit

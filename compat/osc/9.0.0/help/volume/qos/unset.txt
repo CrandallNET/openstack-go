@@ -1,0 +1,11 @@
+usage: openstack volume qos unset [-h] [--property <key>] <qos-spec>
+
+Unset QoS specification properties
+
+positional arguments:
+  <qos-spec>        QoS specification to modify (name or ID)
+
+options:
+  -h, --help        show this help message and exit
+  --property <key>  Property to remove from the QoS specification. (repeat
+                    option to unset multiple properties)

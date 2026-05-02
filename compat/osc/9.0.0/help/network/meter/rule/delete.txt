@@ -1,0 +1,11 @@
+usage: openstack network meter rule delete [-h]
+                                           <meter-rule-id>
+                                           [<meter-rule-id> ...]
+
+Delete meter rule(s)
+
+positional arguments:
+  <meter-rule-id>  Meter rule to delete (ID only)
+
+options:
+  -h, --help       show this help message and exit

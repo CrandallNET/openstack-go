@@ -1,0 +1,16 @@
+usage: openstack compute service delete [-h] <service> [<service> ...]
+
+Delete compute service(s)
+
+positional arguments:
+  <service>   Compute service(s) to delete (ID only). If using ``--os-compute-
+              api-version`` 2.53 or greater, the ID is a UUID which can be
+              retrieved by listing compute services using the same 2.53+
+              microversion. If deleting a compute service, be sure to stop the
+              actual compute process on the physical host before deleting the
+              service with this command. Failing to do so can lead to the
+              running service re-creating orphaned compute_nodes table records
+              in the database.
+
+options:
+  -h, --help  show this help message and exit

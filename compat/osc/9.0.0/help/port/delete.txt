@@ -1,0 +1,9 @@
+usage: openstack port delete [-h] <port> [<port> ...]
+
+Delete port(s)
+
+positional arguments:
+  <port>      Port(s) to delete (name or ID)
+
+options:
+  -h, --help  show this help message and exit

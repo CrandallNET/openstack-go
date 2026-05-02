@@ -1,0 +1,17 @@
+usage: openstack compute agent set [-h] [--agent-version <version>]
+                                   [--url <url>] [--md5hash <md5hash>]
+                                   <id>
+
+Set compute agent properties. The compute agent functionality is hypervisor-
+specific and is only supported by the XenAPI hypervisor driver. It was removed
+from nova in the 23.0.0 (Wallaby) release.
+
+positional arguments:
+  <id>                  ID of the agent
+
+options:
+  -h, --help            show this help message and exit
+  --agent-version <version>
+                        Version of the agent
+  --url <url>           URL of the agent
+  --md5hash <md5hash>   MD5 hash of the agent

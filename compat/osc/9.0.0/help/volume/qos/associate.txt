@@ -1,0 +1,10 @@
+usage: openstack volume qos associate [-h] <qos-spec> <volume-type>
+
+Associate a QoS specification to a volume type
+
+positional arguments:
+  <qos-spec>     QoS specification to modify (name or ID)
+  <volume-type>  Volume type to associate the QoS (name or ID)
+
+options:
+  -h, --help     show this help message and exit

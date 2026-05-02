@@ -1,0 +1,13 @@
+usage: openstack subnet pool unset [-h] [--tag <tag> | --all-tag]
+                                   <subnet-pool>
+
+Unset subnet pool properties
+
+positional arguments:
+  <subnet-pool>  Subnet pool to modify (name or ID)
+
+options:
+  -h, --help     show this help message and exit
+  --tag <tag>    Tag to be removed from the subnet pool (repeat option to
+                 remove multiple tags)
+  --all-tag      Clear all tags associated with the subnet pool

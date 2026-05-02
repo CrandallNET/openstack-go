@@ -1,0 +1,13 @@
+usage: openstack address group unset [-h] [--address <ip-address>]
+                                     <address-group>
+
+Unset address group properties
+
+positional arguments:
+  <address-group>       Address group to modify (name or ID)
+
+options:
+  -h, --help            show this help message and exit
+  --address <ip-address>
+                        IP address or CIDR (repeat option to unset multiple
+                        addresses)

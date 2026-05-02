@@ -1,0 +1,13 @@
+usage: openstack server remove security group [-h]
+                                              <server> <security-group>
+                                              [<security-group> ...]
+
+Remove security group from server
+
+positional arguments:
+  <server>          Server (name or ID)
+  <security-group>  Security group(s) to remove from server (name or ID)
+                    (repeat option to remove multiple groups)
+
+options:
+  -h, --help        show this help message and exit

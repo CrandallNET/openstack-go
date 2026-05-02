@@ -1,0 +1,49 @@
+usage: openstack mapping create [-h] [-f {json,shell,table,value,yaml}]
+                                [-c COLUMN] [--noindent] [--prefix PREFIX]
+                                [--max-width <integer>] [--fit-width]
+                                [--print-empty] --rules <filename>
+                                [--schema-version <schema_version>]
+                                <name>
+
+Create new mapping
+
+positional arguments:
+  <name>                New mapping name (must be unique)
+
+options:
+  -h, --help            show this help message and exit
+  --rules <filename>    Filename that contains a set of mapping rules
+                        (required)
+  --schema-version <schema_version>
+                        The federated attribute mapping schema version. The
+                        default value on the client side is 'None'; however,
+                        that will lead the backend to set the default
+                        according to
+                        'attribute_mapping_default_schema_version' option.
+
+output formatters:
+  output formatter options
+
+  -f {json,shell,table,value,yaml}, --format {json,shell,table,value,yaml}
+                        the output format, defaults to table
+  -c COLUMN, --column COLUMN
+                        specify the column(s) to include, can be repeated to
+                        show multiple columns
+
+json formatter:
+  --noindent            whether to disable indenting the JSON
+
+shell formatter:
+  a format a UNIX shell can parse (variable="value")
+
+  --prefix PREFIX       add a prefix to all variable names
+
+table formatter:
+  --max-width <integer>
+                        Maximum display width, <1 to disable. You can also use
+                        the CLIFF_MAX_TERM_WIDTH environment variable, but the
+                        parameter takes precedence.
+  --fit-width           Fit the table to the display width. Implied if --max-
+                        width greater than 0. Set the environment variable
+                        CLIFF_FIT_WIDTH=1 to always enable
+  --print-empty         Print empty table if there is no data to show.

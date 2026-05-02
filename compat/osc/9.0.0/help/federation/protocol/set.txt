@@ -1,0 +1,16 @@
+usage: openstack federation protocol set [-h] --identity-provider
+                                         <identity-provider>
+                                         [--mapping <mapping>]
+                                         <name>
+
+Set federation protocol properties
+
+positional arguments:
+  <name>                Federation protocol to modify (name or ID)
+
+options:
+  -h, --help            show this help message and exit
+  --identity-provider <identity-provider>
+                        Identity provider that supports <federation-protocol>
+                        (name or ID) (required)
+  --mapping <mapping>   Mapping that is to be used (name or ID)

@@ -1,0 +1,10 @@
+usage: openstack router remove port [-h] <router> <port>
+
+Remove a port from a router
+
+positional arguments:
+  <router>    Router from which port will be removed (name or ID)
+  <port>      Port to be removed and deleted (name or ID)
+
+options:
+  -h, --help  show this help message and exit

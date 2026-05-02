@@ -1,0 +1,9 @@
+usage: openstack network trunk delete [-h] <trunk> [<trunk> ...]
+
+Delete a given network trunk
+
+positional arguments:
+  <trunk>     Trunk(s) to delete (name or ID)
+
+options:
+  -h, --help  show this help message and exit

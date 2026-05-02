@@ -1,0 +1,67 @@
+usage: openstack keypair list [-h] [-f {csv,json,table,value,yaml}]
+                              [-c COLUMN]
+                              [--quote {all,minimal,none,nonnumeric}]
+                              [--noindent] [--max-width <integer>]
+                              [--fit-width] [--print-empty]
+                              [--sort-column SORT_COLUMN]
+                              [--sort-ascending | --sort-descending]
+                              [--user <user>] [--user-domain <user-domain>]
+                              [--project <project>]
+                              [--project-domain <project-domain>]
+                              [--limit <limit>] [--marker <marker>]
+
+List key fingerprints
+
+options:
+  -h, --help            show this help message and exit
+  --user <user>         Show keypairs for another user (admin only) (name or
+                        ID). Requires ``--os-compute-api-version`` 2.10 or
+                        greater.
+  --user-domain <user-domain>
+                        Domain the user belongs to (name or ID). This can be
+                        used in case collisions between user names exist.
+  --project <project>   Show keypairs for all users associated with project
+                        (admin only) (name or ID). Requires ``--os-compute-
+                        api-version`` 2.10 or greater.
+  --project-domain <project-domain>
+                        Domain the project belongs to (name or ID). This can
+                        be used in case collisions between project names
+                        exist.
+  --limit <limit>       The maximum number of entries to return. If the value
+                        exceeds the server-defined maximum, then the maximum
+                        value will be used.
+  --marker <marker>     The first position in the collection to return results
+                        from. This should be a value that was returned in a
+                        previous request.
+
+output formatters:
+  output formatter options
+
+  -f {csv,json,table,value,yaml}, --format {csv,json,table,value,yaml}
+                        the output format, defaults to table
+  -c COLUMN, --column COLUMN
+                        specify the column(s) to include, can be repeated to
+                        show multiple columns
+  --sort-column SORT_COLUMN
+                        specify the column(s) to sort the data (columns
+                        specified first have a priority, non-existing columns
+                        are ignored), can be repeated
+  --sort-ascending      sort the column(s) in ascending order
+  --sort-descending     sort the column(s) in descending order
+
+CSV Formatter:
+  --quote {all,minimal,none,nonnumeric}
+                        when to include quotes, defaults to nonnumeric
+
+json formatter:
+  --noindent            whether to disable indenting the JSON
+
+table formatter:
+  --max-width <integer>
+                        Maximum display width, <1 to disable. You can also use
+                        the CLIFF_MAX_TERM_WIDTH environment variable, but the
+                        parameter takes precedence.
+  --fit-width           Fit the table to the display width. Implied if --max-
+                        width greater than 0. Set the environment variable
+                        CLIFF_FIT_WIDTH=1 to always enable
+  --print-empty         Print empty table if there is no data to show.

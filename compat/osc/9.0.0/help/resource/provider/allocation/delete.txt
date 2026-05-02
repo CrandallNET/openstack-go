@@ -1,0 +1,11 @@
+usage: openstack resource provider allocation delete [-h] <uuid>
+
+Delete all resource allocations for a given consumer.
+
+positional arguments:
+  <uuid>      UUID of the consumer
+
+options:
+  -h, --help  show this help message and exit
+
+This command is provided by the osc-placement plugin.

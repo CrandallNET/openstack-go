@@ -1,0 +1,21 @@
+usage: openstack aggregate set [-h] [--name <name>]
+                               [--zone <availability-zone>]
+                               [--property <key=value>] [--no-property]
+                               <aggregate>
+
+Set aggregate properties
+
+positional arguments:
+  <aggregate>           Aggregate to modify (name or ID)
+
+options:
+  -h, --help            show this help message and exit
+  --name <name>         Set aggregate name
+  --zone <availability-zone>
+                        Set availability zone name
+  --property <key=value>
+                        Property to set on <aggregate> (repeat option to set
+                        multiple properties)
+  --no-property         Remove all properties from <aggregate> (specify both
+                        --property and --no-property to overwrite the current
+                        properties)

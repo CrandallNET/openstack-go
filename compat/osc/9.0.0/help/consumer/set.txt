@@ -1,0 +1,11 @@
+usage: openstack consumer set [-h] [--description <description>] <consumer>
+
+Set consumer properties
+
+positional arguments:
+  <consumer>            Consumer to modify
+
+options:
+  -h, --help            show this help message and exit
+  --description <description>
+                        New consumer description

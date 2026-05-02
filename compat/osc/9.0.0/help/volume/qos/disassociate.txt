@@ -1,0 +1,14 @@
+usage: openstack volume qos disassociate [-h]
+                                         [--volume-type <volume-type> | --all]
+                                         <qos-spec>
+
+Disassociate a QoS specification from a volume type
+
+positional arguments:
+  <qos-spec>            QoS specification to modify (name or ID)
+
+options:
+  -h, --help            show this help message and exit
+  --volume-type <volume-type>
+                        Volume type to disassociate the QoS from (name or ID)
+  --all                 Disassociate the QoS from every volume type

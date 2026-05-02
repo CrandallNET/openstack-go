@@ -1,0 +1,18 @@
+usage: openstack group contains user [-h] [--group-domain <group-domain>]
+                                     [--user-domain <user-domain>]
+                                     <group> <user>
+
+Check user membership in group
+
+positional arguments:
+  <group>               Group to check (name or ID)
+  <user>                User to check (name or ID)
+
+options:
+  -h, --help            show this help message and exit
+  --group-domain <group-domain>
+                        Domain the group belongs to (name or ID). This can be
+                        used in case collisions between group names exist.
+  --user-domain <user-domain>
+                        Domain the user belongs to (name or ID). This can be
+                        used in case collisions between user names exist.

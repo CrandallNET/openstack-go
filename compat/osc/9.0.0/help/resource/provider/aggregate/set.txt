@@ -1,0 +1,68 @@
+usage: openstack resource provider aggregate set [-h]
+                                                 [-f {csv,json,table,value,yaml}]
+                                                 [-c COLUMN]
+                                                 [--quote {all,minimal,none,nonnumeric}]
+                                                 [--noindent]
+                                                 [--max-width <integer>]
+                                                 [--fit-width] [--print-empty]
+                                                 [--sort-column SORT_COLUMN]
+                                                 [--sort-ascending | --sort-descending]
+                                                 [--aggregate <aggregate_uuid>]
+                                                 [--generation <resource_provider_generation>]
+                                                 <uuid>
+
+Associate a list of aggregates with the resource provider. Each request cleans
+up previously associated resource provider aggregates entirely and sets the
+new ones. Passing empty aggregate UUID list will remove all associations with
+aggregates for the particular resource provider. This command requires at
+least ``--os-placement-api-version 1.1``.
+
+positional arguments:
+  <uuid>                UUID of the resource provider
+
+options:
+  -h, --help            show this help message and exit
+  --aggregate <aggregate_uuid>
+                        UUID of the aggregate. Specify multiple times to
+                        associate a resource provider with multiple
+                        aggregates.
+  --generation <resource_provider_generation>
+                        The generation of resource provider. Must match the
+                        server-side generation of the resource provider or the
+                        operation will fail.
+                        This param requires at least ``--os-placement-api-
+                        version 1.19``.
+
+output formatters:
+  output formatter options
+
+  -f {csv,json,table,value,yaml}, --format {csv,json,table,value,yaml}
+                        the output format, defaults to table
+  -c COLUMN, --column COLUMN
+                        specify the column(s) to include, can be repeated to
+                        show multiple columns
+  --sort-column SORT_COLUMN
+                        specify the column(s) to sort the data (columns
+                        specified first have a priority, non-existing columns
+                        are ignored), can be repeated
+  --sort-ascending      sort the column(s) in ascending order
+  --sort-descending     sort the column(s) in descending order
+
+CSV Formatter:
+  --quote {all,minimal,none,nonnumeric}
+                        when to include quotes, defaults to nonnumeric
+
+json formatter:
+  --noindent            whether to disable indenting the JSON
+
+table formatter:
+  --max-width <integer>
+                        Maximum display width, <1 to disable. You can also use
+                        the CLIFF_MAX_TERM_WIDTH environment variable, but the
+                        parameter takes precedence.
+  --fit-width           Fit the table to the display width. Implied if --max-
+                        width greater than 0. Set the environment variable
+                        CLIFF_FIT_WIDTH=1 to always enable
+  --print-empty         Print empty table if there is no data to show.
+
+This command is provided by the osc-placement plugin.

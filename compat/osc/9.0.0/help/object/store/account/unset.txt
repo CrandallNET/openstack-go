@@ -1,0 +1,8 @@
+usage: openstack object store account unset [-h] --property <key>
+
+Unset account properties
+
+options:
+  -h, --help        show this help message and exit
+  --property <key>  Property to remove from account (repeat option to remove
+                    multiple properties)

@@ -1,0 +1,12 @@
+usage: openstack security group unset [-h] [--tag <tag> | --all-tag] <group>
+
+Unset security group properties
+
+positional arguments:
+  <group>      Security group to modify (name or ID)
+
+options:
+  -h, --help   show this help message and exit
+  --tag <tag>  Tag to be removed from the security group (repeat option to
+               remove multiple tags)
+  --all-tag    Clear all tags associated with the security group

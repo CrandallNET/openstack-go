@@ -1,0 +1,13 @@
+usage: openstack consistency group remove volume [-h]
+                                                 <consistency-group> <volume>
+                                                 [<volume> ...]
+
+Remove volume(s) from consistency group
+
+positional arguments:
+  <consistency-group>  Consistency group containing <volume> (name or ID)
+  <volume>             Volume(s) to remove from <consistency-group> (name or
+                       ID) (repeat option to remove multiple volumes)
+
+options:
+  -h, --help           show this help message and exit

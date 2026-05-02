@@ -1,0 +1,14 @@
+usage: openstack network auto allocated topology delete [-h]
+                                                        [--project <project>]
+                                                        [--project-domain <project-domain>]
+
+Delete auto allocated topology for project
+
+options:
+  -h, --help            show this help message and exit
+  --project <project>   Delete auto allocated topology for a given project.
+                        Default is the current project.
+  --project-domain <project-domain>
+                        Domain the project belongs to (name or ID). This can
+                        be used in case collisions between project names
+                        exist.

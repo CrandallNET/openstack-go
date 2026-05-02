@@ -1,0 +1,9 @@
+usage: openstack access rule delete [-h] <access-rule> [<access-rule> ...]
+
+Delete access rule(s)
+
+positional arguments:
+  <access-rule>  Access rule ID(s) to delete
+
+options:
+  -h, --help     show this help message and exit

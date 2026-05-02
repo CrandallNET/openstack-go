@@ -1,0 +1,49 @@
+usage: openstack resource provider inventory show [-h]
+                                                  [-f {json,shell,table,value,yaml}]
+                                                  [-c COLUMN] [--noindent]
+                                                  [--prefix PREFIX]
+                                                  [--max-width <integer>]
+                                                  [--fit-width]
+                                                  [--print-empty]
+                                                  <uuid> <resource_class>
+
+Show the inventory for a given resource provider/class pair.
+
+positional arguments:
+  <uuid>                UUID of the resource provider
+  <resource_class>      <resource_class> is an entity that indicates standard
+                        or deployer-specific resources that can be provided by
+                        a resource provider. For example, VCPU, MEMORY_MB,
+                        DISK_GB.
+
+options:
+  -h, --help            show this help message and exit
+
+output formatters:
+  output formatter options
+
+  -f {json,shell,table,value,yaml}, --format {json,shell,table,value,yaml}
+                        the output format, defaults to table
+  -c COLUMN, --column COLUMN
+                        specify the column(s) to include, can be repeated to
+                        show multiple columns
+
+json formatter:
+  --noindent            whether to disable indenting the JSON
+
+shell formatter:
+  a format a UNIX shell can parse (variable="value")
+
+  --prefix PREFIX       add a prefix to all variable names
+
+table formatter:
+  --max-width <integer>
+                        Maximum display width, <1 to disable. You can also use
+                        the CLIFF_MAX_TERM_WIDTH environment variable, but the
+                        parameter takes precedence.
+  --fit-width           Fit the table to the display width. Implied if --max-
+                        width greater than 0. Set the environment variable
+                        CLIFF_FIT_WIDTH=1 to always enable
+  --print-empty         Print empty table if there is no data to show.
+
+This command is provided by the osc-placement plugin.

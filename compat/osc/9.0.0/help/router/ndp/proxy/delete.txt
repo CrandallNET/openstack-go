@@ -1,0 +1,9 @@
+usage: openstack router ndp proxy delete [-h] <ndp-proxy> [<ndp-proxy> ...]
+
+Delete NDP proxy
+
+positional arguments:
+  <ndp-proxy>  NDP proxy(s) to delete (name or ID)
+
+options:
+  -h, --help   show this help message and exit

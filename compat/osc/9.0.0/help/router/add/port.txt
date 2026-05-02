@@ -1,0 +1,10 @@
+usage: openstack router add port [-h] <router> <port>
+
+Add a port to a router
+
+positional arguments:
+  <router>    Router to which port will be added (name or ID)
+  <port>      Port to be added (name or ID)
+
+options:
+  -h, --help  show this help message and exit

@@ -1,0 +1,10 @@
+usage: openstack volume backup delete [-h] [--force] <backup> [<backup> ...]
+
+Delete volume backup(s)
+
+positional arguments:
+  <backup>    Backup(s) to delete (name or ID)
+
+options:
+  -h, --help  show this help message and exit
+  --force     Allow delete in state other than error or available

@@ -1,0 +1,20 @@
+usage: openstack server ssh [-h] [-4 | -6]
+                            [--public | --private | --address-type <address-type>]
+                            <server> [-- <standard ssh args> ...]
+
+SSH to server
+
+positional arguments:
+  <server>              Server (name or ID)
+  -- <standard ssh args>
+                        Any argument or option that ssh allows. Use -- once
+                        between openstackclient args and SSH args.
+
+options:
+  -h, --help            show this help message and exit
+  -4                    Use only IPv4 addresses
+  -6                    Use only IPv6 addresses
+  --public              Use public IP address
+  --private             Use private IP address
+  --address-type <address-type>
+                        Use other IP address (public, private, etc)

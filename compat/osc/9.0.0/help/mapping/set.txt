@@ -1,0 +1,18 @@
+usage: openstack mapping set [-h] [--rules <filename>]
+                             [--schema-version <schema_version>]
+                             <name>
+
+Set mapping properties
+
+positional arguments:
+  <name>                Mapping to modify
+
+options:
+  -h, --help            show this help message and exit
+  --rules <filename>    Filename that contains a new set of mapping rules
+  --schema-version <schema_version>
+                        The federated attribute mapping schema version. The
+                        default value on the client side is 'None'; however,
+                        that will lead the backend to set the default
+                        according to
+                        'attribute_mapping_default_schema_version' option.

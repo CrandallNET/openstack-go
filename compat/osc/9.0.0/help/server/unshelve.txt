@@ -1,0 +1,25 @@
+usage: openstack server unshelve [-h]
+                                 [--availability-zone AVAILABILITY_ZONE | --no-availability-zone]
+                                 [--host HOST] [--wait]
+                                 <server> [<server> ...]
+
+Unshelve server(s)
+
+positional arguments:
+  <server>              Server(s) to unshelve (name or ID)
+
+options:
+  -h, --help            show this help message and exit
+  --availability-zone AVAILABILITY_ZONE
+                        Name of the availability zone in which to unshelve a
+                        SHELVED_OFFLOADED server (supported by --os-compute-
+                        api-version 2.77 or above)
+  --no-availability-zone
+                        Unpin the availability zone of a SHELVED_OFFLOADED
+                        server. Server will be unshelved on a host without
+                        availability zone constraint (supported by --os-
+                        compute-api-version 2.91 or above)
+  --host HOST           Name of the destination host in which to unshelve a
+                        SHELVED_OFFLOADED server (supported by --os-compute-
+                        api-version 2.91 or above)
+  --wait                Wait for unshelve operation to complete

@@ -1,0 +1,9 @@
+usage: openstack consumer delete [-h] <consumer> [<consumer> ...]
+
+Delete consumer(s)
+
+positional arguments:
+  <consumer>  Consumer(s) to delete
+
+options:
+  -h, --help  show this help message and exit

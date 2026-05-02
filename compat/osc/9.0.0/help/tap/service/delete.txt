@@ -1,0 +1,9 @@
+usage: openstack tap service delete [-h] <tap_service> [<tap_service> ...]
+
+Delete a tap service.
+
+positional arguments:
+  <tap_service>  Tap service to delete (name or ID).
+
+options:
+  -h, --help     show this help message and exit

@@ -1,0 +1,10 @@
+usage: openstack server remove port [-h] <server> <port>
+
+Remove port from server
+
+positional arguments:
+  <server>    Server to remove the port from (name or ID)
+  <port>      Port to remove from the server (name or ID)
+
+options:
+  -h, --help  show this help message and exit

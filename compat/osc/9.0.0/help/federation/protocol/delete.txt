@@ -1,0 +1,16 @@
+usage: openstack federation protocol delete [-h] --identity-provider
+                                            <identity-provider>
+                                            <federation-protocol>
+                                            [<federation-protocol> ...]
+
+Delete federation protocol(s)
+
+positional arguments:
+  <federation-protocol>
+                        Federation protocol(s) to delete (name or ID)
+
+options:
+  -h, --help            show this help message and exit
+  --identity-provider <identity-provider>
+                        Identity provider that supports <federation-protocol>
+                        (name or ID) (required)

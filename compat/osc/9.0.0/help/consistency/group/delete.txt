@@ -1,0 +1,12 @@
+usage: openstack consistency group delete [-h] [--force]
+                                          <consistency-group>
+                                          [<consistency-group> ...]
+
+Delete consistency group(s).
+
+positional arguments:
+  <consistency-group>  Consistency group(s) to delete (name or ID)
+
+options:
+  -h, --help           show this help message and exit
+  --force              Allow delete in state other than error or available

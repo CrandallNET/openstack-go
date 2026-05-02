@@ -1,0 +1,31 @@
+usage: openstack network flavor profile set [-h]
+                                            [--extra-property type=<property_type>,name=<property_name>,value=<property_value>]
+                                            [--description <description>]
+                                            [--enable | --disable]
+                                            [--driver DRIVER]
+                                            [--metainfo METAINFO]
+                                            <flavor-profile>
+
+Set network flavor profile properties
+
+positional arguments:
+  <flavor-profile>      Flavor profile to update (ID only)
+
+options:
+  -h, --help            show this help message and exit
+  --extra-property type=<property_type>,name=<property_name>,value=<property_value>
+                        Additional parameters can be passed using this
+                        property. Default type of the extra property is string
+                        ('str'), but other types can be used as well.
+                        Available types are: 'dict', 'list', 'str', 'bool',
+                        'int'. In case of 'list' type, 'value' can be
+                        semicolon-separated list of values. For 'dict' value
+                        is semicolon-separated list of the key:value pairs.
+  --description <description>
+                        Description for the flavor profile
+  --enable              Enable the flavor profile
+  --disable             Disable the flavor profile
+  --driver DRIVER       Python module path to driver. This becomes required if
+                        --metainfo is missing and vice-versa.
+  --metainfo METAINFO   Metainfo for the flavor profile. This becomes required
+                        if --driver is missing and vice-versa.

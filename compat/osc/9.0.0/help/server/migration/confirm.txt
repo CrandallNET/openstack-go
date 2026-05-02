@@ -1,0 +1,10 @@
+usage: openstack server migration confirm [-h] <server>
+
+Confirm server migration. Confirm (verify) success of the migration operation
+and release the old server.
+
+positional arguments:
+  <server>    Server (name or ID)
+
+options:
+  -h, --help  show this help message and exit

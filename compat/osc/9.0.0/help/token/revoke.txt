@@ -1,0 +1,9 @@
+usage: openstack token revoke [-h] <token>
+
+Revoke existing token
+
+positional arguments:
+  <token>     Token to be deleted
+
+options:
+  -h, --help  show this help message and exit

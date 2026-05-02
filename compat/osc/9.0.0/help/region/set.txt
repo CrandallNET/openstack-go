@@ -1,0 +1,15 @@
+usage: openstack region set [-h] [--parent-region <region-id>]
+                            [--description <description>]
+                            <region-id>
+
+Set region properties
+
+positional arguments:
+  <region-id>           Region to modify
+
+options:
+  -h, --help            show this help message and exit
+  --parent-region <region-id>
+                        New parent region ID
+  --description <description>
+                        New region description

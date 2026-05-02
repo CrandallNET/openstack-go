@@ -1,0 +1,10 @@
+usage: openstack server resize revert [-h] <server>
+
+Revert server resize. Revert the resize operation. Release the new server and
+restart the old one.
+
+positional arguments:
+  <server>    Server (name or ID)
+
+options:
+  -h, --help  show this help message and exit

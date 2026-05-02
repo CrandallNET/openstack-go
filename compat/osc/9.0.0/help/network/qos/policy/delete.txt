@@ -1,0 +1,10 @@
+usage: openstack network qos policy delete [-h]
+                                           <qos-policy> [<qos-policy> ...]
+
+Delete Qos Policy(s)
+
+positional arguments:
+  <qos-policy>  QoS policy(s) to delete (name or ID)
+
+options:
+  -h, --help    show this help message and exit

@@ -1,0 +1,12 @@
+usage: openstack volume group delete [-h] [--force] <group>
+
+Delete a volume group. This command requires ``--os-volume-api-version`` 3.13
+or greater.
+
+positional arguments:
+  <group>     Name or ID of volume group to delete
+
+options:
+  -h, --help  show this help message and exit
+  --force     Delete the volume group even if it contains volumes. This will
+              delete any remaining volumes in the group.

@@ -1,0 +1,65 @@
+usage: openstack volume backup create [-h] [-f {json,shell,table,value,yaml}]
+                                      [-c COLUMN] [--noindent]
+                                      [--prefix PREFIX]
+                                      [--max-width <integer>] [--fit-width]
+                                      [--print-empty] [--name <name>]
+                                      [--description <description>]
+                                      [--container <container>]
+                                      [--snapshot <snapshot>] [--force]
+                                      [--incremental] [--no-incremental]
+                                      [--property <key=value>]
+                                      [--availability-zone <zone-name>]
+                                      <volume>
+
+Create new volume backup
+
+positional arguments:
+  <volume>              Volume to backup (name or ID)
+
+options:
+  -h, --help            show this help message and exit
+  --name <name>         Name of the backup
+  --description <description>
+                        Description of the backup
+  --container <container>
+                        Optional backup container name
+  --snapshot <snapshot>
+                        Snapshot to backup (name or ID)
+  --force               Allow to back up an in-use volume
+  --incremental         Perform an incremental backup
+  --no-incremental      Do not perform an incremental backup
+  --property <key=value>
+                        Set a property on this backup (repeat option to remove
+                        multiple values) (supported by --os-volume-api-version
+                        3.43 or above)
+  --availability-zone <zone-name>
+                        AZ where the backup should be stored; by default it
+                        will be the same as the source (supported by --os-
+                        volume-api-version 3.51 or above)
+
+output formatters:
+  output formatter options
+
+  -f {json,shell,table,value,yaml}, --format {json,shell,table,value,yaml}
+                        the output format, defaults to table
+  -c COLUMN, --column COLUMN
+                        specify the column(s) to include, can be repeated to
+                        show multiple columns
+
+json formatter:
+  --noindent            whether to disable indenting the JSON
+
+shell formatter:
+  a format a UNIX shell can parse (variable="value")
+
+  --prefix PREFIX       add a prefix to all variable names
+
+table formatter:
+  --max-width <integer>
+                        Maximum display width, <1 to disable. You can also use
+                        the CLIFF_MAX_TERM_WIDTH environment variable, but the
+                        parameter takes precedence.
+  --fit-width           Fit the table to the display width. Implied if --max-
+                        width greater than 0. Set the environment variable
+                        CLIFF_FIT_WIDTH=1 to always enable
+  --print-empty         Print empty table if there is no data to show.

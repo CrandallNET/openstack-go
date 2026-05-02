@@ -1,0 +1,8 @@
+usage: openstack cached image clear [-h] [--cache] [--queue]
+
+Clear all images from cache, queue or both
+
+options:
+  -h, --help  show this help message and exit
+  --cache     Clears all the cached images
+  --queue     Clears all the queued images

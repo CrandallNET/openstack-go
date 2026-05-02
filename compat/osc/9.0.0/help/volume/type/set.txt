@@ -1,0 +1,69 @@
+usage: openstack volume type set [-h] [--name <name>]
+                                 [--description <description>]
+                                 [--property <key=value>] [--multiattach]
+                                 [--cacheable] [--replicated]
+                                 [--availability-zone AVAILABILITY_ZONES]
+                                 [--project <project>] [--public | --private]
+                                 [--project-domain <project-domain>]
+                                 [--encryption-provider <provider>]
+                                 [--encryption-cipher <cipher>]
+                                 [--encryption-key-size <key-size>]
+                                 [--encryption-control-location <control-location>]
+                                 <volume-type>
+
+Set volume type properties
+
+positional arguments:
+  <volume-type>         Volume type to modify (name or ID)
+
+options:
+  -h, --help            show this help message and exit
+  --name <name>         Set volume type name
+  --description <description>
+                        Set volume type description
+  --property <key=value>
+                        Set a property on this volume type (repeat option to
+                        set multiple properties)
+  --multiattach         Enable multi-attach for this volume type (this is an
+                        alias for '--property multiattach=<is> True')
+                        (requires driver support)
+  --cacheable           Enable caching for this volume type (this is an alias
+                        for '--property cacheable=<is> True') (requires driver
+                        support)
+  --replicated          Enabled replication for this volume type (this is an
+                        alias for '--property replication_enabled=<is> True')
+                        (requires driver support)
+  --availability-zone AVAILABILITY_ZONES
+                        Set an availability zone for this volume type (this is
+                        an alias for '--property
+                        RESKEY:availability_zones:<az>') (repeat option to set
+                        multiple availability zones)
+  --project <project>   Set volume type access to project (name or ID) (admin
+                        only)
+  --public              Volume type is accessible to the public
+  --private             Volume type is not accessible to the public
+  --project-domain <project-domain>
+                        Domain the project belongs to (name or ID). This can
+                        be used in case collisions between project names
+                        exist.
+  --encryption-provider <provider>
+                        Set the encryption provider format for this volume
+                        type (e.g "luks" or "plain") (admin only) (This option
+                        is required when setting encryption type of a volume
+                        for the first time. Consider using other encryption
+                        options such as: "--encryption-cipher", "--encryption-
+                        key-size" and "--encryption-control-location")
+  --encryption-cipher <cipher>
+                        Set the encryption algorithm or mode for this volume
+                        type (e.g "aes-xts-plain64") (admin only)
+  --encryption-key-size <key-size>
+                        Set the size of the encryption key of this volume type
+                        (e.g "128" or "256") (admin only)
+  --encryption-control-location <control-location>
+                        Set the notional service where the encryption is
+                        performed ("front-end" or "back-end") (admin only)
+                        (The default value for this option is "front-end" when
+                        setting encryption type of a volume for the first
+                        time. Consider using other encryption options such as:
+                        "--encryption-cipher", "--encryption-key-size" and "--
+                        encryption-provider")

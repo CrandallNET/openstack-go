@@ -1,0 +1,61 @@
+usage: openstack network l3 conntrack helper list [-h]
+                                                  [-f {csv,json,table,value,yaml}]
+                                                  [-c COLUMN]
+                                                  [--quote {all,minimal,none,nonnumeric}]
+                                                  [--noindent]
+                                                  [--max-width <integer>]
+                                                  [--fit-width]
+                                                  [--print-empty]
+                                                  [--sort-column SORT_COLUMN]
+                                                  [--sort-ascending | --sort-descending]
+                                                  [--helper <helper>]
+                                                  [--protocol <protocol>]
+                                                  [--port <port>]
+                                                  <router>
+
+List L3 conntrack helpers
+
+positional arguments:
+  <router>              Router that the conntrack helper belongs to
+
+options:
+  -h, --help            show this help message and exit
+  --helper <helper>     List only helpers using the specified netfilter
+                        conntrack helper module
+  --protocol <protocol>
+                        List only helpers with the specified network protocol
+                        for the netfilter conntrack target rule
+  --port <port>         List only helpers with the specified network port for
+                        the netfilter conntrack target rule (name or ID)
+
+output formatters:
+  output formatter options
+
+  -f {csv,json,table,value,yaml}, --format {csv,json,table,value,yaml}
+                        the output format, defaults to table
+  -c COLUMN, --column COLUMN
+                        specify the column(s) to include, can be repeated to
+                        show multiple columns
+  --sort-column SORT_COLUMN
+                        specify the column(s) to sort the data (columns
+                        specified first have a priority, non-existing columns
+                        are ignored), can be repeated
+  --sort-ascending      sort the column(s) in ascending order
+  --sort-descending     sort the column(s) in descending order
+
+CSV Formatter:
+  --quote {all,minimal,none,nonnumeric}
+                        when to include quotes, defaults to nonnumeric
+
+json formatter:
+  --noindent            whether to disable indenting the JSON
+
+table formatter:
+  --max-width <integer>
+                        Maximum display width, <1 to disable. You can also use
+                        the CLIFF_MAX_TERM_WIDTH environment variable, but the
+                        parameter takes precedence.
+  --fit-width           Fit the table to the display width. Implied if --max-
+                        width greater than 0. Set the environment variable
+                        CLIFF_FIT_WIDTH=1 to always enable
+  --print-empty         Print empty table if there is no data to show.

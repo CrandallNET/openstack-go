@@ -1,0 +1,12 @@
+usage: openstack image metadef property delete [-h]
+                                               <namespace> [<property> ...]
+
+Delete metadef propert(ies)
+
+positional arguments:
+  <namespace>  Metadef namespace of the property (name)
+  <property>   Metadef properties to delete (name) (omit this argument to
+               delete all properties in the namespace)
+
+options:
+  -h, --help   show this help message and exit

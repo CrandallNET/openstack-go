@@ -1,0 +1,11 @@
+usage: openstack aggregate unset [-h] [--property <key>] <aggregate>
+
+Unset aggregate properties
+
+positional arguments:
+  <aggregate>       Aggregate to modify (name or ID)
+
+options:
+  -h, --help        show this help message and exit
+  --property <key>  Property to remove from aggregate (repeat option to remove
+                    multiple properties)

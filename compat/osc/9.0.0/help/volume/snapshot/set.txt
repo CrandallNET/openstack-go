@@ -1,0 +1,27 @@
+usage: openstack volume snapshot set [-h] [--name <name>]
+                                     [--description <description>]
+                                     [--no-property] [--property <key=value>]
+                                     [--state <state>]
+                                     <snapshot>
+
+Set volume snapshot properties
+
+positional arguments:
+  <snapshot>            Snapshot to modify (name or ID)
+
+options:
+  -h, --help            show this help message and exit
+  --name <name>         New snapshot name
+  --description <description>
+                        New snapshot description
+  --no-property         Remove all properties from <snapshot> (specify both
+                        --no-property and --property to remove the current
+                        properties before setting new properties.)
+  --property <key=value>
+                        Property to add/change for this snapshot (repeat
+                        option to set multiple properties)
+  --state <state>       New snapshot state. ("available", "error", "creating",
+                        "deleting", or "error_deleting") (admin only) (This
+                        option simply changes the state of the snapshot in the
+                        database with no regard to actual status, exercise
+                        caution when using)

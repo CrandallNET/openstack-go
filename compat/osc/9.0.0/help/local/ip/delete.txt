@@ -1,0 +1,9 @@
+usage: openstack local ip delete [-h] <local-ip> [<local-ip> ...]
+
+Delete Local IP(s)
+
+positional arguments:
+  <local-ip>  Local IP(s) to delete (name or ID)
+
+options:
+  -h, --help  show this help message and exit

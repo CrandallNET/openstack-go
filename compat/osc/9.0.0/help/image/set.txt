@@ -1,0 +1,78 @@
+usage: openstack image set [-h] [--name <name>] [--min-disk <disk-gb>]
+                           [--min-ram <ram-mb>]
+                           [--container-format <container-format>]
+                           [--disk-format <disk-format>]
+                           [--protected | --unprotected]
+                           [--public | --private | --community | --shared]
+                           [--property <key=value>] [--tag <tag>]
+                           [--architecture <architecture>]
+                           [--instance-id <instance-id>]
+                           [--kernel-id <kernel-id>] [--os-distro <os-distro>]
+                           [--os-version <os-version>]
+                           [--ramdisk-id <ramdisk-id>]
+                           [--deactivate | --activate] [--project <project>]
+                           [--project-domain <project-domain>]
+                           [--accept | --reject | --pending]
+                           [--hidden | --unhidden]
+                           <image>
+
+Set image properties
+
+positional arguments:
+  <image>               Image to modify (name or ID)
+
+options:
+  -h, --help            show this help message and exit
+  --name <name>         New image name
+  --min-disk <disk-gb>  Minimum disk size needed to boot image, in gigabytes
+  --min-ram <ram-mb>    Minimum RAM size needed to boot image, in megabytes
+  --container-format <container-format>
+                        Image container format. The supported options are:
+                        ami, ari, aki, bare, docker, ova, ovf
+  --disk-format <disk-format>
+                        Image disk format. The supported options are: ami,
+                        ari, aki, vhd, vmdk, raw, qcow2, vhdx, vdi, iso, ploop
+  --protected           Prevent image from being deleted
+  --unprotected         Allow image to be deleted (default)
+  --public              Image is accessible and visible to all users
+  --private             Image is only accessible by the owner (default until
+                        --os-image-api-version 2.5)
+  --community           Image is accessible by all users but does not appear
+                        in the default image list of any user except the owner
+                        (requires --os-image-api-version 2.5 or later)
+  --shared              Image is only accessible by the owner and image
+                        members (requires --os-image-api-version 2.5 or later)
+                        (default since --os-image-api-version 2.5)
+  --property <key=value>
+                        Set a property on this image (repeat option to set
+                        multiple properties)
+  --tag <tag>           Set a tag on this image (repeat option to set multiple
+                        tags)
+  --architecture <architecture>
+                        Operating system architecture
+  --instance-id <instance-id>
+                        ID of server instance used to create this image
+  --kernel-id <kernel-id>
+                        ID of kernel image used to boot this disk image
+  --os-distro <os-distro>
+                        Operating system distribution name
+  --os-version <os-version>
+                        Operating system distribution version
+  --ramdisk-id <ramdisk-id>
+                        ID of ramdisk image used to boot this disk image
+  --deactivate          Deactivate the image
+  --activate            Activate the image
+  --project <project>   Set an alternate project on this image (name or ID)
+  --project-domain <project-domain>
+                        Domain the project belongs to (name or ID). This can
+                        be used in case collisions between project names
+                        exist.
+  --accept              Accept the image membership for either the project
+                        indicated by '--project', if provided, or the current
+                        user's project
+  --reject              Reject the image membership for either the project
+                        indicated by '--project', if provided, or the current
+                        user's project
+  --pending             Reset the image membership to 'pending'
+  --hidden              Hide the image
+  --unhidden            Unhide the image

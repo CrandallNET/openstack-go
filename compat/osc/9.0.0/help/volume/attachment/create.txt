@@ -1,0 +1,75 @@
+usage: openstack volume attachment create [-h]
+                                          [-f {json,shell,table,value,yaml}]
+                                          [-c COLUMN] [--noindent]
+                                          [--prefix PREFIX]
+                                          [--max-width <integer>]
+                                          [--fit-width] [--print-empty]
+                                          [--connect] [--no-connect]
+                                          [--initiator <initiator>]
+                                          [--ip <ip>] [--host <host>]
+                                          [--platform <platform>]
+                                          [--os-type <ostype>] [--multipath]
+                                          [--no-multipath]
+                                          [--mountpoint <mountpoint>]
+                                          [--mode <mode>]
+                                          <volume> <server>
+
+Create an attachment for a volume. This command will only create a volume
+attachment in the Volume service. It will not invoke the necessary Compute
+service actions to actually attach the volume to the server at the hypervisor
+level. As a result, it should typically only be used for troubleshooting
+issues with an existing server in combination with other tooling. For all
+other use cases, the 'server add volume' command should be preferred.
+
+positional arguments:
+  <volume>              Name or ID of volume to attach to server.
+  <server>              Name or ID of server to attach volume to.
+
+options:
+  -h, --help            show this help message and exit
+  --connect             Make an active connection using provided connector
+                        info
+  --no-connect          Do not make an active connection using provided
+                        connector info
+  --initiator <initiator>
+                        IQN of the initiator attaching to
+  --ip <ip>             IP of the system attaching to
+  --host <host>         Name of the host attaching to
+  --platform <platform>
+                        Platform type
+  --os-type <ostype>    OS type
+  --multipath           Use multipath
+  --no-multipath        Use multipath
+  --mountpoint <mountpoint>
+                        Mountpoint volume will be attached at
+  --mode <mode>         Mode of volume attachment, rw, ro and null, where null
+                        indicates we want to honor any existing admin-metadata
+                        settings (supported by --os-volume-api-version 3.54 or
+                        later)
+
+output formatters:
+  output formatter options
+
+  -f {json,shell,table,value,yaml}, --format {json,shell,table,value,yaml}
+                        the output format, defaults to table
+  -c COLUMN, --column COLUMN
+                        specify the column(s) to include, can be repeated to
+                        show multiple columns
+
+json formatter:
+  --noindent            whether to disable indenting the JSON
+
+shell formatter:
+  a format a UNIX shell can parse (variable="value")
+
+  --prefix PREFIX       add a prefix to all variable names
+
+table formatter:
+  --max-width <integer>
+                        Maximum display width, <1 to disable. You can also use
+                        the CLIFF_MAX_TERM_WIDTH environment variable, but the
+                        parameter takes precedence.
+  --fit-width           Fit the table to the display width. Implied if --max-
+                        width greater than 0. Set the environment variable
+                        CLIFF_FIT_WIDTH=1 to always enable
+  --print-empty         Print empty table if there is no data to show.

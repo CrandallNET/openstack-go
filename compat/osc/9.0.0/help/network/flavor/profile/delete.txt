@@ -1,0 +1,11 @@
+usage: openstack network flavor profile delete [-h]
+                                               <flavor-profile>
+                                               [<flavor-profile> ...]
+
+Delete network flavor profile
+
+positional arguments:
+  <flavor-profile>  Flavor profile(s) to delete (ID only)
+
+options:
+  -h, --help        show this help message and exit

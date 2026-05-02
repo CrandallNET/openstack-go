@@ -1,0 +1,71 @@
+usage: openstack block storage volume manageable list [-h]
+                                                      [-f {csv,json,table,value,yaml}]
+                                                      [-c COLUMN]
+                                                      [--quote {all,minimal,none,nonnumeric}]
+                                                      [--noindent]
+                                                      [--max-width <integer>]
+                                                      [--fit-width]
+                                                      [--print-empty]
+                                                      [--sort-column SORT_COLUMN]
+                                                      [--sort-ascending | --sort-descending]
+                                                      [--cluster <cluster>]
+                                                      [--long]
+                                                      [--marker <marker>]
+                                                      [--limit <limit>]
+                                                      [--offset <offset>]
+                                                      [--sort <key>[:<direction>]]
+                                                      [<host>]
+
+List manageable volumes. Supported by --os-volume-api-version 3.8 or greater.
+
+positional arguments:
+  <host>                Cinder host on which to list manageable volumes. Takes
+                        the form: host@backend-name#pool
+
+options:
+  -h, --help            show this help message and exit
+  --cluster <cluster>   Cinder cluster on which to list manageable volumes.
+                        Takes the form: cluster@backend-name#pool. (supported
+                        by --os-volume-api-version 3.17 or later)
+  --long                List additional fields in output
+  --marker <marker>     Begin returning volumes that appear later in the
+                        volume list than that represented by this reference.
+                        This reference should be json like. Default=None.
+  --limit <limit>       Maximum number of volumes to return. Default=None.
+  --offset <offset>     Number of volumes to skip after marker. Default=None.
+  --sort <key>[:<direction>]
+                        Comma-separated list of sort keys and directions in
+                        the form of <key>[:<asc|desc>]. Valid keys: size,
+                        reference. Default=None.
+
+output formatters:
+  output formatter options
+
+  -f {csv,json,table,value,yaml}, --format {csv,json,table,value,yaml}
+                        the output format, defaults to table
+  -c COLUMN, --column COLUMN
+                        specify the column(s) to include, can be repeated to
+                        show multiple columns
+  --sort-column SORT_COLUMN
+                        specify the column(s) to sort the data (columns
+                        specified first have a priority, non-existing columns
+                        are ignored), can be repeated
+  --sort-ascending      sort the column(s) in ascending order
+  --sort-descending     sort the column(s) in descending order
+
+CSV Formatter:
+  --quote {all,minimal,none,nonnumeric}
+                        when to include quotes, defaults to nonnumeric
+
+json formatter:
+  --noindent            whether to disable indenting the JSON
+
+table formatter:
+  --max-width <integer>
+                        Maximum display width, <1 to disable. You can also use
+                        the CLIFF_MAX_TERM_WIDTH environment variable, but the
+                        parameter takes precedence.
+  --fit-width           Fit the table to the display width. Implied if --max-
+                        width greater than 0. Set the environment variable
+                        CLIFF_FIT_WIDTH=1 to always enable
+  --print-empty         Print empty table if there is no data to show.

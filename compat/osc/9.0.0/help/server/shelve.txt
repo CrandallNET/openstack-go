@@ -1,0 +1,23 @@
+usage: openstack server shelve [-h] [--offload] [--wait]
+                               <server> [<server> ...]
+
+Shelve and optionally offload server(s). Shelving a server creates a snapshot
+of the server and stores this snapshot before shutting down the server. This
+shelved server can then be offloaded or deleted from the host, freeing up
+remaining resources on the host, such as network interfaces. Shelved servers
+can be unshelved, restoring the server from the snapshot. Shelving is
+therefore useful where users wish to retain the UUID and IP of a server,
+without utilizing other resources or disks. Most clouds are configured to
+automatically offload shelved servers immediately or after a small delay. For
+clouds where this is not configured, or where the delay is larger, offloading
+can be manually specified. This is an admin-only operation by default.
+
+positional arguments:
+  <server>    Server(s) to shelve (name or ID)
+
+options:
+  -h, --help  show this help message and exit
+  --offload   Remove the shelved server(s) from the host (admin only).
+              Invoking this option on an unshelved server(s) will result in
+              the server being shelved first
+  --wait      Wait for shelve and/or offload operation to complete

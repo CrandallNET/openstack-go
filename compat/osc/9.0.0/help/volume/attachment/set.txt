@@ -1,0 +1,60 @@
+usage: openstack volume attachment set [-h] [-f {json,shell,table,value,yaml}]
+                                       [-c COLUMN] [--noindent]
+                                       [--prefix PREFIX]
+                                       [--max-width <integer>] [--fit-width]
+                                       [--print-empty]
+                                       [--initiator <initiator>] [--ip <ip>]
+                                       [--host <host>] [--platform <platform>]
+                                       [--os-type <ostype>] [--multipath]
+                                       [--no-multipath]
+                                       [--mountpoint <mountpoint>]
+                                       <attachment>
+
+Update an attachment for a volume. This call is designed to be more of an
+volume attachment completion than anything else. It expects the value of a
+connector object to notify the driver that the volume is going to be connected
+and where it's being connected to.
+
+positional arguments:
+  <attachment>          ID of volume attachment.
+
+options:
+  -h, --help            show this help message and exit
+  --initiator <initiator>
+                        IQN of the initiator attaching to
+  --ip <ip>             IP of the system attaching to
+  --host <host>         Name of the host attaching to
+  --platform <platform>
+                        Platform type
+  --os-type <ostype>    OS type
+  --multipath           Use multipath
+  --no-multipath        Use multipath
+  --mountpoint <mountpoint>
+                        Mountpoint volume will be attached at
+
+output formatters:
+  output formatter options
+
+  -f {json,shell,table,value,yaml}, --format {json,shell,table,value,yaml}
+                        the output format, defaults to table
+  -c COLUMN, --column COLUMN
+                        specify the column(s) to include, can be repeated to
+                        show multiple columns
+
+json formatter:
+  --noindent            whether to disable indenting the JSON
+
+shell formatter:
+  a format a UNIX shell can parse (variable="value")
+
+  --prefix PREFIX       add a prefix to all variable names
+
+table formatter:
+  --max-width <integer>
+                        Maximum display width, <1 to disable. You can also use
+                        the CLIFF_MAX_TERM_WIDTH environment variable, but the
+                        parameter takes precedence.
+  --fit-width           Fit the table to the display width. Implied if --max-
+                        width greater than 0. Set the environment variable
+                        CLIFF_FIT_WIDTH=1 to always enable
+  --print-empty         Print empty table if there is no data to show.

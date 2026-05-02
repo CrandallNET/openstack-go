@@ -1,0 +1,12 @@
+usage: openstack server remove volume [-h] <server> <volume>
+
+Remove volume from server. Specify ``--os-compute-api-version 2.20`` or higher
+to remove a volume from a server with status ``SHELVED`` or
+``SHELVED_OFFLOADED``.
+
+positional arguments:
+  <server>    Server (name or ID)
+  <volume>    Volume to remove (name or ID)
+
+options:
+  -h, --help  show this help message and exit

@@ -1,0 +1,10 @@
+usage: openstack group delete [-h] [--domain <domain>] <group> [<group> ...]
+
+Delete group(s)
+
+positional arguments:
+  <group>            Group(s) to delete (name or ID)
+
+options:
+  -h, --help         show this help message and exit
+  --domain <domain>  Domain containing group(s) (name or ID)

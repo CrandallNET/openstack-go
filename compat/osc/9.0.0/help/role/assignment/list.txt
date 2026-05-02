@@ -1,0 +1,81 @@
+usage: openstack role assignment list [-h] [-f {csv,json,table,value,yaml}]
+                                      [-c COLUMN]
+                                      [--quote {all,minimal,none,nonnumeric}]
+                                      [--noindent] [--max-width <integer>]
+                                      [--fit-width] [--print-empty]
+                                      [--sort-column SORT_COLUMN]
+                                      [--sort-ascending | --sort-descending]
+                                      [--effective] [--role <role>]
+                                      [--role-domain <role-domain>] [--names]
+                                      [--user <user>]
+                                      [--user-domain <user-domain>]
+                                      [--group <group>]
+                                      [--group-domain <group-domain>]
+                                      [--domain <domain> | --project <project> | --system <system>]
+                                      [--project-domain <project-domain>]
+                                      [--inherited] [--auth-user]
+                                      [--auth-project]
+
+List role assignments
+
+options:
+  -h, --help            show this help message and exit
+  --effective           Returns only effective role assignments
+  --role <role>         Role to filter (name or ID)
+  --role-domain <role-domain>
+                        Domain the role belongs to (name or ID). This must be
+                        specified when the name of a domain specific role is
+                        used.
+  --names               Display names instead of IDs
+  --user <user>         User to filter (name or ID)
+  --user-domain <user-domain>
+                        Domain the user belongs to (name or ID). This can be
+                        used in case collisions between user names exist.
+  --group <group>       Group to filter (name or ID)
+  --group-domain <group-domain>
+                        Domain the group belongs to (name or ID). This can be
+                        used in case collisions between group names exist.
+  --domain <domain>     Domain to filter (name or ID)
+  --project <project>   Project to filter (name or ID)
+  --system <system>     Filter based on system role assignments
+  --project-domain <project-domain>
+                        Domain the project belongs to (name or ID). This can
+                        be used in case collisions between project names
+                        exist.
+  --inherited           Specifies if the role grant is inheritable to the sub
+                        projects
+  --auth-user           Only list assignments for the authenticated user
+  --auth-project        Only list assignments for the project to which the
+                        authenticated user's token is scoped
+
+output formatters:
+  output formatter options
+
+  -f {csv,json,table,value,yaml}, --format {csv,json,table,value,yaml}
+                        the output format, defaults to table
+  -c COLUMN, --column COLUMN
+                        specify the column(s) to include, can be repeated to
+                        show multiple columns
+  --sort-column SORT_COLUMN
+                        specify the column(s) to sort the data (columns
+                        specified first have a priority, non-existing columns
+                        are ignored), can be repeated
+  --sort-ascending      sort the column(s) in ascending order
+  --sort-descending     sort the column(s) in descending order
+
+CSV Formatter:
+  --quote {all,minimal,none,nonnumeric}
+                        when to include quotes, defaults to nonnumeric
+
+json formatter:
+  --noindent            whether to disable indenting the JSON
+
+table formatter:
+  --max-width <integer>
+                        Maximum display width, <1 to disable. You can also use
+                        the CLIFF_MAX_TERM_WIDTH environment variable, but the
+                        parameter takes precedence.
+  --fit-width           Fit the table to the display width. Implied if --max-
+                        width greater than 0. Set the environment variable
+                        CLIFF_FIT_WIDTH=1 to always enable
+  --print-empty         Print empty table if there is no data to show.

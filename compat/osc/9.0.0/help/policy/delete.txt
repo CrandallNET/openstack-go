@@ -1,0 +1,9 @@
+usage: openstack policy delete [-h] <policy> [<policy> ...]
+
+Delete policy(s)
+
+positional arguments:
+  <policy>    Policy(s) to delete
+
+options:
+  -h, --help  show this help message and exit

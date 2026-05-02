@@ -1,0 +1,9 @@
+usage: openstack mapping delete [-h] <mapping> [<mapping> ...]
+
+Delete mapping(s)
+
+positional arguments:
+  <mapping>   Mapping(s) to delete
+
+options:
+  -h, --help  show this help message and exit

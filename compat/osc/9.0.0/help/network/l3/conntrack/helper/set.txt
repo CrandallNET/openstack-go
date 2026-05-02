@@ -1,0 +1,21 @@
+usage: openstack network l3 conntrack helper set [-h] [--helper <helper>]
+                                                 [--protocol <protocol>]
+                                                 [--port <port>]
+                                                 <router>
+                                                 <conntrack-helper-id>
+
+Set L3 conntrack helper properties
+
+positional arguments:
+  <router>              Router that the conntrack helper belongs to
+  <conntrack-helper-id>
+                        The ID of the conntrack helper(s)
+
+options:
+  -h, --help            show this help message and exit
+  --helper <helper>     The netfilter conntrack helper module
+  --protocol <protocol>
+                        The network protocol for the netfilter conntrack
+                        target rule
+  --port <port>         The network port for the netfilter conntrack target
+                        rule

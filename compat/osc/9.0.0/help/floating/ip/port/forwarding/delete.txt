@@ -1,0 +1,14 @@
+usage: openstack floating ip port forwarding delete [-h]
+                                                    <floating-ip>
+                                                    <port-forwarding-id>
+                                                    [<port-forwarding-id> ...]
+
+Delete floating IP port forwarding
+
+positional arguments:
+  <floating-ip>         Floating IP that the port forwarding belongs to (IP
+                        address or ID)
+  <port-forwarding-id>  The ID of the floating IP port forwarding(s) to delete
+
+options:
+  -h, --help            show this help message and exit

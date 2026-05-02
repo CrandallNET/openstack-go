@@ -1,0 +1,9 @@
+usage: openstack security group rule delete [-h] <rule> [<rule> ...]
+
+Delete security group rule(s)
+
+positional arguments:
+  <rule>      Security group rule(s) to delete (ID only)
+
+options:
+  -h, --help  show this help message and exit

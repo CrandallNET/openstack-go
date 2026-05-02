@@ -1,0 +1,53 @@
+usage: openstack volume set [-h] [--name <name>] [--size <size>]
+                            [--description <description>] [--no-property]
+                            [--property <key=value>]
+                            [--image-property <key=value>] [--state <state>]
+                            [--attached | --detached] [--type <volume-type>]
+                            [--migration-policy <migration-policy>]
+                            [--bootable | --non-bootable]
+                            [--read-only | --read-write]
+                            <volume>
+
+Set volume properties
+
+positional arguments:
+  <volume>              Volume to modify (name or ID)
+
+options:
+  -h, --help            show this help message and exit
+  --name <name>         New volume name
+  --size <size>         Extend volume size in GB
+  --description <description>
+                        New volume description
+  --no-property         Remove all properties from <volume> (specify both
+                        --no-property and --property to remove the current
+                        properties before setting new properties.)
+  --property <key=value>
+                        Set a property on this volume (repeat option to set
+                        multiple properties)
+  --image-property <key=value>
+                        Set an image property on this volume (repeat option to
+                        set multiple image properties)
+  --state <state>       New volume state ("available", "error", "creating",
+                        "deleting", "in-use", "attaching", "detaching",
+                        "error_deleting" or "maintenance") (admin only) (This
+                        option simply changes the state of the volume in the
+                        database with no regard to actual status, exercise
+                        caution when using)
+  --attached            Set volume attachment status to "attached" (admin
+                        only) (This option simply changes the state of the
+                        volume in the database with no regard to actual
+                        status, exercise caution when using)
+  --detached            Set volume attachment status to "detached" (admin
+                        only) (This option simply changes the state of the
+                        volume in the database with no regard to actual
+                        status, exercise caution when using)
+  --type <volume-type>  New volume type (name or ID)
+  --migration-policy <migration-policy>
+                        Migration policy while re-typing volume ("never" or
+                        "on-demand", default is "never" ) (available only when
+                        --type option is specified)
+  --bootable            Mark volume as bootable
+  --non-bootable        Mark volume as non-bootable
+  --read-only           Set volume to read-only access mode
+  --read-write          Set volume to read-write access mode

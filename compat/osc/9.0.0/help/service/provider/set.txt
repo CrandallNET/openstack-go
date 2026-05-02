@@ -1,0 +1,54 @@
+usage: openstack service provider set [-h] [-f {json,shell,table,value,yaml}]
+                                      [-c COLUMN] [--noindent]
+                                      [--prefix PREFIX]
+                                      [--max-width <integer>] [--fit-width]
+                                      [--print-empty] [--auth-url <auth-url>]
+                                      [--description <description>]
+                                      [--service-provider-url <sp-url>]
+                                      [--enable | --disable]
+                                      <service-provider>
+
+Set service provider properties
+
+positional arguments:
+  <service-provider>    Service provider to modify
+
+options:
+  -h, --help            show this help message and exit
+  --auth-url <auth-url>
+                        New Authentication URL of remote federated service
+                        provider
+  --description <description>
+                        New service provider description
+  --service-provider-url <sp-url>
+                        New service provider URL, where SAML assertions are
+                        sent
+  --enable              Enable the service provider
+  --disable             Disable the service provider
+
+output formatters:
+  output formatter options
+
+  -f {json,shell,table,value,yaml}, --format {json,shell,table,value,yaml}
+                        the output format, defaults to table
+  -c COLUMN, --column COLUMN
+                        specify the column(s) to include, can be repeated to
+                        show multiple columns
+
+json formatter:
+  --noindent            whether to disable indenting the JSON
+
+shell formatter:
+  a format a UNIX shell can parse (variable="value")
+
+  --prefix PREFIX       add a prefix to all variable names
+
+table formatter:
+  --max-width <integer>
+                        Maximum display width, <1 to disable. You can also use
+                        the CLIFF_MAX_TERM_WIDTH environment variable, but the
+                        parameter takes precedence.
+  --fit-width           Fit the table to the display width. Implied if --max-
+                        width greater than 0. Set the environment variable
+                        CLIFF_FIT_WIDTH=1 to always enable
+  --print-empty         Print empty table if there is no data to show.

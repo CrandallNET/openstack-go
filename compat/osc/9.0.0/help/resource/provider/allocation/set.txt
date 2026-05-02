@@ -1,0 +1,83 @@
+usage: openstack resource provider allocation set [-h]
+                                                  [-f {csv,json,table,value,yaml}]
+                                                  [-c COLUMN]
+                                                  [--quote {all,minimal,none,nonnumeric}]
+                                                  [--noindent]
+                                                  [--max-width <integer>]
+                                                  [--fit-width]
+                                                  [--print-empty]
+                                                  [--sort-column SORT_COLUMN]
+                                                  [--sort-ascending | --sort-descending]
+                                                  [--allocation <rp=resource-provider-id,resource-class-name=amount-of-resource-used>]
+                                                  [--project-id project_id]
+                                                  [--user-id user_id]
+                                                  [--consumer-type consumer_type]
+                                                  <uuid>
+
+Replaces the set of resource allocation(s) for a given consumer. Note that
+this is a full replacement of the existing allocations. If you want to retain
+the existing allocations and add a new resource class allocation, you must
+specify all resource class allocations, old and new. From ``--os-placement-
+api-version 1.8`` it is required to specify ``--project-id`` and ``--user-id``
+to set allocations. It is highly recommended to provide a ``--project-id`` and
+``--user-id`` when setting allocations for accounting and data consistency
+reasons. Starting with ``--os-placement-api-version 1.12`` the API response
+contains the ``project_id`` and ``user_id`` of allocations which also appears
+in the CLI output. Starting with ``--os-placement-api-version 1.28`` a
+consumer generation is used which facilitates safe concurrent modification of
+an allocation. Starting with ``--os-placement-api-version 1.38`` it is
+required to specify ``--consumer-type`` to set allocations. It is helpful to
+provide a ``--consumer-type`` when setting allocations so that resource usages
+can be filtered on consumer types.
+
+positional arguments:
+  <uuid>                UUID of the consumer
+
+options:
+  -h, --help            show this help message and exit
+  --allocation <rp=resource-provider-id,resource-class-name=amount-of-resource-used>
+                        Create (or update) an allocation of a resource class.
+                        Specify option multiple times to set multiple
+                        allocations.
+  --project-id project_id
+                        ID of the consuming project. This option is required
+                        starting from ``--os-placement-api-version 1.8``.
+  --user-id user_id     ID of the consuming user. This option is required
+                        starting from ``--os-placement-api-version 1.8``.
+  --consumer-type consumer_type
+                        The type of the consumer. This option is required
+                        starting from ``--os-placement-api-version 1.38``.
+
+output formatters:
+  output formatter options
+
+  -f {csv,json,table,value,yaml}, --format {csv,json,table,value,yaml}
+                        the output format, defaults to table
+  -c COLUMN, --column COLUMN
+                        specify the column(s) to include, can be repeated to
+                        show multiple columns
+  --sort-column SORT_COLUMN
+                        specify the column(s) to sort the data (columns
+                        specified first have a priority, non-existing columns
+                        are ignored), can be repeated
+  --sort-ascending      sort the column(s) in ascending order
+  --sort-descending     sort the column(s) in descending order
+
+CSV Formatter:
+  --quote {all,minimal,none,nonnumeric}
+                        when to include quotes, defaults to nonnumeric
+
+json formatter:
+  --noindent            whether to disable indenting the JSON
+
+table formatter:
+  --max-width <integer>
+                        Maximum display width, <1 to disable. You can also use
+                        the CLIFF_MAX_TERM_WIDTH environment variable, but the
+                        parameter takes precedence.
+  --fit-width           Fit the table to the display width. Implied if --max-
+                        width greater than 0. Set the environment variable
+                        CLIFF_FIT_WIDTH=1 to always enable
+  --print-empty         Print empty table if there is no data to show.
+
+This command is provided by the osc-placement plugin.

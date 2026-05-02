@@ -1,0 +1,9 @@
+usage: openstack service delete [-h] <service> [<service> ...]
+
+Delete service(s)
+
+positional arguments:
+  <service>   Service(s) to delete (type, name or ID)
+
+options:
+  -h, --help  show this help message and exit

@@ -1,0 +1,12 @@
+usage: openstack server add network [-h] [--tag <tag>] <server> <network>
+
+Add network to server
+
+positional arguments:
+  <server>     Server to add the network to (name or ID)
+  <network>    Network to add to the server (name or ID)
+
+options:
+  -h, --help   show this help message and exit
+  --tag <tag>  Tag for the attached interface. (supported by --os-compute-api-
+               version 2.49 or above)

@@ -1,0 +1,9 @@
+usage: openstack limit delete [-h] <limit-id> [<limit-id> ...]
+
+Delete a limit
+
+positional arguments:
+  <limit-id>  Limit to delete (ID) (repeat option to remove multiple limits)
+
+options:
+  -h, --help  show this help message and exit

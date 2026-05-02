@@ -1,0 +1,9 @@
+usage: openstack volume message delete [-h] <message-id> [<message-id> ...]
+
+Delete a volume failure message
+
+positional arguments:
+  <message-id>  Message(s) to delete (ID)
+
+options:
+  -h, --help    show this help message and exit

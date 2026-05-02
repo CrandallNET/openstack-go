@@ -1,0 +1,10 @@
+usage: openstack image metadef namespace delete [-h]
+                                                <namespace> [<namespace> ...]
+
+Delete metadef namespace
+
+positional arguments:
+  <namespace>  Metadef namespace(s) to delete (name)
+
+options:
+  -h, --help   show this help message and exit

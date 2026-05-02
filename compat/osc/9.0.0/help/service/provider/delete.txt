@@ -1,0 +1,11 @@
+usage: openstack service provider delete [-h]
+                                         <service-provider>
+                                         [<service-provider> ...]
+
+Delete service provider(s)
+
+positional arguments:
+  <service-provider>  Service provider(s) to delete
+
+options:
+  -h, --help          show this help message and exit

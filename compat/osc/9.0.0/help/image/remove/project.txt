@@ -1,0 +1,15 @@
+usage: openstack image remove project [-h] [--project-domain <project-domain>]
+                                      <image> <project>
+
+Disassociate project with image
+
+positional arguments:
+  <image>               Image to unshare (name or ID)
+  <project>             Project to disassociate with image (name or ID)
+
+options:
+  -h, --help            show this help message and exit
+  --project-domain <project-domain>
+                        Domain the project belongs to (name or ID). This can
+                        be used in case collisions between project names
+                        exist.

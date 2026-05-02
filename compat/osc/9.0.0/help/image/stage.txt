@@ -1,0 +1,14 @@
+usage: openstack image stage [-h] [--file <file>] [--progress] <image>
+
+Upload data for a specific image to staging. This requires support for the
+interoperable image import process, which was first introduced in Image API
+version 2.6 (Glance 16.0.0 (Queens))
+
+positional arguments:
+  <image>        Image to upload data for (name or ID)
+
+options:
+  -h, --help     show this help message and exit
+  --file <file>  Local file that contains disk image to be uploaded.
+                 Alternatively, images can be passed via stdin.
+  --progress     Show upload progress bar (ignored if passing data via stdin)

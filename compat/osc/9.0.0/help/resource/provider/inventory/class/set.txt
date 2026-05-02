@@ -1,0 +1,80 @@
+usage: openstack resource provider inventory class set [-h]
+                                                       [-f {json,shell,table,value,yaml}]
+                                                       [-c COLUMN]
+                                                       [--noindent]
+                                                       [--prefix PREFIX]
+                                                       [--max-width <integer>]
+                                                       [--fit-width]
+                                                       [--print-empty]
+                                                       [--allocation_ratio <allocation_ratio>]
+                                                       [--min_unit <min_unit>]
+                                                       [--max_unit <max_unit>]
+                                                       [--reserved <reserved>]
+                                                       [--step_size <step_size>]
+                                                       --total <total>
+                                                       <uuid> <class>
+
+Replace the inventory record of the class for the resource provider. Example::
+openstack resource provider inventory class set <uuid> VCPU --total 16
+--max_unit 4 --reserved 1
+
+positional arguments:
+  <uuid>                UUID of the resource provider
+  <class>               <resource_class> is an entity that indicates standard
+                        or deployer-specific resources that can be provided by
+                        a resource provider. For example, VCPU, MEMORY_MB,
+                        DISK_GB.
+
+options:
+  -h, --help            show this help message and exit
+  --allocation_ratio <allocation_ratio>
+                        It is used in determining whether consumption of the
+                        resource of the provider can exceed physical
+                        constraints. For example, for a vCPU resource with:
+                        allocation_ratio = 16.0, total = 8. Overall capacity
+                        is equal to 128 vCPUs.
+  --min_unit <min_unit>
+                        A minimum amount any single allocation against an
+                        inventory can have.
+  --max_unit <max_unit>
+                        A maximum amount any single allocation against an
+                        inventory can have.
+  --reserved <reserved>
+                        The amount of the resource a provider has reserved for
+                        its own use.
+  --step_size <step_size>
+                        A representation of the divisible amount of the
+                        resource that may be requested. For example, step_size
+                        = 5 means that only values divisible by 5 (5, 10, 15,
+                        etc.) can be requested.
+  --total <total>       The actual amount of the resource that the provider
+                        can accommodate.
+
+output formatters:
+  output formatter options
+
+  -f {json,shell,table,value,yaml}, --format {json,shell,table,value,yaml}
+                        the output format, defaults to table
+  -c COLUMN, --column COLUMN
+                        specify the column(s) to include, can be repeated to
+                        show multiple columns
+
+json formatter:
+  --noindent            whether to disable indenting the JSON
+
+shell formatter:
+  a format a UNIX shell can parse (variable="value")
+
+  --prefix PREFIX       add a prefix to all variable names
+
+table formatter:
+  --max-width <integer>
+                        Maximum display width, <1 to disable. You can also use
+                        the CLIFF_MAX_TERM_WIDTH environment variable, but the
+                        parameter takes precedence.
+  --fit-width           Fit the table to the display width. Implied if --max-
+                        width greater than 0. Set the environment variable
+                        CLIFF_FIT_WIDTH=1 to always enable
+  --print-empty         Print empty table if there is no data to show.
+
+This command is provided by the osc-placement plugin.

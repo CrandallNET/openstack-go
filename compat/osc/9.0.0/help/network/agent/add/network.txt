@@ -1,0 +1,11 @@
+usage: openstack network agent add network [-h] [--dhcp] <agent-id> <network>
+
+Add network to an agent
+
+positional arguments:
+  <agent-id>  Agent to which a network is added (ID only)
+  <network>   Network to be added to an agent (name or ID)
+
+options:
+  -h, --help  show this help message and exit
+  --dhcp      Add network to a DHCP agent

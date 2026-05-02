@@ -1,0 +1,10 @@
+usage: openstack server remove fixed ip [-h] <server> <ip-address>
+
+Remove fixed IP address from server
+
+positional arguments:
+  <server>      Server to remove the fixed IP address from (name or ID)
+  <ip-address>  Fixed IP address to remove from the server (IP only)
+
+options:
+  -h, --help    show this help message and exit

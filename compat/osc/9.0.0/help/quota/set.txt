@@ -1,0 +1,86 @@
+usage: openstack quota set [-h] [--class | --default] [--cores <cores>]
+                           [--injected-file-size <injected-file-size>]
+                           [--injected-path-size <injected-path-size>]
+                           [--injected-files <injected-files>]
+                           [--instances <instances>] [--key-pairs <key-pairs>]
+                           [--properties <properties>] [--ram <ram>]
+                           [--server-group-members <server-group-members>]
+                           [--server-groups <server-groups>]
+                           [--backups <backups>]
+                           [--backup-gigabytes <backup-gigabytes>]
+                           [--gigabytes <gigabytes>]
+                           [--per-volume-gigabytes <per-volume-gigabytes>]
+                           [--snapshots <snapshots>] [--volumes <volumes>]
+                           [--floating-ips <floating-ips>]
+                           [--secgroup-rules <secgroup-rules>]
+                           [--secgroups <secgroups>] [--networks <networks>]
+                           [--subnets <subnets>] [--ports <ports>]
+                           [--routers <routers>]
+                           [--rbac-policies <rbac-policies>]
+                           [--subnetpools <subnetpools>]
+                           [--volume-type <volume-type>]
+                           [--force | --no-force]
+                           [<project/class>]
+
+Set quotas for project or class
+
+positional arguments:
+  <project/class>       Set quotas for this project or class (name or ID)
+                        (defaults to current project)
+
+options:
+  -h, --help            show this help message and exit
+  --class               **Deprecated** Set quotas for <class>. Deprecated as
+                        quota classes were never fully implemented and only
+                        the default class is supported. (compute and volume
+                        only)
+  --default             Set default quotas for <project>
+  --cores <cores>       New value for the cores quota
+  --injected-file-size <injected-file-size>
+                        New value for the injected-file-size quota
+  --injected-path-size <injected-path-size>
+                        New value for the injected-path-size quota
+  --injected-files <injected-files>
+                        New value for the injected-files quota
+  --instances <instances>
+                        New value for the instances quota
+  --key-pairs <key-pairs>
+                        New value for the key-pairs quota
+  --properties <properties>
+                        New value for the properties quota
+  --ram <ram>           New value for the ram quota
+  --server-group-members <server-group-members>
+                        New value for the server-group-members quota
+  --server-groups <server-groups>
+                        New value for the server-groups quota
+  --backups <backups>   New value for the backups quota
+  --backup-gigabytes <backup-gigabytes>
+                        New value for the backup-gigabytes quota
+  --gigabytes <gigabytes>
+                        New value for the gigabytes quota
+  --per-volume-gigabytes <per-volume-gigabytes>
+                        New value for the per-volume-gigabytes quota
+  --snapshots <snapshots>
+                        New value for the snapshots quota
+  --volumes <volumes>   New value for the volumes quota
+  --floating-ips <floating-ips>
+                        New value for the floating-ips quota
+  --secgroup-rules <secgroup-rules>
+                        New value for the secgroup-rules quota
+  --secgroups <secgroups>
+                        New value for the secgroups quota
+  --networks <networks>
+                        New value for the networks quota
+  --subnets <subnets>   New value for the subnets quota
+  --ports <ports>       New value for the ports quota
+  --routers <routers>   New value for the routers quota
+  --rbac-policies <rbac-policies>
+                        New value for the rbac-policies quota
+  --subnetpools <subnetpools>
+                        New value for the subnetpools quota
+  --volume-type <volume-type>
+                        Set quotas for a specific <volume-type>
+  --force               Force quota update (only supported by compute and
+                        network)
+  --no-force            Do not force quota update (only supported by compute
+                        and network) (default)

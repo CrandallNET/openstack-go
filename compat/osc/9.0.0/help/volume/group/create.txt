@@ -1,0 +1,70 @@
+usage: openstack volume group create [-h] [-f {json,shell,table,value,yaml}]
+                                     [-c COLUMN] [--noindent]
+                                     [--prefix PREFIX] [--max-width <integer>]
+                                     [--fit-width] [--print-empty]
+                                     [--volume-group-type <volume_group_type>]
+                                     [--volume-type <volume_type>]
+                                     [--source-group <source-group>]
+                                     [--group-snapshot <group-snapshot>]
+                                     [--name <name>]
+                                     [--description <description>]
+                                     [--availability-zone <availability-zone>]
+
+Create a volume group. Generic volume groups enable you to create a group of
+volumes and manage them together. Generic volume groups are more flexible than
+consistency groups. Currently volume consistency groups only support
+consistent group snapshot. It cannot be extended easily to serve other
+purposes. A project may want to put volumes used in the same application
+together in a group so that it is easier to manage them together, and this
+group of volumes may or may not support consistent group snapshot. Generic
+volume group solve this problem. By decoupling the tight relationship between
+the group construct and the consistency concept, generic volume groups can be
+extended to support other features in the future. This command requires
+``--os-volume-api-version`` 3.13 or greater.
+
+options:
+  -h, --help            show this help message and exit
+  --volume-group-type <volume_group_type>
+                        Volume group type to use (name or ID)
+  --volume-type <volume_type>
+                        Volume type(s) to use (name or ID) (required with
+                        --volume-group-type)
+  --source-group <source-group>
+                        Existing volume group to use (name or ID) (supported
+                        by --os-volume-api-version 3.14 or later)
+  --group-snapshot <group-snapshot>
+                        Existing group snapshot to use (name or ID) (supported
+                        by --os-volume-api-version 3.14 or later)
+  --name <name>         Name of the volume group.
+  --description <description>
+                        Description of a volume group.
+  --availability-zone <availability-zone>
+                        Availability zone for volume group. (not available if
+                        creating group from source)
+
+output formatters:
+  output formatter options
+
+  -f {json,shell,table,value,yaml}, --format {json,shell,table,value,yaml}
+                        the output format, defaults to table
+  -c COLUMN, --column COLUMN
+                        specify the column(s) to include, can be repeated to
+                        show multiple columns
+
+json formatter:
+  --noindent            whether to disable indenting the JSON
+
+shell formatter:
+  a format a UNIX shell can parse (variable="value")
+
+  --prefix PREFIX       add a prefix to all variable names
+
+table formatter:
+  --max-width <integer>
+                        Maximum display width, <1 to disable. You can also use
+                        the CLIFF_MAX_TERM_WIDTH environment variable, but the
+                        parameter takes precedence.
+  --fit-width           Fit the table to the display width. Implied if --max-
+                        width greater than 0. Set the environment variable
+                        CLIFF_FIT_WIDTH=1 to always enable
+  --print-empty         Print empty table if there is no data to show.

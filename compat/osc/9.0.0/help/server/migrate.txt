@@ -1,0 +1,39 @@
+usage: openstack server migrate [-h] [--live-migration] [--host <hostname>]
+                                [--shared-migration | --block-migration]
+                                [--disk-overcommit | --no-disk-overcommit]
+                                [--wait]
+                                <server>
+
+Migrate server to different host. A migrate operation is implemented as a
+resize operation using the same flavor as the old server. This means that,
+like resize, migrate works by creating a new server using the same flavor and
+copying the contents of the original disk into a new one. As with resize, the
+migrate operation is a two-step process for the user: the first step is to
+perform the migrate, and the second step is to either confirm (verify) success
+and release the old server, or to declare a revert to release the new server
+and restart the old one.
+
+positional arguments:
+  <server>              Server (name or ID)
+
+options:
+  -h, --help            show this help message and exit
+  --live-migration      Live migrate the server; use the ``--host`` option to
+                        specify a target host for the migration which will be
+                        validated by the scheduler
+  --host <hostname>     Migrate the server to the specified host. (supported
+                        with --os-compute-api-version 2.30 or above when used
+                        with the --live-migration option) (supported with
+                        --os-compute-api-version 2.56 or above when used
+                        without the --live-migration option)
+  --shared-migration    Perform a shared live migration (default before --os-
+                        compute-api-version 2.25, auto after)
+  --block-migration     Perform a block live migration (auto-configured from
+                        --os-compute-api-version 2.25)
+  --disk-overcommit     Allow disk over-commit on the destination host
+                        (supported with --os-compute-api-version 2.24 or
+                        below)
+  --no-disk-overcommit  Do not over-commit disk on the destination host
+                        (default) (supported with --os-compute-api-version
+                        2.24 or below)
+  --wait                Wait for migrate to complete

@@ -1,0 +1,46 @@
+usage: openstack server set [-h] [--name <new-name>]
+                            [--password PASSWORD | --no-password]
+                            [--property <key=value>] [--auto-approve]
+                            [--state <state>] [--description <description>]
+                            [--tag <tag>] [--hostname <hostname>]
+                            <server>
+
+Set server properties
+
+positional arguments:
+  <server>              Server (name or ID)
+
+options:
+  -h, --help            show this help message and exit
+  --name <new-name>     New server name
+  --password PASSWORD   Set the server password. This option requires cloud
+                        support.
+  --no-password         Clear the admin password for the server from the
+                        metadata service; note that this action does not
+                        actually change the server password
+  --property <key=value>
+                        Property to add/change for this server (repeat option
+                        to set multiple properties)
+  --auto-approve        Allow server state override without asking for
+                        confirmation
+  --state <state>       New server state.**WARNING** Resetting the state is
+                        intended to work around servers stuck in an
+                        intermediate state, such as deleting. If the server is
+                        in an error state then this is almost never the
+                        correct command to run and you should prefer hard
+                        reboot where possible. In particular, if the server is
+                        in an error state due to a move operation, setting the
+                        state can result in instances that are no longer
+                        usable. Proceed with caution. (admin only)
+  --description <description>
+                        New server description (supported by --os-compute-api-
+                        version 2.19 or above)
+  --tag <tag>           Tag for the server. Specify multiple times to add
+                        multiple tags. (supported by --os-compute-api-version
+                        2.26 or above)
+  --hostname <hostname>
+                        Hostname configured for the server in the metadata
+                        service. A separate utility running in the guest is
+                        required to propagate changes to this value to the
+                        guest OS itself. (supported by --os-compute-api-
+                        version 2.90 or above)

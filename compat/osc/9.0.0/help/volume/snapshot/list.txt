@@ -1,0 +1,66 @@
+usage: openstack volume snapshot list [-h] [-f {csv,json,table,value,yaml}]
+                                      [-c COLUMN]
+                                      [--quote {all,minimal,none,nonnumeric}]
+                                      [--noindent] [--max-width <integer>]
+                                      [--fit-width] [--print-empty]
+                                      [--sort-column SORT_COLUMN]
+                                      [--sort-ascending | --sort-descending]
+                                      [--all-projects] [--project <project>]
+                                      [--project-domain <project-domain>]
+                                      [--long] [--name <name>]
+                                      [--status <status>] [--volume <volume>]
+                                      [--limit <limit>] [--marker <marker>]
+
+List volume snapshots
+
+options:
+  -h, --help            show this help message and exit
+  --all-projects        Include all projects (admin only)
+  --project <project>   Filter results by project (name or ID) (admin only)
+  --project-domain <project-domain>
+                        Domain the project belongs to (name or ID). This can
+                        be used in case collisions between project names
+                        exist.
+  --long                List additional fields in output
+  --name <name>         Filters results by a name.
+  --status <status>     Filters results by a status. ('available', 'error',
+                        'creating', 'deleting' or 'error_deleting')
+  --volume <volume>     Filters results by a volume (name or ID).
+  --limit <limit>       The maximum number of entries to return. If the value
+                        exceeds the server-defined maximum, then the maximum
+                        value will be used.
+  --marker <marker>     The first position in the collection to return results
+                        from. This should be a value that was returned in a
+                        previous request.
+
+output formatters:
+  output formatter options
+
+  -f {csv,json,table,value,yaml}, --format {csv,json,table,value,yaml}
+                        the output format, defaults to table
+  -c COLUMN, --column COLUMN
+                        specify the column(s) to include, can be repeated to
+                        show multiple columns
+  --sort-column SORT_COLUMN
+                        specify the column(s) to sort the data (columns
+                        specified first have a priority, non-existing columns
+                        are ignored), can be repeated
+  --sort-ascending      sort the column(s) in ascending order
+  --sort-descending     sort the column(s) in descending order
+
+CSV Formatter:
+  --quote {all,minimal,none,nonnumeric}
+                        when to include quotes, defaults to nonnumeric
+
+json formatter:
+  --noindent            whether to disable indenting the JSON
+
+table formatter:
+  --max-width <integer>
+                        Maximum display width, <1 to disable. You can also use
+                        the CLIFF_MAX_TERM_WIDTH environment variable, but the
+                        parameter takes precedence.
+  --fit-width           Fit the table to the display width. Implied if --max-
+                        width greater than 0. Set the environment variable
+                        CLIFF_FIT_WIDTH=1 to always enable
+  --print-empty         Print empty table if there is no data to show.

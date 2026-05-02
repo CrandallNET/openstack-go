@@ -1,0 +1,9 @@
+usage: openstack server unrescue [-h] <server>
+
+Restore server from rescue mode
+
+positional arguments:
+  <server>    Server (name or ID)
+
+options:
+  -h, --help  show this help message and exit

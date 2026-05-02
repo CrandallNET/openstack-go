@@ -1,0 +1,10 @@
+usage: openstack endpoint group delete [-h]
+                                       <endpoint-group> [<endpoint-group> ...]
+
+Delete endpoint group(s)
+
+positional arguments:
+  <endpoint-group>  Endpoint group(s) to delete (name or ID)
+
+options:
+  -h, --help        show this help message and exit

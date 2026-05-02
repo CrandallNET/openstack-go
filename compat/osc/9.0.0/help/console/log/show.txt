@@ -1,0 +1,11 @@
+usage: openstack console log show [-h] [--lines <num-lines>] <server>
+
+Show server's console output
+
+positional arguments:
+  <server>             Server to show console log (name or ID)
+
+options:
+  -h, --help           show this help message and exit
+  --lines <num-lines>  Number of lines to display from the end of the log
+                       (default=all)

@@ -1,0 +1,20 @@
+usage: openstack endpoint set [-h] [--region <region-id>]
+                              [--interface <interface>] [--url <url>]
+                              [--service <service>] [--enable | --disable]
+                              <endpoint-id>
+
+Set endpoint properties
+
+positional arguments:
+  <endpoint-id>         Endpoint to modify (ID only)
+
+options:
+  -h, --help            show this help message and exit
+  --region <region-id>  New endpoint region ID
+  --interface <interface>
+                        New endpoint interface type (admin, public or
+                        internal)
+  --url <url>           New endpoint URL
+  --service <service>   New endpoint service (name or ID)
+  --enable              Enable endpoint
+  --disable             Disable endpoint

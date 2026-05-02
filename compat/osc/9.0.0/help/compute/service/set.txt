@@ -1,0 +1,23 @@
+usage: openstack compute service set [-h] [--enable | --disable]
+                                     [--disable-reason <reason>]
+                                     [--up | --down]
+                                     <host> <service>
+
+Set compute service properties
+
+positional arguments:
+  <host>                Name of host
+  <service>             Name of service (Binary name), for example ``nova-
+                        compute``
+
+options:
+  -h, --help            show this help message and exit
+  --enable              Enable service
+  --disable             Disable service
+  --disable-reason <reason>
+                        Reason for disabling the service (in quotes). Should
+                        be used with --disable option.
+  --up                  Force up service. Requires ``--os-compute-api-
+                        version`` 2.11 or greater.
+  --down                Force down service. Requires ``--os-compute-api-
+                        version`` 2.11 or greater.

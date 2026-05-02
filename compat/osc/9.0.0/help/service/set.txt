@@ -1,0 +1,20 @@
+usage: openstack service set [-h] [--type <type>] [--name <service-name>]
+                             [--description <description>]
+                             [--enable | --disable]
+                             <service>
+
+Set service properties
+
+positional arguments:
+  <service>             Service to modify (type, name or ID)
+
+options:
+  -h, --help            show this help message and exit
+  --type <type>         New service type (compute, image, identity, volume,
+                        etc)
+  --name <service-name>
+                        New service name
+  --description <description>
+                        New service description
+  --enable              Enable service
+  --disable             Disable service

@@ -1,0 +1,10 @@
+usage: openstack object delete [-h] <container> <object> [<object> ...]
+
+Delete object from container
+
+positional arguments:
+  <container>  Delete object(s) from <container>
+  <object>     Object(s) to delete
+
+options:
+  -h, --help   show this help message and exit

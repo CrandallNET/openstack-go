@@ -1,0 +1,9 @@
+usage: openstack endpoint delete [-h] <endpoint-id> [<endpoint-id> ...]
+
+Delete endpoint(s)
+
+positional arguments:
+  <endpoint-id>  Endpoint(s) to delete (ID only)
+
+options:
+  -h, --help     show this help message and exit

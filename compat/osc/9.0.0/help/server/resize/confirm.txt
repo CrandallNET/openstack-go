@@ -1,0 +1,10 @@
+usage: openstack server resize confirm [-h] <server>
+
+Confirm server resize. Confirm (verify) success of resize operation and
+release the old server.
+
+positional arguments:
+  <server>    Server (name or ID)
+
+options:
+  -h, --help  show this help message and exit

@@ -1,0 +1,21 @@
+usage: openstack server unset [-h] [--property <key> | --all-properties]
+                              [--description] [--tag <tag> | --all-tags]
+                              <server>
+
+Unset server properties and tags
+
+positional arguments:
+  <server>          Server (name or ID)
+
+options:
+  -h, --help        show this help message and exit
+  --property <key>  Property key to remove from server (repeat option to
+                    remove multiple values)
+  --all-properties  Remove all properties
+  --description     Unset server description (supported by --os-compute-api-
+                    version 2.19 or above)
+  --tag <tag>       Tag to remove from the server. Specify multiple times to
+                    remove multiple tags. (supported by --os-compute-api-
+                    version 2.26 or above)
+  --all-tags        Remove all tags (supported by --os-compute-api-version
+                    2.26 or above)

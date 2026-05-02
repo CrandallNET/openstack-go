@@ -1,0 +1,12 @@
+usage: openstack local ip association delete [-h]
+                                             <local-ip> <fixed-port-id>
+                                             [<fixed-port-id> ...]
+
+Delete Local IP association(s)
+
+positional arguments:
+  <local-ip>       Local IP that the port association belongs to (Name or ID)
+  <fixed-port-id>  The fixed port ID of Local IP Association
+
+options:
+  -h, --help       show this help message and exit

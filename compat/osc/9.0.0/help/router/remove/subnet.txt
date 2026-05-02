@@ -1,0 +1,10 @@
+usage: openstack router remove subnet [-h] <router> <subnet>
+
+Remove a subnet from a router
+
+positional arguments:
+  <router>    Router from which the subnet will be removed (name or ID)
+  <subnet>    Subnet to be removed (name or ID)
+
+options:
+  -h, --help  show this help message and exit

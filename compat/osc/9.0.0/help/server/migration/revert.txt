@@ -1,0 +1,10 @@
+usage: openstack server migration revert [-h] <server>
+
+Revert server migration. Revert the migration operation. Release the new
+server and restart the old one.
+
+positional arguments:
+  <server>    Server (name or ID)
+
+options:
+  -h, --help  show this help message and exit

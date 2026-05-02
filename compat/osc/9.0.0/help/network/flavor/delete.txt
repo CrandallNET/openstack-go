@@ -1,0 +1,9 @@
+usage: openstack network flavor delete [-h] <flavor> [<flavor> ...]
+
+Delete network flavors
+
+positional arguments:
+  <flavor>    Flavor(s) to delete (name or ID)
+
+options:
+  -h, --help  show this help message and exit

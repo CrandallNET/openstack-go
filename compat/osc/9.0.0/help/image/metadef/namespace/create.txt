@@ -1,0 +1,54 @@
+usage: openstack image metadef namespace create [-h]
+                                                [-f {json,shell,table,value,yaml}]
+                                                [-c COLUMN] [--noindent]
+                                                [--prefix PREFIX]
+                                                [--max-width <integer>]
+                                                [--fit-width] [--print-empty]
+                                                [--display-name <display_name>]
+                                                [--description <description>]
+                                                [--public | --private]
+                                                [--protected | --unprotected]
+                                                <namespace>
+
+Create a metadef namespace
+
+positional arguments:
+  <namespace>           New metadef namespace name
+
+options:
+  -h, --help            show this help message and exit
+  --display-name <display_name>
+                        A user-friendly name for the namespace.
+  --description <description>
+                        A description of the namespace
+  --public              Set namespace visibility 'public'
+  --private             Set namespace visibility 'private'
+  --protected           Prevent metadef namespace from being deleted
+  --unprotected         Allow metadef namespace to be deleted (default)
+
+output formatters:
+  output formatter options
+
+  -f {json,shell,table,value,yaml}, --format {json,shell,table,value,yaml}
+                        the output format, defaults to table
+  -c COLUMN, --column COLUMN
+                        specify the column(s) to include, can be repeated to
+                        show multiple columns
+
+json formatter:
+  --noindent            whether to disable indenting the JSON
+
+shell formatter:
+  a format a UNIX shell can parse (variable="value")
+
+  --prefix PREFIX       add a prefix to all variable names
+
+table formatter:
+  --max-width <integer>
+                        Maximum display width, <1 to disable. You can also use
+                        the CLIFF_MAX_TERM_WIDTH environment variable, but the
+                        parameter takes precedence.
+  --fit-width           Fit the table to the display width. Implied if --max-
+                        width greater than 0. Set the environment variable
+                        CLIFF_FIT_WIDTH=1 to always enable
+  --print-empty         Print empty table if there is no data to show.

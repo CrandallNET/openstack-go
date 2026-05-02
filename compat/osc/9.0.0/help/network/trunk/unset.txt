@@ -1,0 +1,11 @@
+usage: openstack network trunk unset [-h] --subport <subport> <trunk>
+
+Unset subports from a given network trunk
+
+positional arguments:
+  <trunk>              Unset subports from this trunk (name or ID)
+
+options:
+  -h, --help           show this help message and exit
+  --subport <subport>  Subport to unset (name or ID of the port) (repeat
+                       option to unset multiple subports)

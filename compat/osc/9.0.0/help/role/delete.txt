@@ -1,0 +1,10 @@
+usage: openstack role delete [-h] [--domain <domain>] <role> [<role> ...]
+
+Delete role(s)
+
+positional arguments:
+  <role>             Role(s) to delete (name or ID)
+
+options:
+  -h, --help         show this help message and exit
+  --domain <domain>  Domain the role belongs to (name or ID)

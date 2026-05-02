@@ -1,0 +1,21 @@
+usage: openstack volume group failover [-h] [--allow-attached-volume]
+                                       [--disallow-attached-volume]
+                                       [--secondary-backend-id <backend_id>]
+                                       <group>
+
+Failover replication for a volume group. This command requires ``--os-volume-
+api-version`` 3.38 or greater.
+
+positional arguments:
+  <group>               Name or ID of volume group to failover replication
+                        for.
+
+options:
+  -h, --help            show this help message and exit
+  --allow-attached-volume
+                        Allow group with attached volumes to be failed over.
+  --disallow-attached-volume
+                        Disallow group with attached volumes to be failed
+                        over.
+  --secondary-backend-id <backend_id>
+                        Secondary backend ID.

@@ -1,0 +1,11 @@
+usage: openstack server stop [-h] [--all-projects] <server> [<server> ...]
+
+Stop server(s)
+
+positional arguments:
+  <server>        Server(s) to stop (name or ID)
+
+options:
+  -h, --help      show this help message and exit
+  --all-projects  Stop server(s) in another project by name (admin only) (can
+                  be specified using the ALL_PROJECTS envvar)

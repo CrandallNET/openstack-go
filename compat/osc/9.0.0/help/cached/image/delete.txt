@@ -1,0 +1,9 @@
+usage: openstack cached image delete [-h] <image> [<image> ...]
+
+Delete image(s) from cache
+
+positional arguments:
+  <image>     Image(s) to delete (name or ID)
+
+options:
+  -h, --help  show this help message and exit

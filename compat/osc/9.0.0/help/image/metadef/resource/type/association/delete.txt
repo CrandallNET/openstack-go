@@ -1,0 +1,14 @@
+usage: openstack image metadef resource type association delete
+       [-h] [--force] <metadef_namespace> <name> [<name> ...]
+
+Delete metadef resource type association
+
+positional arguments:
+  <metadef_namespace>  The name of the namespace whose details you want to see
+  <name>               The name of the resource type(s) (repeat option to
+                       deletemultiple metadef resource type associations)
+
+options:
+  -h, --help           show this help message and exit
+  --force              Force delete the resource type association if
+                       thenamespace is protected

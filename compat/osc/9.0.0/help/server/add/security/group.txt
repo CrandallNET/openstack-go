@@ -1,0 +1,13 @@
+usage: openstack server add security group [-h]
+                                           <server> <security-group>
+                                           [<security-group> ...]
+
+Add security group(s) to server
+
+positional arguments:
+  <server>          Server (name or ID)
+  <security-group>  Security group(s) to add to the server (name or ID)
+                    (repeat option to add multiple groups)
+
+options:
+  -h, --help        show this help message and exit

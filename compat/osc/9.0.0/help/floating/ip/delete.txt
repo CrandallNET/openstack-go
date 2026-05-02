@@ -1,0 +1,9 @@
+usage: openstack floating ip delete [-h] <floating-ip> [<floating-ip> ...]
+
+Delete floating IP(s)
+
+positional arguments:
+  <floating-ip>  Floating IP(s) to delete (IP address or ID)
+
+options:
+  -h, --help     show this help message and exit

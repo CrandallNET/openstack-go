@@ -1,0 +1,14 @@
+usage: openstack server dump create [-h] <server> [<server> ...]
+
+Create a dump file in server(s) Trigger crash dump in server(s) with features
+like kdump in Linux. It will create a dump file in the server(s) dumping the
+server(s)' memory, and also crash the server(s). This is contingent on guest
+operating system support, and the location of the dump file inside the guest
+will depend on the exact guest operating system. This command requires ``--os-
+compute-api-version`` 2.17 or greater.
+
+positional arguments:
+  <server>    Server(s) to create dump file (name or ID)
+
+options:
+  -h, --help  show this help message and exit

@@ -1,0 +1,14 @@
+usage: openstack resource class set [-h] <name>
+
+Create or validate the existence of single resource class. Unlike ``openstack
+resource class create``, this command also succeeds if the resource class
+already exists, which makes this an idempotent check or create command. This
+command requires at least ``--os-placement-api-version 1.7``.
+
+positional arguments:
+  <name>      Name of the resource class
+
+options:
+  -h, --help  show this help message and exit
+
+This command is provided by the osc-placement plugin.

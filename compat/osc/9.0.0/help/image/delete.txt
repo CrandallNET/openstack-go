@@ -1,0 +1,10 @@
+usage: openstack image delete [-h] [--store <STORE>] <image> [<image> ...]
+
+Delete image(s)
+
+positional arguments:
+  <image>          Image(s) to delete (name or ID)
+
+options:
+  -h, --help       show this help message and exit
+  --store <STORE>  Store to delete image(s) from.

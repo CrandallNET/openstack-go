@@ -1,0 +1,11 @@
+usage: openstack volume transfer request delete [-h]
+                                                <transfer-request>
+                                                [<transfer-request> ...]
+
+Delete volume transfer request(s).
+
+positional arguments:
+  <transfer-request>  Volume transfer request(s) to delete (name or ID)
+
+options:
+  -h, --help          show this help message and exit

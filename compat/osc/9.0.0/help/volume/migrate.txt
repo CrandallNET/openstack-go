@@ -1,0 +1,17 @@
+usage: openstack volume migrate [-h] --host <host> [--force-host-copy]
+                                [--lock-volume]
+                                <volume>
+
+Migrate volume to a new host
+
+positional arguments:
+  <volume>           Volume to migrate (name or ID)
+
+options:
+  -h, --help         show this help message and exit
+  --host <host>      Destination host (takes the form: host@backend-name#pool)
+  --force-host-copy  Enable generic host-based force-migration, which bypasses
+                     driver optimizations
+  --lock-volume      If specified, the volume state will be locked and will
+                     not allow a migration to be aborted (possibly by another
+                     operation)

@@ -1,0 +1,9 @@
+usage: openstack server pause [-h] <server> [<server> ...]
+
+Pause server(s)
+
+positional arguments:
+  <server>    Server(s) to pause (name or ID)
+
+options:
+  -h, --help  show this help message and exit

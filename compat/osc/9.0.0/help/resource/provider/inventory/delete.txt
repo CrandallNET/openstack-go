@@ -1,0 +1,25 @@
+usage: openstack resource provider inventory delete [-h] --resource-class
+                                                    <resource_class>
+                                                    <uuid>
+
+Delete the inventory. Depending on the resource class argument presence,
+delete all inventory for a given resource provider or for a resource
+provider/class pair. Delete all inventories for given resource provider
+requires at least ``--os-placement-api-version 1.5``.
+
+positional arguments:
+  <uuid>                UUID of the resource provider
+
+options:
+  -h, --help            show this help message and exit
+  --resource-class <resource_class>
+                        <resource_class> is an entity that indicates standard
+                        or deployer-specific resources that can be provided by
+                        a resource provider. For example, VCPU, MEMORY_MB,
+                        DISK_GB.
+                        This argument can be omitted starting with ``--os-
+                        placement-api-version 1.5``. If it is omitted all
+                        inventories of the specified resource provider will be
+                        deleted.
+
+This command is provided by the osc-placement plugin.

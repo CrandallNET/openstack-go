@@ -1,0 +1,15 @@
+usage: openstack quota delete [-h] [--all | --compute | --volume | --network]
+                              <project>
+
+Delete configured quota for a project and revert to defaults.
+
+positional arguments:
+  <project>   Delete quotas for this project (name or ID)
+
+options:
+  -h, --help  show this help message and exit
+  --all       Delete project quotas for all services (default)
+  --compute   Delete compute quotas for the project (including network quotas
+              when using nova-network)
+  --volume    Delete volume quotas for the project
+  --network   Delete network quotas for the project

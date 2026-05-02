@@ -1,0 +1,9 @@
+usage: openstack server migrate revert [-h] <server>
+
+DEPRECATED: Use 'server migration revert' instead.
+
+positional arguments:
+  <server>    Server (name or ID)
+
+options:
+  -h, --help  show this help message and exit

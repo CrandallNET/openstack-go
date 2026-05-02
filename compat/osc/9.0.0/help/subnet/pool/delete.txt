@@ -1,0 +1,9 @@
+usage: openstack subnet pool delete [-h] <subnet-pool> [<subnet-pool> ...]
+
+Delete subnet pool(s)
+
+positional arguments:
+  <subnet-pool>  Subnet pool(s) to delete (name or ID)
+
+options:
+  -h, --help     show this help message and exit

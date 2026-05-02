@@ -1,0 +1,11 @@
+usage: openstack network agent add router [-h] [--l3] <agent-id> <router>
+
+Add router to an agent
+
+positional arguments:
+  <agent-id>  Agent to which a router is added (ID only)
+  <router>    Router to be added to an agent (name or ID)
+
+options:
+  -h, --help  show this help message and exit
+  --l3        Add router to an L3 agent

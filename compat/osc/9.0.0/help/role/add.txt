@@ -1,0 +1,38 @@
+usage: openstack role add [-h]
+                          [--system <system> | --domain <domain> | --project <project>]
+                          [--user <user> | --group <group>]
+                          [--group-domain <group-domain>]
+                          [--project-domain <project-domain>]
+                          [--user-domain <user-domain>] [--inherited]
+                          [--role-domain <role-domain>]
+                          <role>
+
+Adds a role assignment to a user or group on the system, a domain, or a
+project
+
+positional arguments:
+  <role>                Role to add to <user> (name or ID)
+
+options:
+  -h, --help            show this help message and exit
+  --system <system>     Include <system> (all)
+  --domain <domain>     Include <domain> (name or ID)
+  --project <project>   Include <project> (name or ID)
+  --user <user>         Include <user> (name or ID)
+  --group <group>       Include <group> (name or ID)
+  --group-domain <group-domain>
+                        Domain the group belongs to (name or ID). This can be
+                        used in case collisions between group names exist.
+  --project-domain <project-domain>
+                        Domain the project belongs to (name or ID). This can
+                        be used in case collisions between project names
+                        exist.
+  --user-domain <user-domain>
+                        Domain the user belongs to (name or ID). This can be
+                        used in case collisions between user names exist.
+  --inherited           Specifies if the role grant is inheritable to the sub
+                        projects
+  --role-domain <role-domain>
+                        Domain the role belongs to (name or ID). This must be
+                        specified when the name of a domain specific role is
+                        used.

@@ -1,0 +1,9 @@
+usage: openstack network meter delete [-h] <meter> [<meter> ...]
+
+Delete network meter
+
+positional arguments:
+  <meter>     Meter to delete (name or ID)
+
+options:
+  -h, --help  show this help message and exit

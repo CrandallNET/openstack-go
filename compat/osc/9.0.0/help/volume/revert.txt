@@ -1,0 +1,10 @@
+usage: openstack volume revert [-h] <snapshot>
+
+Revert a volume to a snapshot.
+
+positional arguments:
+  <snapshot>  Name or ID of the snapshot to restore. The snapshot must be the
+              most recent one known to cinder.
+
+options:
+  -h, --help  show this help message and exit

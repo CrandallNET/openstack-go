@@ -1,0 +1,24 @@
+usage: openstack server resize [-h] (--flavor <flavor> | --confirm | --revert)
+                               [--wait]
+                               <server>
+
+Scale server to a new flavor. A resize operation is implemented by creating a
+new server and copying the contents of the original disk into a new one. It is
+a two-step process for the user: the first step is to perform the resize, and
+the second step is to either confirm (verify) success and release the old
+server or to declare a revert to release the new server and restart the old
+one.
+
+positional arguments:
+  <server>           Server (name or ID)
+
+options:
+  -h, --help         show this help message and exit
+  --flavor <flavor>  Resize server to specified flavor
+  --confirm          **Deprecated** Confirm server resize is complete.
+                     Replaced by the 'openstack server resize confirm' and
+                     'openstack server migration confirm' commands
+  --revert           **Deprecated** Restore server state before resize.
+                     Replaced by the 'openstack server resize revert' and
+                     'openstack server migration revert' commands
+  --wait             Wait for resize to complete

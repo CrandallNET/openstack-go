@@ -1,0 +1,10 @@
+usage: openstack network flavor add profile [-h] <flavor> <service-profile>
+
+Add a service profile to a network flavor
+
+positional arguments:
+  <flavor>           Network flavor (name or ID)
+  <service-profile>  Service profile (ID only)
+
+options:
+  -h, --help         show this help message and exit

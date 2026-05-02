@@ -1,0 +1,23 @@
+usage: openstack image metadef namespace set [-h]
+                                             [--display-name <display_name>]
+                                             [--description <description>]
+                                             [--public | --private]
+                                             [--protected | --unprotected]
+                                             <namespace>
+
+Set metadef namespace properties
+
+positional arguments:
+  <namespace>           Metadef namespace to modify (name)
+
+options:
+  -h, --help            show this help message and exit
+  --display-name <display_name>
+                        Set a user-friendly name for the namespace.
+  --description <description>
+                        Set the description of the namespace
+  --public              Metadef namespace is accessible to the public
+  --private             Metadef namespace is inaccessible to the public
+                        (default)
+  --protected           Prevent metadef namespace from being deleted
+  --unprotected         Allow metadef namespace to be deleted (default)

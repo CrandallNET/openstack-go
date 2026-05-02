@@ -1,0 +1,14 @@
+usage: openstack project delete [-h] [--domain <domain>]
+                                <project> [<project> ...]
+
+Delete project(s). This command will remove specified existing project(s) if
+an active user is authorized to do this. If there are resources managed by
+other services (for example, Nova, Neutron, Cinder) associated with specified
+project(s), delete operation will proceed regardless.
+
+positional arguments:
+  <project>          Project(s) to delete (name or ID)
+
+options:
+  -h, --help         show this help message and exit
+  --domain <domain>  Domain owning <project> (name or ID)

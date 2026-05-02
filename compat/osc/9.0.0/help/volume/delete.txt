@@ -1,0 +1,14 @@
+usage: openstack volume delete [-h] [--force | --cascade] [--remote]
+                               <volume> [<volume> ...]
+
+Delete volume(s)
+
+positional arguments:
+  <volume>    Volume(s) to delete (name or ID)
+
+options:
+  -h, --help  show this help message and exit
+  --force     Attempt forced removal of volume(s), regardless of state
+              (defaults to False)
+  --cascade   Remove any snapshots along with volume(s) (defaults to False)
+  --remote    Specify this parameter to unmanage a volume.

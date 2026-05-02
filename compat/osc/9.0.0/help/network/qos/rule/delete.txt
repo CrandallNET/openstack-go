@@ -1,0 +1,10 @@
+usage: openstack network qos rule delete [-h] <qos-policy> <rule-id>
+
+Delete Network QoS rule
+
+positional arguments:
+  <qos-policy>  QoS policy that contains the rule (name or ID)
+  <rule-id>     Network QoS rule to delete (ID)
+
+options:
+  -h, --help    show this help message and exit

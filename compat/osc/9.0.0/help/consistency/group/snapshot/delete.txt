@@ -1,0 +1,12 @@
+usage: openstack consistency group snapshot delete [-h]
+                                                   <consistency-group-snapshot>
+                                                   [<consistency-group-snapshot> ...]
+
+Delete consistency group snapshot(s).
+
+positional arguments:
+  <consistency-group-snapshot>
+                        Consistency group snapshot(s) to delete (name or ID)
+
+options:
+  -h, --help            show this help message and exit

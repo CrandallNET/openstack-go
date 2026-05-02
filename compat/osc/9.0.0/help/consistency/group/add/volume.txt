@@ -1,0 +1,13 @@
+usage: openstack consistency group add volume [-h]
+                                              <consistency-group> <volume>
+                                              [<volume> ...]
+
+Add volume(s) to consistency group
+
+positional arguments:
+  <consistency-group>  Consistency group to contain <volume> (name or ID)
+  <volume>             Volume(s) to add to <consistency-group> (name or ID)
+                       (repeat option to add multiple volumes)
+
+options:
+  -h, --help           show this help message and exit

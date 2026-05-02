@@ -1,0 +1,10 @@
+usage: openstack server remove floating ip [-h] <server> <ip-address>
+
+Remove floating IP address from server
+
+positional arguments:
+  <server>      Server to remove the floating IP address from (name or ID)
+  <ip-address>  Floating IP address to remove from server (IP only)
+
+options:
+  -h, --help    show this help message and exit

@@ -1,0 +1,12 @@
+usage: openstack object save [-h] [--file <filename>] <container> <object>
+
+Save object locally
+
+positional arguments:
+  <container>        Download <object> from <container>
+  <object>           Object to save
+
+options:
+  -h, --help         show this help message and exit
+  --file <filename>  Destination filename (defaults to object name); using '-'
+                     as the filename will print the file to stdout

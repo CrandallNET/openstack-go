@@ -1,0 +1,33 @@
+usage: openstack project set [-h] [--name <name>] [--domain <domain>]
+                             [--description <description>]
+                             [--enable | --disable] [--property <key=value>]
+                             [--immutable | --no-immutable] [--tag <tag>]
+                             [--clear-tags] [--remove-tag <tag>]
+                             <project>
+
+Set project properties
+
+positional arguments:
+  <project>             Project to modify (name or ID)
+
+options:
+  -h, --help            show this help message and exit
+  --name <name>         Set project name
+  --domain <domain>     Domain owning <project> (name or ID)
+  --description <description>
+                        Set project description
+  --enable              Enable project
+  --disable             Disable project
+  --property <key=value>
+                        Set a property on <project> (repeat option to set
+                        multiple properties)
+  --immutable           Make resource immutable. An immutable project may not
+                        be deleted or modified except to remove the immutable
+                        flag
+  --no-immutable        Make resource mutable (default)
+  --tag <tag>           Tag to be added to the project (repeat option to set
+                        multiple tags)
+  --clear-tags          Clear tags associated with the project. Specify both
+                        --tag and --clear-tags to overwrite current tags
+  --remove-tag <tag>    Tag to be deleted from the project (repeat option to
+                        delete multiple tags)

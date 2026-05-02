@@ -1,0 +1,9 @@
+usage: openstack subnet delete [-h] <subnet> [<subnet> ...]
+
+Delete subnet(s)
+
+positional arguments:
+  <subnet>    Subnet(s) to delete (name or ID)
+
+options:
+  -h, --help  show this help message and exit

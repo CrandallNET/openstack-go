@@ -1,0 +1,49 @@
+usage: openstack router remove gateway [-h] [-f {json,shell,table,value,yaml}]
+                                       [-c COLUMN] [--noindent]
+                                       [--prefix PREFIX]
+                                       [--max-width <integer>] [--fit-width]
+                                       [--print-empty]
+                                       [--fixed-ip subnet=<subnet>,ip-address=<ip-address>]
+                                       <router> <network>
+
+Remove router gateway
+
+positional arguments:
+  <router>              Router to modify (name or ID).
+  <network>             External Network to remove a router gateway from (name
+                        or ID)
+
+options:
+  -h, --help            show this help message and exit
+  --fixed-ip subnet=<subnet>,ip-address=<ip-address>
+                        IP and/or subnet (name or ID) on the external gateway
+                        which is used to identify a particular gateway if
+                        multiple are attached to the same network:
+                        subnet=<subnet>,ip-address=<ip-address>
+
+output formatters:
+  output formatter options
+
+  -f {json,shell,table,value,yaml}, --format {json,shell,table,value,yaml}
+                        the output format, defaults to table
+  -c COLUMN, --column COLUMN
+                        specify the column(s) to include, can be repeated to
+                        show multiple columns
+
+json formatter:
+  --noindent            whether to disable indenting the JSON
+
+shell formatter:
+  a format a UNIX shell can parse (variable="value")
+
+  --prefix PREFIX       add a prefix to all variable names
+
+table formatter:
+  --max-width <integer>
+                        Maximum display width, <1 to disable. You can also use
+                        the CLIFF_MAX_TERM_WIDTH environment variable, but the
+                        parameter takes precedence.
+  --fit-width           Fit the table to the display width. Implied if --max-
+                        width greater than 0. Set the environment variable
+                        CLIFF_FIT_WIDTH=1 to always enable
+  --print-empty         Print empty table if there is no data to show.

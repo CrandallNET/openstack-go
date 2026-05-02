@@ -1,0 +1,29 @@
+{
+  "generated_at": "2026-05-02T22:50:21Z",
+  "oracle_path": "/Users/ken/.local/bin/openstack",
+  "oracle_version_output": "openstack 9.0.0",
+  "compatibility_target": "9.0.0",
+  "command_group_count": 9,
+  "command_count": 594,
+  "help_snapshot_count": 594,
+  "generator": "tools/osc-catalog",
+  "generation_commands": [
+    "/Users/ken/.local/bin/openstack --version",
+    "/Users/ken/.local/bin/openstack command list -f json",
+    "/Users/ken/.local/bin/openstack --help",
+    "/Users/ken/.local/bin/openstack complete",
+    "/Users/ken/.local/bin/openstack help \u003ccommand\u003e"
+  ],
+  "command_count_by_group": {
+    "openstack.cli": 2,
+    "openstack.common": 11,
+    "openstack.compute.v2": 96,
+    "openstack.identity.v3": 128,
+    "openstack.image.v2": 41,
+    "openstack.network.v2": 175,
+    "openstack.object_store.v1": 17,
+    "openstack.placement.v1": 31,
+    "openstack.volume.v3": 93
+  },
+  "secrets_redaction_note": "Generated artifacts must not include clouds.yaml contents, tokens, passwords, application credentials, or unsanitized debug logs."
+}

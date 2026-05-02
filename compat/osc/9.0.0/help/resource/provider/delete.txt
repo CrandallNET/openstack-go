@@ -1,0 +1,11 @@
+usage: openstack resource provider delete [-h] <uuid>
+
+Delete a resource provider
+
+positional arguments:
+  <uuid>      UUID of the resource provider
+
+options:
+  -h, --help  show this help message and exit
+
+This command is provided by the osc-placement plugin.

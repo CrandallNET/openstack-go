@@ -1,0 +1,75 @@
+usage: openstack project list [-h] [-f {csv,json,table,value,yaml}]
+                              [-c COLUMN]
+                              [--quote {all,minimal,none,nonnumeric}]
+                              [--noindent] [--max-width <integer>]
+                              [--fit-width] [--print-empty]
+                              [--sort-column SORT_COLUMN]
+                              [--sort-ascending | --sort-descending]
+                              [--domain <domain>] [--parent <parent>]
+                              [--user <user>] [--my-projects] [--long]
+                              [--sort <key>[:<direction>]] [--enabled]
+                              [--disabled] [--tags <tag>[,<tag>,...]]
+                              [--tags-any <tag>[,<tag>,...]]
+                              [--not-tags <tag>[,<tag>,...]]
+                              [--not-tags-any <tag>[,<tag>,...]]
+
+List projects
+
+options:
+  -h, --help            show this help message and exit
+  --domain <domain>     Filter projects by <domain> (name or ID)
+  --parent <parent>     Filter projects whose parent is <parent> (name or ID)
+  --user <user>         Filter projects by <user> (name or ID)
+  --my-projects         List projects for the authenticated user. Supersedes
+                        other filters.
+  --long                List additional fields in output
+  --sort <key>[:<direction>]
+                        Sort output by selected keys and directions (asc or
+                        desc) (default: asc), repeat this option to specify
+                        multiple keys and directions.
+  --enabled             List only enabled projects
+  --disabled            List only disabled projects
+  --tags <tag>[,<tag>,...]
+                        List projects which have all given tag(s) (Comma-
+                        separated list of tags)
+  --tags-any <tag>[,<tag>,...]
+                        List projects which have any given tag(s) (Comma-
+                        separated list of tags)
+  --not-tags <tag>[,<tag>,...]
+                        Exclude projects which have all given tag(s) (Comma-
+                        separated list of tags)
+  --not-tags-any <tag>[,<tag>,...]
+                        Exclude projects which have any given tag(s) (Comma-
+                        separated list of tags)
+
+output formatters:
+  output formatter options
+
+  -f {csv,json,table,value,yaml}, --format {csv,json,table,value,yaml}
+                        the output format, defaults to table
+  -c COLUMN, --column COLUMN
+                        specify the column(s) to include, can be repeated to
+                        show multiple columns
+  --sort-column SORT_COLUMN
+                        specify the column(s) to sort the data (columns
+                        specified first have a priority, non-existing columns
+                        are ignored), can be repeated
+  --sort-ascending      sort the column(s) in ascending order
+  --sort-descending     sort the column(s) in descending order
+
+CSV Formatter:
+  --quote {all,minimal,none,nonnumeric}
+                        when to include quotes, defaults to nonnumeric
+
+json formatter:
+  --noindent            whether to disable indenting the JSON
+
+table formatter:
+  --max-width <integer>
+                        Maximum display width, <1 to disable. You can also use
+                        the CLIFF_MAX_TERM_WIDTH environment variable, but the
+                        parameter takes precedence.
+  --fit-width           Fit the table to the display width. Implied if --max-
+                        width greater than 0. Set the environment variable
+                        CLIFF_FIT_WIDTH=1 to always enable
+  --print-empty         Print empty table if there is no data to show.

@@ -1,0 +1,11 @@
+usage: openstack server start [-h] [--all-projects] <server> [<server> ...]
+
+Start server(s)
+
+positional arguments:
+  <server>        Server(s) to start (name or ID)
+
+options:
+  -h, --help      show this help message and exit
+  --all-projects  Start server(s) in another project by name (admin only) (can
+                  be specified using the ALL_PROJECTS envvar)

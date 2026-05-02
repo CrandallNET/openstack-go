@@ -1,0 +1,11 @@
+usage: openstack server migration force complete [-h] <server> <migration>
+
+Force an ongoing live migration to complete. This command requires ``--os-
+compute-api-version`` 2.22 or greater.
+
+positional arguments:
+  <server>     Server (name or ID)
+  <migration>  Migration (ID)
+
+options:
+  -h, --help   show this help message and exit

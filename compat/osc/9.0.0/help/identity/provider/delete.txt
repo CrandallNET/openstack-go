@@ -1,0 +1,11 @@
+usage: openstack identity provider delete [-h]
+                                          <identity-provider>
+                                          [<identity-provider> ...]
+
+Delete identity provider(s)
+
+positional arguments:
+  <identity-provider>  Identity provider(s) to delete
+
+options:
+  -h, --help           show this help message and exit

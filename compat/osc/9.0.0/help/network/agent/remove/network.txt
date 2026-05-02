@@ -1,0 +1,12 @@
+usage: openstack network agent remove network [-h] [--dhcp]
+                                              <agent-id> <network>
+
+Remove network from an agent.
+
+positional arguments:
+  <agent-id>  Agent to which a network is removed (ID only)
+  <network>   Network to be removed from an agent (name or ID)
+
+options:
+  -h, --help  show this help message and exit
+  --dhcp      Remove network from DHCP agent

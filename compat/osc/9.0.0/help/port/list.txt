@@ -1,0 +1,96 @@
+usage: openstack port list [-h] [-f {csv,json,table,value,yaml}] [-c COLUMN]
+                           [--quote {all,minimal,none,nonnumeric}]
+                           [--noindent] [--max-width <integer>] [--fit-width]
+                           [--print-empty] [--sort-column SORT_COLUMN]
+                           [--sort-ascending | --sort-descending]
+                           [--device-owner <device-owner>] [--host <host-id>]
+                           [--network <network>]
+                           [--router <router> | --server <server> | --device-id <device-id>]
+                           [--mac-address <mac-address>] [--long]
+                           [--project <project>] [--name <name>]
+                           [--security-group <security-group>]
+                           [--status <status>]
+                           [--project-domain <project-domain>]
+                           [--fixed-ip subnet=<subnet>,ip-address=<ip-address>,ip-substring=<ip-substring>]
+                           [--tags <tag>[,<tag>,...]]
+                           [--any-tags <tag>[,<tag>,...]]
+                           [--not-tags <tag>[,<tag>,...]]
+                           [--not-any-tags <tag>[,<tag>,...]]
+
+List ports
+
+options:
+  -h, --help            show this help message and exit
+  --device-owner <device-owner>
+                        List only ports with the specified device owner. This
+                        is the entity that uses the port (for example,
+                        network:dhcp).
+  --host <host-id>      List only ports bound to this host ID
+  --network <network>   List only ports connected to this network (name or ID)
+  --router <router>     List only ports attached to this router (name or ID)
+  --server <server>     List only ports attached to this server (name or ID)
+  --device-id <device-id>
+                        List only ports with the specified device ID
+  --mac-address <mac-address>
+                        List only ports with the specified MAC address
+  --long                List additional fields in output
+  --project <project>   List only ports with the specified project (name or
+                        ID)
+  --name <name>         List only ports with the specified name
+  --security-group <security-group>
+                        List only ports associated with this security group
+  --status <status>     List only ports with the specified status ('ACTIVE',
+                        'BUILD', 'DOWN', 'ERROR')
+  --project-domain <project-domain>
+                        Domain the project belongs to (name or ID). This can
+                        be used in case collisions between project names
+                        exist.
+  --fixed-ip subnet=<subnet>,ip-address=<ip-address>,ip-substring=<ip-substring>
+                        Desired IP and/or subnet for filtering ports (name or
+                        ID): subnet=<subnet>,ip-address=<ip-address>,ip-
+                        substring=<ip-substring> (repeat option to filter
+                        multiple fixed IP addresses)
+  --tags <tag>[,<tag>,...]
+                        List ports which have all given tag(s) (Comma-
+                        separated list of tags)
+  --any-tags <tag>[,<tag>,...]
+                        List ports which have any given tag(s) (Comma-
+                        separated list of tags)
+  --not-tags <tag>[,<tag>,...]
+                        Exclude ports which have all given tag(s) (Comma-
+                        separated list of tags)
+  --not-any-tags <tag>[,<tag>,...]
+                        Exclude ports which have any given tag(s) (Comma-
+                        separated list of tags)
+
+output formatters:
+  output formatter options
+
+  -f {csv,json,table,value,yaml}, --format {csv,json,table,value,yaml}
+                        the output format, defaults to table
+  -c COLUMN, --column COLUMN
+                        specify the column(s) to include, can be repeated to
+                        show multiple columns
+  --sort-column SORT_COLUMN
+                        specify the column(s) to sort the data (columns
+                        specified first have a priority, non-existing columns
+                        are ignored), can be repeated
+  --sort-ascending      sort the column(s) in ascending order
+  --sort-descending     sort the column(s) in descending order
+
+CSV Formatter:
+  --quote {all,minimal,none,nonnumeric}
+                        when to include quotes, defaults to nonnumeric
+
+json formatter:
+  --noindent            whether to disable indenting the JSON
+
+table formatter:
+  --max-width <integer>
+                        Maximum display width, <1 to disable. You can also use
+                        the CLIFF_MAX_TERM_WIDTH environment variable, but the
+                        parameter takes precedence.
+  --fit-width           Fit the table to the display width. Implied if --max-
+                        width greater than 0. Set the environment variable
+                        CLIFF_FIT_WIDTH=1 to always enable
+  --print-empty         Print empty table if there is no data to show.

@@ -1,0 +1,88 @@
+usage: openstack volume create [-h] [-f {json,shell,table,value,yaml}]
+                               [-c COLUMN] [--noindent] [--prefix PREFIX]
+                               [--max-width <integer>] [--fit-width]
+                               [--print-empty] [--size <size>]
+                               [--type <volume-type>]
+                               [--image <image> | --snapshot <snapshot> | --source <volume> | --backup <backup> | --remote-source <key=value>]
+                               [--description <description>]
+                               [--availability-zone <availability-zone>]
+                               [--consistency-group consistency-group>]
+                               [--property <key=value>] [--hint <key=value>]
+                               [--bootable | --non-bootable]
+                               [--read-only | --read-write] [--host <host>]
+                               [--cluster <cluster>]
+                               [<name>]
+
+Create new volume
+
+positional arguments:
+  <name>                Volume name
+
+options:
+  -h, --help            show this help message and exit
+  --size <size>         Volume size in GB (required unless --snapshot or
+                        --source specified)
+  --type <volume-type>  Set the type of volume
+  --image <image>       Use <image> as source of volume (name or ID)
+  --snapshot <snapshot>
+                        Use <snapshot> as source of volume (name or ID)
+  --source <volume>     Volume to clone (name or ID)
+  --backup <backup>     Restore backup to a volume (name or ID) (supported by
+                        --os-volume-api-version 3.47 or later)
+  --remote-source <key=value>
+                        The attribute(s) of the existing remote volume (admin
+                        required) (repeat option to specify multiple
+                        attributes, e.g.: '--remote-source source-
+                        name=test_name --remote-source source-id=test_id')
+  --description <description>
+                        Volume description
+  --availability-zone <availability-zone>
+                        Create volume in <availability-zone>
+  --consistency-group consistency-group>
+                        Consistency group where the new volume belongs to
+  --property <key=value>
+                        Set a property to this volume (repeat option to set
+                        multiple properties)
+  --hint <key=value>    Arbitrary scheduler hint key-value pairs to help
+                        creating a volume. Repeat the option to set multiple
+                        hints. 'same_host' and 'different_host' get values
+                        appended when repeated, all other keys take the last
+                        given value
+  --bootable            Mark volume as bootable
+  --non-bootable        Mark volume as non-bootable (default)
+  --read-only           Set volume to read-only access mode
+  --read-write          Set volume to read-write access mode (default)
+  --host <host>         Cinder host on which the existing volume resides;
+                        takes the form: host@backend-name#pool. This is only
+                        used along with the --remote-source option.
+  --cluster <cluster>   Cinder cluster on which the existing volume resides;
+                        takes the form: cluster@backend-name#pool. This is
+                        only used along with the --remote-source option.
+                        (supported by --os-volume-api-version 3.16 or above)
+
+output formatters:
+  output formatter options
+
+  -f {json,shell,table,value,yaml}, --format {json,shell,table,value,yaml}
+                        the output format, defaults to table
+  -c COLUMN, --column COLUMN
+                        specify the column(s) to include, can be repeated to
+                        show multiple columns
+
+json formatter:
+  --noindent            whether to disable indenting the JSON
+
+shell formatter:
+  a format a UNIX shell can parse (variable="value")
+
+  --prefix PREFIX       add a prefix to all variable names
+
+table formatter:
+  --max-width <integer>
+                        Maximum display width, <1 to disable. You can also use
+                        the CLIFF_MAX_TERM_WIDTH environment variable, but the
+                        parameter takes precedence.
+  --fit-width           Fit the table to the display width. Implied if --max-
+                        width greater than 0. Set the environment variable
+                        CLIFF_FIT_WIDTH=1 to always enable
+  --print-empty         Print empty table if there is no data to show.

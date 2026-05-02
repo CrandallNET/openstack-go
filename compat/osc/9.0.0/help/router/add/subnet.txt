@@ -1,0 +1,10 @@
+usage: openstack router add subnet [-h] <router> <subnet>
+
+Add a subnet to a router
+
+positional arguments:
+  <router>    Router to which subnet will be added (name or ID)
+  <subnet>    Subnet to be added (name or ID)
+
+options:
+  -h, --help  show this help message and exit

@@ -1,0 +1,11 @@
+usage: openstack aggregate cache image [-h] <aggregate> <image> [<image> ...]
+
+Request image caching for aggregate
+
+positional arguments:
+  <aggregate>  Aggregate (name or ID)
+  <image>      Image ID to request caching for aggregate (name or ID). May be
+               specified multiple times.
+
+options:
+  -h, --help   show this help message and exit

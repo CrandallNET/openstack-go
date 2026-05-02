@@ -1,0 +1,11 @@
+usage: openstack container delete [-h] [--recursive]
+                                  <container> [<container> ...]
+
+Delete container
+
+positional arguments:
+  <container>      Container(s) to delete
+
+options:
+  -h, --help       show this help message and exit
+  --recursive, -r  Recursively delete objects and container

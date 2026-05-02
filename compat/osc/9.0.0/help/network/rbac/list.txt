@@ -1,0 +1,57 @@
+usage: openstack network rbac list [-h] [-f {csv,json,table,value,yaml}]
+                                   [-c COLUMN]
+                                   [--quote {all,minimal,none,nonnumeric}]
+                                   [--noindent] [--max-width <integer>]
+                                   [--fit-width] [--print-empty]
+                                   [--sort-column SORT_COLUMN]
+                                   [--sort-ascending | --sort-descending]
+                                   [--type <type>] [--action <action>]
+                                   [--target-project <target-project>]
+                                   [--long]
+
+List network RBAC policies
+
+options:
+  -h, --help            show this help message and exit
+  --type <type>         List only network RBAC policies with the specified
+                        object type ("address_group", "address_scope",
+                        "security_group", "subnetpool", "qos_policy" or
+                        "network")
+  --action <action>     List only network RBAC policies with the specified
+                        action ("access_as_external" or "access_as_shared")
+  --target-project <target-project>
+                        List only network RBAC policies with the specified
+                        target project (name or ID)
+  --long                List additional fields in output
+
+output formatters:
+  output formatter options
+
+  -f {csv,json,table,value,yaml}, --format {csv,json,table,value,yaml}
+                        the output format, defaults to table
+  -c COLUMN, --column COLUMN
+                        specify the column(s) to include, can be repeated to
+                        show multiple columns
+  --sort-column SORT_COLUMN
+                        specify the column(s) to sort the data (columns
+                        specified first have a priority, non-existing columns
+                        are ignored), can be repeated
+  --sort-ascending      sort the column(s) in ascending order
+  --sort-descending     sort the column(s) in descending order
+
+CSV Formatter:
+  --quote {all,minimal,none,nonnumeric}
+                        when to include quotes, defaults to nonnumeric
+
+json formatter:
+  --noindent            whether to disable indenting the JSON
+
+table formatter:
+  --max-width <integer>
+                        Maximum display width, <1 to disable. You can also use
+                        the CLIFF_MAX_TERM_WIDTH environment variable, but the
+                        parameter takes precedence.
+  --fit-width           Fit the table to the display width. Implied if --max-
+                        width greater than 0. Set the environment variable
+                        CLIFF_FIT_WIDTH=1 to always enable
+  --print-empty         Print empty table if there is no data to show.

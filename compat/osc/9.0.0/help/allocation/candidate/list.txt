@@ -1,0 +1,130 @@
+usage: openstack allocation candidate list [-h]
+                                           [-f {csv,json,table,value,yaml}]
+                                           [-c COLUMN]
+                                           [--quote {all,minimal,none,nonnumeric}]
+                                           [--noindent]
+                                           [--max-width <integer>]
+                                           [--fit-width] [--print-empty]
+                                           [--sort-column SORT_COLUMN]
+                                           [--sort-ascending | --sort-descending]
+                                           [--resource <resource_class>=<value>]
+                                           [--limit <limit>]
+                                           [--required <required>]
+                                           [--forbidden <forbidden>]
+                                           [--member-of <member_of>]
+                                           [--group <group>]
+                                           [--group-policy <group_policy>]
+
+List allocation candidates. Returns a representation of a collection of
+allocation requests and resource provider summaries. Each allocation request
+has information to issue an ``openstack resource provider allocation set``
+request to claim resources against a related set of resource providers. As
+several allocation requests are available its necessary to select one. To make
+a decision, resource provider summaries are provided with the
+inventory/capacity information. For example:: $ export
+OS_PLACEMENT_API_VERSION=1.10 $ openstack allocation candidate list --resource
+VCPU=1 +---+------------+-------------------------+-------------------------+
+| # | allocation | resource provider | inventory used/capacity |
++---+------------+-------------------------+-------------------------+ | 1 |
+VCPU=1 | 66bcaca9-9263-45b1-a569 | VCPU=0/128 | | | | -ea708ff7a968 | |
++---+------------+-------------------------+-------------------------+ In this
+case, the user is looking for resource providers that can have capacity to
+allocate 1 ``VCPU`` resource class. There is one resource provider that can
+serve that allocation request and that resource providers current ``VCPU``
+inventory used is 0 and available capacity is 128. This command requires at
+least ``--os-placement-api-version 1.10``.
+
+options:
+  -h, --help            show this help message and exit
+  --resource <resource_class>=<value>
+                        String indicating an amount of resource of a specified
+                        class that providers in each allocation request must
+                        collectively have the capacity and availability to
+                        serve. Can be specified multiple times per resource
+                        class. For example: ``--resource VCPU=4 --resource
+                        DISK_GB=64 --resource MEMORY_MB=2048``
+  --limit <limit>       A positive integer to limit the maximum number of
+                        allocation candidates. This option requires at least
+                        ``--os-placement-api-version 1.16``.
+  --required <required>
+                        A required trait. May be repeated. Allocation
+                        candidates must collectively contain all of the
+                        required traits. This option requires at least ``--os-
+                        placement-api-version 1.17``. Since ``--os-placement-
+                        api-version 1.39`` the value of this parameter can be
+                        a comma separated list of trait names to express OR
+                        relationship between those traits.
+  --forbidden <forbidden>
+                        A forbidden trait. May be repeated. Returned
+                        allocation candidates must not contain any of the
+                        specified traits. This option requires at least
+                        ``--os-placement-api-version 1.22``.
+  --member-of <member_of>
+                        A list of comma-separated UUIDs of the resource
+                        provider aggregates. The returned allocation
+                        candidates must be associated with at least one of the
+                        aggregates identified by uuid. This param requires at
+                        least ``--os-placement-api-version 1.21`` and can be
+                        repeated to add(restrict) the condition with ``--os-
+                        placement-api-version 1.24`` or greater. For example,
+                        to get candidates in either of agg1 or agg2 and
+                        definitely in agg3, specify:
+                        ``--member_of <agg1>,<agg2> --member_of <agg3>``
+  --group <group>       An integer to group granular requests. If specified,
+                        following given options of resources,
+                        required/forbidden traits, and aggregate are
+                        associated to that group and will be satisfied by the
+                        same resource provider in the response. Can be
+                        repeated to get candidates from multiple resource
+                        providers in the same resource provider tree. For
+                        example, ``--group 1 --resource VCPU=3 --required
+                        HW_CPU_X86_AVX --group 2 --resource VCPU=2 --required
+                        HW_CPU_X86_SSE`` will provide candidates where three
+                        VCPUs comes from a provider with ``HW_CPU_X86_AVX``
+                        trait and two VCPUs from a provider with
+                        ``HW_CPU_X86_SSE`` trait. This option requires at
+                        least ``--os-placement-api-version 1.25`` or greater,
+                        but to have placement server be aware of resource
+                        provider tree, use ``--os-placement-api-version 1.29``
+                        or greater.
+  --group-policy <group_policy>
+                        This indicates how the groups should interact when
+                        multiple groups are supplied. With group_policy=none
+                        (default), separate groups may or may not be satisfied
+                        by the same provider. With group_policy=isolate,
+                        numbered groups are guaranteed to be satisfied by
+                        different providers.
+
+output formatters:
+  output formatter options
+
+  -f {csv,json,table,value,yaml}, --format {csv,json,table,value,yaml}
+                        the output format, defaults to table
+  -c COLUMN, --column COLUMN
+                        specify the column(s) to include, can be repeated to
+                        show multiple columns
+  --sort-column SORT_COLUMN
+                        specify the column(s) to sort the data (columns
+                        specified first have a priority, non-existing columns
+                        are ignored), can be repeated
+  --sort-ascending      sort the column(s) in ascending order
+  --sort-descending     sort the column(s) in descending order
+
+CSV Formatter:
+  --quote {all,minimal,none,nonnumeric}
+                        when to include quotes, defaults to nonnumeric
+
+json formatter:
+  --noindent            whether to disable indenting the JSON
+
+table formatter:
+  --max-width <integer>
+                        Maximum display width, <1 to disable. You can also use
+                        the CLIFF_MAX_TERM_WIDTH environment variable, but the
+                        parameter takes precedence.
+  --fit-width           Fit the table to the display width. Implied if --max-
+                        width greater than 0. Set the environment variable
+                        CLIFF_FIT_WIDTH=1 to always enable
+  --print-empty         Print empty table if there is no data to show.
+
+This command is provided by the osc-placement plugin.

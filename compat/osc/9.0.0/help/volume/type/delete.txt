@@ -1,0 +1,9 @@
+usage: openstack volume type delete [-h] <volume-type> [<volume-type> ...]
+
+Delete volume type(s)
+
+positional arguments:
+  <volume-type>  Volume type(s) to delete (name or ID)
+
+options:
+  -h, --help     show this help message and exit

@@ -1,0 +1,94 @@
+usage: openstack default security group rule create [-h]
+                                                    [-f {json,shell,table,value,yaml}]
+                                                    [-c COLUMN] [--noindent]
+                                                    [--prefix PREFIX]
+                                                    [--max-width <integer>]
+                                                    [--fit-width]
+                                                    [--print-empty]
+                                                    [--extra-property type=<property_type>,name=<property_name>,value=<property_value>]
+                                                    [--description <description>]
+                                                    [--icmp-type <icmp-type>]
+                                                    [--icmp-code <icmp-code>]
+                                                    [--ingress | --egress]
+                                                    [--ethertype <ethertype>]
+                                                    [--remote-ip <ip-address> | --remote-group <group> | --remote-address-group <group>]
+                                                    [--dst-port <port-range>]
+                                                    [--protocol <protocol>]
+                                                    [--for-default-sg]
+                                                    [--for-custom-sg]
+
+Add a new security group rule to the default security group template. These
+rules will be applied to the default security groups created for any new
+project. They will not be applied to any existing default security groups.
+
+options:
+  -h, --help            show this help message and exit
+  --extra-property type=<property_type>,name=<property_name>,value=<property_value>
+                        Additional parameters can be passed using this
+                        property. Default type of the extra property is string
+                        ('str'), but other types can be used as well.
+                        Available types are: 'dict', 'list', 'str', 'bool',
+                        'int'. In case of 'list' type, 'value' can be
+                        semicolon-separated list of values. For 'dict' value
+                        is semicolon-separated list of the key:value pairs.
+  --description <description>
+                        Set default security group rule description
+  --icmp-type <icmp-type>
+                        ICMP type for ICMP IP protocols
+  --icmp-code <icmp-code>
+                        ICMP code for ICMP IP protocols
+  --ingress             Rule will apply to incoming network traffic (default)
+  --egress              Rule will apply to outgoing network traffic
+  --ethertype <ethertype>
+                        Ethertype of network traffic (IPv4, IPv6; default:
+                        based on IP protocol)
+  --remote-ip <ip-address>
+                        Remote IP address block (may use CIDR notation;
+                        default for IPv4 rule: 0.0.0.0/0, default for IPv6
+                        rule: ::/0)
+  --remote-group <group>
+                        Remote security group (ID)
+  --remote-address-group <group>
+                        Remote address group (ID)
+  --dst-port <port-range>
+                        Destination port, may be a single port or a starting
+                        and ending port range: 137:139. Required for IP
+                        protocols TCP and UDP. Ignored for ICMP IP protocols.
+  --protocol <protocol>
+                        IP protocol (ah, dccp, egp, esp, gre, icmp, igmp,
+                        ipv66-encap, ipv6-frag, ipv6-icmp, ipv6-nonxt,
+                        ipv6-opts, ipv6-route, ospf, pgm, rsvp, sctp, tcp,
+                        udp, udplite, vrrp and integer representations [0-255]
+                        or any; default: any (all protocols))
+  --for-default-sg      Set this default security group rule to be used in all
+                        default security groups created automatically for each
+                        project
+  --for-custom-sg       Set this default security group rule to be used in all
+                        custom security groups created manually by users
+
+output formatters:
+  output formatter options
+
+  -f {json,shell,table,value,yaml}, --format {json,shell,table,value,yaml}
+                        the output format, defaults to table
+  -c COLUMN, --column COLUMN
+                        specify the column(s) to include, can be repeated to
+                        show multiple columns
+
+json formatter:
+  --noindent            whether to disable indenting the JSON
+
+shell formatter:
+  a format a UNIX shell can parse (variable="value")
+
+  --prefix PREFIX       add a prefix to all variable names
+
+table formatter:
+  --max-width <integer>
+                        Maximum display width, <1 to disable. You can also use
+                        the CLIFF_MAX_TERM_WIDTH environment variable, but the
+                        parameter takes precedence.
+  --fit-width           Fit the table to the display width. Implied if --max-
+                        width greater than 0. Set the environment variable
+                        CLIFF_FIT_WIDTH=1 to always enable
+  --print-empty         Print empty table if there is no data to show.

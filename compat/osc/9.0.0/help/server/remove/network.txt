@@ -1,0 +1,10 @@
+usage: openstack server remove network [-h] <server> <network>
+
+Remove all ports of a network from server
+
+positional arguments:
+  <server>    Server to remove the port from (name or ID)
+  <network>   Network to remove from the server (name or ID)
+
+options:
+  -h, --help  show this help message and exit

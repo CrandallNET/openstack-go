@@ -1,0 +1,11 @@
+usage: openstack volume snapshot unset [-h] [--property <key>] <snapshot>
+
+Unset volume snapshot properties
+
+positional arguments:
+  <snapshot>        Snapshot to modify (name or ID)
+
+options:
+  -h, --help        show this help message and exit
+  --property <key>  Property to remove from snapshot (repeat option to remove
+                    multiple properties)

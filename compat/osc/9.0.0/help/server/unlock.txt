@@ -1,0 +1,9 @@
+usage: openstack server unlock [-h] <server> [<server> ...]
+
+Unlock server(s)
+
+positional arguments:
+  <server>    Server(s) to unlock (name or ID)
+
+options:
+  -h, --help  show this help message and exit

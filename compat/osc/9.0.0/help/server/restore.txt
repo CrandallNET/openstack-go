@@ -1,0 +1,9 @@
+usage: openstack server restore [-h] <server> [<server> ...]
+
+Restore server(s)
+
+positional arguments:
+  <server>    Server(s) to restore (name or ID)
+
+options:
+  -h, --help  show this help message and exit

@@ -1,0 +1,14 @@
+usage: openstack network l3 conntrack helper delete [-h]
+                                                    <router>
+                                                    <conntrack-helper-id>
+                                                    [<conntrack-helper-id> ...]
+
+Delete L3 conntrack helper
+
+positional arguments:
+  <router>              Router that the conntrack helper belongs to
+  <conntrack-helper-id>
+                        The ID of the conntrack helper(s) to delete
+
+options:
+  -h, --help            show this help message and exit

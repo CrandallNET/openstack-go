@@ -1,0 +1,10 @@
+usage: openstack address scope delete [-h]
+                                      <address-scope> [<address-scope> ...]
+
+Delete address scope(s)
+
+positional arguments:
+  <address-scope>  Address scope(s) to delete (name or ID)
+
+options:
+  -h, --help       show this help message and exit

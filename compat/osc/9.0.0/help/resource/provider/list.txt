@@ -1,0 +1,87 @@
+usage: openstack resource provider list [-h] [-f {csv,json,table,value,yaml}]
+                                        [-c COLUMN]
+                                        [--quote {all,minimal,none,nonnumeric}]
+                                        [--noindent] [--max-width <integer>]
+                                        [--fit-width] [--print-empty]
+                                        [--sort-column SORT_COLUMN]
+                                        [--sort-ascending | --sort-descending]
+                                        [--uuid <uuid>] [--name <name>]
+                                        [--resource <resource_class>=<value>]
+                                        [--in-tree <in_tree>]
+                                        [--required <required>]
+                                        [--forbidden <forbidden>]
+                                        [--member-of <member_of>]
+
+List resource providers
+
+options:
+  -h, --help            show this help message and exit
+  --uuid <uuid>         UUID of the resource provider
+  --name <name>         Name of the resource provider
+  --resource <resource_class>=<value>
+                        A resource class value pair indicating an amount of
+                        resource of a specified class that a provider must
+                        have the capacity to serve. May be repeated.
+                        This param requires at least ``--os-placement-api-
+                        version 1.4``.
+  --in-tree <in_tree>   Restrict listing to the same "provider tree" as the
+                        specified provider UUID. This option requires at least
+                        ``--os-placement-api-version 1.14``.
+  --required <required>
+                        A required trait. May be repeated. Resource providers
+                        must collectively contain all of the required traits.
+                        This option requires at least ``--os-placement-api-
+                        version 1.18``. Since ``--os-placement-api-version
+                        1.39`` the value of this parameter can be a comma
+                        separated list of trait names to express OR
+                        relationship between those traits.
+  --forbidden <forbidden>
+                        A forbidden trait. May be repeated. Returned resource
+                        providers must not contain any of the specified
+                        traits. This option requires at least ``--os-
+                        placement-api-version 1.22``.
+  --member-of <member_of>
+                        A list of comma-separated UUIDs of the resource
+                        provider aggregates. The returned resource providers
+                        must be associated with at least one of the aggregates
+                        identified by uuid. This param requires at least
+                        ``--os-placement-api-version 1.3`` and can be repeated
+                        to add(restrict) the condition with ``--os-placement-
+                        api-version 1.24`` or greater. For example, to get
+                        candidates either in agg1 or in agg2 and definitely in
+                        agg3, specify:
+                        ``--member_of <agg1>,<agg2> --member_of <agg3>``
+
+output formatters:
+  output formatter options
+
+  -f {csv,json,table,value,yaml}, --format {csv,json,table,value,yaml}
+                        the output format, defaults to table
+  -c COLUMN, --column COLUMN
+                        specify the column(s) to include, can be repeated to
+                        show multiple columns
+  --sort-column SORT_COLUMN
+                        specify the column(s) to sort the data (columns
+                        specified first have a priority, non-existing columns
+                        are ignored), can be repeated
+  --sort-ascending      sort the column(s) in ascending order
+  --sort-descending     sort the column(s) in descending order
+
+CSV Formatter:
+  --quote {all,minimal,none,nonnumeric}
+                        when to include quotes, defaults to nonnumeric
+
+json formatter:
+  --noindent            whether to disable indenting the JSON
+
+table formatter:
+  --max-width <integer>
+                        Maximum display width, <1 to disable. You can also use
+                        the CLIFF_MAX_TERM_WIDTH environment variable, but the
+                        parameter takes precedence.
+  --fit-width           Fit the table to the display width. Implied if --max-
+                        width greater than 0. Set the environment variable
+                        CLIFF_FIT_WIDTH=1 to always enable
+  --print-empty         Print empty table if there is no data to show.
+
+This command is provided by the osc-placement plugin.

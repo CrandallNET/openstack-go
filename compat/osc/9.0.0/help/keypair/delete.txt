@@ -1,0 +1,16 @@
+usage: openstack keypair delete [-h] [--user <user>]
+                                [--user-domain <user-domain>]
+                                <key> [<key> ...]
+
+Delete public or private key(s)
+
+positional arguments:
+  <key>                 Name of key(s) to delete (name only)
+
+options:
+  -h, --help            show this help message and exit
+  --user <user>         The owner of the keypair. (admin only) (name or ID).
+                        Requires ``--os-compute-api-version`` 2.10 or greater.
+  --user-domain <user-domain>
+                        Domain the user belongs to (name or ID). This can be
+                        used in case collisions between user names exist.

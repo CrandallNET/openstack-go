@@ -1,0 +1,15 @@
+usage: openstack group set [-h] [--domain <domain>] [--name <name>]
+                           [--description <description>]
+                           <group>
+
+Set group properties
+
+positional arguments:
+  <group>               Group to modify (name or ID)
+
+options:
+  -h, --help            show this help message and exit
+  --domain <domain>     Domain containing <group> (name or ID)
+  --name <name>         New group name
+  --description <description>
+                        New group description

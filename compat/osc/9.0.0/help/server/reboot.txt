@@ -1,0 +1,12 @@
+usage: openstack server reboot [-h] [--hard | --soft] [--wait] <server>
+
+Perform a hard or soft server reboot
+
+positional arguments:
+  <server>    Server (name or ID)
+
+options:
+  -h, --help  show this help message and exit
+  --hard      Perform a hard reboot
+  --soft      Perform a soft reboot
+  --wait      Wait for reboot to complete

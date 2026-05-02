@@ -1,0 +1,11 @@
+usage: openstack policy set [-h] [--type <type>] [--rules <filename>] <policy>
+
+Set policy properties
+
+positional arguments:
+  <policy>            Policy to modify
+
+options:
+  -h, --help          show this help message and exit
+  --type <type>       New MIME type of the policy rules file
+  --rules <filename>  New serialized policy rules file

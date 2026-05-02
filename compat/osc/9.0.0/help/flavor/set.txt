@@ -1,0 +1,27 @@
+usage: openstack flavor set [-h] [--no-property] [--property <key=value>]
+                            [--project <project>]
+                            [--project-domain <project-domain>]
+                            [--description <description>]
+                            <flavor>
+
+Set flavor properties
+
+positional arguments:
+  <flavor>              Flavor to modify (name or ID)
+
+options:
+  -h, --help            show this help message and exit
+  --no-property         Remove all properties from this flavor (specify both
+                        --no-property and --property to remove the current
+                        properties before setting new properties.)
+  --property <key=value>
+                        Property to add or modify for this flavor (repeat
+                        option to set multiple properties)
+  --project <project>   Set flavor access to project (name or ID) (admin only)
+  --project-domain <project-domain>
+                        Domain the project belongs to (name or ID). This can
+                        be used in case collisions between project names
+                        exist.
+  --description <description>
+                        Set description for the flavor.(Supported by API
+                        versions '2.55' - '2.latest'

@@ -1,0 +1,11 @@
+usage: openstack server lock [-h] [--reason <reason>] <server> [<server> ...]
+
+Lock server(s) A non-admin user will not be able to execute actions.
+
+positional arguments:
+  <server>           Server(s) to lock (name or ID)
+
+options:
+  -h, --help         show this help message and exit
+  --reason <reason>  Reason for locking the server(s) (supported by --os-
+                     compute-api-version 2.73 or above)

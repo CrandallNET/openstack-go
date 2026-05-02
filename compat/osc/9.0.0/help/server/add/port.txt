@@ -1,0 +1,12 @@
+usage: openstack server add port [-h] [--tag <tag>] <server> <port>
+
+Add port to server
+
+positional arguments:
+  <server>     Server to add the port to (name or ID)
+  <port>       Port to add to the server (name or ID)
+
+options:
+  -h, --help   show this help message and exit
+  --tag <tag>  Tag for the attached interface (supported by --os-compute-api-
+               version 2.49 or later)

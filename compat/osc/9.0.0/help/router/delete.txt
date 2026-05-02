@@ -1,0 +1,9 @@
+usage: openstack router delete [-h] <router> [<router> ...]
+
+Delete router(s)
+
+positional arguments:
+  <router>    Router(s) to delete (name or ID)
+
+options:
+  -h, --help  show this help message and exit

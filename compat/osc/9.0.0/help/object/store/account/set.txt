@@ -1,0 +1,9 @@
+usage: openstack object store account set [-h] --property <key=value>
+
+Set account properties
+
+options:
+  -h, --help            show this help message and exit
+  --property <key=value>
+                        Set a property on this account (repeat option to set
+                        multiple properties)

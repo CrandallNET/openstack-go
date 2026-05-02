@@ -1,0 +1,143 @@
+usage: openstack server list [-h] [-f {csv,json,table,value,yaml}] [-c COLUMN]
+                             [--quote {all,minimal,none,nonnumeric}]
+                             [--noindent] [--max-width <integer>]
+                             [--fit-width] [--print-empty]
+                             [--sort-column SORT_COLUMN]
+                             [--sort-ascending | --sort-descending]
+                             [--reservation-id <reservation-id>]
+                             [--ip <ip-address-regex>]
+                             [--ip6 <ip-address-regex>] [--name <name-regex>]
+                             [--instance-name <server-name>]
+                             [--status <status>] [--flavor <flavor>]
+                             [--image <image>] [--host <hostname>]
+                             [--all-projects] [--project <project>]
+                             [--project-domain <project-domain>]
+                             [--user <user>] [--user-domain <user-domain>]
+                             [--deleted]
+                             [--availability-zone AVAILABILITY_ZONE]
+                             [--key-name KEY_NAME]
+                             [--config-drive | --no-config-drive]
+                             [--progress PROGRESS] [--vm-state <state>]
+                             [--task-state <state>] [--power-state <state>]
+                             [--long] [-n | --name-lookup-one-by-one]
+                             [--limit <limit>] [--marker <marker>]
+                             [--changes-before <changes-before>]
+                             [--changes-since <changes-since>]
+                             [--locked | --unlocked] [--tags <tag>]
+                             [--not-tags <tag>]
+
+List servers
+
+options:
+  -h, --help            show this help message and exit
+  --reservation-id <reservation-id>
+                        Only return instances that match the reservation
+  --ip <ip-address-regex>
+                        Regular expression to match IP addresses
+  --ip6 <ip-address-regex>
+                        Regular expression to match IPv6 addresses. Note that
+                        this option only applies for non-admin users when
+                        using ``--os-compute-api-version`` 2.5 or greater.
+  --name <name-regex>   Regular expression to match names
+  --instance-name <server-name>
+                        Regular expression to match instance name (admin only)
+  --status <status>     Search by server status
+  --flavor <flavor>     Search by flavor (name or ID)
+  --image <image>       Search by image (name or ID)
+  --host <hostname>     Search by hostname
+  --all-projects        Include all projects (admin only) (can be specified
+                        using the ALL_PROJECTS envvar)
+  --project <project>   Search by project (admin only) (name or ID)
+  --project-domain <project-domain>
+                        Domain the project belongs to (name or ID). This can
+                        be used in case collisions between project names
+                        exist.
+  --user <user>         Search by user (name or ID) (admin only before
+                        microversion 2.83)
+  --user-domain <user-domain>
+                        Domain the user belongs to (name or ID). This can be
+                        used in case collisions between user names exist.
+  --deleted             Only display deleted servers (admin only)
+  --availability-zone AVAILABILITY_ZONE
+                        Search by availability zone (admin only before
+                        microversion 2.83)
+  --key-name KEY_NAME   Search by keypair name (admin only before microversion
+                        2.83)
+  --config-drive        Only display servers with a config drive attached
+                        (admin only before microversion 2.83)
+  --no-config-drive     Only display servers without a config drive attached
+                        (admin only before microversion 2.83)
+  --progress PROGRESS   Search by progress value (%) (admin only before
+                        microversion 2.83)
+  --vm-state <state>    Search by vm_state value (admin only before
+                        microversion 2.83)
+  --task-state <state>  Search by task_state value (admin only before
+                        microversion 2.83)
+  --power-state <state>
+                        Search by power_state value (admin only before
+                        microversion 2.83)
+  --long                List additional fields in output
+  -n, --no-name-lookup  Skip flavor and image name lookup. Mutually exclusive
+                        with "--name-lookup-one-by-one" option.
+  --name-lookup-one-by-one
+                        When looking up flavor and image names, look them up
+                        one by one as needed instead of all together
+                        (default). Mutually exclusive with "--no-name-
+                        lookup|-n" option.
+  --limit <limit>       The maximum number of entries to return. If the value
+                        exceeds the server-defined maximum, then the maximum
+                        value will be used.
+  --marker <marker>     The first position in the collection to return results
+                        from. This should be a value that was returned in a
+                        previous request.
+  --changes-before <changes-before>
+                        List only servers changed before a certain point of
+                        time. The provided time should be an ISO 8061
+                        formatted time (e.g., 2016-03-05T06:27:59Z).
+                        (supported by --os-compute-api-version 2.66 or above)
+  --changes-since <changes-since>
+                        List only servers changed after a certain point of
+                        time. The provided time should be an ISO 8061
+                        formatted time (e.g., 2016-03-04T06:27:59Z).
+  --locked              Only display locked servers (supported by --os-
+                        compute-api-version 2.73 or above)
+  --unlocked            Only display unlocked servers (supported by --os-
+                        compute-api-version 2.73 or above)
+  --tags <tag>          Only list servers with the specified tag. Specify
+                        multiple times to filter on multiple tags. (supported
+                        by --os-compute-api-version 2.26 or above)
+  --not-tags <tag>      Only list servers without the specified tag. Specify
+                        multiple times to filter on multiple tags. (supported
+                        by --os-compute-api-version 2.26 or above)
+
+output formatters:
+  output formatter options
+
+  -f {csv,json,table,value,yaml}, --format {csv,json,table,value,yaml}
+                        the output format, defaults to table
+  -c COLUMN, --column COLUMN
+                        specify the column(s) to include, can be repeated to
+                        show multiple columns
+  --sort-column SORT_COLUMN
+                        specify the column(s) to sort the data (columns
+                        specified first have a priority, non-existing columns
+                        are ignored), can be repeated
+  --sort-ascending      sort the column(s) in ascending order
+  --sort-descending     sort the column(s) in descending order
+
+CSV Formatter:
+  --quote {all,minimal,none,nonnumeric}
+                        when to include quotes, defaults to nonnumeric
+
+json formatter:
+  --noindent            whether to disable indenting the JSON
+
+table formatter:
+  --max-width <integer>
+                        Maximum display width, <1 to disable. You can also use
+                        the CLIFF_MAX_TERM_WIDTH environment variable, but the
+                        parameter takes precedence.
+  --fit-width           Fit the table to the display width. Implied if --max-
+                        width greater than 0. Set the environment variable
+                        CLIFF_FIT_WIDTH=1 to always enable
+  --print-empty         Print empty table if there is no data to show.

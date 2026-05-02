@@ -1,0 +1,16 @@
+usage: openstack endpoint group remove project [-h]
+                                               [--project-domain <project-domain>]
+                                               <endpoint-group> <project>
+
+Remove project from endpoint group
+
+positional arguments:
+  <endpoint-group>      Endpoint group (name or ID)
+  <project>             Project to remove (name or ID)
+
+options:
+  -h, --help            show this help message and exit
+  --project-domain <project-domain>
+                        Domain the project belongs to (name or ID). This can
+                        be used in case collisions between project names
+                        exist.

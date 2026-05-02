@@ -1,0 +1,16 @@
+usage: openstack server rescue [-h] [--image <image>] [--password <password>]
+                               <server>
+
+Put server in rescue mode. Specify ``--os-compute-api-version 2.87`` or higher
+to rescue a server booted from a volume.
+
+positional arguments:
+  <server>              Server (name or ID)
+
+options:
+  -h, --help            show this help message and exit
+  --image <image>       Image (name or ID) to use for the rescue mode
+                        (defaults to the currently used one)
+  --password <password>
+                        Set the password on the rescued instance (requires
+                        cloud support)

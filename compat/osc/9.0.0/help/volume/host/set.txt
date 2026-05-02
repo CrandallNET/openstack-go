@@ -1,0 +1,11 @@
+usage: openstack volume host set [-h] [--disable | --enable] <host-name>
+
+Set volume host properties
+
+positional arguments:
+  <host-name>  Name of volume host
+
+options:
+  -h, --help   show this help message and exit
+  --disable    Freeze and disable the specified volume host
+  --enable     Thaw and enable the specified volume host

@@ -1,0 +1,11 @@
+usage: openstack network segment delete [-h]
+                                        <network-segment>
+                                        [<network-segment> ...]
+
+Delete network segment(s)
+
+positional arguments:
+  <network-segment>  Network segment(s) to delete (name or ID)
+
+options:
+  -h, --help         show this help message and exit

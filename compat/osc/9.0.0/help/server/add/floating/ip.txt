@@ -1,0 +1,16 @@
+usage: openstack server add floating ip [-h] [--fixed-ip-address <ip-address>]
+                                        <server> <ip-address>
+
+Add floating IP address to server
+
+positional arguments:
+  <server>              Server to receive the floating IP address (name or ID)
+  <ip-address>          Floating IP address to assign to the first available
+                        server port (IP only)
+
+options:
+  -h, --help            show this help message and exit
+  --fixed-ip-address <ip-address>
+                        Fixed IP address to associate with this floating IP
+                        address. The first server port containing the fixed IP
+                        address will be used

@@ -1,0 +1,16 @@
+usage: openstack endpoint group set [-h] [--name <name>]
+                                    [--filters <filename>]
+                                    [--description <description>]
+                                    <endpoint-group>
+
+Set endpoint group properties
+
+positional arguments:
+  <endpoint-group>      Endpoint Group to modify (name or ID)
+
+options:
+  -h, --help            show this help message and exit
+  --name <name>         New endpoint group name
+  --filters <filename>  Filename that contains a new set of filters
+  --description <description>
+                        New endpoint group description

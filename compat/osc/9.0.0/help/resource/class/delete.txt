@@ -1,0 +1,13 @@
+usage: openstack resource class delete [-h] <name>
+
+Delete the resource class identified by ``<name>``. Only custom resource
+classes can be deleted. This command requires at least ``--os-placement-api-
+version 1.2``.
+
+positional arguments:
+  <name>      Name of the resource class
+
+options:
+  -h, --help  show this help message and exit
+
+This command is provided by the osc-placement plugin.

@@ -1,0 +1,42 @@
+usage: openstack usage show [-h] [-f {json,shell,table,value,yaml}]
+                            [-c COLUMN] [--noindent] [--prefix PREFIX]
+                            [--max-width <integer>] [--fit-width]
+                            [--print-empty] [--project <project>]
+                            [--start <start>] [--end <end>]
+
+Show resource usage for a single project
+
+options:
+  -h, --help            show this help message and exit
+  --project <project>   Name or ID of project to show usage for
+  --start <start>       Usage range start date, ex 2012-01-20 (default: 4
+                        weeks ago)
+  --end <end>           Usage range end date, ex 2012-01-20 (default:
+                        tomorrow)
+
+output formatters:
+  output formatter options
+
+  -f {json,shell,table,value,yaml}, --format {json,shell,table,value,yaml}
+                        the output format, defaults to table
+  -c COLUMN, --column COLUMN
+                        specify the column(s) to include, can be repeated to
+                        show multiple columns
+
+json formatter:
+  --noindent            whether to disable indenting the JSON
+
+shell formatter:
+  a format a UNIX shell can parse (variable="value")
+
+  --prefix PREFIX       add a prefix to all variable names
+
+table formatter:
+  --max-width <integer>
+                        Maximum display width, <1 to disable. You can also use
+                        the CLIFF_MAX_TERM_WIDTH environment variable, but the
+                        parameter takes precedence.
+  --fit-width           Fit the table to the display width. Implied if --max-
+                        width greater than 0. Set the environment variable
+                        CLIFF_FIT_WIDTH=1 to always enable
+  --print-empty         Print empty table if there is no data to show.

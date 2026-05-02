@@ -1,0 +1,9 @@
+usage: openstack server group delete [-h] <server-group> [<server-group> ...]
+
+Delete existing server group(s).
+
+positional arguments:
+  <server-group>  server group(s) to delete (name or ID)
+
+options:
+  -h, --help      show this help message and exit

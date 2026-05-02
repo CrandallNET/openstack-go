@@ -1,0 +1,9 @@
+usage: openstack network rbac delete [-h] <rbac-policy> [<rbac-policy> ...]
+
+Delete network RBAC policy(s)
+
+positional arguments:
+  <rbac-policy>  RBAC policy(s) to delete (ID only)
+
+options:
+  -h, --help     show this help message and exit

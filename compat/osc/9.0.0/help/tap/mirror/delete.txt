@@ -1,0 +1,9 @@
+usage: openstack tap mirror delete [-h] <tap_mirror> [<tap_mirror> ...]
+
+Delete a tap mirror.
+
+positional arguments:
+  <tap_mirror>  Tap mirror to delete (name or ID).
+
+options:
+  -h, --help    show this help message and exit

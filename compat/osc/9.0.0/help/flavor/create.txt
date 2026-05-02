@@ -1,0 +1,69 @@
+usage: openstack flavor create [-h] [-f {json,shell,table,value,yaml}]
+                               [-c COLUMN] [--noindent] [--prefix PREFIX]
+                               [--max-width <integer>] [--fit-width]
+                               [--print-empty] [--id <id>] [--ram <size-mb>]
+                               [--disk <size-gb>] [--ephemeral <size-gb>]
+                               [--swap <size-mb>] [--vcpus <vcpus>]
+                               [--rxtx-factor <factor>] [--public | --private]
+                               [--property <key=value>] [--project <project>]
+                               [--description <description>]
+                               [--project-domain <project-domain>]
+                               <flavor-name>
+
+Create new flavor
+
+positional arguments:
+  <flavor-name>         New flavor name
+
+options:
+  -h, --help            show this help message and exit
+  --id <id>             Unique flavor ID
+  --ram <size-mb>       Memory size in MB (default 256M)
+  --disk <size-gb>      Disk size in GB (default 0G)
+  --ephemeral <size-gb>
+                        Ephemeral disk size in GB (default 0G)
+  --swap <size-mb>      Additional swap space size in MB (default 0M)
+  --vcpus <vcpus>       Number of vcpus (default 1)
+  --rxtx-factor <factor>
+                        RX/TX factor (default 1.0)
+  --public              Flavor is available to other projects (default)
+  --private             Flavor is not available to other projects
+  --property <key=value>
+                        Property to add for this flavor (repeat option to set
+                        multiple properties)
+  --project <project>   Allow <project> to access private flavor (name or ID)
+                        (Must be used with --private option)
+  --description <description>
+                        Description for the flavor.(Supported by API versions
+                        '2.55' - '2.latest'
+  --project-domain <project-domain>
+                        Domain the project belongs to (name or ID). This can
+                        be used in case collisions between project names
+                        exist.
+
+output formatters:
+  output formatter options
+
+  -f {json,shell,table,value,yaml}, --format {json,shell,table,value,yaml}
+                        the output format, defaults to table
+  -c COLUMN, --column COLUMN
+                        specify the column(s) to include, can be repeated to
+                        show multiple columns
+
+json formatter:
+  --noindent            whether to disable indenting the JSON
+
+shell formatter:
+  a format a UNIX shell can parse (variable="value")
+
+  --prefix PREFIX       add a prefix to all variable names
+
+table formatter:
+  --max-width <integer>
+                        Maximum display width, <1 to disable. You can also use
+                        the CLIFF_MAX_TERM_WIDTH environment variable, but the
+                        parameter takes precedence.
+  --fit-width           Fit the table to the display width. Implied if --max-
+                        width greater than 0. Set the environment variable
+                        CLIFF_FIT_WIDTH=1 to always enable
+  --print-empty         Print empty table if there is no data to show.

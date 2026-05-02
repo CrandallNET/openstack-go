@@ -1,0 +1,14 @@
+usage: openstack consistency group set [-h] [--name <name>]
+                                       [--description <description>]
+                                       <consistency-group>
+
+Set consistency group properties
+
+positional arguments:
+  <consistency-group>   Consistency group to modify (name or ID)
+
+options:
+  -h, --help            show this help message and exit
+  --name <name>         New consistency group name
+  --description <description>
+                        New consistency group description

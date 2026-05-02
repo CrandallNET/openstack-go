@@ -1,0 +1,15 @@
+usage: openstack volume attachment delete [-h] <attachment>
+
+Delete an attachment for a volume. Similarly to the 'volume attachment create'
+command, this command will only delete the volume attachment record in the
+Volume service. It will not invoke the necessary Compute service actions to
+actually attach the volume to the server at the hypervisor level. As a result,
+it should typically only be used for troubleshooting issues with an existing
+server in combination with other tooling. For all other use cases, the 'server
+volume remove' command should be preferred.
+
+positional arguments:
+  <attachment>  ID of volume attachment to delete
+
+options:
+  -h, --help    show this help message and exit

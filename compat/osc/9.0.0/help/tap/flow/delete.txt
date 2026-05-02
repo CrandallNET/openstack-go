@@ -1,0 +1,9 @@
+usage: openstack tap flow delete [-h] <tap_flow> [<tap_flow> ...]
+
+Delete a tap flow.
+
+positional arguments:
+  <tap_flow>  Tap flow to delete (name or ID).
+
+options:
+  -h, --help  show this help message and exit

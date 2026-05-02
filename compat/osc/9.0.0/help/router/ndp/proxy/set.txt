@@ -1,0 +1,15 @@
+usage: openstack router ndp proxy set [-h] [--name <name>]
+                                      [--description <description>]
+                                      <ndp-proxy>
+
+Set NDP proxy properties
+
+positional arguments:
+  <ndp-proxy>           The ID or name of the NDP proxy to update
+
+options:
+  -h, --help            show this help message and exit
+  --name <name>         Set NDP proxy name
+  --description <description>
+                        Text to describe/contextualize the use of the NDP
+                        proxy configuration

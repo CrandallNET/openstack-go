@@ -1,0 +1,16 @@
+usage: openstack image metadef property set [-h] [--name NAME] [--title TITLE]
+                                            [--type TYPE] [--schema SCHEMA]
+                                            namespace property
+
+Update metadef namespace property
+
+positional arguments:
+  namespace        Namespace of the namespace to which the property belongs
+  property         Property to update
+
+options:
+  -h, --help       show this help message and exit
+  --name NAME      Internal name of the property
+  --title TITLE    Property name displayed to the user
+  --type TYPE      Property type
+  --schema SCHEMA  Valid JSON schema of the property

@@ -1,0 +1,10 @@
+usage: openstack network flavor remove profile [-h] <flavor> <service-profile>
+
+Remove service profile from network flavor
+
+positional arguments:
+  <flavor>           Network flavor (name or ID)
+  <service-profile>  Service profile (ID only)
+
+options:
+  -h, --help         show this help message and exit

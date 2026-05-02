@@ -1,0 +1,14 @@
+usage: openstack volume snapshot delete [-h] [--force] [--remote]
+                                        <snapshot> [<snapshot> ...]
+
+Delete volume snapshot(s)
+
+positional arguments:
+  <snapshot>  Snapshot(s) to delete (name or ID)
+
+options:
+  -h, --help  show this help message and exit
+  --force     Attempt forced removal of snapshot(s), regardless of state
+              (defaults to False)
+  --remote    Unmanage the snapshot, removing it from the Block Storage
+              service management but not from the backend.

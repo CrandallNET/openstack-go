@@ -1,0 +1,74 @@
+usage: openstack router list [-h] [-f {csv,json,table,value,yaml}] [-c COLUMN]
+                             [--quote {all,minimal,none,nonnumeric}]
+                             [--noindent] [--max-width <integer>]
+                             [--fit-width] [--print-empty]
+                             [--sort-column SORT_COLUMN]
+                             [--sort-ascending | --sort-descending]
+                             [--name <name>] [--enable | --disable] [--long]
+                             [--project <project>]
+                             [--project-domain <project-domain>]
+                             [--agent <agent-id>] [--tags <tag>[,<tag>,...]]
+                             [--any-tags <tag>[,<tag>,...]]
+                             [--not-tags <tag>[,<tag>,...]]
+                             [--not-any-tags <tag>[,<tag>,...]]
+
+List routers
+
+options:
+  -h, --help            show this help message and exit
+  --name <name>         List routers according to their name
+  --enable              List enabled routers
+  --disable             List disabled routers
+  --long                List additional fields in output
+  --project <project>   List only routers with the specified project (name or
+                        ID)
+  --project-domain <project-domain>
+                        Domain the project belongs to (name or ID). This can
+                        be used in case collisions between project names
+                        exist.
+  --agent <agent-id>    List only routers hosted by the specified agent (ID
+                        only)
+  --tags <tag>[,<tag>,...]
+                        List routers which have all given tag(s) (Comma-
+                        separated list of tags)
+  --any-tags <tag>[,<tag>,...]
+                        List routers which have any given tag(s) (Comma-
+                        separated list of tags)
+  --not-tags <tag>[,<tag>,...]
+                        Exclude routers which have all given tag(s) (Comma-
+                        separated list of tags)
+  --not-any-tags <tag>[,<tag>,...]
+                        Exclude routers which have any given tag(s) (Comma-
+                        separated list of tags)
+
+output formatters:
+  output formatter options
+
+  -f {csv,json,table,value,yaml}, --format {csv,json,table,value,yaml}
+                        the output format, defaults to table
+  -c COLUMN, --column COLUMN
+                        specify the column(s) to include, can be repeated to
+                        show multiple columns
+  --sort-column SORT_COLUMN
+                        specify the column(s) to sort the data (columns
+                        specified first have a priority, non-existing columns
+                        are ignored), can be repeated
+  --sort-ascending      sort the column(s) in ascending order
+  --sort-descending     sort the column(s) in descending order
+
+CSV Formatter:
+  --quote {all,minimal,none,nonnumeric}
+                        when to include quotes, defaults to nonnumeric
+
+json formatter:
+  --noindent            whether to disable indenting the JSON
+
+table formatter:
+  --max-width <integer>
+                        Maximum display width, <1 to disable. You can also use
+                        the CLIFF_MAX_TERM_WIDTH environment variable, but the
+                        parameter takes precedence.
+  --fit-width           Fit the table to the display width. Implied if --max-
+                        width greater than 0. Set the environment variable
+                        CLIFF_FIT_WIDTH=1 to always enable
+  --print-empty         Print empty table if there is no data to show.

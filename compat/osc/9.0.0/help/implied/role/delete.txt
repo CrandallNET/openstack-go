@@ -1,0 +1,11 @@
+usage: openstack implied role delete [-h] --implied-role <role> <role>
+
+Deletes an association between prior and implied roles
+
+positional arguments:
+  <role>                Role (name or ID) that implies another role
+
+options:
+  -h, --help            show this help message and exit
+  --implied-role <role>
+                        <role> (name or ID) implied by another role

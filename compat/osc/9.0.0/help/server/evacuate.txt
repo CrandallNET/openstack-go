@@ -1,0 +1,63 @@
+usage: openstack server evacuate [-h] [-f {json,shell,table,value,yaml}]
+                                 [-c COLUMN] [--noindent] [--prefix PREFIX]
+                                 [--max-width <integer>] [--fit-width]
+                                 [--print-empty] [--wait] [--host <host>]
+                                 [--password <password> | --shared-storage]
+                                 <server>
+
+Evacuate a server to a different host. This command is used to recreate a
+server after the host it was on has failed. It can only be used if the compute
+service that manages the server is down. This command should only be used by
+an admin after they have confirmed that the instance is not running on the
+failed host. If the server instance was created with an ephemeral root disk on
+non-shared storage the server will be rebuilt using the original glance image
+preserving the ports and any attached data volumes. If the server uses boot
+for volume or has its root disk on shared storage the root disk will be
+preserved and reused for the evacuated instance on the new host.
+
+positional arguments:
+  <server>              Server (name or ID)
+
+options:
+  -h, --help            show this help message and exit
+  --wait                Wait for evacuation to complete
+  --host <host>         Set the preferred host on which to rebuild the
+                        evacuated server. The host will be validated by the
+                        scheduler. (supported by --os-compute-api-version 2.29
+                        or above)
+  --password <password>
+                        Set the password on the evacuated instance. This
+                        option is mutually exclusive with the --shared-storage
+                        option. This option requires cloud support.
+  --shared-storage      Indicate that the instance is on shared storage. This
+                        will be auto-calculated with --os-compute-api-version
+                        2.14 and greater and should not be used with later
+                        microversions. This option is mutually exclusive with
+                        the --password option
+
+output formatters:
+  output formatter options
+
+  -f {json,shell,table,value,yaml}, --format {json,shell,table,value,yaml}
+                        the output format, defaults to table
+  -c COLUMN, --column COLUMN
+                        specify the column(s) to include, can be repeated to
+                        show multiple columns
+
+json formatter:
+  --noindent            whether to disable indenting the JSON
+
+shell formatter:
+  a format a UNIX shell can parse (variable="value")
+
+  --prefix PREFIX       add a prefix to all variable names
+
+table formatter:
+  --max-width <integer>
+                        Maximum display width, <1 to disable. You can also use
+                        the CLIFF_MAX_TERM_WIDTH environment variable, but the
+                        parameter takes precedence.
+  --fit-width           Fit the table to the display width. Implied if --max-
+                        width greater than 0. Set the environment variable
+                        CLIFF_FIT_WIDTH=1 to always enable
+  --print-empty         Print empty table if there is no data to show.

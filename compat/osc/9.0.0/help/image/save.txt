@@ -1,0 +1,15 @@
+usage: openstack image save [-h] [--chunk-size <chunk-size>]
+                            [--file <filename>]
+                            <image>
+
+Save an image locally
+
+positional arguments:
+  <image>               Image to save (name or ID)
+
+options:
+  -h, --help            show this help message and exit
+  --chunk-size <chunk-size>
+                        Size in bytes to read from the wire and buffer at one
+                        time (default: 1024)
+  --file <filename>     Downloaded image save filename (default: stdout)

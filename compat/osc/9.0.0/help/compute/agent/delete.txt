@@ -1,0 +1,11 @@
+usage: openstack compute agent delete [-h] <id> [<id> ...]
+
+Delete compute agent(s). The compute agent functionality is hypervisor
+specific and is only supported by the XenAPI hypervisor driver. It was removed
+from nova in the 23.0.0 (Wallaby) release.
+
+positional arguments:
+  <id>        ID of agent(s) to delete
+
+options:
+  -h, --help  show this help message and exit

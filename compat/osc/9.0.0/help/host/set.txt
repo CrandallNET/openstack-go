@@ -1,0 +1,16 @@
+usage: openstack host set [-h] [--enable | --disable]
+                          [--enable-maintenance | --disable-maintenance]
+                          <host>
+
+DEPRECATED: Set host properties
+
+positional arguments:
+  <host>                Host to modify (name only)
+
+options:
+  -h, --help            show this help message and exit
+  --enable              Enable the host
+  --disable             Disable the host
+  --enable-maintenance  Enable maintenance mode for the host
+  --disable-maintenance
+                        Disable maintenance mode for the host

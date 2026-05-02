@@ -1,0 +1,10 @@
+usage: openstack network agent delete [-h]
+                                      <network-agent> [<network-agent> ...]
+
+Delete network agent(s)
+
+positional arguments:
+  <network-agent>  Network agent(s) to delete (ID only)
+
+options:
+  -h, --help       show this help message and exit

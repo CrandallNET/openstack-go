@@ -1,0 +1,12 @@
+usage: openstack default security group rule delete [-h] <rule> [<rule> ...]
+
+Remove security group rule(s) from the default security group template. These
+rules will not longer be applied to the default security groups created for
+any new project. They will not be removed from any existing default security
+groups.
+
+positional arguments:
+  <rule>      Default security group rule(s) to delete (ID only)
+
+options:
+  -h, --help  show this help message and exit

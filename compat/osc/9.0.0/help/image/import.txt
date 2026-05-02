@@ -1,0 +1,78 @@
+usage: openstack image import [-h] [-f {json,shell,table,value,yaml}]
+                              [-c COLUMN] [--noindent] [--prefix PREFIX]
+                              [--max-width <integer>] [--fit-width]
+                              [--print-empty] [--method <method>]
+                              [--uri <uri>] [--remote-image <REMOTE_IMAGE>]
+                              [--remote-region <REMOTE_GLANCE_REGION>]
+                              [--remote-service-interface <REMOTE_SERVICE_INTERFACE>]
+                              [--store [<STORE> ...] | --all-stores]
+                              [--allow-failure | --disallow-failure] [--wait]
+                              <image>
+
+Initiate the image import process. This requires support for the interoperable
+image import process, which was first introduced in Image API version 2.6
+(Glance 16.0.0 (Queens))
+
+positional arguments:
+  <image>               Image to initiate import process for (name or ID)
+
+options:
+  -h, --help            show this help message and exit
+  --method <method>     Import method used for image import process. Not all
+                        deployments will support all methods. The 'glance-
+                        direct' method (default) requires images be first
+                        staged using the 'image-stage' command.
+  --uri <uri>           URI to download the external image (only valid with
+                        the 'web-download' import method)
+  --remote-image <REMOTE_IMAGE>
+                        The image of remote glance (ID only) to be imported
+                        (only valid with the 'glance-download' import method)
+  --remote-region <REMOTE_GLANCE_REGION>
+                        The remote Glance region to download the image from
+                        (only valid with the 'glance-download' import method)
+  --remote-service-interface <REMOTE_SERVICE_INTERFACE>
+                        The remote Glance service interface to use when
+                        importing images (only valid with the 'glance-
+                        download' import method)
+  --store [<STORE> ...]
+                        Backend store to upload image to (specify multiple
+                        times to upload to multiple stores) (either '--store'
+                        or '--all-stores' required with the 'copy-image'
+                        import method)
+  --all-stores          Make image available to all stores (either '--store'
+                        or '--all-stores' required with the 'copy-image'
+                        import method)
+  --allow-failure       When uploading to multiple stores, indicate that the
+                        import should be continue should any of the uploads
+                        fail. Only usable with --stores or --all-stores
+  --disallow-failure    When uploading to multiple stores, indicate that the
+                        import should be reverted should any of the uploads
+                        fail. Only usable with --stores or --all-stores
+  --wait                Wait for operation to complete
+
+output formatters:
+  output formatter options
+
+  -f {json,shell,table,value,yaml}, --format {json,shell,table,value,yaml}
+                        the output format, defaults to table
+  -c COLUMN, --column COLUMN
+                        specify the column(s) to include, can be repeated to
+                        show multiple columns
+
+json formatter:
+  --noindent            whether to disable indenting the JSON
+
+shell formatter:
+  a format a UNIX shell can parse (variable="value")
+
+  --prefix PREFIX       add a prefix to all variable names
+
+table formatter:
+  --max-width <integer>
+                        Maximum display width, <1 to disable. You can also use
+                        the CLIFF_MAX_TERM_WIDTH environment variable, but the
+                        parameter takes precedence.
+  --fit-width           Fit the table to the display width. Implied if --max-
+                        width greater than 0. Set the environment variable
+                        CLIFF_FIT_WIDTH=1 to always enable
+  --print-empty         Print empty table if there is no data to show.

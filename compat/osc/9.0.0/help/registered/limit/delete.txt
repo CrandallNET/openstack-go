@@ -1,0 +1,12 @@
+usage: openstack registered limit delete [-h]
+                                         <registered-limits>
+                                         [<registered-limits> ...]
+
+Delete a registered limit
+
+positional arguments:
+  <registered-limits>  Registered limit(s) to delete (ID) (repeat option to
+                       remove multiple registered limits)
+
+options:
+  -h, --help           show this help message and exit

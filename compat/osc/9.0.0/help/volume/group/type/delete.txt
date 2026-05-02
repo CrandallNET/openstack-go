@@ -1,0 +1,10 @@
+usage: openstack volume group type delete [-h] <group_type>
+
+Delete a volume group type. This command requires ``--os-volume-api-version``
+3.11 or greater.
+
+positional arguments:
+  <group_type>  Name or ID of volume group type to delete
+
+options:
+  -h, --help    show this help message and exit

@@ -1,0 +1,57 @@
+usage: openstack quota show [-h] [-f {csv,json,table,value,yaml}] [-c COLUMN]
+                            [--quote {all,minimal,none,nonnumeric}]
+                            [--noindent] [--max-width <integer>] [--fit-width]
+                            [--print-empty] [--sort-column SORT_COLUMN]
+                            [--sort-ascending | --sort-descending]
+                            [--default | --usage]
+                            [--all | --compute | --volume | --network]
+                            [<project>]
+
+Show quotas for project or class. Specify ``--os-compute-api-version 2.50`` or
+higher to see ``server-groups`` and ``server-group-members`` output for a
+given quota class.
+
+positional arguments:
+  <project>             Show quotas for this project (name or ID) (defaults to
+                        current project)
+
+options:
+  -h, --help            show this help message and exit
+  --default             Show default quotas for <project>
+  --usage               Show details about quotas usage
+  --all                 Show quotas for all services
+  --compute             Show compute quota
+  --volume              Show volume quota
+  --network             Show network quota
+
+output formatters:
+  output formatter options
+
+  -f {csv,json,table,value,yaml}, --format {csv,json,table,value,yaml}
+                        the output format, defaults to table
+  -c COLUMN, --column COLUMN
+                        specify the column(s) to include, can be repeated to
+                        show multiple columns
+  --sort-column SORT_COLUMN
+                        specify the column(s) to sort the data (columns
+                        specified first have a priority, non-existing columns
+                        are ignored), can be repeated
+  --sort-ascending      sort the column(s) in ascending order
+  --sort-descending     sort the column(s) in descending order
+
+CSV Formatter:
+  --quote {all,minimal,none,nonnumeric}
+                        when to include quotes, defaults to nonnumeric
+
+json formatter:
+  --noindent            whether to disable indenting the JSON
+
+table formatter:
+  --max-width <integer>
+                        Maximum display width, <1 to disable. You can also use
+                        the CLIFF_MAX_TERM_WIDTH environment variable, but the
+                        parameter takes precedence.
+  --fit-width           Fit the table to the display width. Implied if --max-
+                        width greater than 0. Set the environment variable
+                        CLIFF_FIT_WIDTH=1 to always enable
+  --print-empty         Print empty table if there is no data to show.
