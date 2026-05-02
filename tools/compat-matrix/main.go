@@ -143,10 +143,15 @@ func newCommandEntry(group string, command string) commandEntry {
 	if group == "openstack.placement.v1" || strings.HasPrefix(command, "tap ") {
 		entry.PluginScope = true
 	}
-	if command == "command list" {
+	switch command {
+	case "command list":
 		entry.Status = "implemented"
 		entry.ImplementedIn = "internal/cli"
 		entry.Notes = "Initial implementation uses the embedded OSC catalog and marks unfinished commands."
+	case "module list":
+		entry.Status = "implemented"
+		entry.ImplementedIn = "internal/cli"
+		entry.Notes = "Initial implementation lists golang-osc module and command-provider state through the Caddy-backed plugin registry."
 	}
 	return entry
 }

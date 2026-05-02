@@ -42,7 +42,7 @@ func TestRootHelp(t *testing.T) {
 }
 
 func TestStubCommand(t *testing.T) {
-	stdout, stderr, err := executeForTest("module", "list")
+	stdout, stderr, err := executeForTest("configuration", "show")
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -91,8 +91,34 @@ func TestCommandListJSONMarksUnimplementedCommands(t *testing.T) {
 	if !strings.Contains(stdout, `"command list"`) {
 		t.Fatalf("expected implemented command without suffix, got:\n%s", stdout)
 	}
-	if !strings.Contains(stdout, `"module list (Not Implemented Yet)"`) {
-		t.Fatalf("expected module list to be marked unimplemented, got:\n%s", stdout)
+	if !strings.Contains(stdout, `"module list"`) {
+		t.Fatalf("expected module list to be marked implemented, got:\n%s", stdout)
+	}
+}
+
+func TestCommandListJSONMarksServiceStubs(t *testing.T) {
+	stdout, stderr, err := executeForTest("command", "list", "-f", "json", "--group", "openstack.compute.v2")
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if stderr != "" {
+		t.Fatalf("expected empty stderr, got %q", stderr)
+	}
+	if !strings.Contains(stdout, `"server list (Not Implemented Yet)"`) {
+		t.Fatalf("expected server list to be marked unimplemented, got:\n%s", stdout)
+	}
+}
+
+func TestModuleListUsesPluginRegistry(t *testing.T) {
+	stdout, stderr, err := executeForTest("module", "list", "-f", "json")
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if stderr != "" {
+		t.Fatalf("expected empty stderr, got %q", stderr)
+	}
+	if !strings.Contains(stdout, `"openstack.commands.core.local"`) {
+		t.Fatalf("expected local Caddy command module, got:\n%s", stdout)
 	}
 }
 

@@ -26,7 +26,43 @@ The CLI parser decision is [Cobra](https://pkg.go.dev/github.com/spf13/cobra) wi
 
 Core OpenStack API access should use Gophercloud. Python/OpenStackClient must not be used in production execution paths. It may be used only as a reference for catalog generation, compatibility tests, and behavior comparison.
 
-Plugin-scope commands and service-scoped extras plugins should use [Caddy's module system](https://caddyserver.com/docs/extending-caddy) as the plugin framework. The project should use Caddy's module registration and loading model for statically linked, in-process CLI plugins, not Caddy's server runtime behavior.
+Plugin-scope commands and service-scoped extras plugins use [Caddy's module system](https://caddyserver.com/docs/extending-caddy) as the plugin framework. The project uses Caddy's module registration and loading model for statically linked, in-process CLI plugins, not Caddy's server runtime behavior.
+
+## Build And Test
+
+Use workspace-local Go caches so builds and tests do not write into user-level cache directories from constrained environments:
+
+```sh
+export GOCACHE="$PWD/.cache/go-build"
+export GOMODCACHE="$PWD/.cache/gomod"
+```
+
+Run the unit test suite:
+
+```sh
+go test ./...
+```
+
+Build the local compatibility binary:
+
+```sh
+go build -o bin/openstack ./cmd/openstack
+```
+
+Run basic smoke checks:
+
+```sh
+./bin/openstack --version
+./bin/openstack command list -f json --group openstack.cli
+./bin/openstack server list --help
+```
+
+Regenerate compatibility artifacts after changing the local Python OSC oracle or matrix generator:
+
+```sh
+go run ./tools/osc-catalog
+go run ./tools/compat-matrix
+```
 
 ## Compatibility Artifacts
 
@@ -57,4 +93,4 @@ Live tests should use a structured cloud capability config so additional clouds 
 
 ## Implementation Status
 
-The repository now contains the initial Go module, `cmd/openstack` entry point, Cobra/pflag root command, global flag parsing skeleton, embedded OSC 9.0.0 compatibility catalog, generated command stubs, captured help/completion snapshots, and a catalog-backed `command list`. See the plan for the current progress table and next work items.
+The repository now contains the initial Go module, `cmd/openstack` entry point, Cobra/pflag root command, global flag parsing skeleton, Caddy-backed command-provider registry, embedded OSC 9.0.0 compatibility catalog, generated command stubs, captured help/completion snapshots, catalog-backed `command list`, and plugin-backed `module list`. See the plan for the current progress table and next work items.

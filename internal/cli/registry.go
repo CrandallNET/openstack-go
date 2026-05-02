@@ -20,12 +20,12 @@ type commandRegistry struct {
 
 func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Options) *commandRegistry {
 	registry := &commandRegistry{
-		groups: groups,
-		implemented: map[string]commandHandler{
-			"command list": runCommandList(groups, stdout, opts),
-		},
-		stdout: stdout,
+		groups:      groups,
+		implemented: map[string]commandHandler{},
+		stdout:      stdout,
 	}
+	registry.implemented["command list"] = runCommandList(groups, stdout, opts, registry.implemented)
+	registry.implemented["module list"] = runModuleList(stdout, opts)
 	return registry
 }
 

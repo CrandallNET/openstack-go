@@ -19,6 +19,16 @@ func TestNewCommandEntryMarksImplementedCommandList(t *testing.T) {
 	}
 }
 
+func TestNewCommandEntryMarksImplementedModuleList(t *testing.T) {
+	entry := newCommandEntry("openstack.cli", "module list")
+	if entry.Status != "implemented" {
+		t.Fatalf("expected module list to be implemented, got %q", entry.Status)
+	}
+	if entry.ImplementedIn != "internal/cli" {
+		t.Fatalf("unexpected implementation owner: %q", entry.ImplementedIn)
+	}
+}
+
 func TestNewCommandEntryMarksPluginScope(t *testing.T) {
 	entry := newCommandEntry("openstack.placement.v1", "resource provider list")
 	if !entry.PluginScope {

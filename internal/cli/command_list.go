@@ -12,16 +12,14 @@ import (
 
 const notImplementedSuffix = " (Not Implemented Yet)"
 
-func runCommandList(groups []osc.CommandGroup, stdout io.Writer, opts *Options) commandHandler {
+func runCommandList(groups []osc.CommandGroup, stdout io.Writer, opts *Options, implemented map[string]commandHandler) commandHandler {
 	return func(cmd *cobra.Command, args []string) error {
 		groupFilter, err := cmd.Flags().GetString("group")
 		if err != nil {
 			return err
 		}
 
-		rows := commandListRows(groups, implementedCommandNames(map[string]commandHandler{
-			"command list": nil,
-		}), groupFilter)
+		rows := commandListRows(groups, implementedCommandNames(implemented), groupFilter)
 
 		switch opts.Format {
 		case "json":

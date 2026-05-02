@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"github.com/crandallnet/golang-osc/compat/osc"
+	_ "github.com/crandallnet/golang-osc/internal/plugins/local"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )

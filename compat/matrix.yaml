@@ -2477,13 +2477,13 @@ commands:
     group: "openstack.cli"
     service: "cli"
     api: "local"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
     shim: false
     plugin_scope: false
-    implemented_in: ""
+    implemented_in: "internal/cli"
     tests: []
-    notes: ""
+    notes: "Initial implementation lists golang-osc module and command-provider state through the Caddy-backed plugin registry."
   - command: "network agent add network"
     group: "openstack.network.v2"
     service: "network"
