@@ -3,6 +3,7 @@ package cli
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -136,6 +137,12 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 			return aggregateShow(cmd.Context(), stdout, opts, client, args)
 		case "availability zone list":
 			return availabilityZoneList(cmd.Context(), stdout, opts, clients)
+		case "compute agent list":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return computeAgentList(cmd.Context(), stdout, opts, client)
 		case "compute service list":
 			client, err := clients.computeV2()
 			if err != nil {
@@ -907,6 +914,37 @@ func computeServiceList(ctx context.Context, stdout io.Writer, opts *Options, cl
 	return renderListOutput(stdout, opts, columns, rows)
 }
 
+func computeAgentList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	client.Microversion = "2.1"
+	requestURL := client.ServiceURL("os-agents")
+	if hypervisor := flagValue(opts, "hypervisor"); hypervisor != "" {
+		query := url.Values{}
+		query.Set("hypervisor", hypervisor)
+		requestURL += "?" + query.Encode()
+	}
+	var body struct {
+		Agents []map[string]any `json:"agents"`
+	}
+	resp, err := client.Get(ctx, requestURL, &body, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return oscHTTPException(err)
+	}
+	rows := make([]outputRow, 0, len(body.Agents))
+	for _, item := range body.Agents {
+		rows = append(rows, outputRow{
+			"Agent ID":     mapValueOrEmpty(item, "agent_id"),
+			"Hypervisor":   mapValueOrEmpty(item, "hypervisor"),
+			"OS":           mapValueOrEmpty(item, "os"),
+			"Architecture": mapValueOrEmpty(item, "architecture"),
+			"Version":      mapValueOrEmpty(item, "version"),
+			"Md5Hash":      mapValueOrEmpty(item, "md5hash"),
+			"URL":          mapValueOrEmpty(item, "url"),
+		})
+	}
+	return renderListOutput(stdout, opts, []string{"Agent ID", "Hypervisor", "OS", "Architecture", "Version", "Md5Hash", "URL"}, rows)
+}
+
 func hostList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
 	client.Microversion = "2.1"
 	var body struct {
@@ -915,7 +953,7 @@ func hostList(ctx context.Context, stdout io.Writer, opts *Options, client *goph
 	resp, err := client.Get(ctx, client.ServiceURL("os-hosts"), &body, nil)
 	_, _, err = gophercloud.ParseResponse(resp, err)
 	if err != nil {
-		return err
+		return oscHTTPException(err)
 	}
 	zone := flagValue(opts, "zone")
 	rows := make([]outputRow, 0, len(body.Hosts))
@@ -945,7 +983,7 @@ func hostShow(ctx context.Context, stdout io.Writer, opts *Options, client *goph
 	resp, err := client.Get(ctx, client.ServiceURL("os-hosts", args[0]), &body, nil)
 	_, _, err = gophercloud.ParseResponse(resp, err)
 	if err != nil {
-		return err
+		return oscHTTPException(err)
 	}
 	rows := make([]outputRow, 0, len(body.Host))
 	for _, item := range body.Host {
@@ -4634,6 +4672,48 @@ func mapValueOrEmpty(item map[string]any, keys ...string) any {
 
 func mapValueString(item map[string]any, keys ...string) string {
 	return valueString(mapValueOrEmpty(item, keys...))
+}
+
+func oscHTTPException(err error) error {
+	if err == nil {
+		return nil
+	}
+	var valueErr gophercloud.ErrUnexpectedResponseCode
+	if errors.As(err, &valueErr) {
+		return formatOSCHTTPException(valueErr)
+	}
+	var ptrErr *gophercloud.ErrUnexpectedResponseCode
+	if errors.As(err, &ptrErr) && ptrErr != nil {
+		return formatOSCHTTPException(*ptrErr)
+	}
+	return err
+}
+
+func formatOSCHTTPException(err gophercloud.ErrUnexpectedResponseCode) error {
+	class := "Error"
+	if err.Actual >= 500 {
+		class = "Server Error"
+	} else if err.Actual >= 400 {
+		class = "Client Error"
+	}
+	message := openStackFaultMessage(err.Body)
+	if message == "" {
+		message = strings.TrimSpace(string(err.Body))
+	}
+	return fmt.Errorf("HttpException: %d: %s for url: %s, %s", err.Actual, class, err.URL, message)
+}
+
+func openStackFaultMessage(body []byte) string {
+	var decoded map[string]map[string]any
+	if err := json.Unmarshal(body, &decoded); err != nil {
+		return ""
+	}
+	for _, value := range decoded {
+		if message, ok := value["message"].(string); ok {
+			return message
+		}
+	}
+	return ""
 }
 
 func intFlag(opts *Options, name string) int {

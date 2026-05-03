@@ -495,3 +495,16 @@ Sources consulted:
 
 * Local OSC oracle snapshots in `compat/osc/9.0.0/help/host/list.txt` and `compat/osc/9.0.0/help/host/show.txt`.
 * Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/compute/v2/host.py`, used only as the pinned local oracle implementation source.
+
+## 2026-05-03: Deprecated Nova Compute Agent Read
+
+Work done: added `compute agent list`.
+
+Implementation note: Python OSC implements `compute agent list` as a raw Compute API call because OpenStackSDK intentionally does not support the deprecated agent API. The command calls `GET /os-agents` at Compute microversion 2.1, includes the optional `--hypervisor` query parameter, and uses the OSC columns `Agent ID`, `Hypervisor`, `OS`, `Architecture`, `Version`, `Md5Hash`, and `URL`. The Go CLI also added a small HTTP error formatter for these raw Compute shims so removed Nova APIs return Python-style `HttpException` text instead of Gophercloud's default response-code error.
+
+Live observations on `cloud6`: Python OSC and the Go CLI matched for the removed API error path on `compute agent list -f json` and `compute agent list --hypervisor xen -f json`. `cloud6` returns HTTP 410 for the base list and HTTP 500 with Nova's `KeyError` message for the filtered list, so success output still needs a XenAPI-capable or older fixture cloud before golden success rows can be recorded.
+
+Sources consulted:
+
+* Local OSC oracle snapshot in `compat/osc/9.0.0/help/compute/agent/list.txt`.
+* Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/compute/v2/agent.py`, used only as the pinned local oracle implementation source.

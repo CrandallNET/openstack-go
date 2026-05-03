@@ -6,6 +6,8 @@ import (
 	"io"
 	"strings"
 	"testing"
+
+	"github.com/gophercloud/gophercloud/v2"
 )
 
 func executeForTest(args ...string) (string, string, error) {
@@ -237,6 +239,18 @@ func TestJSONOutputDoesNotEscapeHTML(t *testing.T) {
 	}
 	if !strings.Contains(stdout.String(), `"<is> True"`) {
 		t.Fatalf("expected JSON output to contain unescaped value, got:\n%s", stdout.String())
+	}
+}
+
+func TestOSCHTTPExceptionFormatsOpenStackFault(t *testing.T) {
+	err := oscHTTPException(gophercloud.ErrUnexpectedResponseCode{
+		URL:    "http://example.test/v2.1/os-agents",
+		Method: "GET",
+		Actual: 410,
+		Body:   []byte(`{"computeFault":{"code":410,"message":"This resource is no longer available. No forwarding address is given."}}`),
+	})
+	if got, want := err.Error(), "HttpException: 410: Client Error for url: http://example.test/v2.1/os-agents, This resource is no longer available. No forwarding address is given."; got != want {
+		t.Fatalf("HTTP exception mismatch: got %q want %q", got, want)
 	}
 }
 
