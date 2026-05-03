@@ -21,6 +21,34 @@ type outputField struct {
 	Value any
 }
 
+type orderedJSONObject struct {
+	keys   []string
+	values map[string]any
+}
+
+func (object orderedJSONObject) MarshalJSON() ([]byte, error) {
+	var buffer bytes.Buffer
+	buffer.WriteByte('{')
+	for i, key := range object.keys {
+		if i > 0 {
+			buffer.WriteByte(',')
+		}
+		encodedKey, err := json.Marshal(key)
+		if err != nil {
+			return nil, err
+		}
+		encodedValue, err := json.Marshal(object.values[key])
+		if err != nil {
+			return nil, err
+		}
+		buffer.Write(encodedKey)
+		buffer.WriteByte(':')
+		buffer.Write(encodedValue)
+	}
+	buffer.WriteByte('}')
+	return buffer.Bytes(), nil
+}
+
 func renderListOutput(stdout io.Writer, opts *Options, columns []string, rows []outputRow) error {
 	if rows == nil {
 		rows = []outputRow{}
@@ -383,6 +411,12 @@ func valueString(value any) string {
 		bytes, err := json.Marshal(typed)
 		if err != nil {
 			return fmt.Sprint(typed)
+		}
+		return string(bytes)
+	case orderedJSONObject:
+		bytes, err := json.Marshal(typed)
+		if err != nil {
+			return fmt.Sprint(typed.values)
 		}
 		return string(bytes)
 	case time.Time:

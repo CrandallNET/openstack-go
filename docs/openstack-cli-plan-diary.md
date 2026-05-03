@@ -578,3 +578,17 @@ Sources consulted:
 * Local OSC oracle snapshots in `compat/osc/9.0.0/help/image/metadef/resource/type/list.txt` and `compat/osc/9.0.0/help/image/metadef/resource/type/association/list.txt`.
 * Local Python OSC source files `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/image/v2/metadef_resource_types.py` and `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/image/v2/metadef_resource_type_association.py`, used only as pinned local oracle implementation sources.
 * Local OpenStackSDK source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/image/v2/metadef_resource_type.py`, which documents the resource type and association paths and response fields.
+
+## 2026-05-03: Glance Metadef Object and Property Reads
+
+Work done: added `image metadef object list`, `image metadef object show`, `image metadef object property show`, `image metadef property list`, and `image metadef property show`.
+
+Implementation note: Python OSC uses OpenStackSDK metadef object and property resources at `/metadefs/namespaces/{namespace}/objects` and `/metadefs/namespaces/{namespace}/properties`. The local Gophercloud v2.12.0 module has no typed metadef object or property helper, so the Go CLI uses narrow authenticated Glance REST reads. The implementation preserves ordered JSON for nested metadef property dictionaries because Python OSC's JSON output reflects the order returned by Glance and OpenStackSDK.
+
+Live observations on `cloud6`: Python OSC and the Go CLI matched for `image metadef object list OS::Software::WebServers -f json`, `image metadef object show OS::Software::WebServers "Apache HTTP Server" -f json`, `image metadef property list OS::OperatingSystem -f json`, `image metadef property show OS::OperatingSystem os_distro -f json`, and `image metadef object property show OS::Software::WebServers "Apache HTTP Server" sw_webserver_apache_http_port -f json`.
+
+Sources consulted:
+
+* Local OSC oracle snapshots in `compat/osc/9.0.0/help/image/metadef/object/list.txt`, `compat/osc/9.0.0/help/image/metadef/object/show.txt`, `compat/osc/9.0.0/help/image/metadef/object/property/show.txt`, `compat/osc/9.0.0/help/image/metadef/property/list.txt`, and `compat/osc/9.0.0/help/image/metadef/property/show.txt`.
+* Local Python OSC source files `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/image/v2/metadef_objects.py` and `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/image/v2/metadef_properties.py`, used only as pinned local oracle implementation sources.
+* Local OpenStackSDK source files `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/image/v2/metadef_object.py` and `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/image/v2/metadef_property.py`, which document the object and property paths and SDK-shaped fields.

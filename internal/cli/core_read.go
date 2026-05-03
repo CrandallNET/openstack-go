@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -277,6 +278,36 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return imageMetadefNamespaceShow(cmd.Context(), stdout, opts, client, args)
+		case "image metadef object list":
+			client, err := clients.imageV2()
+			if err != nil {
+				return err
+			}
+			return imageMetadefObjectList(cmd.Context(), stdout, opts, client, args)
+		case "image metadef object property show":
+			client, err := clients.imageV2()
+			if err != nil {
+				return err
+			}
+			return imageMetadefObjectPropertyShow(cmd.Context(), stdout, opts, client, args)
+		case "image metadef object show":
+			client, err := clients.imageV2()
+			if err != nil {
+				return err
+			}
+			return imageMetadefObjectShow(cmd.Context(), stdout, opts, client, args)
+		case "image metadef property list":
+			client, err := clients.imageV2()
+			if err != nil {
+				return err
+			}
+			return imageMetadefPropertyList(cmd.Context(), stdout, opts, client, args)
+		case "image metadef property show":
+			client, err := clients.imageV2()
+			if err != nil {
+				return err
+			}
+			return imageMetadefPropertyShow(cmd.Context(), stdout, opts, client, args)
 		case "image metadef resource type association list":
 			client, err := clients.imageV2()
 			if err != nil {
@@ -1694,6 +1725,161 @@ func imageMetadefNamespaceShow(ctx context.Context, stdout io.Writer, opts *Opti
 		fields = appendMapField(fields, body, name, name)
 	}
 	return renderShowOutput(stdout, opts, fields)
+}
+
+func imageMetadefObjectList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("image metadef object list requires <namespace>")
+	}
+	requestURL := client.ServiceURL("metadefs", "namespaces", url.PathEscape(args[0]), "objects")
+	var rows []outputRow
+	for requestURL != "" {
+		var body struct {
+			Objects []map[string]any `json:"objects"`
+			Next    string           `json:"next"`
+		}
+		resp, err := client.Get(ctx, requestURL, &body, nil)
+		_, _, err = gophercloud.ParseResponse(resp, err)
+		if err != nil {
+			return oscHTTPException(err)
+		}
+		for _, item := range body.Objects {
+			rows = append(rows, outputRow{
+				"name":        mapValueOrEmpty(item, "name"),
+				"description": mapValueOrEmpty(item, "description"),
+			})
+		}
+		requestURL = resolveServiceNextURL(client, body.Next)
+	}
+	return renderListOutput(stdout, opts, []string{"name", "description"}, rows)
+}
+
+func imageMetadefObjectShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("image metadef object show requires <namespace> <object>")
+	}
+	item, err := imageMetadefObject(ctx, client, args[0], args[1])
+	if err != nil {
+		return oscResourceNotFoundError(err, "MetadefObject", "None")
+	}
+	fields := []outputField{
+		{Name: "created_at", Value: orderedMapValueOrNil(item, "created_at")},
+		{Name: "description", Value: orderedMapValueOrNil(item, "description")},
+		{Name: "name", Value: orderedMapValueOrDefault(item, "name", args[1])},
+		{Name: "namespace_name", Value: orderedMapValueOrDefault(item, "namespace_name", args[0])},
+		{Name: "properties", Value: orderedMapValueOrNil(item, "properties")},
+		{Name: "required", Value: orderedMapValueOrDefault(item, "required", []any{})},
+		{Name: "updated_at", Value: orderedMapValueOrNil(item, "updated_at")},
+	}
+	return renderShowOutput(stdout, opts, fields)
+}
+
+func imageMetadefObjectPropertyShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 3 {
+		return fmt.Errorf("image metadef object property show requires <namespace_name> <object_name> <property>")
+	}
+	item, err := imageMetadefObject(ctx, client, args[0], args[1])
+	if err != nil {
+		return oscResourceNotFoundError(err, "MetadefObject", "None")
+	}
+	properties, ok := orderedMapValueAsObject(item, "properties")
+	if !ok {
+		return fmt.Errorf("Property %s not found in object %s.", args[2], args[1])
+	}
+	property, ok := orderedJSONValueAsObject(properties.values[args[2]])
+	if !ok {
+		return fmt.Errorf("Property %s not found in object %s.", args[2], args[1])
+	}
+	values := make(map[string]any, len(property.values)+1)
+	for key, value := range property.values {
+		values[key] = value
+	}
+	values["name"] = args[2]
+	return renderShowOutput(stdout, opts, sortedFieldsFromMap(values, false))
+}
+
+func imageMetadefPropertyList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("image metadef property list requires <namespace>")
+	}
+	body, err := readServiceJSONRaw(ctx, client, client.ServiceURL("metadefs", "namespaces", url.PathEscape(args[0]), "properties"))
+	if err != nil {
+		return oscHTTPException(err)
+	}
+	item, err := orderedJSONTopObject(body)
+	if err != nil {
+		return err
+	}
+	properties, _ := orderedMapValueAsObject(item, "properties")
+	rows := make([]outputRow, 0, len(properties.keys))
+	for _, name := range properties.keys {
+		property, _ := orderedJSONValueAsObject(properties.values[name])
+		rows = append(rows, outputRow{
+			"name":  name,
+			"title": orderedMapValueOrNil(property, "title"),
+			"type":  orderedMapValueOrNil(property, "type"),
+		})
+	}
+	return renderListOutput(stdout, opts, []string{"name", "title", "type"}, rows)
+}
+
+func imageMetadefPropertyShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("image metadef property show requires <namespace> <property>")
+	}
+	body, err := readServiceJSONRaw(ctx, client, client.ServiceURL("metadefs", "namespaces", url.PathEscape(args[0]), "properties", url.PathEscape(args[1])))
+	if err != nil {
+		return oscResourceNotFoundError(err, "MetadefProperty", args[1])
+	}
+	item, err := orderedJSONTopObject(body)
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, metadefPropertyFields(item, args[1]))
+}
+
+func imageMetadefObject(ctx context.Context, client *gophercloud.ServiceClient, namespace string, object string) (orderedJSONObject, error) {
+	body, err := readServiceJSONRaw(ctx, client, client.ServiceURL("metadefs", "namespaces", url.PathEscape(namespace), "objects", url.PathEscape(object)))
+	if err != nil {
+		return orderedJSONObject{}, err
+	}
+	return orderedJSONTopObject(body)
+}
+
+func metadefPropertyFields(item orderedJSONObject, propertyName string) []outputField {
+	values := map[string]any{}
+	addPropertyValue := func(outputName string, inputNames ...string) {
+		for _, inputName := range inputNames {
+			if value, ok := item.values[inputName]; ok && value != nil {
+				values[outputName] = value
+				return
+			}
+		}
+	}
+	addPropertyValue("namespace_name", "namespace_name")
+	if value, ok := item.values["name"]; ok && value != nil {
+		values["name"] = value
+	} else if propertyName != "" {
+		values["name"] = propertyName
+	}
+	addPropertyValue("type", "type")
+	addPropertyValue("title", "title")
+	addPropertyValue("description", "description")
+	addPropertyValue("operators", "operators")
+	addPropertyValue("default", "default")
+	addPropertyValue("is_readonly", "is_readonly", "readonly")
+	addPropertyValue("minimum", "minimum")
+	addPropertyValue("maximum", "maximum")
+	addPropertyValue("enum", "enum")
+	addPropertyValue("pattern", "pattern")
+	addPropertyValue("min_length", "min_length", "minLength")
+	addPropertyValue("max_length", "max_length", "maxLength")
+	addPropertyValue("items", "items")
+	addPropertyValue("require_unique_items", "require_unique_items", "uniqueItems")
+	addPropertyValue("min_items", "min_items", "minItems")
+	addPropertyValue("max_items", "max_items", "maxItems")
+	addPropertyValue("allow_additional_items", "allow_additional_items", "additionalItems")
+	return sortedFieldsFromMap(values, true)
 }
 
 func imageMetadefResourceTypeList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
@@ -4976,6 +5162,122 @@ func appendMapField(fields []outputField, item map[string]any, key string, name 
 		return fields
 	}
 	return append(fields, outputField{Name: name, Value: value})
+}
+
+func readServiceJSONRaw(ctx context.Context, client *gophercloud.ServiceClient, requestURL string) ([]byte, error) {
+	resp, err := client.Get(ctx, requestURL, nil, &gophercloud.RequestOpts{KeepResponseBody: true})
+	body, _, err := gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return nil, err
+	}
+	if body == nil {
+		return nil, nil
+	}
+	defer body.Close()
+	return io.ReadAll(body)
+}
+
+func orderedJSONTopObject(body []byte) (orderedJSONObject, error) {
+	decoder := json.NewDecoder(bytes.NewReader(body))
+	decoder.UseNumber()
+	value, err := decodeOrderedJSONValue(decoder)
+	if err != nil {
+		return orderedJSONObject{}, err
+	}
+	item, ok := orderedJSONValueAsObject(value)
+	if !ok {
+		return orderedJSONObject{}, fmt.Errorf("expected JSON object")
+	}
+	return item, nil
+}
+
+func decodeOrderedJSONValue(decoder *json.Decoder) (any, error) {
+	token, err := decoder.Token()
+	if err != nil {
+		return nil, err
+	}
+	delim, ok := token.(json.Delim)
+	if !ok {
+		return token, nil
+	}
+	switch delim {
+	case '{':
+		item := orderedJSONObject{values: map[string]any{}}
+		for decoder.More() {
+			keyToken, err := decoder.Token()
+			if err != nil {
+				return nil, err
+			}
+			key, ok := keyToken.(string)
+			if !ok {
+				return nil, fmt.Errorf("expected JSON object key")
+			}
+			value, err := decodeOrderedJSONValue(decoder)
+			if err != nil {
+				return nil, err
+			}
+			item.keys = append(item.keys, key)
+			item.values[key] = value
+		}
+		if _, err := decoder.Token(); err != nil {
+			return nil, err
+		}
+		return item, nil
+	case '[':
+		items := []any{}
+		for decoder.More() {
+			value, err := decodeOrderedJSONValue(decoder)
+			if err != nil {
+				return nil, err
+			}
+			items = append(items, value)
+		}
+		if _, err := decoder.Token(); err != nil {
+			return nil, err
+		}
+		return items, nil
+	default:
+		return nil, fmt.Errorf("unexpected JSON delimiter %q", delim)
+	}
+}
+
+func orderedJSONValueAsObject(value any) (orderedJSONObject, bool) {
+	item, ok := value.(orderedJSONObject)
+	return item, ok
+}
+
+func orderedMapValueAsObject(item orderedJSONObject, key string) (orderedJSONObject, bool) {
+	return orderedJSONValueAsObject(item.values[key])
+}
+
+func orderedMapValueOrNil(item orderedJSONObject, key string) any {
+	if value, ok := item.values[key]; ok {
+		return value
+	}
+	return nil
+}
+
+func orderedMapValueOrDefault(item orderedJSONObject, key string, defaultValue any) any {
+	if value, ok := item.values[key]; ok && value != nil {
+		return value
+	}
+	return defaultValue
+}
+
+func sortedFieldsFromMap(values map[string]any, skipNil bool) []outputField {
+	keys := make([]string, 0, len(values))
+	for key, value := range values {
+		if skipNil && value == nil {
+			continue
+		}
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	fields := make([]outputField, 0, len(keys))
+	for _, key := range keys {
+		fields = append(fields, outputField{Name: key, Value: values[key]})
+	}
+	return fields
 }
 
 func metadefResourceTypeNames(value any) []string {

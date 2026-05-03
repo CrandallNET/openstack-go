@@ -3,6 +3,7 @@ package cli
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"io"
 	"strings"
 	"testing"
@@ -239,6 +240,27 @@ func TestJSONOutputDoesNotEscapeHTML(t *testing.T) {
 	}
 	if !strings.Contains(stdout.String(), `"<is> True"`) {
 		t.Fatalf("expected JSON output to contain unescaped value, got:\n%s", stdout.String())
+	}
+}
+
+func TestOrderedJSONTopObjectPreservesNestedOrder(t *testing.T) {
+	item, err := orderedJSONTopObject([]byte(`{"properties":{"z":{"type":"string","title":"Z"},"a":{"default":"1","minimum":1}},"required":[]}`))
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	properties, ok := orderedMapValueAsObject(item, "properties")
+	if !ok {
+		t.Fatalf("expected properties object")
+	}
+	if got, want := valueString(properties), `{"z":{"type":"string","title":"Z"},"a":{"default":"1","minimum":1}}`; got != want {
+		t.Fatalf("ordered JSON mismatch: got %q want %q", got, want)
+	}
+	encodedRequired, err := json.Marshal(orderedMapValueOrNil(item, "required"))
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if got, want := string(encodedRequired), `[]`; got != want {
+		t.Fatalf("empty array mismatch: got %q want %q", got, want)
 	}
 }
 

@@ -425,6 +425,11 @@ func coreReadPackages() map[string]string {
 		"volume type list":                   "github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/volumetypes",
 		"volume type show":                   "github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/volumetypes",
 	}
+	packages["image metadef object list"] = "Glance metadef objects via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
+	packages["image metadef object property show"] = "Glance metadef object properties via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
+	packages["image metadef object show"] = "Glance metadef objects via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
+	packages["image metadef property list"] = "Glance metadef namespace properties via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
+	packages["image metadef property show"] = "Glance metadef namespace properties via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
 	packages["image metadef resource type association list"] = "Glance metadef namespace resource type associations via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
 	return packages
 }
@@ -462,6 +467,11 @@ func coreReadShims() map[string]bool {
 		"volume summary":                     true,
 		"versions show":                      true,
 	}
+	shims["image metadef object list"] = true
+	shims["image metadef object property show"] = true
+	shims["image metadef object show"] = true
+	shims["image metadef property list"] = true
+	shims["image metadef property show"] = true
 	shims["image metadef resource type association list"] = true
 	return shims
 }
@@ -575,6 +585,11 @@ func coreCloudVerified() map[string]bool {
 		"volume type list":                   true,
 		"volume type show":                   true,
 	}
+	verified["image metadef object list"] = true
+	verified["image metadef object property show"] = true
+	verified["image metadef object show"] = true
+	verified["image metadef property list"] = true
+	verified["image metadef property show"] = true
 	verified["image metadef resource type association list"] = true
 	return verified
 }
