@@ -176,6 +176,24 @@ Sources consulted: Gophercloud package docs and local module sources for [Block 
 
 Verification: `go test ./...`, `go build -o bin/openstack ./cmd/openstack`, and live `cloud6` JSON smoke checks passed for `volume backup list`, `volume service list`, `volume service list --long`, `volume backend pool list`, `volume backend pool list --long`, and `volume transfer request list`. `volume backup show` and `volume transfer request show` are implemented but still need live fixtures because the list commands returned no rows during this run.
 
+## 2026-05-03: Volume Attachment, QoS, Summary, And Ordered JSON
+
+Work done: added Block Storage v3 read implementations for `volume attachment list/show`, `volume qos list/show`, and `volume summary`. Attachments and QoS use Gophercloud packages. `volume summary` uses a narrow authenticated Cinder REST read through the Gophercloud service client because the local Gophercloud v2.12.0 module has no typed summary helper.
+
+Renderer work: JSON list and show output now preserves command column and field order instead of serializing Go maps. This closes visible mismatches for `volume attachment list -f json`, `volume attachment show -f json`, and `volume summary -f json`, and should reduce future golden-test churn for all implemented commands.
+
+Microversion work: the Block Storage client now honors `OS_VOLUME_API_VERSION`. Commands with minimum Cinder microversions discover supported service microversions and use the service's maximum when no explicit version is set. This was needed because Python OSC/openstacksdk used Cinder 3.71 for attachment reads on `cloud6`, while `volume summary` needs at least 3.12 and includes `metadata` only at 3.36 or later.
+
+Sources consulted:
+
+* [Gophercloud Block Storage attachments](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/attachments), whose package note says the attachment API requires Cinder 3.27 minimum.
+* [Gophercloud Block Storage QoS](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/qos), for QoS specs and associations.
+* [Gophercloud OpenStack utils](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/utils), for service version and supported microversion discovery.
+* [OpenStack Block Storage API v3](https://docs.openstack.org/api-ref/block-storage/v3/), which documents attachments as new in microversion 3.27 and volume summary as available since 3.12, with `metadata` new in 3.36.
+* Local Python OSC source files `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/volume/v3/volume_attachment.py`, `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/volume/v2/qos_specs.py`, and `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/volume/v3/volume.py`, used only as the pinned local oracle implementation source.
+
+Verification: `go test ./...`, `go build -o bin/openstack ./cmd/openstack`, and `go run ./tools/compat-matrix` passed. Live `cloud6` checks matched Python OSC for `volume attachment list -f json`, `volume attachment show <existing-attachment> -f json`, `volume qos list --print-empty`, and `volume summary -f json`. A temporary QoS spec named `golang-osc-test-64fb7c64-bee7-47ed-8dba-65b585469eb5` was created with Python OSC to provide a show fixture; Python and Go matched for `volume qos show -f json` and `volume qos list -f json`, and the temporary QoS spec was deleted successfully.
+
 ## 2026-05-02: Pre-Implementation Question Register
 
 Work done: reviewed the living plan for implementation-defining choices and added a decision and question register to the plan. The register separates questions that require user answers from assumptions that can be reviewed and reopened later.

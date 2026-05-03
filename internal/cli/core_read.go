@@ -10,7 +10,9 @@ import (
 	"strings"
 
 	"github.com/gophercloud/gophercloud/v2"
+	bsattachments "github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/attachments"
 	"github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/backups"
+	bsqos "github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/qos"
 	"github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/schedulerstats"
 	bsservices "github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/services"
 	"github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/snapshots"
@@ -43,6 +45,7 @@ import (
 	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/networks"
 	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/ports"
 	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/subnets"
+	osutils "github.com/gophercloud/gophercloud/v2/openstack/utils"
 	"github.com/gophercloud/gophercloud/v2/pagination"
 	"github.com/spf13/cobra"
 )
@@ -513,6 +516,18 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return volumeBackendPoolList(cmd.Context(), stdout, opts, client)
+		case "volume attachment list":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeAttachmentList(cmd.Context(), stdout, opts, client)
+		case "volume attachment show":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeAttachmentShow(cmd.Context(), stdout, opts, client, args)
 		case "volume backup list":
 			client, err := clients.blockStorageV3()
 			if err != nil {
@@ -543,6 +558,24 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return volumeSnapshotShow(cmd.Context(), stdout, opts, client, args)
+		case "volume qos list":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeQoSList(cmd.Context(), stdout, opts, client)
+		case "volume qos show":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeQoSShow(cmd.Context(), stdout, opts, client, args)
+		case "volume summary":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeSummary(cmd.Context(), stdout, opts, client)
 		case "volume type list":
 			client, err := clients.blockStorageV3()
 			if err != nil {
@@ -1998,6 +2031,165 @@ func volumeBackendPoolList(ctx context.Context, stdout io.Writer, opts *Options,
 	return renderListOutput(stdout, opts, columns, rows)
 }
 
+func volumeAttachmentList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	client, err := blockStorageClientWithMinimumMicroversion(ctx, client, "3.27")
+	if err != nil {
+		return err
+	}
+	page, err := bsattachments.List(client, bsattachments.ListOpts{
+		AllTenants: boolFlag(opts, "all-projects") || flagValue(opts, "project") != "",
+		ProjectID:  flagValue(opts, "project"),
+		VolumeID:   flagValue(opts, "volume-id"),
+		Status:     flagValue(opts, "status"),
+		Limit:      intFlag(opts, "limit"),
+		Marker:     flagValue(opts, "marker"),
+	}).AllPages(ctx)
+	if err != nil {
+		return err
+	}
+	items, err := bsattachments.ExtractAttachments(page)
+	if err != nil {
+		return err
+	}
+	rows := make([]outputRow, 0, len(items))
+	for _, item := range items {
+		rows = append(rows, outputRow{
+			"ID":        item.ID,
+			"Volume ID": item.VolumeID,
+			"Server ID": item.Instance,
+			"Status":    item.Status,
+		})
+	}
+	return renderListOutput(stdout, opts, []string{"ID", "Volume ID", "Server ID", "Status"}, rows)
+}
+
+func volumeAttachmentShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("volume attachment show requires <attachment>")
+	}
+	client, err := blockStorageClientWithMinimumMicroversion(ctx, client, "3.27")
+	if err != nil {
+		return err
+	}
+	item, err := bsattachments.Get(ctx, client, args[0]).Extract()
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, []outputField{
+		{"ID", item.ID},
+		{"Volume ID", item.VolumeID},
+		{"Instance ID", item.Instance},
+		{"Status", item.Status},
+		{"Attach Mode", item.AttachMode},
+		{"Attached At", valueString(oscTime(item.AttachedAt))},
+		{"Detached At", valueString(oscTime(item.DetachedAt))},
+		{"Properties", item.ConnectionInfo},
+	})
+}
+
+func volumeQoSList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	page, err := bsqos.List(client, bsqos.ListOpts{}).AllPages(ctx)
+	if err != nil {
+		return err
+	}
+	items, err := bsqos.ExtractQoS(page)
+	if err != nil {
+		return err
+	}
+	rows := make([]outputRow, 0, len(items))
+	for _, item := range items {
+		associations, err := volumeQoSAssociations(ctx, client, item.ID)
+		if err != nil {
+			return err
+		}
+		rows = append(rows, outputRow{
+			"ID":           item.ID,
+			"Name":         item.Name,
+			"Consumer":     item.Consumer,
+			"Associations": associations,
+			"Properties":   item.Specs,
+		})
+	}
+	return renderListOutput(stdout, opts, []string{"ID", "Name", "Consumer", "Associations", "Properties"}, rows)
+}
+
+func volumeQoSShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("volume qos show requires <qos-spec>")
+	}
+	item, err := findVolumeQoS(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	associations, err := volumeQoSAssociations(ctx, client, item.ID)
+	if err != nil {
+		return err
+	}
+	fields := []outputField{
+		{"consumer", item.Consumer},
+		{"id", item.ID},
+		{"name", item.Name},
+		{"properties", item.Specs},
+	}
+	if len(associations) > 0 {
+		fields = append([]outputField{{"associations", associations}}, fields...)
+	}
+	return renderShowOutput(stdout, opts, fields)
+}
+
+func volumeSummary(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	client, err := blockStorageClientWithMinimumMicroversion(ctx, client, "3.12")
+	if err != nil {
+		return err
+	}
+	url := client.ServiceURL("volumes", "summary")
+	if boolFlag(opts, "all-projects") {
+		url += "?all_tenants=True"
+	} else {
+		url += "?all_tenants=False"
+	}
+
+	var response struct {
+		Summary struct {
+			TotalCount int            `json:"total_count"`
+			TotalSize  int            `json:"total_size"`
+			Metadata   map[string]any `json:"metadata"`
+		} `json:"volume-summary"`
+	}
+	_, err = client.Get(ctx, url, &response, nil)
+	if err != nil {
+		return err
+	}
+	fields := []outputField{
+		{"Total Count", response.Summary.TotalCount},
+		{"Total Size", response.Summary.TotalSize},
+	}
+	if microversionAtLeast(client.Microversion, "3.36") {
+		metadata := response.Summary.Metadata
+		if metadata == nil {
+			metadata = map[string]any{}
+		}
+		fields = append(fields, outputField{"Metadata", metadata})
+	}
+	return renderShowOutput(stdout, opts, fields)
+}
+
+func volumeQoSAssociations(ctx context.Context, client *gophercloud.ServiceClient, qosID string) ([]string, error) {
+	page, err := bsqos.ListAssociations(client, qosID).AllPages(ctx)
+	if err != nil {
+		return nil, err
+	}
+	items, err := bsqos.ExtractAssociations(page)
+	if err != nil {
+		return nil, err
+	}
+	names := make([]string, 0, len(items))
+	for _, item := range items {
+		names = append(names, item.Name)
+	}
+	return names, nil
+}
+
 func volumeTransferList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
 	page, err := transfers.List(client, transfers.ListOpts{AllTenants: boolFlag(opts, "all-projects")}).AllPages(ctx)
 	if err != nil {
@@ -2889,6 +3081,22 @@ func findVolumeTransfer(ctx context.Context, client *gophercloud.ServiceClient, 
 	return singleByName(value, items, func(item transfers.Transfer) string { return item.Name })
 }
 
+func findVolumeQoS(ctx context.Context, client *gophercloud.ServiceClient, value string) (*bsqos.QoS, error) {
+	result := bsqos.Get(ctx, client, value)
+	if result.Err == nil {
+		return result.Extract()
+	}
+	page, err := bsqos.List(client, bsqos.ListOpts{}).AllPages(ctx)
+	if err != nil {
+		return nil, result.Err
+	}
+	items, err := bsqos.ExtractQoS(page)
+	if err != nil {
+		return nil, err
+	}
+	return singleByName(value, items, func(item bsqos.QoS) string { return item.Name })
+}
+
 func findSubnet(ctx context.Context, client *gophercloud.ServiceClient, value string) (*subnets.Subnet, error) {
 	result := subnets.Get(ctx, client, value)
 	if result.Err == nil {
@@ -3423,6 +3631,58 @@ func volumeTypeAvailabilityZoneMatches(specs map[string]string, availabilityZone
 		}
 	}
 	return false
+}
+
+func blockStorageClientWithMinimumMicroversion(ctx context.Context, client *gophercloud.ServiceClient, minimum string) (*gophercloud.ServiceClient, error) {
+	if client.Microversion != "" {
+		if !microversionAtLeast(client.Microversion, minimum) {
+			return nil, fmt.Errorf("--os-volume-api-version %s or greater is required", minimum)
+		}
+		return client, nil
+	}
+	supported, err := discoverBlockStorageMicroversions(ctx, client)
+	if err != nil {
+		client.Microversion = minimum
+		return client, nil
+	}
+	max := fmt.Sprintf("%d.%d", supported.MaxMajor, supported.MaxMinor)
+	if !microversionAtLeast(max, minimum) {
+		return nil, fmt.Errorf("--os-volume-api-version %s or greater is required", minimum)
+	}
+	client.Microversion = max
+	return client, nil
+}
+
+func discoverBlockStorageMicroversions(ctx context.Context, client *gophercloud.ServiceClient) (osutils.SupportedMicroversions, error) {
+	endpoint := client.Endpoint
+	if versioned, err := osutils.BaseVersionedEndpoint(client.Endpoint); err == nil && versioned != "" {
+		endpoint = versioned
+	}
+	versions, err := osutils.GetServiceVersions(ctx, client.ProviderClient, endpoint, true)
+	if err != nil {
+		return osutils.SupportedMicroversions{}, err
+	}
+	for _, version := range versions {
+		if version.Major == 3 {
+			return version.SupportedMicroversions, nil
+		}
+	}
+	return osutils.SupportedMicroversions{}, fmt.Errorf("block storage v3 microversions not found")
+}
+
+func microversionAtLeast(value string, minimum string) bool {
+	valueMajor, valueMinor, err := osutils.ParseMicroversion(value)
+	if err != nil {
+		return false
+	}
+	minMajor, minMinor, err := osutils.ParseMicroversion(minimum)
+	if err != nil {
+		return false
+	}
+	if valueMajor != minMajor {
+		return valueMajor > minMajor
+	}
+	return valueMinor >= minMinor
 }
 
 func stringSliceContains(values []string, want string) bool {

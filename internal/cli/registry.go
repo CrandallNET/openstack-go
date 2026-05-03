@@ -91,11 +91,14 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"subnet pool list", "subnet pool show",
 		"trait list", "trait show",
 		"versions show",
+		"volume attachment list", "volume attachment show",
 		"volume backend pool list",
 		"volume backup list", "volume backup show",
 		"volume list", "volume show",
+		"volume qos list", "volume qos show",
 		"volume service list",
 		"volume snapshot list", "volume snapshot show",
+		"volume summary",
 		"volume transfer request list", "volume transfer request show",
 		"volume type list", "volume type show",
 	} {
@@ -443,6 +446,14 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().Int("offset", 0, "collection offset")
 	case "volume backend pool list":
 		cmd.Flags().Bool("long", false, "show detailed information about pools")
+	case "volume attachment list":
+		cmd.Flags().String("project", "", "filter by project")
+		cmd.Flags().String("project-domain", "", "project domain")
+		cmd.Flags().Bool("all-projects", false, "include all projects")
+		cmd.Flags().String("volume-id", "", "filter by volume ID")
+		cmd.Flags().String("status", "", "filter by status")
+		cmd.Flags().Int("limit", 0, "maximum number of entries")
+		cmd.Flags().String("marker", "", "pagination marker")
 	case "volume backup list":
 		cmd.Flags().String("project", "", "filter by project")
 		cmd.Flags().Bool("long", false, "list additional fields")
@@ -479,6 +490,8 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().String("volume", "", "filter by volume")
 		cmd.Flags().Int("limit", 0, "maximum number of entries")
 		cmd.Flags().String("marker", "", "pagination marker")
+	case "volume summary":
+		cmd.Flags().Bool("all-projects", false, "include all projects")
 	case "versions show":
 		cmd.Flags().Bool("all-interfaces", false, "show all interfaces")
 		cmd.Flags().String("interface", "", "show a specific interface")
@@ -566,11 +579,14 @@ func isCoreReadCommand(path string) bool {
 		"subnet pool list", "subnet pool show",
 		"trait list", "trait show",
 		"versions show",
+		"volume attachment list", "volume attachment show",
 		"volume backend pool list",
 		"volume backup list", "volume backup show",
 		"volume list", "volume show",
+		"volume qos list", "volume qos show",
 		"volume service list",
 		"volume snapshot list", "volume snapshot show",
+		"volume summary",
 		"volume transfer request list", "volume transfer request show",
 		"volume type list", "volume type show":
 		return true

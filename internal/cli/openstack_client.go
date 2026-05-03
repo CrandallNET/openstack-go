@@ -64,7 +64,12 @@ func (clients *openStackClients) networkV2() (*gophercloud.ServiceClient, error)
 }
 
 func (clients *openStackClients) blockStorageV3() (*gophercloud.ServiceClient, error) {
-	return openstack.NewBlockStorageV3(clients.Provider, clients.EndpointOpts)
+	client, err := openstack.NewBlockStorageV3(clients.Provider, clients.EndpointOpts)
+	if err != nil {
+		return nil, err
+	}
+	client.Microversion = os.Getenv("OS_VOLUME_API_VERSION")
+	return client, nil
 }
 
 func (clients *openStackClients) objectStorageV1() (*gophercloud.ServiceClient, error) {

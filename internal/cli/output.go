@@ -29,11 +29,7 @@ func renderListOutput(stdout io.Writer, opts *Options, columns []string, rows []
 
 	switch opts.Format {
 	case "json":
-		encoder := json.NewEncoder(stdout)
-		if !opts.NoIndent {
-			encoder.SetIndent("", "  ")
-		}
-		return encoder.Encode(rows)
+		return writeJSONRows(stdout, columns, rows, opts.NoIndent)
 	case "yaml":
 		bytes, err := yaml.Marshal(rows)
 		if err != nil {
@@ -76,11 +72,7 @@ func renderShowOutput(stdout io.Writer, opts *Options, fields []outputField) err
 
 	switch opts.Format {
 	case "json":
-		encoder := json.NewEncoder(stdout)
-		if !opts.NoIndent {
-			encoder.SetIndent("", "  ")
-		}
-		return encoder.Encode(fieldsToMap(fields))
+		return writeJSONFields(stdout, fields, opts.NoIndent)
 	case "yaml":
 		bytes, err := yaml.Marshal(fieldsToMap(fields))
 		if err != nil {
@@ -205,6 +197,128 @@ func rowStrings(columns []string, row outputRow) []string {
 	return values
 }
 
+func writeJSONRows(stdout io.Writer, columns []string, rows []outputRow, noIndent bool) error {
+	if noIndent {
+		if _, err := fmt.Fprint(stdout, "["); err != nil {
+			return err
+		}
+		for i, row := range rows {
+			if i > 0 {
+				if _, err := fmt.Fprint(stdout, ","); err != nil {
+					return err
+				}
+			}
+			if err := writeJSONObject(stdout, columns, func(column string) any { return row[column] }, "", "", noIndent); err != nil {
+				return err
+			}
+		}
+		_, err := fmt.Fprintln(stdout, "]")
+		return err
+	}
+
+	if len(rows) == 0 {
+		_, err := fmt.Fprintln(stdout, "[]")
+		return err
+	}
+	if _, err := fmt.Fprintln(stdout, "["); err != nil {
+		return err
+	}
+	for i, row := range rows {
+		if _, err := fmt.Fprint(stdout, "  "); err != nil {
+			return err
+		}
+		if err := writeJSONObject(stdout, columns, func(column string) any { return row[column] }, "  ", "  ", noIndent); err != nil {
+			return err
+		}
+		if i < len(rows)-1 {
+			if _, err := fmt.Fprint(stdout, ","); err != nil {
+				return err
+			}
+		}
+		if _, err := fmt.Fprintln(stdout); err != nil {
+			return err
+		}
+	}
+	_, err := fmt.Fprintln(stdout, "]")
+	return err
+}
+
+func writeJSONFields(stdout io.Writer, fields []outputField, noIndent bool) error {
+	names := make([]string, 0, len(fields))
+	values := make(map[string]any, len(fields))
+	for _, field := range fields {
+		names = append(names, field.Name)
+		values[field.Name] = field.Value
+	}
+	if noIndent {
+		if err := writeJSONObject(stdout, names, func(name string) any { return values[name] }, "", "", noIndent); err != nil {
+			return err
+		}
+		_, err := fmt.Fprintln(stdout)
+		return err
+	}
+	if err := writeJSONObject(stdout, names, func(name string) any { return values[name] }, "", "  ", noIndent); err != nil {
+		return err
+	}
+	_, err := fmt.Fprintln(stdout)
+	return err
+}
+
+func writeJSONObject(stdout io.Writer, names []string, value func(string) any, objectPrefix string, indent string, noIndent bool) error {
+	if noIndent {
+		if _, err := fmt.Fprint(stdout, "{"); err != nil {
+			return err
+		}
+		for i, name := range names {
+			if i > 0 {
+				if _, err := fmt.Fprint(stdout, ","); err != nil {
+					return err
+				}
+			}
+			key, err := json.Marshal(name)
+			if err != nil {
+				return err
+			}
+			encoded, err := json.Marshal(value(name))
+			if err != nil {
+				return err
+			}
+			if _, err := fmt.Fprintf(stdout, "%s:%s", key, encoded); err != nil {
+				return err
+			}
+		}
+		_, err := fmt.Fprint(stdout, "}")
+		return err
+	}
+
+	if _, err := fmt.Fprintln(stdout, "{"); err != nil {
+		return err
+	}
+	for i, name := range names {
+		key, err := json.Marshal(name)
+		if err != nil {
+			return err
+		}
+		encoded, err := json.MarshalIndent(value(name), objectPrefix+indent, indent)
+		if err != nil {
+			return err
+		}
+		if _, err := fmt.Fprintf(stdout, "%s%s%s: %s", objectPrefix, indent, key, encoded); err != nil {
+			return err
+		}
+		if i < len(names)-1 {
+			if _, err := fmt.Fprint(stdout, ","); err != nil {
+				return err
+			}
+		}
+		if _, err := fmt.Fprintln(stdout); err != nil {
+			return err
+		}
+	}
+	_, err := fmt.Fprintf(stdout, "%s}", objectPrefix)
+	return err
+}
+
 func fieldsToMap(fields []outputField) map[string]any {
 	values := make(map[string]any, len(fields))
 	for _, field := range fields {
@@ -240,6 +354,15 @@ func valueString(value any) string {
 		}
 		return strings.Join(parts, ", ")
 	case map[string]any:
+		if len(typed) == 0 {
+			return "{}"
+		}
+		bytes, err := json.Marshal(typed)
+		if err != nil {
+			return fmt.Sprint(typed)
+		}
+		return string(bytes)
+	case map[string]string:
 		if len(typed) == 0 {
 			return "{}"
 		}
