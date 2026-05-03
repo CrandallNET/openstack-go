@@ -41,6 +41,7 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"project list", "project show",
 		"region list", "region show",
 		"registered limit list", "registered limit show",
+		"role assignment list",
 		"role list", "role show",
 		"service list", "service show",
 		"trust list", "trust show",
@@ -421,6 +422,21 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().Bool("allocations", false, "include resource allocations")
 	case "registered limit list":
 		cmd.Flags().String("resource-name", "", "filter by resource name")
+	case "role assignment list":
+		cmd.Flags().Bool("effective", false, "return only effective role assignments")
+		cmd.Flags().String("role", "", "role to filter")
+		cmd.Flags().String("role-domain", "", "role domain")
+		cmd.Flags().Bool("names", false, "display names instead of IDs")
+		cmd.Flags().String("user", "", "user to filter")
+		cmd.Flags().String("user-domain", "", "user domain")
+		cmd.Flags().String("group", "", "group to filter")
+		cmd.Flags().String("group-domain", "", "group domain")
+		cmd.Flags().String("project", "", "project to filter")
+		cmd.Flags().String("project-domain", "", "project domain")
+		cmd.Flags().String("system", "", "system to filter")
+		cmd.Flags().Bool("inherited", false, "filter inherited assignments")
+		cmd.Flags().Bool("auth-user", false, "filter to authenticated user")
+		cmd.Flags().Bool("auth-project", false, "filter to authenticated project")
 	case "router list":
 		cmd.Flags().String("name", "", "filter by name")
 		cmd.Flags().Bool("enable", false, "list enabled routers")
@@ -551,6 +567,7 @@ func isIdentityReadCommand(path string) bool {
 		"project list", "project show",
 		"region list", "region show",
 		"registered limit list", "registered limit show",
+		"role assignment list",
 		"role list", "role show",
 		"service list", "service show",
 		"trust list", "trust show",

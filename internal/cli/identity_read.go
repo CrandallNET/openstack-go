@@ -23,12 +23,17 @@ import (
 	"github.com/gophercloud/gophercloud/v2/openstack/identity/v3/tokens"
 	"github.com/gophercloud/gophercloud/v2/openstack/identity/v3/trusts"
 	"github.com/gophercloud/gophercloud/v2/openstack/identity/v3/users"
+	"github.com/gophercloud/gophercloud/v2/pagination"
 	"github.com/spf13/cobra"
 )
 
 func runIdentityRead(path string, stdout io.Writer, opts *Options) commandHandler {
 	return func(cmd *cobra.Command, args []string) error {
-		client, err := identityClient(cmd.Context(), opts)
+		clients, err := newOpenStackClients(cmd.Context(), opts)
+		if err != nil {
+			return err
+		}
+		client, err := clients.identityV3()
 		if err != nil {
 			return err
 		}
@@ -88,6 +93,8 @@ func runIdentityRead(path string, stdout io.Writer, opts *Options) commandHandle
 			return identityRegisteredLimitShow(cmd.Context(), stdout, opts, client, args)
 		case "role list":
 			return identityRoleList(cmd.Context(), stdout, opts, client)
+		case "role assignment list":
+			return identityRoleAssignmentList(cmd.Context(), stdout, opts, clients, client)
 		case "role show":
 			return identityRoleShow(cmd.Context(), stdout, opts, client, args)
 		case "service list":
@@ -529,6 +536,173 @@ func identityRoleShow(ctx context.Context, stdout io.Writer, opts *Options, clie
 		{"description", item.Description},
 		{"options", item.Options},
 	})
+}
+
+type roleAssignmentListOpts struct {
+	GroupID        string `q:"group.id"`
+	RoleID         string `q:"role.id"`
+	ScopeDomainID  string `q:"scope.domain.id"`
+	ScopeProjectID string `q:"scope.project.id"`
+	ScopeSystem    string `q:"scope.system"`
+	UserID         string `q:"user.id"`
+	Effective      *bool  `q:"effective"`
+	IncludeNames   *bool  `q:"include_names"`
+	InheritedTo    string `q:"scope.OS-INHERIT:inherited_to"`
+}
+
+func (opts roleAssignmentListOpts) ToRolesListAssignmentsQuery() (string, error) {
+	q, err := gophercloud.BuildQueryString(opts)
+	return q.String(), err
+}
+
+type roleAssignmentEntity struct {
+	ID     string                `json:"id,omitempty"`
+	Name   string                `json:"name,omitempty"`
+	Domain *roleAssignmentEntity `json:"domain,omitempty"`
+}
+
+type roleAssignmentScope struct {
+	Domain      *roleAssignmentEntity `json:"domain,omitempty"`
+	Project     *roleAssignmentEntity `json:"project,omitempty"`
+	System      map[string]any        `json:"system,omitempty"`
+	InheritedTo string                `json:"OS-INHERIT:inherited_to,omitempty"`
+}
+
+type roleAssignmentRecord struct {
+	Role  *roleAssignmentEntity `json:"role,omitempty"`
+	Scope roleAssignmentScope   `json:"scope,omitempty"`
+	User  *roleAssignmentEntity `json:"user,omitempty"`
+	Group *roleAssignmentEntity `json:"group,omitempty"`
+}
+
+func identityRoleAssignmentList(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, client *gophercloud.ServiceClient) error {
+	if flagValue(opts, "user") != "" && flagValue(opts, "group") != "" {
+		return fmt.Errorf("argument --group: not allowed with argument --user")
+	}
+	scopeFilters := 0
+	for _, name := range []string{"domain", "project", "system"} {
+		if flagValue(opts, name) != "" {
+			scopeFilters++
+		}
+	}
+	if scopeFilters > 1 {
+		return fmt.Errorf("arguments --domain, --project, and --system are mutually exclusive")
+	}
+
+	listOpts := roleAssignmentListOpts{}
+	if boolFlag(opts, "effective") {
+		listOpts.Effective = boolPointer(true)
+	}
+	includeNames := boolFlag(opts, "names")
+	if includeNames {
+		listOpts.IncludeNames = boolPointer(true)
+	}
+	if boolFlag(opts, "inherited") {
+		listOpts.InheritedTo = "projects"
+	}
+	if value := flagValue(opts, "role"); value != "" {
+		item, err := findRoleWithDomain(ctx, client, value, flagValue(opts, "role-domain"))
+		if err != nil {
+			return err
+		}
+		listOpts.RoleID = item.ID
+	}
+	if value := flagValue(opts, "user"); value != "" {
+		item, err := findUserWithDomain(ctx, client, value, flagValue(opts, "user-domain"))
+		if err != nil {
+			return err
+		}
+		listOpts.UserID = item.ID
+	} else if boolFlag(opts, "auth-user") {
+		userID, err := currentTokenUserID(ctx, client)
+		if err != nil {
+			return err
+		}
+		listOpts.UserID = userID
+	}
+	if value := flagValue(opts, "group"); value != "" {
+		item, err := findGroupWithDomain(ctx, client, value, flagValue(opts, "group-domain"))
+		if err != nil {
+			return err
+		}
+		listOpts.GroupID = item.ID
+	}
+	if value := flagValue(opts, "domain"); value != "" {
+		item, err := findDomain(ctx, client, value)
+		if err != nil {
+			return err
+		}
+		listOpts.ScopeDomainID = item.ID
+	}
+	if value := flagValue(opts, "project"); value != "" {
+		item, err := findProjectWithDomain(ctx, client, value, flagValue(opts, "project-domain"))
+		if err != nil {
+			return err
+		}
+		listOpts.ScopeProjectID = item.ID
+	} else if boolFlag(opts, "auth-project") {
+		listOpts.ScopeProjectID = currentProjectID(clients)
+	}
+	if value := flagValue(opts, "system"); value != "" {
+		listOpts.ScopeSystem = value
+	}
+
+	page, err := roles.ListAssignments(client, listOpts).AllPages(ctx)
+	if err != nil {
+		return err
+	}
+	items, err := extractRoleAssignmentRecords(page)
+	if err != nil {
+		return err
+	}
+	rows := make([]outputRow, 0, len(items))
+	for _, item := range items {
+		rows = append(rows, outputRow{
+			"Role":      roleAssignmentValue(item.Role, includeNames),
+			"User":      roleAssignmentValue(item.User, includeNames),
+			"Group":     roleAssignmentValue(item.Group, includeNames),
+			"Project":   roleAssignmentValue(item.Scope.Project, includeNames),
+			"Domain":    roleAssignmentValue(item.Scope.Domain, includeNames),
+			"System":    roleAssignmentSystem(item.Scope.System),
+			"Inherited": item.Scope.InheritedTo == "projects",
+		})
+	}
+	return renderListOutput(stdout, opts, []string{"Role", "User", "Group", "Project", "Domain", "System", "Inherited"}, rows)
+}
+
+func extractRoleAssignmentRecords(page pagination.Page) ([]roleAssignmentRecord, error) {
+	var body struct {
+		RoleAssignments []roleAssignmentRecord `json:"role_assignments"`
+	}
+	err := page.(roles.RoleAssignmentPage).ExtractInto(&body)
+	return body.RoleAssignments, err
+}
+
+func roleAssignmentValue(entity *roleAssignmentEntity, includeNames bool) string {
+	if entity == nil {
+		return ""
+	}
+	if !includeNames {
+		return entity.ID
+	}
+	if entity.Name == "" {
+		return ""
+	}
+	if entity.Domain != nil && entity.Domain.Name != "" {
+		return entity.Name + "@" + entity.Domain.Name
+	}
+	return entity.Name
+}
+
+func roleAssignmentSystem(system map[string]any) string {
+	if len(system) == 0 {
+		return ""
+	}
+	return "all"
+}
+
+func boolPointer(value bool) *bool {
+	return &value
 }
 
 func identityLimitList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
@@ -1034,6 +1208,32 @@ func findProject(ctx context.Context, client *gophercloud.ServiceClient, value s
 	return singleByName(value, items, func(item projects.Project) string { return item.Name })
 }
 
+func findProjectWithDomain(ctx context.Context, client *gophercloud.ServiceClient, value string, domainValue string) (*projects.Project, error) {
+	if domainValue == "" {
+		return findProject(ctx, client, value)
+	}
+	domain, err := findDomain(ctx, client, domainValue)
+	if err != nil {
+		return nil, err
+	}
+	result := projects.Get(ctx, client, value)
+	if result.Err == nil {
+		item, err := result.Extract()
+		if err == nil && item.DomainID == domain.ID {
+			return item, nil
+		}
+	}
+	page, err := projects.List(client, projects.ListOpts{Name: value, DomainID: domain.ID}).AllPages(ctx)
+	if err != nil {
+		return nil, err
+	}
+	items, err := projects.ExtractProjects(page)
+	if err != nil {
+		return nil, err
+	}
+	return singleByName(value, items, func(item projects.Project) string { return item.Name })
+}
+
 func findUser(ctx context.Context, client *gophercloud.ServiceClient, value string) (*users.User, error) {
 	result := users.Get(ctx, client, value)
 	if result.Err == nil {
@@ -1042,6 +1242,32 @@ func findUser(ctx context.Context, client *gophercloud.ServiceClient, value stri
 	page, err := users.List(client, users.ListOpts{Name: value}).AllPages(ctx)
 	if err != nil {
 		return nil, result.Err
+	}
+	items, err := users.ExtractUsers(page)
+	if err != nil {
+		return nil, err
+	}
+	return singleByName(value, items, func(item users.User) string { return item.Name })
+}
+
+func findUserWithDomain(ctx context.Context, client *gophercloud.ServiceClient, value string, domainValue string) (*users.User, error) {
+	if domainValue == "" {
+		return findUser(ctx, client, value)
+	}
+	domain, err := findDomain(ctx, client, domainValue)
+	if err != nil {
+		return nil, err
+	}
+	result := users.Get(ctx, client, value)
+	if result.Err == nil {
+		item, err := result.Extract()
+		if err == nil && item.DomainID == domain.ID {
+			return item, nil
+		}
+	}
+	page, err := users.List(client, users.ListOpts{Name: value, DomainID: domain.ID}).AllPages(ctx)
+	if err != nil {
+		return nil, err
 	}
 	items, err := users.ExtractUsers(page)
 	if err != nil {
@@ -1082,6 +1308,32 @@ func findGroup(ctx context.Context, client *gophercloud.ServiceClient, value str
 	return singleByName(value, items, func(item groups.Group) string { return item.Name })
 }
 
+func findGroupWithDomain(ctx context.Context, client *gophercloud.ServiceClient, value string, domainValue string) (*groups.Group, error) {
+	if domainValue == "" {
+		return findGroup(ctx, client, value)
+	}
+	domain, err := findDomain(ctx, client, domainValue)
+	if err != nil {
+		return nil, err
+	}
+	result := groups.Get(ctx, client, value)
+	if result.Err == nil {
+		item, err := result.Extract()
+		if err == nil && item.DomainID == domain.ID {
+			return item, nil
+		}
+	}
+	page, err := groups.List(client, groups.ListOpts{Name: value, DomainID: domain.ID}).AllPages(ctx)
+	if err != nil {
+		return nil, err
+	}
+	items, err := groups.ExtractGroups(page)
+	if err != nil {
+		return nil, err
+	}
+	return singleByName(value, items, func(item groups.Group) string { return item.Name })
+}
+
 func findRole(ctx context.Context, client *gophercloud.ServiceClient, value string) (*roles.Role, error) {
 	result := roles.Get(ctx, client, value)
 	if result.Err == nil {
@@ -1090,6 +1342,32 @@ func findRole(ctx context.Context, client *gophercloud.ServiceClient, value stri
 	page, err := roles.List(client, roles.ListOpts{Name: value}).AllPages(ctx)
 	if err != nil {
 		return nil, result.Err
+	}
+	items, err := roles.ExtractRoles(page)
+	if err != nil {
+		return nil, err
+	}
+	return singleByName(value, items, func(item roles.Role) string { return item.Name })
+}
+
+func findRoleWithDomain(ctx context.Context, client *gophercloud.ServiceClient, value string, domainValue string) (*roles.Role, error) {
+	if domainValue == "" {
+		return findRole(ctx, client, value)
+	}
+	domain, err := findDomain(ctx, client, domainValue)
+	if err != nil {
+		return nil, err
+	}
+	result := roles.Get(ctx, client, value)
+	if result.Err == nil {
+		item, err := result.Extract()
+		if err == nil && item.DomainID == domain.ID {
+			return item, nil
+		}
+	}
+	page, err := roles.List(client, roles.ListOpts{Name: value, DomainID: domain.ID}).AllPages(ctx)
+	if err != nil {
+		return nil, err
 	}
 	items, err := roles.ExtractRoles(page)
 	if err != nil {

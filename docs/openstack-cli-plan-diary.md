@@ -392,3 +392,19 @@ Sources consulted:
 * [Gophercloud registered limits](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/identity/v3/registeredlimits)
 * [Gophercloud trusts](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/identity/v3/trusts)
 * Local OSC oracle snapshots in `compat/osc/9.0.0/help/access/rule/list.txt`, `compat/osc/9.0.0/help/application/credential/list.txt`, `compat/osc/9.0.0/help/credential/list.txt`, `compat/osc/9.0.0/help/ec2/credentials/list.txt`, `compat/osc/9.0.0/help/limit/list.txt`, `compat/osc/9.0.0/help/policy/list.txt`, `compat/osc/9.0.0/help/registered/limit/list.txt`, and `compat/osc/9.0.0/help/trust/list.txt`.
+
+## 2026-05-03: Keystone Role Assignment Read Expansion
+
+Work done: added `role assignment list` through Gophercloud's Identity v3 roles package. The command supports `--effective`, `--role`, `--role-domain`, `--names`, `--user`, `--user-domain`, `--group`, `--group-domain`, `--domain`, `--project`, `--project-domain`, `--system`, `--inherited`, `--auth-user`, and `--auth-project`.
+
+Compatibility note: Gophercloud's typed `roles.RoleAssignment` result does not expose Keystone's `scope.system` and `scope.OS-INHERIT:inherited_to` response fields in the local v2.12.0 module. The command still uses Gophercloud's role-assignment pager and query builder, but extracts into an OSC-shaped local struct so the `System` and `Inherited` columns match Python OSC instead of silently dropping data.
+
+Live observations on `cloud6`: default JSON output matched Python OSC for the observed role assignments, including the system-scoped `System: all` row. `--names`, `--auth-user`, `--auth-project`, `--system all`, and `--role admin --names` also matched Python OSC in live smoke checks.
+
+Sources consulted:
+
+* [Gophercloud Identity roles](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/identity/v3/roles)
+* Local Gophercloud source file `.cache/gomod/github.com/gophercloud/gophercloud/v2@v2.12.0/openstack/identity/v3/roles/results.go`, which shows the typed assignment struct fields available in the local module.
+* Local OSC oracle snapshot `compat/osc/9.0.0/help/role/assignment/list.txt`.
+* Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/identity/v3/role_assignment.py`, used only as the pinned local oracle implementation source.
+* Local openstacksdk source for `openstack.identity.v3.role_assignment.RoleAssignment`, which maps `scope_system` to `scope.system` and `inherited_to` to `scope.OS-INHERIT:inherited_to`.
