@@ -123,7 +123,7 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"security group rule list", "security group rule show",
 		"server event list", "server event show",
 		"server list", "server show",
-		"server group list", "server group show",
+		"server group create", "server group delete", "server group list", "server group show",
 		"server migration list",
 		"server volume list",
 		"subnet list", "subnet show",
@@ -657,6 +657,9 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().Bool("long", false, "list additional fields")
 		cmd.Flags().Int("limit", 0, "maximum number of entries")
 		cmd.Flags().Int("offset", 0, "collection offset")
+	case "server group create":
+		cmd.Flags().String("policy", "", "server group policy")
+		cmd.Flags().StringArray("rule", nil, "server group rule key=value")
 	case "server event list":
 		cmd.Flags().Bool("long", false, "list additional fields")
 		cmd.Flags().String("changes-since", "", "show events changed since this timestamp")
@@ -884,7 +887,7 @@ func isCoreReadCommand(path string) bool {
 		"security group rule list", "security group rule show",
 		"server event list", "server event show",
 		"server list", "server show",
-		"server group list", "server group show",
+		"server group create", "server group delete", "server group list", "server group show",
 		"server migration list",
 		"server volume list",
 		"subnet list", "subnet show",

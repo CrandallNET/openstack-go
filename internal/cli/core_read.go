@@ -814,9 +814,37 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 			if err != nil {
 				return err
 			}
+			client, err = computeClientWithMaximumMicroversion(cmd.Context(), client, "2.64")
+			if err != nil {
+				return err
+			}
 			return serverGroupList(cmd.Context(), stdout, opts, client)
+		case "server group create":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			client, err = computeClientWithMaximumMicroversion(cmd.Context(), client, "2.64")
+			if err != nil {
+				return err
+			}
+			return serverGroupCreate(cmd.Context(), stdout, opts, client, args)
+		case "server group delete":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			client, err = computeClientWithMaximumMicroversion(cmd.Context(), client, "2.64")
+			if err != nil {
+				return err
+			}
+			return serverGroupDelete(cmd.Context(), client, args)
 		case "server group show":
 			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			client, err = computeClientWithMaximumMicroversion(cmd.Context(), client, "2.64")
 			if err != nil {
 				return err
 			}
@@ -6085,20 +6113,82 @@ func serverGroupList(ctx context.Context, stdout io.Writer, opts *Options, clien
 		return err
 	}
 	rows := make([]outputRow, 0, len(items))
+	policyColumn := "Policies"
+	if microversionAtLeast(client.Microversion, "2.64") {
+		policyColumn = "Policy"
+	}
 	for _, item := range items {
-		row := outputRow{"ID": item.ID, "Name": item.Name, "Policies": item.Policies}
+		row := outputRow{"ID": item.ID, "Name": item.Name}
+		if policyColumn == "Policy" {
+			row[policyColumn] = stringPtrValue(item.Policy)
+		} else {
+			row[policyColumn] = item.Policies
+		}
 		if boolFlag(opts, "long") {
-			row["Project"] = item.ProjectID
-			row["User"] = item.UserID
 			row["Members"] = item.Members
+			row["Project Id"] = item.ProjectID
+			row["User Id"] = item.UserID
 		}
 		rows = append(rows, row)
 	}
-	columns := []string{"ID", "Name", "Policies"}
+	columns := []string{"ID", "Name", policyColumn}
 	if boolFlag(opts, "long") {
-		columns = append(columns, "Project", "User", "Members")
+		columns = append(columns, "Members", "Project Id", "User Id")
 	}
 	return renderListOutput(stdout, opts, columns, rows)
+}
+
+func serverGroupCreate(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("server group create requires <name>")
+	}
+	policy := flagValue(opts, "policy")
+	if policy == "" {
+		policy = "affinity"
+	}
+	if !serverGroupPolicyAllowed(policy) {
+		return fmt.Errorf("argument --policy: invalid choice: %q (choose from 'affinity', 'anti-affinity', 'soft-affinity', 'soft-anti-affinity')", policy)
+	}
+	if (policy == "soft-affinity" || policy == "soft-anti-affinity") && !microversionAtLeast(client.Microversion, "2.15") {
+		return fmt.Errorf("--os-compute-api-version 2.15 or greater is required to support the %s policy", policy)
+	}
+	rules, err := serverGroupRules(opts, client)
+	if err != nil {
+		return err
+	}
+	createOpts := servergroups.CreateOpts{Name: args[0]}
+	if microversionAtLeast(client.Microversion, "2.64") {
+		createOpts.Policy = policy
+		createOpts.Rules = rules
+	} else {
+		createOpts.Policies = []string{policy}
+	}
+	item, err := servergroups.Create(ctx, client, createOpts).Extract()
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, serverGroupFields(item, client))
+}
+
+func serverGroupDelete(ctx context.Context, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("server group delete requires <server-group>")
+	}
+	failures := 0
+	for _, value := range args {
+		item, err := findServerGroup(ctx, client, value)
+		if err != nil {
+			failures++
+			continue
+		}
+		if err := servergroups.Delete(ctx, client, item.ID).ExtractErr(); err != nil {
+			failures++
+		}
+	}
+	if failures > 0 {
+		return fmt.Errorf("%d of %d server groups failed to delete.", failures, len(args))
+	}
+	return nil
 }
 
 func serverGroupShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
@@ -6109,17 +6199,73 @@ func serverGroupShow(ctx context.Context, stdout io.Writer, opts *Options, clien
 	if err != nil {
 		return err
 	}
-	return renderShowOutput(stdout, opts, []outputField{
+	return renderShowOutput(stdout, opts, serverGroupFields(item, client))
+}
+
+func serverGroupFields(item *servergroups.ServerGroup, client *gophercloud.ServiceClient) []outputField {
+	if microversionAtLeast(client.Microversion, "2.64") {
+		return []outputField{
+			{"id", item.ID},
+			{"members", item.Members},
+			{"name", item.Name},
+			outputField{"policy", stringPtrValue(item.Policy)},
+			{"project_id", item.ProjectID},
+			{"rules", serverGroupRulesOutput(item.Rules)},
+			{"user_id", item.UserID},
+		}
+	}
+	return []outputField{
 		{"id", item.ID},
+		{"members", item.Members},
 		{"name", item.Name},
 		{"policies", item.Policies},
-		{"members", item.Members},
 		{"project_id", item.ProjectID},
 		{"user_id", item.UserID},
-		{"metadata", item.Metadata},
-		{"policy", item.Policy},
-		{"rules", item.Rules},
-	})
+	}
+}
+
+func serverGroupPolicyAllowed(policy string) bool {
+	switch policy {
+	case "affinity", "anti-affinity", "soft-affinity", "soft-anti-affinity":
+		return true
+	default:
+		return false
+	}
+}
+
+func serverGroupRules(opts *Options, client *gophercloud.ServiceClient) (*servergroups.Rules, error) {
+	values := flagValues(opts, "rule")
+	if len(values) == 0 {
+		return nil, nil
+	}
+	if !microversionAtLeast(client.Microversion, "2.64") {
+		return nil, fmt.Errorf("--os-compute-api-version 2.64 or greater is required to support the --rule option")
+	}
+	rules := &servergroups.Rules{}
+	for _, value := range values {
+		key, raw, ok := strings.Cut(value, "=")
+		if !ok || key == "" {
+			return nil, fmt.Errorf("invalid rule %q, expected <key=value>", value)
+		}
+		switch key {
+		case "max_server_per_host":
+			parsed, err := strconv.Atoi(raw)
+			if err != nil {
+				return nil, fmt.Errorf("invalid max_server_per_host rule value %q", raw)
+			}
+			rules.MaxServerPerHost = parsed
+		default:
+			return nil, fmt.Errorf("unsupported server group rule %q", key)
+		}
+	}
+	return rules, nil
+}
+
+func serverGroupRulesOutput(rules *servergroups.Rules) any {
+	if rules == nil || rules.MaxServerPerHost == 0 {
+		return map[string]any{}
+	}
+	return map[string]any{"max_server_per_host": rules.MaxServerPerHost}
 }
 
 func volumeTypeList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {

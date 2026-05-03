@@ -761,3 +761,17 @@ Sources consulted:
 * Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/compute/v2/keypair.py`, used only as the pinned local oracle implementation source.
 * Gophercloud package docs for [Compute keypairs](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/compute/v2/keypairs).
 * Go package docs for [golang.org/x/crypto/ssh](https://pkg.go.dev/golang.org/x/crypto/ssh), used for OpenSSH public and private key encoding.
+
+## 2026-05-03: Server Group Create And Delete
+
+Work done: added `server group create` and `server group delete`, and tightened `server group list/show` output.
+
+Implementation note: the Go CLI now negotiates Compute microversion up to 2.64 for server group commands when `OS_COMPUTE_API_VERSION` is not explicitly set. That matches the Python-observed `cloud6` output shape, where server groups expose singular `policy` plus `rules` instead of legacy `policies`. The create command uses Gophercloud's typed Server Groups helper and supports the OSC policy choices plus `--rule max_server_per_host=<n>` when the negotiated microversion supports rules. Delete resolves each argument by name or ID, then deletes by ID.
+
+Live observations on `cloud6`: Python OSC created and deleted disposable server group `gocli-test-server-group-python-20260503`. The Go CLI created and deleted disposable server groups `gocli-test-server-group-go-20260503` and `gocli-test-server-group-go2-20260503`. Create and show JSON output matched the Python-observed 2.64 field shape, and Python/Go `server group list -f json` both returned an empty list after cleanup.
+
+Sources consulted:
+
+* Local OSC oracle snapshots in `compat/osc/9.0.0/help/server/group/create.txt` and `compat/osc/9.0.0/help/server/group/delete.txt`.
+* Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/compute/v2/server_group.py`, used only as the pinned local oracle implementation source.
+* Gophercloud package docs for [Compute server groups](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servergroups).
