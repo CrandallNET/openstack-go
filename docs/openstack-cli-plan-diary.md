@@ -451,3 +451,17 @@ Sources consulted:
 * Local OSC oracle snapshots in `compat/osc/9.0.0/help/block/storage/resource/filter/list.txt`, `compat/osc/9.0.0/help/block/storage/resource/filter/show.txt`, and `compat/osc/9.0.0/help/block/storage/log/level/list.txt`.
 * Local Python OSC source files `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/volume/v3/block_storage_resource_filter.py` and `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/volume/v3/block_storage_log_level.py`, used only as pinned local oracle implementation sources.
 * Local OpenStackSDK source files `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/block_storage/v3/resource_filter.py` and `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/block_storage/v3/service.py`, which document the resource paths and microversion requirements used by the Python command implementation.
+
+## 2026-05-03: Cinder Legacy-Client Read Expansion
+
+Work done: added `volume message list`, `volume message show`, `block storage cluster list`, and `block storage cluster show`.
+
+Implementation note: these Python OSC commands use the older cinderclient manager path, not the OpenStackSDK volume proxy path used by the previous Cinder slice. Live Python checks showed that `volume message list` fails by default unless `OS_VOLUME_API_VERSION` is at least 3.3, and `block storage cluster list` fails by default unless `OS_VOLUME_API_VERSION` is at least 3.7. The Go commands preserve that default error behavior with an explicit-microversion helper instead of auto-negotiating to the service maximum.
+
+Live observations on `cloud6`: Python OSC and the Go CLI matched for `OS_VOLUME_API_VERSION=3.3 volume message list -f json`, `OS_VOLUME_API_VERSION=3.3 volume message show <message-id> -f json`, `OS_VOLUME_API_VERSION=3.7 block storage cluster list -f json`, and the default microversion errors for `volume message list` and `block storage cluster list`. `block storage cluster show` is implemented but still needs a cluster fixture because `cloud6` returned an empty cluster list.
+
+Sources consulted:
+
+* Local OSC oracle snapshots in `compat/osc/9.0.0/help/volume/message/list.txt`, `compat/osc/9.0.0/help/volume/message/show.txt`, `compat/osc/9.0.0/help/block/storage/cluster/list.txt`, and `compat/osc/9.0.0/help/block/storage/cluster/show.txt`.
+* Local Python OSC source files `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/volume/v3/volume_message.py` and `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/volume/v3/block_storage_cluster.py`, used only as pinned local oracle implementation sources.
+* Local cinderclient source files `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/cinderclient/v3/messages.py` and `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/cinderclient/v3/clusters.py`, which document the resource paths and cinderclient version gates used by the Python command implementation.

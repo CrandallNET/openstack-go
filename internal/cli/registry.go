@@ -60,6 +60,7 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"aggregate list", "aggregate show",
 		"allocation candidate list",
 		"availability zone list",
+		"block storage cluster list", "block storage cluster show",
 		"block storage log level list",
 		"block storage resource filter list", "block storage resource filter show",
 		"compute service list",
@@ -109,6 +110,7 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"volume backend pool list",
 		"volume backup list", "volume backup show",
 		"volume list", "volume show",
+		"volume message list", "volume message show",
 		"volume qos list", "volume qos show",
 		"volume service list",
 		"volume snapshot list", "volume snapshot show",
@@ -505,6 +507,18 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		}
 	case "volume backend pool list":
 		cmd.Flags().Bool("long", false, "show detailed information about pools")
+	case "block storage cluster list":
+		cmd.Flags().String("cluster", "", "filter by cluster name")
+		cmd.Flags().String("binary", "", "filter by cluster binary")
+		cmd.Flags().Bool("up", false, "filter by up status")
+		cmd.Flags().Bool("down", false, "filter by down status")
+		cmd.Flags().Bool("disabled", false, "filter by disabled status")
+		cmd.Flags().Bool("enabled", false, "filter by enabled status")
+		cmd.Flags().Int("num-hosts", 0, "filter by number of hosts")
+		cmd.Flags().Int("num-down-hosts", 0, "filter by number of down hosts")
+		cmd.Flags().Bool("long", false, "list additional fields")
+	case "block storage cluster show":
+		cmd.Flags().String("binary", "", "service binary")
 	case "block storage log level list":
 		cmd.Flags().String("host", "", "filter by host")
 		cmd.Flags().String("service", "", "filter by service binary")
@@ -530,6 +544,11 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().String("host", "", "filter by host")
 		cmd.Flags().String("service", "", "filter by service binary")
 		cmd.Flags().Bool("long", false, "list additional fields")
+	case "volume message list":
+		cmd.Flags().String("project", "", "filter by project")
+		cmd.Flags().String("project-domain", "", "project domain")
+		cmd.Flags().Int("limit", 0, "maximum number of entries")
+		cmd.Flags().String("marker", "", "pagination marker")
 	case "volume type list":
 		cmd.Flags().Bool("long", false, "list additional fields")
 		cmd.Flags().Bool("default", false, "list the default volume type")
@@ -611,6 +630,7 @@ func isCoreReadCommand(path string) bool {
 		"aggregate list", "aggregate show",
 		"allocation candidate list",
 		"availability zone list",
+		"block storage cluster list", "block storage cluster show",
 		"block storage log level list",
 		"block storage resource filter list", "block storage resource filter show",
 		"compute service list",
@@ -660,6 +680,7 @@ func isCoreReadCommand(path string) bool {
 		"volume backend pool list",
 		"volume backup list", "volume backup show",
 		"volume list", "volume show",
+		"volume message list", "volume message show",
 		"volume qos list", "volume qos show",
 		"volume service list",
 		"volume snapshot list", "volume snapshot show",

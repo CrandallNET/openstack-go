@@ -42,6 +42,16 @@ func TestNewCommandEntryMarksCinderResourceFilterShim(t *testing.T) {
 	}
 }
 
+func TestNewCommandEntryMarksCinderMessageShim(t *testing.T) {
+	entry := newCommandEntry("openstack.volume.v3", "volume message show")
+	if entry.Status != "cloud-verified" {
+		t.Fatalf("expected volume message show to be cloud-verified, got %q", entry.Status)
+	}
+	if !entry.Shim {
+		t.Fatal("expected volume message show to be marked as a shim")
+	}
+}
+
 func TestNewCommandEntryMarksPluginScope(t *testing.T) {
 	entry := newCommandEntry("openstack.placement.v1", "resource provider list")
 	if !entry.PluginScope {

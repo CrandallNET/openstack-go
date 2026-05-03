@@ -68,6 +68,18 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 		}
 
 		switch path {
+		case "block storage cluster list":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return blockStorageClusterList(cmd.Context(), stdout, opts, client)
+		case "block storage cluster show":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return blockStorageClusterShow(cmd.Context(), stdout, opts, client, args)
 		case "block storage log level list":
 			client, err := clients.blockStorageV3()
 			if err != nil {
@@ -582,6 +594,18 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return volumeList(cmd.Context(), stdout, opts, client)
+		case "volume message list":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeMessageList(cmd.Context(), stdout, opts, clients, client)
+		case "volume message show":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeMessageShow(cmd.Context(), stdout, opts, client, args)
 		case "volume show":
 			client, err := clients.blockStorageV3()
 			if err != nil {
@@ -2526,6 +2550,126 @@ func volumeSummary(ctx context.Context, stdout io.Writer, opts *Options, client 
 	return renderShowOutput(stdout, opts, fields)
 }
 
+type blockStorageClusterRecord struct {
+	Name              string `json:"name"`
+	Binary            string `json:"binary"`
+	State             string `json:"state"`
+	Status            string `json:"status"`
+	DisabledReason    string `json:"disabled_reason"`
+	NumHosts          any    `json:"num_hosts"`
+	NumDownHosts      any    `json:"num_down_hosts"`
+	LastHeartbeat     string `json:"last_heartbeat"`
+	CreatedAt         string `json:"created_at"`
+	UpdatedAt         string `json:"updated_at"`
+	ReplicationStatus string `json:"replication_status"`
+	Frozen            any    `json:"frozen"`
+	ActiveBackendID   string `json:"active_backend_id"`
+}
+
+func blockStorageClusterList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	client, err := blockStorageClientWithExplicitMinimumMicroversion(client, "3.7", "block storage cluster list")
+	if err != nil {
+		return err
+	}
+	requestURL := client.ServiceURL("clusters")
+	if boolFlag(opts, "long") {
+		requestURL = client.ServiceURL("clusters", "detail")
+	}
+	query := url.Values{}
+	if value := flagValue(opts, "cluster"); value != "" {
+		query.Set("name", value)
+	}
+	if value := flagValue(opts, "binary"); value != "" {
+		query.Set("binary", value)
+	}
+	if boolFlag(opts, "up") {
+		query.Set("is_up", "True")
+	}
+	if boolFlag(opts, "disabled") {
+		query.Set("disabled", "True")
+	}
+	if value := flagValue(opts, "num-hosts"); value != "" {
+		query.Set("num_hosts", value)
+	}
+	if value := flagValue(opts, "num-down-hosts"); value != "" {
+		query.Set("num_down_hosts", value)
+	}
+	if encoded := query.Encode(); encoded != "" {
+		requestURL += "?" + encoded
+	}
+	var response struct {
+		Clusters []blockStorageClusterRecord `json:"clusters"`
+	}
+	resp, err := client.Get(ctx, requestURL, &response, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return err
+	}
+	columns := []string{"Name", "Binary", "State", "Status"}
+	if boolFlag(opts, "long") {
+		columns = append(columns, "Num Hosts", "Num Down Hosts", "Last Heartbeat", "Disabled Reason", "Created At", "Updated At")
+	}
+	rows := make([]outputRow, 0, len(response.Clusters))
+	for _, item := range response.Clusters {
+		row := outputRow{
+			"Name":   item.Name,
+			"Binary": item.Binary,
+			"State":  item.State,
+			"Status": item.Status,
+		}
+		if boolFlag(opts, "long") {
+			row["Num Hosts"] = item.NumHosts
+			row["Num Down Hosts"] = item.NumDownHosts
+			row["Last Heartbeat"] = nilIfEmpty(item.LastHeartbeat)
+			row["Disabled Reason"] = nilIfEmpty(item.DisabledReason)
+			row["Created At"] = nilIfEmpty(item.CreatedAt)
+			row["Updated At"] = nilIfEmpty(item.UpdatedAt)
+		}
+		rows = append(rows, row)
+	}
+	return renderListOutput(stdout, opts, columns, rows)
+}
+
+func blockStorageClusterShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("block storage cluster show requires <cluster>")
+	}
+	client, err := blockStorageClientWithExplicitMinimumMicroversion(client, "3.7", "block storage cluster show")
+	if err != nil {
+		return err
+	}
+	requestURL := client.ServiceURL("clusters", args[0])
+	if value := flagValue(opts, "binary"); value != "" {
+		query := url.Values{}
+		query.Set("binary", value)
+		requestURL += "?" + query.Encode()
+	}
+	var response struct {
+		Cluster blockStorageClusterRecord `json:"cluster"`
+	}
+	resp, err := client.Get(ctx, requestURL, &response, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return err
+	}
+	item := response.Cluster
+	return renderShowOutput(stdout, opts, []outputField{
+		{"Name", item.Name},
+		{"Binary", item.Binary},
+		{"State", item.State},
+		{"Status", item.Status},
+		{"Disabled Reason", nilIfEmpty(item.DisabledReason)},
+		{"Hosts", item.NumHosts},
+		{"Down Hosts", item.NumDownHosts},
+		{"Last Heartbeat", nilIfEmpty(item.LastHeartbeat)},
+		{"Created At", nilIfEmpty(item.CreatedAt)},
+		{"Updated At", nilIfEmpty(item.UpdatedAt)},
+		{"Replication Status", nilIfEmpty(item.ReplicationStatus)},
+		{"Frozen", item.Frozen},
+		{"Active Backend ID", nilIfEmpty(item.ActiveBackendID)},
+	})
+}
+
 type blockStorageResourceFilterRecord struct {
 	Resource string   `json:"resource"`
 	Filters  []string `json:"filters"`
@@ -2629,6 +2773,107 @@ func blockStorageLogLevelList(ctx context.Context, stdout io.Writer, opts *Optio
 		}
 	}
 	return renderListOutput(stdout, opts, []string{"Binary", "Host", "Prefix", "Level"}, rows)
+}
+
+type volumeMessageRecord struct {
+	ID              string              `json:"id"`
+	EventID         string              `json:"event_id"`
+	ResourceType    string              `json:"resource_type"`
+	ResourceUUID    string              `json:"resource_uuid"`
+	MessageLevel    string              `json:"message_level"`
+	UserMessage     string              `json:"user_message"`
+	RequestID       string              `json:"request_id"`
+	CreatedAt       string              `json:"created_at"`
+	GuaranteedUntil string              `json:"guaranteed_until"`
+	Links           []volumeMessageLink `json:"links"`
+}
+
+type volumeMessageLink struct {
+	Rel  string `json:"rel"`
+	Href string `json:"href"`
+}
+
+func volumeMessageList(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, client *gophercloud.ServiceClient) error {
+	client, err := blockStorageClientWithExplicitMinimumMicroversion(client, "3.3", "volume message list")
+	if err != nil {
+		return err
+	}
+	query := url.Values{}
+	if project := flagValue(opts, "project"); project != "" {
+		identityClient, err := clients.identityV3()
+		if err != nil {
+			return err
+		}
+		item, err := findProjectWithDomain(ctx, identityClient, project, flagValue(opts, "project-domain"))
+		if err != nil {
+			return err
+		}
+		query.Set("project_id", item.ID)
+	}
+	if value := flagValue(opts, "marker"); value != "" {
+		query.Set("marker", value)
+	}
+	if value := intFlag(opts, "limit"); value > 0 {
+		query.Set("limit", strconv.Itoa(value))
+	}
+	requestURL := client.ServiceURL("messages")
+	if encoded := query.Encode(); encoded != "" {
+		requestURL += "?" + encoded
+	}
+	var response struct {
+		Messages []volumeMessageRecord `json:"messages"`
+	}
+	resp, err := client.Get(ctx, requestURL, &response, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return err
+	}
+	rows := make([]outputRow, 0, len(response.Messages))
+	for _, item := range response.Messages {
+		rows = append(rows, outputRow{
+			"ID":               item.ID,
+			"Event ID":         item.EventID,
+			"Resource Type":    item.ResourceType,
+			"Resource UUID":    item.ResourceUUID,
+			"Message Level":    item.MessageLevel,
+			"User Message":     item.UserMessage,
+			"Request ID":       item.RequestID,
+			"Created At":       item.CreatedAt,
+			"Guaranteed Until": item.GuaranteedUntil,
+		})
+	}
+	return renderListOutput(stdout, opts, []string{"ID", "Event ID", "Resource Type", "Resource UUID", "Message Level", "User Message", "Request ID", "Created At", "Guaranteed Until"}, rows)
+}
+
+func volumeMessageShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("volume message show requires <message-id>")
+	}
+	client, err := blockStorageClientWithExplicitMinimumMicroversion(client, "3.3", "volume message show")
+	if err != nil {
+		return err
+	}
+	var response struct {
+		Message volumeMessageRecord `json:"message"`
+	}
+	resp, err := client.Get(ctx, client.ServiceURL("messages", args[0]), &response, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return err
+	}
+	item := response.Message
+	return renderShowOutput(stdout, opts, []outputField{
+		{"created_at", item.CreatedAt},
+		{"event_id", item.EventID},
+		{"guaranteed_until", item.GuaranteedUntil},
+		{"id", item.ID},
+		{"links", item.Links},
+		{"message_level", item.MessageLevel},
+		{"request_id", item.RequestID},
+		{"resource_type", item.ResourceType},
+		{"resource_uuid", item.ResourceUUID},
+		{"user_message", item.UserMessage},
+	})
 }
 
 func volumeQoSAssociations(ctx context.Context, client *gophercloud.ServiceClient, qosID string) ([]string, error) {
@@ -4519,6 +4764,13 @@ func blockStorageClientWithMinimumMicroversion(ctx context.Context, client *goph
 		return nil, fmt.Errorf("--os-volume-api-version %s or greater is required", minimum)
 	}
 	client.Microversion = max
+	return client, nil
+}
+
+func blockStorageClientWithExplicitMinimumMicroversion(client *gophercloud.ServiceClient, minimum string, command string) (*gophercloud.ServiceClient, error) {
+	if client.Microversion == "" || !microversionAtLeast(client.Microversion, minimum) {
+		return nil, fmt.Errorf("--os-volume-api-version %s or greater is required to support the '%s' command", minimum, command)
+	}
 	return client, nil
 }
 
