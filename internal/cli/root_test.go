@@ -254,6 +254,18 @@ func TestOSCHTTPExceptionFormatsOpenStackFault(t *testing.T) {
 	}
 }
 
+func TestOSCResourceNotFoundFormatsSDKLookupError(t *testing.T) {
+	err := oscResourceNotFoundError(gophercloud.ErrUnexpectedResponseCode{
+		URL:    "http://example.test/v2.1/os-console-auth-tokens/bad-token",
+		Method: "GET",
+		Actual: 404,
+		Body:   []byte(`{"itemNotFound":{"code":404,"message":"Token not found"}}`),
+	}, "ConsoleAuthToken", "bad-token")
+	if got, want := err.Error(), "No ConsoleAuthToken found for bad-token: Client Error for url: http://example.test/v2.1/os-console-auth-tokens/bad-token, Token not found"; got != want {
+		t.Fatalf("resource not found mismatch: got %q want %q", got, want)
+	}
+}
+
 func TestServerMigrationListColumnsMatchMicroversion(t *testing.T) {
 	columns, keys := serverMigrationListColumns("2.80", &Options{CommandFlags: map[string]string{
 		"project": "admin",

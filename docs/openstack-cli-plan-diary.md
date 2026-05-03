@@ -522,3 +522,17 @@ Sources consulted:
 * Local OSC oracle snapshots in `compat/osc/9.0.0/help/server/migration/list.txt` and `compat/osc/9.0.0/help/server/migration/show.txt`.
 * Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/compute/v2/server_migration.py`, used only as the pinned local oracle implementation source.
 * Local OpenStackSDK source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/compute/v2/migration.py`, which documents the `/os-migrations` path, query mapping, response fields, and 2.80 resource microversion cap.
+
+## 2026-05-03: Nova Console Connection Read
+
+Work done: added `console connection show`.
+
+Implementation note: Python OSC calls OpenStackSDK's `validate_console_auth_token`, which maps to the `ConsoleAuthToken` resource at `/os-console-auth-tokens`. The local Gophercloud v2.12.0 module has remote-console creation helpers but no typed console-auth-token lookup helper, so the Go CLI uses a narrow authenticated Nova REST read, caps automatic Compute microversion discovery to 2.99 to match the pinned SDK resource, and renders the SDK-observed fields `host`, `instance_uuid`, `internal_access_path`, `port`, and `tls_port`. The not-found path uses a Python-style resource lookup error instead of the generic `HttpException` text.
+
+Live observations on `cloud6`: Python OSC and the Go CLI matched for `console connection show invalid-token -f json`. A successful row still needs a valid, live console token fixture because these tokens are short-lived.
+
+Sources consulted:
+
+* Local OSC oracle snapshot in `compat/osc/9.0.0/help/console/connection/show.txt`.
+* Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/compute/v2/console_connection.py`, used only as the pinned local oracle implementation source.
+* Local OpenStackSDK source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/compute/v2/console_auth_token.py`, which documents the `/os-console-auth-tokens` path, fields, and 2.99 resource microversion cap.

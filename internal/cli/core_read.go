@@ -149,6 +149,12 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return computeServiceList(cmd.Context(), stdout, opts, client)
+		case "console connection show":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return consoleConnectionShow(cmd.Context(), stdout, opts, client, args)
 		case "console log show":
 			client, err := clients.computeV2()
 			if err != nil {
@@ -949,6 +955,31 @@ func computeAgentList(ctx context.Context, stdout io.Writer, opts *Options, clie
 		})
 	}
 	return renderListOutput(stdout, opts, []string{"Agent ID", "Hypervisor", "OS", "Architecture", "Version", "Md5Hash", "URL"}, rows)
+}
+
+func consoleConnectionShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("console connection show requires <token>")
+	}
+	client, err := computeClientWithMaximumMicroversion(ctx, client, "2.99")
+	if err != nil {
+		return err
+	}
+	var body struct {
+		Console map[string]any `json:"console"`
+	}
+	resp, err := client.Get(ctx, client.ServiceURL("os-console-auth-tokens", args[0]), &body, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return oscResourceNotFoundError(err, "ConsoleAuthToken", args[0])
+	}
+	return renderShowOutput(stdout, opts, []outputField{
+		{"host", mapValueOrEmpty(body.Console, "host")},
+		{"instance_uuid", mapValueOrEmpty(body.Console, "instance_uuid")},
+		{"internal_access_path", mapValueOrEmpty(body.Console, "internal_access_path")},
+		{"port", mapValueOrEmpty(body.Console, "port")},
+		{"tls_port", mapValueOrEmpty(body.Console, "tls_port")},
+	})
 }
 
 func hostList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
@@ -4785,15 +4816,34 @@ func oscHTTPException(err error) error {
 	if err == nil {
 		return nil
 	}
+	if codeErr, ok := unexpectedResponseCode(err); ok {
+		return formatOSCHTTPException(codeErr)
+	}
+	return err
+}
+
+func oscResourceNotFoundError(err error, resource string, id string) error {
+	codeErr, ok := unexpectedResponseCode(err)
+	if !ok || codeErr.Actual != http.StatusNotFound {
+		return oscHTTPException(err)
+	}
+	message := openStackFaultMessage(codeErr.Body)
+	if message == "" {
+		message = strings.TrimSpace(string(codeErr.Body))
+	}
+	return fmt.Errorf("No %s found for %s: Client Error for url: %s, %s", resource, id, codeErr.URL, message)
+}
+
+func unexpectedResponseCode(err error) (gophercloud.ErrUnexpectedResponseCode, bool) {
 	var valueErr gophercloud.ErrUnexpectedResponseCode
 	if errors.As(err, &valueErr) {
-		return formatOSCHTTPException(valueErr)
+		return valueErr, true
 	}
 	var ptrErr *gophercloud.ErrUnexpectedResponseCode
 	if errors.As(err, &ptrErr) && ptrErr != nil {
-		return formatOSCHTTPException(*ptrErr)
+		return *ptrErr, true
 	}
-	return err
+	return gophercloud.ErrUnexpectedResponseCode{}, false
 }
 
 func formatOSCHTTPException(err gophercloud.ErrUnexpectedResponseCode) error {
