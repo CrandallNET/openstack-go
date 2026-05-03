@@ -4352,13 +4352,15 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/routers"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
   - command: "router ndp proxy create"
     group: "openstack.network.v2"
     service: "network"
@@ -4473,13 +4475,15 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/routers"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
   - command: "router unset"
     group: "openstack.network.v2"
     service: "network"
@@ -4517,13 +4521,15 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/security/groups"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
   - command: "security group rule create"
     group: "openstack.network.v2"
     service: "network"
@@ -4550,24 +4556,28 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/security/rules"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
   - command: "security group rule show"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/security/rules"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
   - command: "security group set"
     group: "openstack.network.v2"
     service: "network"
@@ -4583,13 +4593,15 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/security/groups"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
   - command: "security group unset"
     group: "openstack.network.v2"
     service: "network"

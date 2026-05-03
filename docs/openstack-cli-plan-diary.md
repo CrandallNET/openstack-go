@@ -156,6 +156,16 @@ Sources consulted: Gophercloud package docs and local module sources for [Image 
 
 Verification: `go test ./...`, `go build -o bin/openstack ./cmd/openstack`, and live `cloud6` JSON smoke checks passed for `image member list`, `image task list`, `image stores list`, and `OS_IMAGE_API_VERSION=2.15 image stores list --detail`. `image member get` and `image task show` are implemented but still need live fixtures because the tested image had no members and `cloud6` returned no image tasks during this run.
 
+## 2026-05-02: Network Router And Security Group Read Expansion
+
+Work done: added Network v2 read implementations for `router list/show`, `security group list/show`, and `security group rule list/show`. These commands use Gophercloud's Neutron router, security group, and security group rule packages.
+
+Compatibility note: the implementation now matches the Python-observed JSON column shape for the default `cloud6` list outputs, including router `Distributed` and `HA` columns and security-group-rule `Remote Address Group` output. Exact parity still needs oracle golden tests for project-name resolution, shared security group filtering, router HA data, security group rule port-range edge cases, and full show output formatting.
+
+Sources consulted: Gophercloud package docs and local module sources for [Neutron routers](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/routers), [security groups](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/security/groups), and [security group rules](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/security/rules).
+
+Verification: `go test ./...`, `go build -o bin/openstack ./cmd/openstack`, and live `cloud6` JSON smoke checks passed for `router list/show`, `security group list/show`, and `security group rule list/show`.
+
 ## 2026-05-02: Pre-Implementation Question Register
 
 Work done: reviewed the living plan for implementation-defining choices and added a decision and question register to the plan. The register separates questions that require user answers from assumptions that can be reviewed and reopened later.

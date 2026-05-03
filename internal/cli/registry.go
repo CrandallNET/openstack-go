@@ -66,6 +66,9 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"resource provider list", "resource provider show",
 		"resource provider trait list",
 		"resource provider usage show",
+		"router list", "router show",
+		"security group list", "security group show",
+		"security group rule list", "security group rule show",
 		"server list", "server show",
 		"server group list", "server group show",
 		"subnet list", "subnet show",
@@ -318,6 +321,29 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().String("member-of", "", "aggregate membership")
 	case "resource provider show":
 		cmd.Flags().Bool("allocations", false, "include resource allocations")
+	case "router list":
+		cmd.Flags().String("name", "", "filter by name")
+		cmd.Flags().Bool("enable", false, "list enabled routers")
+		cmd.Flags().Bool("disable", false, "list disabled routers")
+		cmd.Flags().Bool("long", false, "list additional fields")
+		cmd.Flags().String("project", "", "filter by project")
+		cmd.Flags().String("project-domain", "", "project domain")
+		cmd.Flags().String("agent", "", "filter by agent")
+		addTagFilterFlags(cmd)
+	case "security group list":
+		cmd.Flags().String("project", "", "filter by project")
+		cmd.Flags().String("project-domain", "", "project domain")
+		cmd.Flags().Bool("share", false, "list shared security groups")
+		cmd.Flags().Bool("no-share", false, "list non-shared security groups")
+		addTagFilterFlags(cmd)
+	case "security group rule list":
+		cmd.Flags().String("protocol", "", "filter by IP protocol")
+		cmd.Flags().String("ethertype", "", "filter by ethertype")
+		cmd.Flags().Bool("ingress", false, "list ingress rules")
+		cmd.Flags().Bool("egress", false, "list egress rules")
+		cmd.Flags().Bool("long", false, "deprecated")
+		cmd.Flags().String("project", "", "filter by project")
+		cmd.Flags().String("project-domain", "", "project domain")
 	case "trait list":
 		cmd.Flags().String("name", "", "filter by name")
 		cmd.Flags().Bool("associated", false, "filter to associated traits")
@@ -409,6 +435,9 @@ func isCoreReadCommand(path string) bool {
 		"resource provider list", "resource provider show",
 		"resource provider trait list",
 		"resource provider usage show",
+		"router list", "router show",
+		"security group list", "security group show",
+		"security group rule list", "security group rule show",
 		"server list", "server show",
 		"server group list", "server group show",
 		"subnet list", "subnet show",

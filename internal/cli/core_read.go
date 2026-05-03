@@ -24,6 +24,9 @@ import (
 	"github.com/gophercloud/gophercloud/v2/openstack/image/v2/members"
 	"github.com/gophercloud/gophercloud/v2/openstack/image/v2/tasks"
 	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/floatingips"
+	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/routers"
+	secgroups "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/security/groups"
+	secgrouprules "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/security/rules"
 	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/networks"
 	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/ports"
 	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/subnets"
@@ -286,6 +289,42 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return resourceProviderUsageShow(cmd.Context(), stdout, opts, client, args)
+		case "router list":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return routerList(cmd.Context(), stdout, opts, client)
+		case "router show":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return routerShow(cmd.Context(), stdout, opts, client, args)
+		case "security group list":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return securityGroupList(cmd.Context(), stdout, opts, client)
+		case "security group show":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return securityGroupShow(cmd.Context(), stdout, opts, client, args)
+		case "security group rule list":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return securityGroupRuleList(cmd.Context(), stdout, opts, client, args)
+		case "security group rule show":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return securityGroupRuleShow(cmd.Context(), stdout, opts, client, args)
 		case "server list":
 			client, err := clients.computeV2()
 			if err != nil {
@@ -899,6 +938,311 @@ func networkShow(ctx context.Context, stdout io.Writer, opts *Options, client *g
 	})
 }
 
+func routerList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	listOpts := routers.ListOpts{
+		Name:       flagValue(opts, "name"),
+		ProjectID:  flagValue(opts, "project"),
+		Tags:       firstFlag(opts, "tags"),
+		TagsAny:    firstFlag(opts, "any-tags", "tags-any"),
+		NotTags:    firstFlag(opts, "not-tags"),
+		NotTagsAny: firstFlag(opts, "not-any-tags", "not-tags-any"),
+	}
+	if boolFlag(opts, "enable") {
+		enabled := true
+		listOpts.AdminStateUp = &enabled
+	}
+	if boolFlag(opts, "disable") {
+		disabled := false
+		listOpts.AdminStateUp = &disabled
+	}
+	page, err := routers.List(client, listOpts).AllPages(ctx)
+	if err != nil {
+		return err
+	}
+	items, err := routers.ExtractRouters(page)
+	if err != nil {
+		return err
+	}
+	rows := make([]outputRow, 0, len(items))
+	for _, item := range items {
+		row := outputRow{
+			"ID":          item.ID,
+			"Name":        item.Name,
+			"Status":      item.Status,
+			"State":       item.AdminStateUp,
+			"Project":     item.ProjectID,
+			"Distributed": item.Distributed,
+			"HA":          false,
+		}
+		if boolFlag(opts, "long") {
+			row["Routes"] = item.Routes
+			row["External gateway info"] = item.GatewayInfo
+			row["Tags"] = item.Tags
+		}
+		rows = append(rows, row)
+	}
+	columns := []string{"ID", "Name", "Status", "State", "Project", "Distributed", "HA"}
+	if boolFlag(opts, "long") {
+		columns = append(columns, "Routes", "External gateway info", "Tags")
+	}
+	return renderListOutput(stdout, opts, columns, rows)
+}
+
+func routerShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("router show requires <router>")
+	}
+	item, err := findRouter(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, []outputField{
+		{"admin_state_up", item.AdminStateUp},
+		{"availability_zone_hints", item.AvailabilityZoneHints},
+		{"created_at", oscTime(item.CreatedAt)},
+		{"description", item.Description},
+		{"distributed", item.Distributed},
+		{"external_gateway_info", item.GatewayInfo},
+		{"ha", false},
+		{"id", item.ID},
+		{"interfaces_info", routerInterfacesInfo(ctx, client, item.ID)},
+		{"name", item.Name},
+		{"project_id", item.ProjectID},
+		{"revision_number", item.RevisionNumber},
+		{"routes", item.Routes},
+		{"status", item.Status},
+		{"tags", item.Tags},
+		{"updated_at", oscTime(item.UpdatedAt)},
+	})
+}
+
+func routerInterfacesInfo(ctx context.Context, client *gophercloud.ServiceClient, routerID string) []map[string]string {
+	page, err := ports.List(client, ports.ListOpts{DeviceID: routerID}).AllPages(ctx)
+	if err != nil {
+		return nil
+	}
+	items, err := ports.ExtractPorts(page)
+	if err != nil {
+		return nil
+	}
+	var rows []map[string]string
+	for _, port := range items {
+		if port.DeviceOwner == "network:router_gateway" {
+			continue
+		}
+		for _, fixedIP := range port.FixedIPs {
+			rows = append(rows, map[string]string{
+				"port_id":    port.ID,
+				"ip_address": fixedIP.IPAddress,
+				"subnet_id":  fixedIP.SubnetID,
+			})
+		}
+	}
+	return rows
+}
+
+func securityGroupList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	page, err := secgroups.List(client, secgroups.ListOpts{
+		ProjectID:  flagValue(opts, "project"),
+		Tags:       firstFlag(opts, "tags"),
+		TagsAny:    firstFlag(opts, "any-tags", "tags-any"),
+		NotTags:    firstFlag(opts, "not-tags"),
+		NotTagsAny: firstFlag(opts, "not-any-tags", "not-tags-any"),
+	}).AllPages(ctx)
+	if err != nil {
+		return err
+	}
+	items, err := secgroups.ExtractGroups(page)
+	if err != nil {
+		return err
+	}
+	rows := make([]outputRow, 0, len(items))
+	for _, item := range items {
+		rows = append(rows, outputRow{
+			"ID":          item.ID,
+			"Name":        item.Name,
+			"Description": item.Description,
+			"Project":     item.ProjectID,
+			"Tags":        item.Tags,
+			"Shared":      false,
+		})
+	}
+	return renderListOutput(stdout, opts, []string{"ID", "Name", "Description", "Project", "Tags", "Shared"}, rows)
+}
+
+func securityGroupShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("security group show requires <group>")
+	}
+	item, err := findSecurityGroup(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, []outputField{
+		{"created_at", oscTime(item.CreatedAt)},
+		{"description", item.Description},
+		{"id", item.ID},
+		{"name", item.Name},
+		{"project_id", item.ProjectID},
+		{"revision_number", item.RevisionNumber},
+		{"rules", securityGroupRuleDetails(item.Rules)},
+		{"stateful", item.Stateful},
+		{"tags", item.Tags},
+		{"updated_at", oscTime(item.UpdatedAt)},
+	})
+}
+
+func securityGroupRuleDetails(items []secgrouprules.SecGroupRule) []map[string]any {
+	rows := make([]map[string]any, 0, len(items))
+	for _, item := range items {
+		rows = append(rows, map[string]any{
+			"id":                      item.ID,
+			"description":             item.Description,
+			"direction":               item.Direction,
+			"ethertype":               item.EtherType,
+			"protocol":                nilIfEmpty(item.Protocol),
+			"port_range_min":          zeroNil(item.PortRangeMin),
+			"port_range_max":          zeroNil(item.PortRangeMax),
+			"remote_ip_prefix":        remoteIPPrefix(item),
+			"remote_group_id":         nilIfEmpty(item.RemoteGroupID),
+			"remote_address_group_id": nilIfEmpty(item.RemoteAddressGroupID),
+			"security_group_id":       item.SecGroupID,
+			"project_id":              item.ProjectID,
+		})
+	}
+	return rows
+}
+
+func securityGroupRuleList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	listOpts := secgrouprules.ListOpts{
+		Protocol:  protocolFilter(opts),
+		EtherType: ethertypeFilter(opts),
+		ProjectID: flagValue(opts, "project"),
+	}
+	if boolFlag(opts, "ingress") {
+		listOpts.Direction = "ingress"
+	}
+	if boolFlag(opts, "egress") {
+		listOpts.Direction = "egress"
+	}
+	includeSecurityGroup := true
+	if len(args) > 0 {
+		group, err := findSecurityGroup(ctx, client, args[0])
+		if err != nil {
+			return err
+		}
+		listOpts.SecGroupID = group.ID
+		includeSecurityGroup = false
+	}
+	page, err := secgrouprules.List(client, listOpts).AllPages(ctx)
+	if err != nil {
+		return err
+	}
+	items, err := secgrouprules.ExtractRules(page)
+	if err != nil {
+		return err
+	}
+	rows := make([]outputRow, 0, len(items))
+	for _, item := range items {
+		row := outputRow{
+			"ID":                    item.ID,
+			"IP Protocol":           nilIfEmpty(item.Protocol),
+			"Ethertype":             item.EtherType,
+			"IP Range":              remoteIPPrefix(item),
+			"Port Range":            portRange(item),
+			"Direction":             item.Direction,
+			"Remote Security Group": nilIfEmpty(item.RemoteGroupID),
+			"Remote Address Group":  nilIfEmpty(item.RemoteAddressGroupID),
+		}
+		if includeSecurityGroup {
+			row["Security Group"] = item.SecGroupID
+		}
+		rows = append(rows, row)
+	}
+	columns := []string{"ID", "IP Protocol", "Ethertype", "IP Range", "Port Range", "Direction", "Remote Security Group", "Remote Address Group"}
+	if includeSecurityGroup {
+		columns = append(columns, "Security Group")
+	}
+	return renderListOutput(stdout, opts, columns, rows)
+}
+
+func securityGroupRuleShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("security group rule show requires <rule>")
+	}
+	item, err := secgrouprules.Get(ctx, client, args[0]).Extract()
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, []outputField{
+		{"created_at", oscTime(item.CreatedAt)},
+		{"description", item.Description},
+		{"direction", item.Direction},
+		{"ether_type", item.EtherType},
+		{"id", item.ID},
+		{"port_range_max", zeroNil(item.PortRangeMax)},
+		{"port_range_min", zeroNil(item.PortRangeMin)},
+		{"project_id", item.ProjectID},
+		{"protocol", nilIfEmpty(item.Protocol)},
+		{"remote_address_group_id", nilIfEmpty(item.RemoteAddressGroupID)},
+		{"remote_group_id", nilIfEmpty(item.RemoteGroupID)},
+		{"remote_ip_prefix", remoteIPPrefix(*item)},
+		{"revision_number", item.RevisionNumber},
+		{"security_group_id", item.SecGroupID},
+		{"updated_at", oscTime(item.UpdatedAt)},
+	})
+}
+
+func protocolFilter(opts *Options) string {
+	value := strings.ToLower(flagValue(opts, "protocol"))
+	if value == "any" {
+		return ""
+	}
+	return value
+}
+
+func ethertypeFilter(opts *Options) string {
+	value := flagValue(opts, "ethertype")
+	switch strings.ToLower(value) {
+	case "ipv4":
+		return "IPv4"
+	case "ipv6":
+		return "IPv6"
+	default:
+		return value
+	}
+}
+
+func remoteIPPrefix(rule secgrouprules.SecGroupRule) any {
+	if rule.RemoteIPPrefix != "" {
+		return rule.RemoteIPPrefix
+	}
+	if rule.EtherType == "IPv6" {
+		return "::/0"
+	}
+	if rule.EtherType == "IPv4" {
+		return "0.0.0.0/0"
+	}
+	return nil
+}
+
+func portRange(rule secgrouprules.SecGroupRule) string {
+	if rule.PortRangeMin == 0 && rule.PortRangeMax == 0 {
+		return ""
+	}
+	if rule.PortRangeMin == rule.PortRangeMax {
+		return strconv.Itoa(rule.PortRangeMin)
+	}
+	return fmt.Sprintf("%d:%d", rule.PortRangeMin, rule.PortRangeMax)
+}
+
+func zeroNil(value int) any {
+	if value == 0 {
+		return nil
+	}
+	return value
+}
+
 func volumeList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
 	page, err := volumes.List(client, volumes.ListOpts{}).AllPages(ctx)
 	if err != nil {
@@ -1510,6 +1854,38 @@ func findNetwork(ctx context.Context, client *gophercloud.ServiceClient, value s
 		return nil, err
 	}
 	return singleByName(value, items, func(item networks.Network) string { return item.Name })
+}
+
+func findRouter(ctx context.Context, client *gophercloud.ServiceClient, value string) (*routers.Router, error) {
+	result := routers.Get(ctx, client, value)
+	if result.Err == nil {
+		return result.Extract()
+	}
+	page, err := routers.List(client, routers.ListOpts{Name: value}).AllPages(ctx)
+	if err != nil {
+		return nil, result.Err
+	}
+	items, err := routers.ExtractRouters(page)
+	if err != nil {
+		return nil, err
+	}
+	return singleByName(value, items, func(item routers.Router) string { return item.Name })
+}
+
+func findSecurityGroup(ctx context.Context, client *gophercloud.ServiceClient, value string) (*secgroups.SecGroup, error) {
+	result := secgroups.Get(ctx, client, value)
+	if result.Err == nil {
+		return result.Extract()
+	}
+	page, err := secgroups.List(client, secgroups.ListOpts{Name: value}).AllPages(ctx)
+	if err != nil {
+		return nil, result.Err
+	}
+	items, err := secgroups.ExtractGroups(page)
+	if err != nil {
+		return nil, err
+	}
+	return singleByName(value, items, func(item secgroups.SecGroup) string { return item.Name })
 }
 
 func findVolume(ctx context.Context, client *gophercloud.ServiceClient, value string) (*volumes.Volume, error) {
