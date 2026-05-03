@@ -12,6 +12,7 @@ import (
 	"github.com/gophercloud/gophercloud/v2/openstack/identity/v3/domains"
 	"github.com/gophercloud/gophercloud/v2/openstack/identity/v3/ec2credentials"
 	"github.com/gophercloud/gophercloud/v2/openstack/identity/v3/endpoints"
+	"github.com/gophercloud/gophercloud/v2/openstack/identity/v3/federation"
 	"github.com/gophercloud/gophercloud/v2/openstack/identity/v3/groups"
 	identitylimits "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/limits"
 	"github.com/gophercloud/gophercloud/v2/openstack/identity/v3/policies"
@@ -67,14 +68,28 @@ func runIdentityRead(path string, stdout io.Writer, opts *Options) commandHandle
 			return identityEndpointList(cmd.Context(), stdout, opts, client)
 		case "endpoint show":
 			return identityEndpointShow(cmd.Context(), stdout, opts, client, args)
+		case "federation protocol list":
+			return identityFederationProtocolList(cmd.Context(), stdout, opts, client)
+		case "federation protocol show":
+			return identityFederationProtocolShow(cmd.Context(), stdout, opts, client, args)
 		case "group list":
 			return identityGroupList(cmd.Context(), stdout, opts, client)
 		case "group show":
 			return identityGroupShow(cmd.Context(), stdout, opts, client, args)
+		case "identity provider list":
+			return identityProviderList(cmd.Context(), stdout, opts, client)
+		case "identity provider show":
+			return identityProviderShow(cmd.Context(), stdout, opts, client, args)
+		case "implied role list":
+			return identityImpliedRoleList(cmd.Context(), stdout, opts, client)
 		case "limit list":
 			return identityLimitList(cmd.Context(), stdout, opts, client)
 		case "limit show":
 			return identityLimitShow(cmd.Context(), stdout, opts, client, args)
+		case "mapping list":
+			return identityMappingList(cmd.Context(), stdout, opts, client)
+		case "mapping show":
+			return identityMappingShow(cmd.Context(), stdout, opts, client, args)
 		case "policy list":
 			return identityPolicyList(cmd.Context(), stdout, opts, client)
 		case "policy show":
@@ -99,6 +114,10 @@ func runIdentityRead(path string, stdout io.Writer, opts *Options) commandHandle
 			return identityRoleShow(cmd.Context(), stdout, opts, client, args)
 		case "service list":
 			return identityServiceList(cmd.Context(), stdout, opts, client)
+		case "service provider list":
+			return identityServiceProviderList(cmd.Context(), stdout, opts, client)
+		case "service provider show":
+			return identityServiceProviderShow(cmd.Context(), stdout, opts, client, args)
 		case "service show":
 			return identityServiceShow(cmd.Context(), stdout, opts, client, args)
 		case "trust list":
@@ -703,6 +722,250 @@ func roleAssignmentSystem(system map[string]any) string {
 
 func boolPointer(value bool) *bool {
 	return &value
+}
+
+type mappingRecord struct {
+	ID            string                   `json:"id,omitempty"`
+	Links         map[string]any           `json:"links,omitempty"`
+	Rules         []federation.MappingRule `json:"rules,omitempty"`
+	SchemaVersion any                      `json:"schema_version,omitempty"`
+}
+
+func identityMappingList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	page, err := federation.ListMappings(client).AllPages(ctx)
+	if err != nil {
+		return err
+	}
+	items, err := extractMappingRecords(page)
+	if err != nil {
+		return err
+	}
+	rows := make([]outputRow, 0, len(items))
+	for _, item := range items {
+		rows = append(rows, outputRow{
+			"ID":             item.ID,
+			"schema_version": item.SchemaVersion,
+		})
+	}
+	return renderListOutput(stdout, opts, []string{"ID", "schema_version"}, rows)
+}
+
+func identityMappingShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("mapping show requires <mapping>")
+	}
+	var body struct {
+		Mapping mappingRecord `json:"mapping"`
+	}
+	resp, err := client.Get(ctx, client.ServiceURL("OS-FEDERATION", "mappings", args[0]), &body, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, []outputField{
+		{"id", body.Mapping.ID},
+		{"rules", body.Mapping.Rules},
+		{"schema_version", body.Mapping.SchemaVersion},
+	})
+}
+
+func extractMappingRecords(page pagination.Page) ([]mappingRecord, error) {
+	var body struct {
+		Mappings []mappingRecord `json:"mappings"`
+	}
+	err := page.(federation.MappingsPage).ExtractInto(&body)
+	return body.Mappings, err
+}
+
+type identityProviderRecord struct {
+	ID          string         `json:"id,omitempty"`
+	Enabled     bool           `json:"enabled,omitempty"`
+	DomainID    string         `json:"domain_id,omitempty"`
+	Description string         `json:"description,omitempty"`
+	RemoteIDs   []string       `json:"remote_ids,omitempty"`
+	Links       map[string]any `json:"links,omitempty"`
+}
+
+func identityProviderList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	var body struct {
+		IdentityProviders []identityProviderRecord `json:"identity_providers"`
+	}
+	resp, err := client.Get(ctx, client.ServiceURL("OS-FEDERATION", "identity_providers"), &body, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return err
+	}
+	rows := make([]outputRow, 0, len(body.IdentityProviders))
+	for _, item := range body.IdentityProviders {
+		if id := flagValue(opts, "id"); id != "" && item.ID != id {
+			continue
+		}
+		if boolFlag(opts, "enabled") && !item.Enabled {
+			continue
+		}
+		rows = append(rows, outputRow{
+			"ID":          item.ID,
+			"Enabled":     item.Enabled,
+			"Domain ID":   item.DomainID,
+			"Description": item.Description,
+		})
+	}
+	return renderListOutput(stdout, opts, []string{"ID", "Enabled", "Domain ID", "Description"}, rows)
+}
+
+func identityProviderShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("identity provider show requires <identity-provider>")
+	}
+	item, err := getIdentityProvider(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, []outputField{
+		{"description", item.Description},
+		{"domain_id", item.DomainID},
+		{"enabled", item.Enabled},
+		{"id", item.ID},
+		{"remote_ids", item.RemoteIDs},
+	})
+}
+
+func getIdentityProvider(ctx context.Context, client *gophercloud.ServiceClient, id string) (*identityProviderRecord, error) {
+	var body struct {
+		IdentityProvider identityProviderRecord `json:"identity_provider"`
+	}
+	resp, err := client.Get(ctx, client.ServiceURL("OS-FEDERATION", "identity_providers", id), &body, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return nil, err
+	}
+	return &body.IdentityProvider, nil
+}
+
+type serviceProviderRecord struct {
+	ID                 string `json:"id,omitempty"`
+	Enabled            bool   `json:"enabled,omitempty"`
+	Description        string `json:"description,omitempty"`
+	AuthURL            string `json:"auth_url,omitempty"`
+	ServiceProviderURL string `json:"sp_url,omitempty"`
+	RelayStatePrefix   string `json:"relay_state_prefix,omitempty"`
+}
+
+func identityServiceProviderList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	var body struct {
+		ServiceProviders []serviceProviderRecord `json:"service_providers"`
+	}
+	resp, err := client.Get(ctx, client.ServiceURL("OS-FEDERATION", "service_providers"), &body, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return err
+	}
+	rows := make([]outputRow, 0, len(body.ServiceProviders))
+	for _, item := range body.ServiceProviders {
+		rows = append(rows, outputRow{
+			"ID":                   item.ID,
+			"Enabled":              item.Enabled,
+			"Description":          item.Description,
+			"Auth URL":             item.AuthURL,
+			"Service Provider URL": item.ServiceProviderURL,
+			"Relay State Prefix":   item.RelayStatePrefix,
+		})
+	}
+	return renderListOutput(stdout, opts, []string{"ID", "Enabled", "Description", "Auth URL", "Service Provider URL", "Relay State Prefix"}, rows)
+}
+
+func identityServiceProviderShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("service provider show requires <service-provider>")
+	}
+	var body struct {
+		ServiceProvider serviceProviderRecord `json:"service_provider"`
+	}
+	resp, err := client.Get(ctx, client.ServiceURL("OS-FEDERATION", "service_providers", args[0]), &body, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, []outputField{
+		{"id", body.ServiceProvider.ID},
+		{"enabled", body.ServiceProvider.Enabled},
+		{"description", body.ServiceProvider.Description},
+		{"auth_url", body.ServiceProvider.AuthURL},
+		{"sp_url", body.ServiceProvider.ServiceProviderURL},
+		{"relay_state_prefix", body.ServiceProvider.RelayStatePrefix},
+	})
+}
+
+type federationProtocolRecord struct {
+	ID        string `json:"id,omitempty"`
+	Name      string `json:"name,omitempty"`
+	IDPID     string `json:"idp_id,omitempty"`
+	MappingID string `json:"mapping_id,omitempty"`
+}
+
+func identityFederationProtocolList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	idpID := flagValue(opts, "identity-provider")
+	if idpID == "" {
+		return fmt.Errorf("federation protocol list requires --identity-provider <identity-provider>")
+	}
+	var body struct {
+		Protocols []federationProtocolRecord `json:"protocols"`
+	}
+	resp, err := client.Get(ctx, client.ServiceURL("OS-FEDERATION", "identity_providers", idpID, "protocols"), &body, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return err
+	}
+	rows := make([]outputRow, 0, len(body.Protocols))
+	for _, item := range body.Protocols {
+		rows = append(rows, outputRow{
+			"id":      firstNonEmpty(item.Name, item.ID),
+			"mapping": item.MappingID,
+		})
+	}
+	return renderListOutput(stdout, opts, []string{"id", "mapping"}, rows)
+}
+
+func identityFederationProtocolShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	idpID := flagValue(opts, "identity-provider")
+	if idpID == "" {
+		return fmt.Errorf("federation protocol show requires --identity-provider <identity-provider>")
+	}
+	if len(args) < 1 {
+		return fmt.Errorf("federation protocol show requires <federation-protocol>")
+	}
+	var body struct {
+		Protocol federationProtocolRecord `json:"protocol"`
+	}
+	resp, err := client.Get(ctx, client.ServiceURL("OS-FEDERATION", "identity_providers", idpID, "protocols", args[0]), &body, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, []outputField{
+		{"id", firstNonEmpty(body.Protocol.Name, body.Protocol.ID)},
+		{"identity_provider", firstNonEmpty(body.Protocol.IDPID, idpID)},
+		{"mapping", body.Protocol.MappingID},
+	})
+}
+
+func identityImpliedRoleList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	result, err := roles.ListRoleInferenceRules(ctx, client).Extract()
+	if err != nil {
+		return err
+	}
+	rows := make([]outputRow, 0)
+	for _, rule := range result.RoleInferenceRuleList {
+		for _, implied := range rule.ImpliedRoles {
+			rows = append(rows, outputRow{
+				"Prior Role ID":     rule.PriorRole.ID,
+				"Prior Role Name":   rule.PriorRole.Name,
+				"Implied Role ID":   implied.ID,
+				"Implied Role Name": implied.Name,
+			})
+		}
+	}
+	return renderListOutput(stdout, opts, []string{"Prior Role ID", "Prior Role Name", "Implied Role ID", "Implied Role Name"}, rows)
 }
 
 func identityLimitList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {

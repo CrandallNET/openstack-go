@@ -169,6 +169,9 @@ func newCommandEntry(group string, command string) commandEntry {
 	if packagePath, ok := identityReadPackages()[command]; ok {
 		entry.Status = "implemented"
 		entry.SDKPackage = packagePath
+		if identityReadShims()[command] {
+			entry.Shim = true
+		}
 		entry.ImplementedIn = "internal/cli"
 		entry.Tests = []string{"unit: command registry", "live: cloud6 identity read smoke"}
 		entry.Notes = "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, sorting, and oracle parity coverage still need completion."
@@ -212,10 +215,17 @@ func identityReadPackages() map[string]string {
 		"ec2 credentials show":        base + "ec2credentials",
 		"endpoint list":               base + "endpoints",
 		"endpoint show":               base + "endpoints",
+		"federation protocol list":    "Keystone OS-FEDERATION protocol reads via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0",
+		"federation protocol show":    "Keystone OS-FEDERATION protocol reads via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0",
 		"group list":                  base + "groups",
 		"group show":                  base + "groups",
+		"identity provider list":      "Keystone OS-FEDERATION identity provider reads via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0",
+		"identity provider show":      "Keystone OS-FEDERATION identity provider reads via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0",
+		"implied role list":           base + "roles",
 		"limit list":                  base + "limits",
 		"limit show":                  base + "limits",
+		"mapping list":                base + "federation",
+		"mapping show":                base + "federation",
 		"policy list":                 base + "policies",
 		"policy show":                 base + "policies",
 		"project list":                base + "projects",
@@ -228,11 +238,24 @@ func identityReadPackages() map[string]string {
 		"role list":                   base + "roles",
 		"role show":                   base + "roles",
 		"service list":                base + "services",
+		"service provider list":       "Keystone OS-FEDERATION service provider reads via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0",
+		"service provider show":       "Keystone OS-FEDERATION service provider reads via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0",
 		"service show":                base + "services",
 		"trust list":                  base + "trusts",
 		"trust show":                  base + "trusts",
 		"user list":                   base + "users",
 		"user show":                   base + "users",
+	}
+}
+
+func identityReadShims() map[string]bool {
+	return map[string]bool{
+		"federation protocol list": true,
+		"federation protocol show": true,
+		"identity provider list":   true,
+		"identity provider show":   true,
+		"service provider list":    true,
+		"service provider show":    true,
 	}
 }
 
@@ -248,6 +271,9 @@ func identityCloudVerified() map[string]bool {
 		"ec2 credentials list":        true,
 		"endpoint list":               true,
 		"endpoint show":               true,
+		"identity provider list":      true,
+		"implied role list":           true,
+		"mapping list":                true,
 		"group list":                  true,
 		"limit list":                  true,
 		"policy list":                 true,
@@ -260,6 +286,7 @@ func identityCloudVerified() map[string]bool {
 		"role list":                   true,
 		"role show":                   true,
 		"service list":                true,
+		"service provider list":       true,
 		"service show":                true,
 		"trust list":                  true,
 		"user list":                   true,

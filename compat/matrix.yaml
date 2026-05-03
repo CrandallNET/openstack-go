@@ -1377,13 +1377,15 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
-    shim: false
+    status: "implemented"
+    sdk_package: "Keystone OS-FEDERATION protocol reads via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
+    shim: true
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: cloud6 identity read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, sorting, and oracle parity coverage still need completion."
   - command: "federation protocol set"
     group: "openstack.identity.v3"
     service: "identity"
@@ -1399,13 +1401,15 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
-    shim: false
+    status: "implemented"
+    sdk_package: "Keystone OS-FEDERATION protocol reads via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
+    shim: true
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: cloud6 identity read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, sorting, and oracle parity coverage still need completion."
   - command: "flavor create"
     group: "openstack.compute.v2"
     service: "compute"
@@ -1802,13 +1806,15 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
-    shim: false
+    status: "cloud-verified"
+    sdk_package: "Keystone OS-FEDERATION identity provider reads via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
+    shim: true
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: cloud6 identity read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, sorting, and oracle parity coverage still need completion."
   - command: "identity provider set"
     group: "openstack.identity.v3"
     service: "identity"
@@ -1824,13 +1830,15 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
-    shim: false
+    status: "implemented"
+    sdk_package: "Keystone OS-FEDERATION identity provider reads via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
+    shim: true
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: cloud6 identity read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, sorting, and oracle parity coverage still need completion."
   - command: "image add project"
     group: "openstack.image.v2"
     service: "image"
@@ -2276,13 +2284,15 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/roles"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: cloud6 identity read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, sorting, and oracle parity coverage still need completion."
   - command: "ip availability list"
     group: "openstack.network.v2"
     service: "network"
@@ -2539,13 +2549,15 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/federation"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: cloud6 identity read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, sorting, and oracle parity coverage still need completion."
   - command: "mapping set"
     group: "openstack.identity.v3"
     service: "identity"
@@ -2561,13 +2573,15 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/federation"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: cloud6 identity read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, sorting, and oracle parity coverage still need completion."
   - command: "module list"
     group: "openstack.cli"
     service: "cli"
@@ -5392,13 +5406,15 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
-    shim: false
+    status: "cloud-verified"
+    sdk_package: "Keystone OS-FEDERATION service provider reads via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
+    shim: true
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: cloud6 identity read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, sorting, and oracle parity coverage still need completion."
   - command: "service provider set"
     group: "openstack.identity.v3"
     service: "identity"
@@ -5414,13 +5430,15 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
-    shim: false
+    status: "implemented"
+    sdk_package: "Keystone OS-FEDERATION service provider reads via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
+    shim: true
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: cloud6 identity read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, sorting, and oracle parity coverage still need completion."
   - command: "service set"
     group: "openstack.identity.v3"
     service: "identity"

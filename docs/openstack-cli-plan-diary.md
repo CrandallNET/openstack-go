@@ -408,3 +408,18 @@ Sources consulted:
 * Local OSC oracle snapshot `compat/osc/9.0.0/help/role/assignment/list.txt`.
 * Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/identity/v3/role_assignment.py`, used only as the pinned local oracle implementation source.
 * Local openstacksdk source for `openstack.identity.v3.role_assignment.RoleAssignment`, which maps `scope_system` to `scope.system` and `inherited_to` to `scope.OS-INHERIT:inherited_to`.
+
+## 2026-05-03: Keystone Federation And Provider Read Expansion
+
+Work done: added read implementations for `mapping list`, `mapping show`, `identity provider list`, `identity provider show`, `federation protocol list`, `federation protocol show`, `service provider list`, `service provider show`, and `implied role list`.
+
+Implementation note: `mapping list/show` uses Gophercloud's Identity v3 federation package, and `implied role list` uses Gophercloud's Identity v3 roles package. Identity-provider, federation-protocol, and service-provider reads use narrow OS-FEDERATION REST reads through the authenticated Gophercloud Identity service client because no typed local Gophercloud helper exists in v2.12.0.
+
+Live observations on `cloud6`: Python OSC and the Go CLI both returned empty JSON lists for `mapping list`, `identity provider list`, and `service provider list`. `implied role list` matched Python OSC against the three role-inference rows exposed by Keystone. The show commands and federation protocol list/show are implemented but still need fixtures because `cloud6` currently has no mappings, identity providers, service providers, or federation protocols.
+
+Sources consulted:
+
+* [Gophercloud Identity federation](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/identity/v3/federation)
+* [Gophercloud Identity roles](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/identity/v3/roles)
+* Local OSC oracle snapshots in `compat/osc/9.0.0/help/mapping/list.txt`, `compat/osc/9.0.0/help/mapping/show.txt`, `compat/osc/9.0.0/help/identity/provider/list.txt`, `compat/osc/9.0.0/help/identity/provider/show.txt`, `compat/osc/9.0.0/help/federation/protocol/list.txt`, `compat/osc/9.0.0/help/federation/protocol/show.txt`, and `compat/osc/9.0.0/help/implied/role/list.txt`.
+* Local Python OSC source files `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/identity/v3/mapping.py`, `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/identity/v3/identity_provider.py`, `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/identity/v3/federation_protocol.py`, `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/identity/v3/service_provider.py`, and `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/identity/v3/implied_role.py`, used only as pinned local oracle implementation sources.

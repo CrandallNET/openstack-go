@@ -35,8 +35,12 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"domain list", "domain show",
 		"ec2 credentials list", "ec2 credentials show",
 		"endpoint list", "endpoint show",
+		"federation protocol list", "federation protocol show",
 		"group list", "group show",
+		"identity provider list", "identity provider show",
+		"implied role list",
 		"limit list", "limit show",
+		"mapping list", "mapping show",
 		"policy list", "policy show",
 		"project list", "project show",
 		"region list", "region show",
@@ -44,6 +48,7 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"role assignment list",
 		"role list", "role show",
 		"service list", "service show",
+		"service provider list", "service provider show",
 		"trust list", "trust show",
 		"user list", "user show",
 	} {
@@ -236,9 +241,13 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().String("endpoint", "", "endpoint group")
 		cmd.Flags().String("project", "", "filter by project")
 		cmd.Flags().String("project-domain", "", "project domain")
+	case "federation protocol list", "federation protocol show":
+		cmd.Flags().String("identity-provider", "", "identity provider")
 	case "ec2 credentials show":
 		cmd.Flags().String("user", "", "filter by user")
 		cmd.Flags().String("user-domain", "", "user domain")
+	case "identity provider list":
+		cmd.Flags().String("id", "", "filter by ID")
 	case "allocation candidate list":
 		cmd.Flags().String("resource", "", "resource class amount")
 		cmd.Flags().Int("limit", 0, "maximum number of entries")
@@ -561,8 +570,12 @@ func isIdentityReadCommand(path string) bool {
 		"domain list", "domain show",
 		"ec2 credentials list", "ec2 credentials show",
 		"endpoint list", "endpoint show",
+		"federation protocol list", "federation protocol show",
 		"group list", "group show",
+		"identity provider list", "identity provider show",
+		"implied role list",
 		"limit list", "limit show",
+		"mapping list", "mapping show",
 		"policy list", "policy show",
 		"project list", "project show",
 		"region list", "region show",
@@ -570,6 +583,7 @@ func isIdentityReadCommand(path string) bool {
 		"role assignment list",
 		"role list", "role show",
 		"service list", "service show",
+		"service provider list", "service provider show",
 		"trust list", "trust show",
 		"user list", "user show":
 		return true
