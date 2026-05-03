@@ -27,10 +27,19 @@ import (
 	"github.com/gophercloud/gophercloud/v2/openstack/image/v2/images"
 	"github.com/gophercloud/gophercloud/v2/openstack/image/v2/members"
 	"github.com/gophercloud/gophercloud/v2/openstack/image/v2/tasks"
+	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/agents"
+	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/addressscopes"
 	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/floatingips"
 	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/routers"
+	qospolicies "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/qos/policies"
+	qosruletypes "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/qos/ruletypes"
+	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/rbacpolicies"
+	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/security/addressgroups"
 	secgroups "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/security/groups"
 	secgrouprules "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/security/rules"
+	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/segments"
+	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/subnetpools"
+	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/trunks"
 	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/networks"
 	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/ports"
 	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/subnets"
@@ -46,6 +55,30 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 		}
 
 		switch path {
+		case "address group list":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return addressGroupList(cmd.Context(), stdout, opts, client)
+		case "address group show":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return addressGroupShow(cmd.Context(), stdout, opts, client, args)
+		case "address scope list":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return addressScopeList(cmd.Context(), stdout, opts, client)
+		case "address scope show":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return addressScopeShow(cmd.Context(), stdout, opts, client, args)
 		case "aggregate list":
 			client, err := clients.computeV2()
 			if err != nil {
@@ -160,12 +193,84 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return networkList(cmd.Context(), stdout, opts, client)
+		case "network agent list":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return networkAgentList(cmd.Context(), stdout, opts, client)
+		case "network agent show":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return networkAgentShow(cmd.Context(), stdout, opts, client, args)
+		case "network qos policy list":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return networkQoSPolicyList(cmd.Context(), stdout, opts, client)
+		case "network qos policy show":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return networkQoSPolicyShow(cmd.Context(), stdout, opts, client, args)
+		case "network qos rule type list":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return networkQoSRuleTypeList(cmd.Context(), stdout, opts, client)
+		case "network qos rule type show":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return networkQoSRuleTypeShow(cmd.Context(), stdout, opts, client, args)
+		case "network rbac list":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return networkRBACList(cmd.Context(), stdout, opts, client)
+		case "network rbac show":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return networkRBACShow(cmd.Context(), stdout, opts, client, args)
+		case "network segment list":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return networkSegmentList(cmd.Context(), stdout, opts, client)
+		case "network segment show":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return networkSegmentShow(cmd.Context(), stdout, opts, client, args)
 		case "network show":
 			client, err := clients.networkV2()
 			if err != nil {
 				return err
 			}
 			return networkShow(cmd.Context(), stdout, opts, client, args)
+		case "network trunk list":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return networkTrunkList(cmd.Context(), stdout, opts, client)
+		case "network trunk show":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return networkTrunkShow(cmd.Context(), stdout, opts, client, args)
 		case "object list":
 			client, err := clients.objectStorageV1()
 			if err != nil {
@@ -360,6 +465,18 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return subnetList(cmd.Context(), stdout, opts, client)
+		case "subnet pool list":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return subnetPoolList(cmd.Context(), stdout, opts, client)
+		case "subnet pool show":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return subnetPoolShow(cmd.Context(), stdout, opts, client, args)
 		case "subnet show":
 			client, err := clients.networkV2()
 			if err != nil {
@@ -975,6 +1092,424 @@ func networkShow(ctx context.Context, stdout io.Writer, opts *Options, client *g
 		{"subnets", item.Subnets},
 		{"description", item.Description},
 		{"tags", item.Tags},
+	})
+}
+
+func addressGroupList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	page, err := addressgroups.List(client, addressgroups.ListOpts{
+		Name:      flagValue(opts, "name"),
+		ProjectID: flagValue(opts, "project"),
+	}).AllPages(ctx)
+	if err != nil {
+		return err
+	}
+	items, err := addressgroups.ExtractGroups(page)
+	if err != nil {
+		return err
+	}
+	rows := make([]outputRow, 0, len(items))
+	for _, item := range items {
+		rows = append(rows, outputRow{
+			"ID":          item.ID,
+			"Name":        item.Name,
+			"Description": item.Description,
+			"Project":     item.ProjectID,
+			"Addresses":   item.Addresses,
+		})
+	}
+	return renderListOutput(stdout, opts, []string{"ID", "Name", "Description", "Project", "Addresses"}, rows)
+}
+
+func addressGroupShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("address group show requires <address-group>")
+	}
+	item, err := findAddressGroup(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, []outputField{
+		{"addresses", item.Addresses},
+		{"description", item.Description},
+		{"id", item.ID},
+		{"name", item.Name},
+		{"project_id", item.ProjectID},
+	})
+}
+
+func addressScopeList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	listOpts := addressscopes.ListOpts{
+		Name:      flagValue(opts, "name"),
+		ProjectID: flagValue(opts, "project"),
+		IPVersion: intFlag(opts, "ip-version"),
+	}
+	if boolFlag(opts, "share") {
+		shared := true
+		listOpts.Shared = &shared
+	}
+	if boolFlag(opts, "no-share") {
+		shared := false
+		listOpts.Shared = &shared
+	}
+	page, err := addressscopes.List(client, listOpts).AllPages(ctx)
+	if err != nil {
+		return err
+	}
+	items, err := addressscopes.ExtractAddressScopes(page)
+	if err != nil {
+		return err
+	}
+	rows := make([]outputRow, 0, len(items))
+	for _, item := range items {
+		rows = append(rows, outputRow{
+			"ID":         item.ID,
+			"Name":       item.Name,
+			"IP Version": item.IPVersion,
+			"Shared":     item.Shared,
+			"Project":    firstNonEmpty(item.ProjectID, item.TenantID),
+		})
+	}
+	return renderListOutput(stdout, opts, []string{"ID", "Name", "IP Version", "Shared", "Project"}, rows)
+}
+
+func addressScopeShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("address scope show requires <address-scope>")
+	}
+	item, err := findAddressScope(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, []outputField{
+		{"id", item.ID},
+		{"ip_version", item.IPVersion},
+		{"name", item.Name},
+		{"project_id", firstNonEmpty(item.ProjectID, item.TenantID)},
+		{"shared", item.Shared},
+	})
+}
+
+func networkAgentList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	listOpts := agents.ListOpts{
+		AgentType: neutronAgentType(flagValue(opts, "agent-type")),
+		Host:      flagValue(opts, "host"),
+	}
+	page, err := agents.List(client, listOpts).AllPages(ctx)
+	if err != nil {
+		return err
+	}
+	items, err := agents.ExtractAgents(page)
+	if err != nil {
+		return err
+	}
+	if network := flagValue(opts, "network"); network != "" {
+		items = filterAgentsByNetwork(ctx, client, items, resolveNetworkID(ctx, client, network))
+	}
+	if router := flagValue(opts, "router"); router != "" {
+		items = filterAgentsByRouter(ctx, client, items, resolveRouterID(ctx, client, router))
+	}
+	rows := make([]outputRow, 0, len(items))
+	for _, item := range items {
+		rows = append(rows, outputRow{
+			"ID":                item.ID,
+			"Agent Type":        item.AgentType,
+			"Host":              item.Host,
+			"Availability Zone": nilIfEmpty(item.AvailabilityZone),
+			"Alive":             item.Alive,
+			"State":             item.AdminStateUp,
+			"Binary":            item.Binary,
+		})
+	}
+	return renderListOutput(stdout, opts, []string{"ID", "Agent Type", "Host", "Availability Zone", "Alive", "State", "Binary"}, rows)
+}
+
+func networkAgentShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("network agent show requires <agent-id>")
+	}
+	item, err := networkAgentRaw(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, []outputField{
+		{"admin_state_up", item["admin_state_up"]},
+		{"agent_type", item["agent_type"]},
+		{"alive", item["alive"]},
+		{"availability_zone", item["availability_zone"]},
+		{"binary", item["binary"]},
+		{"configuration", item["configurations"]},
+		{"created_at", item["created_at"]},
+		{"description", item["description"]},
+		{"ha_state", item["ha_state"]},
+		{"host", item["host"]},
+		{"id", item["id"]},
+		{"last_heartbeat_at", item["heartbeat_timestamp"]},
+		{"resources_synced", item["resources_synced"]},
+		{"started_at", item["started_at"]},
+		{"topic", item["topic"]},
+	})
+}
+
+func networkAgentRaw(ctx context.Context, client *gophercloud.ServiceClient, id string) (map[string]any, error) {
+	var response struct {
+		Agent map[string]any `json:"agent"`
+	}
+	_, err := client.Get(ctx, client.ServiceURL("agents", id), &response, nil)
+	return response.Agent, err
+}
+
+func networkRBACList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	page, err := rbacpolicies.List(client, rbacpolicies.ListOpts{
+		ObjectType:   flagValue(opts, "type"),
+		Action:       rbacpolicies.PolicyAction(flagValue(opts, "action")),
+		TargetTenant: flagValue(opts, "target-project"),
+	}).AllPages(ctx)
+	if err != nil {
+		return err
+	}
+	items, err := rbacpolicies.ExtractRBACPolicies(page)
+	if err != nil {
+		return err
+	}
+	rows := make([]outputRow, 0, len(items))
+	for _, item := range items {
+		row := outputRow{
+			"ID":          item.ID,
+			"Object Type": item.ObjectType,
+			"Object ID":   item.ObjectID,
+		}
+		if boolFlag(opts, "long") {
+			row["Action"] = item.Action
+		}
+		rows = append(rows, row)
+	}
+	columns := []string{"ID", "Object Type", "Object ID"}
+	if boolFlag(opts, "long") {
+		columns = append(columns, "Action")
+	}
+	return renderListOutput(stdout, opts, columns, rows)
+}
+
+func networkRBACShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("network rbac show requires <rbac-policy>")
+	}
+	item, err := rbacpolicies.Get(ctx, client, args[0]).Extract()
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, []outputField{
+		{"action", item.Action},
+		{"id", item.ID},
+		{"object_id", item.ObjectID},
+		{"object_type", item.ObjectType},
+		{"project_id", firstNonEmpty(item.ProjectID, item.TenantID)},
+		{"target_project_id", item.TargetTenant},
+	})
+}
+
+func networkSegmentList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	page, err := segments.List(client, segments.ListOpts{
+		NetworkID: resolveNetworkID(ctx, client, flagValue(opts, "network")),
+	}).AllPages(ctx)
+	if err != nil {
+		return err
+	}
+	items, err := segments.ExtractSegments(page)
+	if err != nil {
+		return err
+	}
+	rows := make([]outputRow, 0, len(items))
+	for _, item := range items {
+		row := outputRow{
+			"ID":           item.ID,
+			"Network":      item.NetworkID,
+			"Network Type": item.NetworkType,
+			"Segment":      item.SegmentationID,
+		}
+		if boolFlag(opts, "long") {
+			row["Name"] = item.Name
+			row["Physical Network"] = nilIfEmpty(item.PhysicalNetwork)
+			row["Description"] = item.Description
+		}
+		rows = append(rows, row)
+	}
+	columns := []string{"ID", "Network", "Network Type", "Segment"}
+	if boolFlag(opts, "long") {
+		columns = append(columns, "Name", "Physical Network", "Description")
+	}
+	return renderListOutput(stdout, opts, columns, rows)
+}
+
+func networkSegmentShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("network segment show requires <network-segment>")
+	}
+	item, err := findNetworkSegment(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, []outputField{
+		{"created_at", oscTime(item.CreatedAt)},
+		{"description", item.Description},
+		{"id", item.ID},
+		{"name", item.Name},
+		{"network_id", item.NetworkID},
+		{"network_type", item.NetworkType},
+		{"physical_network", nilIfEmpty(item.PhysicalNetwork)},
+		{"revision_number", item.RevisionNumber},
+		{"segmentation_id", item.SegmentationID},
+		{"updated_at", oscTime(item.UpdatedAt)},
+	})
+}
+
+func networkTrunkList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	page, err := trunks.List(client, trunks.ListOpts{}).AllPages(ctx)
+	if err != nil {
+		return err
+	}
+	items, err := trunks.ExtractTrunks(page)
+	if err != nil {
+		return err
+	}
+	rows := make([]outputRow, 0, len(items))
+	for _, item := range items {
+		row := outputRow{
+			"ID":          item.ID,
+			"Name":        item.Name,
+			"Parent Port": item.PortID,
+			"Description": item.Description,
+			"Project":     firstNonEmpty(item.ProjectID, item.TenantID),
+			"State":       item.Status,
+		}
+		if boolFlag(opts, "long") {
+			row["Subports"] = trunkSubports(item.Subports)
+			row["Tags"] = item.Tags
+		}
+		rows = append(rows, row)
+	}
+	columns := []string{"ID", "Name", "Parent Port", "Description", "Project", "State"}
+	if boolFlag(opts, "long") {
+		columns = append(columns, "Subports", "Tags")
+	}
+	return renderListOutput(stdout, opts, columns, rows)
+}
+
+func networkTrunkShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("network trunk show requires <trunk>")
+	}
+	item, err := findNetworkTrunk(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, []outputField{
+		{"admin_state_up", item.AdminStateUp},
+		{"created_at", oscTime(item.CreatedAt)},
+		{"description", item.Description},
+		{"id", item.ID},
+		{"name", item.Name},
+		{"port_id", item.PortID},
+		{"project_id", firstNonEmpty(item.ProjectID, item.TenantID)},
+		{"revision_number", item.RevisionNumber},
+		{"status", item.Status},
+		{"sub_ports", trunkSubports(item.Subports)},
+		{"tags", item.Tags},
+		{"updated_at", oscTime(item.UpdatedAt)},
+	})
+}
+
+func networkQoSPolicyList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	listOpts := qospolicies.ListOpts{
+		ProjectID: flagValue(opts, "project"),
+	}
+	if boolFlag(opts, "share") {
+		shared := true
+		listOpts.Shared = &shared
+	}
+	if boolFlag(opts, "no-share") {
+		shared := false
+		listOpts.Shared = &shared
+	}
+	page, err := qospolicies.List(client, listOpts).AllPages(ctx)
+	if err != nil {
+		return err
+	}
+	items, err := qospolicies.ExtractPolicies(page)
+	if err != nil {
+		return err
+	}
+	rows := make([]outputRow, 0, len(items))
+	for _, item := range items {
+		rows = append(rows, outputRow{
+			"ID":      item.ID,
+			"Name":    item.Name,
+			"Shared":  item.Shared,
+			"Default": item.IsDefault,
+			"Project": firstNonEmpty(item.ProjectID, item.TenantID),
+		})
+	}
+	return renderListOutput(stdout, opts, []string{"ID", "Name", "Shared", "Default", "Project"}, rows)
+}
+
+func networkQoSPolicyShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("network qos policy show requires <qos-policy>")
+	}
+	item, err := findNetworkQoSPolicy(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, []outputField{
+		{"created_at", oscTime(item.CreatedAt)},
+		{"description", item.Description},
+		{"id", item.ID},
+		{"is_default", item.IsDefault},
+		{"name", item.Name},
+		{"project_id", firstNonEmpty(item.ProjectID, item.TenantID)},
+		{"revision_number", item.RevisionNumber},
+		{"rules", item.Rules},
+		{"shared", item.Shared},
+		{"tags", item.Tags},
+		{"updated_at", oscTime(item.UpdatedAt)},
+	})
+}
+
+func networkQoSRuleTypeList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	page, err := qosruletypes.ListRuleTypes(client).AllPages(ctx)
+	if err != nil {
+		return err
+	}
+	items, err := qosruletypes.ExtractRuleTypes(page)
+	if err != nil {
+		return err
+	}
+	rows := make([]outputRow, 0, len(items))
+	for _, item := range items {
+		row := outputRow{"Type": item.Type}
+		if boolFlag(opts, "all-supported") || boolFlag(opts, "all-rules") {
+			row["Drivers"] = qosRuleTypeDrivers(item.Drivers)
+		}
+		rows = append(rows, row)
+	}
+	columns := []string{"Type"}
+	if boolFlag(opts, "all-supported") || boolFlag(opts, "all-rules") {
+		columns = append(columns, "Drivers")
+	}
+	return renderListOutput(stdout, opts, columns, rows)
+}
+
+func networkQoSRuleTypeShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("network qos rule type show requires <qos-rule-type-name>")
+	}
+	item, err := qosruletypes.GetRuleType(ctx, client, args[0]).Extract()
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, []outputField{
+		{"drivers", qosRuleTypeDrivers(item.Drivers)},
+		{"type", item.Type},
 	})
 }
 
@@ -1626,6 +2161,95 @@ func subnetShow(ctx context.Context, stdout io.Writer, opts *Options, client *go
 	})
 }
 
+func subnetPoolList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	listOpts := subnetpools.ListOpts{
+		Name:       flagValue(opts, "name"),
+		ProjectID:  flagValue(opts, "project"),
+		Tags:       firstFlag(opts, "tags"),
+		TagsAny:    firstFlag(opts, "any-tags", "tags-any"),
+		NotTags:    firstFlag(opts, "not-tags"),
+		NotTagsAny: firstFlag(opts, "not-any-tags", "not-tags-any"),
+	}
+	if boolFlag(opts, "share") {
+		shared := true
+		listOpts.Shared = &shared
+	}
+	if boolFlag(opts, "no-share") {
+		shared := false
+		listOpts.Shared = &shared
+	}
+	if boolFlag(opts, "default") {
+		isDefault := true
+		listOpts.IsDefault = &isDefault
+	}
+	if boolFlag(opts, "no-default") {
+		isDefault := false
+		listOpts.IsDefault = &isDefault
+	}
+	if addressScope := flagValue(opts, "address-scope"); addressScope != "" {
+		listOpts.AddressScopeID = resolveAddressScopeID(ctx, client, addressScope)
+	}
+	page, err := subnetpools.List(client, listOpts).AllPages(ctx)
+	if err != nil {
+		return err
+	}
+	items, err := subnetpools.ExtractSubnetPools(page)
+	if err != nil {
+		return err
+	}
+	rows := make([]outputRow, 0, len(items))
+	for _, item := range items {
+		row := outputRow{
+			"ID":       item.ID,
+			"Name":     item.Name,
+			"Prefixes": item.Prefixes,
+		}
+		if boolFlag(opts, "long") {
+			row["Default Prefix Length"] = item.DefaultPrefixLen
+			row["Address Scope"] = nilIfEmpty(item.AddressScopeID)
+			row["Default"] = item.IsDefault
+			row["Shared"] = item.Shared
+			row["Project"] = firstNonEmpty(item.ProjectID, item.TenantID)
+			row["Tags"] = item.Tags
+		}
+		rows = append(rows, row)
+	}
+	columns := []string{"ID", "Name", "Prefixes"}
+	if boolFlag(opts, "long") {
+		columns = append(columns, "Default Prefix Length", "Address Scope", "Default", "Shared", "Project", "Tags")
+	}
+	return renderListOutput(stdout, opts, columns, rows)
+}
+
+func subnetPoolShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("subnet pool show requires <subnet-pool>")
+	}
+	item, err := findSubnetPool(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, []outputField{
+		{"address_scope_id", nilIfEmpty(item.AddressScopeID)},
+		{"created_at", oscTime(item.CreatedAt)},
+		{"default_prefixlen", item.DefaultPrefixLen},
+		{"default_quota", item.DefaultQuota},
+		{"description", item.Description},
+		{"id", item.ID},
+		{"ip_version", item.IPversion},
+		{"is_default", item.IsDefault},
+		{"max_prefixlen", item.MaxPrefixLen},
+		{"min_prefixlen", item.MinPrefixLen},
+		{"name", item.Name},
+		{"prefixes", item.Prefixes},
+		{"project_id", firstNonEmpty(item.ProjectID, item.TenantID)},
+		{"revision_number", item.RevisionNumber},
+		{"shared", item.Shared},
+		{"tags", item.Tags},
+		{"updated_at", oscTime(item.UpdatedAt)},
+	})
+}
+
 func portList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, computeClient *gophercloud.ServiceClient) error {
 	listOpts := ports.ListOpts{
 		Name:           flagValue(opts, "name"),
@@ -2105,6 +2729,38 @@ func findNetwork(ctx context.Context, client *gophercloud.ServiceClient, value s
 	return singleByName(value, items, func(item networks.Network) string { return item.Name })
 }
 
+func findAddressGroup(ctx context.Context, client *gophercloud.ServiceClient, value string) (*addressgroups.AddressGroup, error) {
+	result := addressgroups.Get(ctx, client, value)
+	if result.Err == nil {
+		return result.Extract()
+	}
+	page, err := addressgroups.List(client, addressgroups.ListOpts{Name: value}).AllPages(ctx)
+	if err != nil {
+		return nil, result.Err
+	}
+	items, err := addressgroups.ExtractGroups(page)
+	if err != nil {
+		return nil, err
+	}
+	return singleByName(value, items, func(item addressgroups.AddressGroup) string { return item.Name })
+}
+
+func findAddressScope(ctx context.Context, client *gophercloud.ServiceClient, value string) (*addressscopes.AddressScope, error) {
+	result := addressscopes.Get(ctx, client, value)
+	if result.Err == nil {
+		return result.Extract()
+	}
+	page, err := addressscopes.List(client, addressscopes.ListOpts{Name: value}).AllPages(ctx)
+	if err != nil {
+		return nil, result.Err
+	}
+	items, err := addressscopes.ExtractAddressScopes(page)
+	if err != nil {
+		return nil, err
+	}
+	return singleByName(value, items, func(item addressscopes.AddressScope) string { return item.Name })
+}
+
 func findRouter(ctx context.Context, client *gophercloud.ServiceClient, value string) (*routers.Router, error) {
 	result := routers.Get(ctx, client, value)
 	if result.Err == nil {
@@ -2119,6 +2775,54 @@ func findRouter(ctx context.Context, client *gophercloud.ServiceClient, value st
 		return nil, err
 	}
 	return singleByName(value, items, func(item routers.Router) string { return item.Name })
+}
+
+func findNetworkSegment(ctx context.Context, client *gophercloud.ServiceClient, value string) (*segments.Segment, error) {
+	result := segments.Get(ctx, client, value)
+	if result.Err == nil {
+		return result.Extract()
+	}
+	page, err := segments.List(client, segments.ListOpts{Name: value}).AllPages(ctx)
+	if err != nil {
+		return nil, result.Err
+	}
+	items, err := segments.ExtractSegments(page)
+	if err != nil {
+		return nil, err
+	}
+	return singleByName(value, items, func(item segments.Segment) string { return item.Name })
+}
+
+func findNetworkTrunk(ctx context.Context, client *gophercloud.ServiceClient, value string) (*trunks.Trunk, error) {
+	result := trunks.Get(ctx, client, value)
+	if result.Err == nil {
+		return result.Extract()
+	}
+	page, err := trunks.List(client, trunks.ListOpts{Name: value}).AllPages(ctx)
+	if err != nil {
+		return nil, result.Err
+	}
+	items, err := trunks.ExtractTrunks(page)
+	if err != nil {
+		return nil, err
+	}
+	return singleByName(value, items, func(item trunks.Trunk) string { return item.Name })
+}
+
+func findNetworkQoSPolicy(ctx context.Context, client *gophercloud.ServiceClient, value string) (*qospolicies.Policy, error) {
+	result := qospolicies.Get(ctx, client, value)
+	if result.Err == nil {
+		return result.Extract()
+	}
+	page, err := qospolicies.List(client, qospolicies.ListOpts{Name: value}).AllPages(ctx)
+	if err != nil {
+		return nil, result.Err
+	}
+	items, err := qospolicies.ExtractPolicies(page)
+	if err != nil {
+		return nil, err
+	}
+	return singleByName(value, items, func(item qospolicies.Policy) string { return item.Name })
 }
 
 func findSecurityGroup(ctx context.Context, client *gophercloud.ServiceClient, value string) (*secgroups.SecGroup, error) {
@@ -2199,6 +2903,22 @@ func findSubnet(ctx context.Context, client *gophercloud.ServiceClient, value st
 		return nil, err
 	}
 	return singleByName(value, items, func(item subnets.Subnet) string { return item.Name })
+}
+
+func findSubnetPool(ctx context.Context, client *gophercloud.ServiceClient, value string) (*subnetpools.SubnetPool, error) {
+	result := subnetpools.Get(ctx, client, value)
+	if result.Err == nil {
+		return result.Extract()
+	}
+	page, err := subnetpools.List(client, subnetpools.ListOpts{Name: value}).AllPages(ctx)
+	if err != nil {
+		return nil, result.Err
+	}
+	items, err := subnetpools.ExtractSubnetPools(page)
+	if err != nil {
+		return nil, err
+	}
+	return singleByName(value, items, func(item subnetpools.SubnetPool) string { return item.Name })
 }
 
 func findPort(ctx context.Context, client *gophercloud.ServiceClient, value string) (*ports.Port, error) {
@@ -2458,6 +3178,28 @@ func resolveNetworkID(ctx context.Context, client *gophercloud.ServiceClient, va
 	return item.ID
 }
 
+func resolveAddressScopeID(ctx context.Context, client *gophercloud.ServiceClient, value string) string {
+	if client == nil || value == "" {
+		return value
+	}
+	item, err := findAddressScope(ctx, client, value)
+	if err != nil {
+		return value
+	}
+	return item.ID
+}
+
+func resolveRouterID(ctx context.Context, client *gophercloud.ServiceClient, value string) string {
+	if client == nil || value == "" {
+		return value
+	}
+	item, err := findRouter(ctx, client, value)
+	if err != nil {
+		return value
+	}
+	return item.ID
+}
+
 func resolvePortID(ctx context.Context, client *gophercloud.ServiceClient, value string) string {
 	if client == nil || value == "" {
 		return value
@@ -2521,6 +3263,104 @@ func fixedIPFilter(ctx context.Context, client *gophercloud.ServiceClient, value
 		}
 	}
 	return filter
+}
+
+func neutronAgentType(value string) string {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "":
+		return ""
+	case "bgp":
+		return "BGP dynamic routing agent"
+	case "dhcp":
+		return "DHCP agent"
+	case "open-vswitch", "openvswitch", "ovs":
+		return "Open vSwitch agent"
+	case "linux-bridge":
+		return "Linux bridge agent"
+	case "l3":
+		return "L3 agent"
+	case "metadata":
+		return "Metadata agent"
+	case "metering":
+		return "Metering agent"
+	default:
+		return value
+	}
+}
+
+func filterAgentsByNetwork(ctx context.Context, client *gophercloud.ServiceClient, items []agents.Agent, networkID string) []agents.Agent {
+	if networkID == "" {
+		return items
+	}
+	var filtered []agents.Agent
+	for _, item := range items {
+		networks, err := agents.ListDHCPNetworks(ctx, client, item.ID).Extract()
+		if err != nil {
+			continue
+		}
+		for _, network := range networks {
+			if network.ID == networkID {
+				filtered = append(filtered, item)
+				break
+			}
+		}
+	}
+	return filtered
+}
+
+func filterAgentsByRouter(ctx context.Context, client *gophercloud.ServiceClient, items []agents.Agent, routerID string) []agents.Agent {
+	if routerID == "" {
+		return items
+	}
+	var filtered []agents.Agent
+	for _, item := range items {
+		routers, err := agents.ListL3Routers(ctx, client, item.ID).Extract()
+		if err != nil {
+			continue
+		}
+		for _, router := range routers {
+			if router.ID == routerID {
+				filtered = append(filtered, item)
+				break
+			}
+		}
+	}
+	return filtered
+}
+
+func trunkSubports(items []trunks.Subport) []map[string]any {
+	values := make([]map[string]any, 0, len(items))
+	for _, item := range items {
+		values = append(values, map[string]any{
+			"port_id":           item.PortID,
+			"segmentation_id":   item.SegmentationID,
+			"segmentation_type": item.SegmentationType,
+		})
+	}
+	return values
+}
+
+func qosRuleTypeDrivers(items []qosruletypes.Driver) []map[string]any {
+	values := make([]map[string]any, 0, len(items))
+	for _, item := range items {
+		values = append(values, map[string]any{
+			"name":                 item.Name,
+			"supported_parameters": qosRuleTypeParameters(item.SupportedParameters),
+		})
+	}
+	return values
+}
+
+func qosRuleTypeParameters(items []qosruletypes.SupportedParameter) []map[string]any {
+	values := make([]map[string]any, 0, len(items))
+	for _, item := range items {
+		values = append(values, map[string]any{
+			"parameter_name":   item.ParameterName,
+			"parameter_type":   item.ParameterType,
+			"parameter_values": item.ParameterValues,
+		})
+	}
+	return values
 }
 
 func portFixedIPs(fixedIPs []ports.IP) []string {

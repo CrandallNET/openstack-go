@@ -41,6 +41,8 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		registry.implemented[path] = runIdentityRead(path, stdout, opts)
 	}
 	for _, path := range []string{
+		"address group list", "address group show",
+		"address scope list", "address scope show",
 		"aggregate list", "aggregate show",
 		"allocation candidate list",
 		"availability zone list",
@@ -54,7 +56,13 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"image stores list", "image task list", "image task show",
 		"keypair list", "keypair show",
 		"limits show",
+		"network agent list", "network agent show",
 		"network list", "network show",
+		"network qos policy list", "network qos policy show",
+		"network qos rule type list", "network qos rule type show",
+		"network rbac list", "network rbac show",
+		"network segment list", "network segment show",
+		"network trunk list", "network trunk show",
 		"object list", "object show",
 		"object store account show",
 		"port list", "port show",
@@ -72,6 +80,7 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"server list", "server show",
 		"server group list", "server group show",
 		"subnet list", "subnet show",
+		"subnet pool list", "subnet pool show",
 		"trait list", "trait show",
 		"versions show",
 		"volume backend pool list",
@@ -177,6 +186,17 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().String("name", "", "filter by name")
 	}
 	switch path {
+	case "address group list":
+		cmd.Flags().String("name", "", "filter by name")
+		cmd.Flags().String("project", "", "filter by project")
+		cmd.Flags().String("project-domain", "", "project domain")
+	case "address scope list":
+		cmd.Flags().String("name", "", "filter by name")
+		cmd.Flags().Int("ip-version", 0, "filter by IP version")
+		cmd.Flags().String("project", "", "filter by project")
+		cmd.Flags().String("project-domain", "", "project domain")
+		cmd.Flags().Bool("share", false, "list shared resources")
+		cmd.Flags().Bool("no-share", false, "list non-shared resources")
 	case "aggregate list":
 		cmd.Flags().Bool("long", false, "list additional fields")
 	case "project show", "user show", "group show", "role show", "domain show":
@@ -231,6 +251,30 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().String("host", "", "filter by host")
 		cmd.Flags().String("service", "", "filter by service binary")
 		cmd.Flags().Bool("long", false, "list additional fields")
+	case "network agent list":
+		cmd.Flags().String("agent-type", "", "filter by agent type")
+		cmd.Flags().String("host", "", "filter by host")
+		cmd.Flags().String("network", "", "filter by hosted network")
+		cmd.Flags().String("router", "", "filter by hosted router")
+		cmd.Flags().Bool("long", false, "list additional fields")
+	case "network qos policy list":
+		cmd.Flags().String("project", "", "filter by project")
+		cmd.Flags().String("project-domain", "", "project domain")
+		cmd.Flags().Bool("share", false, "list shared policies")
+		cmd.Flags().Bool("no-share", false, "list non-shared policies")
+	case "network qos rule type list":
+		cmd.Flags().Bool("all-supported", false, "list all supported rule types")
+		cmd.Flags().Bool("all-rules", false, "list all implemented rule types")
+	case "network rbac list":
+		cmd.Flags().String("type", "", "filter by object type")
+		cmd.Flags().String("action", "", "filter by action")
+		cmd.Flags().String("target-project", "", "filter by target project")
+		cmd.Flags().Bool("long", false, "list additional fields")
+	case "network segment list":
+		cmd.Flags().Bool("long", false, "list additional fields")
+		cmd.Flags().String("network", "", "filter by network")
+	case "network trunk list":
+		cmd.Flags().Bool("long", false, "list additional fields")
 	case "subnet list":
 		cmd.Flags().Bool("long", false, "list additional fields")
 		cmd.Flags().Int("ip-version", 0, "filter by IP version")
@@ -244,6 +288,17 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().String("name", "", "filter by name")
 		cmd.Flags().String("subnet-range", "", "filter by subnet range")
 		cmd.Flags().String("subnet-pool", "", "filter by subnet pool")
+		addTagFilterFlags(cmd)
+	case "subnet pool list":
+		cmd.Flags().Bool("long", false, "list additional fields")
+		cmd.Flags().Bool("share", false, "list shared subnet pools")
+		cmd.Flags().Bool("no-share", false, "list non-shared subnet pools")
+		cmd.Flags().Bool("default", false, "list default subnet pools")
+		cmd.Flags().Bool("no-default", false, "list non-default subnet pools")
+		cmd.Flags().String("project", "", "filter by project")
+		cmd.Flags().String("project-domain", "", "project domain")
+		cmd.Flags().String("name", "", "filter by name")
+		cmd.Flags().String("address-scope", "", "filter by address scope")
 		addTagFilterFlags(cmd)
 	case "port list":
 		cmd.Flags().String("device-owner", "", "filter by device owner")
@@ -431,7 +486,9 @@ func isIdentityReadCommand(path string) bool {
 
 func isCoreReadCommand(path string) bool {
 	switch path {
-	case "aggregate list", "aggregate show",
+	case "address group list", "address group show",
+		"address scope list", "address scope show",
+		"aggregate list", "aggregate show",
 		"allocation candidate list",
 		"availability zone list",
 		"compute service list",
@@ -444,7 +501,13 @@ func isCoreReadCommand(path string) bool {
 		"image stores list", "image task list", "image task show",
 		"keypair list", "keypair show",
 		"limits show",
+		"network agent list", "network agent show",
 		"network list", "network show",
+		"network qos policy list", "network qos policy show",
+		"network qos rule type list", "network qos rule type show",
+		"network rbac list", "network rbac show",
+		"network segment list", "network segment show",
+		"network trunk list", "network trunk show",
 		"object list", "object show",
 		"object store account show",
 		"port list", "port show",
@@ -462,6 +525,7 @@ func isCoreReadCommand(path string) bool {
 		"server list", "server show",
 		"server group list", "server group show",
 		"subnet list", "subnet show",
+		"subnet pool list", "subnet pool show",
 		"trait list", "trait show",
 		"versions show",
 		"volume backend pool list",

@@ -302,3 +302,26 @@ Implementation consequences:
 * Override flag errors and command errors so stderr and exit codes match OSC.
 * Prefer the existing Python-style `openstack complete` behavior over Cobra's default completion command. Cobra's completion hooks may still be useful internally, but the public command must match OSC.
 * Keep auth/config resolution outside Viper unless a later proof shows it can exactly reproduce OpenStackClient semantics.
+
+## 2026-05-03: Neutron Extension Read Slice
+
+Decision: add the next read-only Network slice through Gophercloud packages where the SDK has first-class support, and use a narrow raw GET only where the typed SDK loses OSC-visible nullability.
+
+Implemented commands: `address group list/show`, `address scope list/show`, `subnet pool list/show`, `network agent list/show`, `network rbac list/show`, `network segment list/show`, `network trunk list/show`, `network qos policy list/show`, and `network qos rule type list/show`.
+
+The `network agent show` command uses Gophercloud's authenticated `ServiceClient` directly for `GET /v2.0/agents/{id}` because the typed `agents.Agent.ResourcesSynced` field is a Go `bool`, and the `cloud6` API returned JSON `null` for `resources_synced`. Python OSC showed `resources_synced: null`, so preserving the raw nullable value is the closer compatibility behavior.
+
+Live observations on `cloud6`: `address group list`, `address scope list`, and `subnet pool list` succeeded with empty tables matching the Python OSC default columns. `network agent list/show` and `network rbac list/show` succeeded against real resources. `network segment list`, `network trunk list`, `network qos policy list`, and `network qos rule type list` returned 404 on both Python OSC and the Go CLI because those Neutron extensions are not exposed on `cloud6`; they remain implemented but need a flex cloud or another cloud exposing the extension before they can be marked cloud-verified.
+
+Sources consulted:
+
+* [Gophercloud address groups](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/security/addressgroups)
+* [Gophercloud address scopes](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/addressscopes)
+* [Gophercloud subnet pools](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/subnetpools)
+* [Gophercloud agents](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/agents)
+* [Gophercloud RBAC policies](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/rbacpolicies)
+* [Gophercloud segments](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/segments)
+* [Gophercloud trunks](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/trunks)
+* [Gophercloud QoS policies](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/qos/policies)
+* [Gophercloud QoS rule types](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/qos/ruletypes)
+* Local OSC oracle snapshots in `compat/osc/9.0.0/help/address/group/list.txt`, `compat/osc/9.0.0/help/address/scope/list.txt`, `compat/osc/9.0.0/help/subnet/pool/list.txt`, `compat/osc/9.0.0/help/network/agent/list.txt`, `compat/osc/9.0.0/help/network/rbac/list.txt`, `compat/osc/9.0.0/help/network/segment/list.txt`, `compat/osc/9.0.0/help/network/trunk/list.txt`, and `compat/osc/9.0.0/help/network/qos/rule/type/list.txt`.
