@@ -634,3 +634,18 @@ Sources consulted:
 * Local OSC oracle snapshots in `compat/osc/9.0.0/help/cached/image/clear.txt`, `compat/osc/9.0.0/help/cached/image/delete.txt`, and `compat/osc/9.0.0/help/cached/image/queue.txt`.
 * Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/image/v2/cache.py`, used only as the pinned local oracle implementation source.
 * Local OpenStackSDK source files `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/image/v2/cache.py` and `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/image/v2/_proxy.py`, which document the `/cache` path, 2.14 resource microversion cap, and delete `ignore_missing` default.
+
+## 2026-05-03: Image Import Info
+
+Work done: added `image import info`.
+
+Implementation note: Python OSC calls OpenStackSDK import service info at `/info/import` and renders the `import-methods.value` list under the `import-methods` field. Gophercloud v2.12.0 has a typed `imageimport` package for this path, so the Go CLI uses that package instead of a raw REST shim.
+
+Live observations on `cloud6`: Python OSC and the Go CLI matched for `image import info -f json`, returning `glance-direct`, `web-download`, and `copy-image`.
+
+Sources consulted:
+
+* Local OSC oracle snapshot in `compat/osc/9.0.0/help/image/import/info.txt`.
+* Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/image/v2/info.py`, used only as the pinned local oracle implementation source.
+* Local OpenStackSDK source files `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/image/v2/service_info.py` and `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/image/v2/_proxy.py`, which document the `/info/import` path and import methods field.
+* Local Gophercloud source package `github.com/gophercloud/gophercloud/v2/openstack/image/v2/imageimport`, which provides the typed `Get` call used by the Go CLI.

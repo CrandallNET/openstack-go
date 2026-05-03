@@ -37,6 +37,7 @@ import (
 	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/usage"
 	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/volumeattach"
 	"github.com/gophercloud/gophercloud/v2/openstack/identity/v3/projects"
+	"github.com/gophercloud/gophercloud/v2/openstack/image/v2/imageimport"
 	"github.com/gophercloud/gophercloud/v2/openstack/image/v2/images"
 	"github.com/gophercloud/gophercloud/v2/openstack/image/v2/members"
 	"github.com/gophercloud/gophercloud/v2/openstack/image/v2/tasks"
@@ -404,6 +405,12 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return imageMetadefResourceTypeList(cmd.Context(), stdout, opts, client)
+		case "image import info":
+			client, err := clients.imageV2()
+			if err != nil {
+				return err
+			}
+			return imageImportInfo(cmd.Context(), stdout, opts, client)
 		case "image show":
 			client, err := clients.imageV2()
 			if err != nil {
@@ -1727,6 +1734,14 @@ func imageList(ctx context.Context, stdout io.Writer, opts *Options, client *gop
 		rows = append(rows, outputRow{"ID": item.ID, "Name": item.Name, "Status": string(item.Status)})
 	}
 	return renderListOutput(stdout, opts, []string{"ID", "Name", "Status"}, rows)
+}
+
+func imageImportInfo(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	info, err := imageimport.Get(ctx, client).Extract()
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, []outputField{{Name: "import-methods", Value: info.ImportMethods.Value}})
 }
 
 func imageShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
