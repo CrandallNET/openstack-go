@@ -65,14 +65,16 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"container list", "container show",
 		"extension list", "extension show",
 		"flavor list", "flavor show",
-		"floating ip list", "floating ip show",
+		"floating ip list", "floating ip pool list", "floating ip show",
 		"hypervisor list", "hypervisor show", "hypervisor stats show",
 		"image list", "image member get", "image member list", "image show",
 		"image stores list", "image task list", "image task show",
+		"ip availability list", "ip availability show",
 		"keypair list", "keypair show",
 		"limits show",
 		"network agent list", "network agent show",
 		"network list", "network show",
+		"network service provider list",
 		"network qos policy list", "network qos policy show",
 		"network qos rule type list", "network qos rule type show",
 		"network rbac list", "network rbac show",
@@ -372,6 +374,10 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().String("router", "", "filter by router")
 		addTagFilterFlags(cmd)
 		cmd.Flags().Bool("long", false, "list additional fields")
+	case "ip availability list":
+		cmd.Flags().Int("ip-version", 0, "filter by IP version")
+		cmd.Flags().String("project", "", "filter by project")
+		cmd.Flags().String("project-domain", "", "project domain")
 	case "keypair list":
 		cmd.Flags().String("user", "", "filter by user")
 		cmd.Flags().String("user-domain", "", "user domain")
@@ -604,14 +610,16 @@ func isCoreReadCommand(path string) bool {
 		"container list", "container show",
 		"extension list", "extension show",
 		"flavor list", "flavor show",
-		"floating ip list", "floating ip show",
+		"floating ip list", "floating ip pool list", "floating ip show",
 		"hypervisor list", "hypervisor show", "hypervisor stats show",
 		"image list", "image member get", "image member list", "image show",
 		"image stores list", "image task list", "image task show",
+		"ip availability list", "ip availability show",
 		"keypair list", "keypair show",
 		"limits show",
 		"network agent list", "network agent show",
 		"network list", "network show",
+		"network service provider list",
 		"network qos policy list", "network qos policy show",
 		"network qos rule type list", "network qos rule type show",
 		"network rbac list", "network rbac show",

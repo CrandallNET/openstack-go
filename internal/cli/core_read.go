@@ -41,6 +41,7 @@ import (
 	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/addressscopes"
 	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/floatingips"
 	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/routers"
+	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/networkipavailabilities"
 	qospolicies "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/qos/policies"
 	qosruletypes "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/qos/ruletypes"
 	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/rbacpolicies"
@@ -162,12 +163,26 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return floatingIPList(cmd.Context(), stdout, opts, client)
+		case "floating ip pool list":
+			return floatingIPPoolList()
 		case "floating ip show":
 			client, err := clients.networkV2()
 			if err != nil {
 				return err
 			}
 			return floatingIPShow(cmd.Context(), stdout, opts, client, args)
+		case "ip availability list":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return ipAvailabilityList(cmd.Context(), stdout, opts, clients, client)
+		case "ip availability show":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return ipAvailabilityShow(cmd.Context(), stdout, opts, client, args)
 		case "image list":
 			client, err := clients.imageV2()
 			if err != nil {
@@ -228,6 +243,12 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return networkAgentShow(cmd.Context(), stdout, opts, client, args)
+		case "network service provider list":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return networkServiceProviderList(cmd.Context(), stdout, opts, client)
 		case "network qos policy list":
 			client, err := clients.networkV2()
 			if err != nil {
@@ -2913,6 +2934,125 @@ func floatingIPShow(ctx context.Context, stdout io.Writer, opts *Options, client
 		{"created_at", item.CreatedAt},
 		{"updated_at", item.UpdatedAt},
 	})
+}
+
+func floatingIPPoolList() error {
+	return fmt.Errorf("Floating ip pool operations are only available for Compute v2 network.")
+}
+
+func ipAvailabilityList(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, client *gophercloud.ServiceClient) error {
+	listOpts := networkipavailabilities.ListOpts{}
+	if version := flagValue(opts, "ip-version"); version != "" {
+		listOpts.IPVersion = version
+	}
+	if project := flagValue(opts, "project"); project != "" {
+		identityClient, err := clients.identityV3()
+		if err != nil {
+			return err
+		}
+		item, err := findProjectWithDomain(ctx, identityClient, project, flagValue(opts, "project-domain"))
+		if err != nil {
+			return err
+		}
+		listOpts.ProjectID = item.ID
+	}
+	page, err := networkipavailabilities.List(client, listOpts).AllPages(ctx)
+	if err != nil {
+		return err
+	}
+	items, err := networkipavailabilities.ExtractNetworkIPAvailabilities(page)
+	if err != nil {
+		return err
+	}
+	rows := make([]outputRow, 0, len(items))
+	for _, item := range items {
+		rows = append(rows, outputRow{
+			"Network ID":   item.NetworkID,
+			"Network Name": item.NetworkName,
+			"Total IPs":    jsonNumberString(item.TotalIPs),
+			"Used IPs":     jsonNumberString(item.UsedIPs),
+		})
+	}
+	return renderListOutput(stdout, opts, []string{"Network ID", "Network Name", "Total IPs", "Used IPs"}, rows)
+}
+
+func ipAvailabilityShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("ip availability show requires <network>")
+	}
+	network, err := findNetwork(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	item, err := networkipavailabilities.Get(ctx, client, network.ID).Extract()
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, []outputField{
+		{"network_id", item.NetworkID},
+		{"network_name", item.NetworkName},
+		{"project_id", firstNonEmpty(item.ProjectID, item.TenantID)},
+		{"subnet_ip_availability", ipAvailabilitySubnets(item.SubnetIPAvailabilities)},
+		{"total_ips", jsonNumberString(item.TotalIPs)},
+		{"used_ips", jsonNumberString(item.UsedIPs)},
+	})
+}
+
+type ipAvailabilitySubnetOutput struct {
+	SubnetID   string `json:"subnet_id"`
+	IPVersion  int    `json:"ip_version"`
+	CIDR       string `json:"cidr"`
+	SubnetName string `json:"subnet_name"`
+	UsedIPs    any    `json:"used_ips"`
+	TotalIPs   any    `json:"total_ips"`
+}
+
+func ipAvailabilitySubnets(items []networkipavailabilities.SubnetIPAvailability) []ipAvailabilitySubnetOutput {
+	values := make([]ipAvailabilitySubnetOutput, 0, len(items))
+	for _, item := range items {
+		values = append(values, ipAvailabilitySubnetOutput{
+			SubnetID:   item.SubnetID,
+			IPVersion:  item.IPVersion,
+			CIDR:       item.CIDR,
+			SubnetName: item.SubnetName,
+			UsedIPs:    jsonNumberString(item.UsedIPs),
+			TotalIPs:   jsonNumberString(item.TotalIPs),
+		})
+	}
+	return values
+}
+
+func jsonNumberString(value string) any {
+	if value == "" {
+		return nil
+	}
+	return json.Number(value)
+}
+
+type networkServiceProviderRecord struct {
+	ServiceType string `json:"service_type"`
+	Name        string `json:"name"`
+	Default     bool   `json:"default"`
+}
+
+func networkServiceProviderList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	var body struct {
+		ServiceProviders []networkServiceProviderRecord `json:"service_providers"`
+	}
+	resp, err := client.Get(ctx, client.ServiceURL("service-providers"), &body, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return err
+	}
+	rows := make([]outputRow, 0, len(body.ServiceProviders))
+	for _, item := range body.ServiceProviders {
+		rows = append(rows, outputRow{
+			"Service Type": item.ServiceType,
+			"Name":         item.Name,
+			"Default":      item.Default,
+		})
+	}
+	return renderListOutput(stdout, opts, []string{"Service Type", "Name", "Default"}, rows)
 }
 
 func keypairList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {

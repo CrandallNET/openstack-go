@@ -423,3 +423,17 @@ Sources consulted:
 * [Gophercloud Identity roles](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/identity/v3/roles)
 * Local OSC oracle snapshots in `compat/osc/9.0.0/help/mapping/list.txt`, `compat/osc/9.0.0/help/mapping/show.txt`, `compat/osc/9.0.0/help/identity/provider/list.txt`, `compat/osc/9.0.0/help/identity/provider/show.txt`, `compat/osc/9.0.0/help/federation/protocol/list.txt`, `compat/osc/9.0.0/help/federation/protocol/show.txt`, and `compat/osc/9.0.0/help/implied/role/list.txt`.
 * Local Python OSC source files `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/identity/v3/mapping.py`, `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/identity/v3/identity_provider.py`, `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/identity/v3/federation_protocol.py`, `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/identity/v3/service_provider.py`, and `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/identity/v3/implied_role.py`, used only as pinned local oracle implementation sources.
+
+## 2026-05-03: Neutron IP Availability And Service Provider Reads
+
+Work done: added `ip availability list`, `ip availability show`, `network service provider list`, and the Neutron compatibility behavior for `floating ip pool list`.
+
+Implementation note: IP availability uses Gophercloud's `networkipavailabilities` package and converts Gophercloud's string-preserved IP counts back to JSON numbers to match Python OSC output. `network service provider list` uses a narrow authenticated Neutron `service-providers` REST read because no typed local Gophercloud helper exists in v2.12.0. `floating ip pool list` returns the Python-observed Neutron error, `Floating ip pool operations are only available for Compute v2 network.`, because that command is only available on the legacy Nova-network path in Python OSC.
+
+Live observations on `cloud6`: Python OSC and the Go CLI matched for `ip availability list -f json`, `ip availability list --ip-version 4 -f json`, `ip availability show os6-lan -f json`, `network service provider list -f json`, and the `floating ip pool list -f json` error text.
+
+Sources consulted:
+
+* [Gophercloud network IP availabilities](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/networkipavailabilities)
+* Local OSC oracle snapshots in `compat/osc/9.0.0/help/ip/availability/list.txt`, `compat/osc/9.0.0/help/ip/availability/show.txt`, `compat/osc/9.0.0/help/network/service/provider/list.txt`, and `compat/osc/9.0.0/help/floating/ip/pool/list.txt`.
+* Local Python OSC source files `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/network/v2/ip_availability.py`, `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/network/v2/network_service_provider.py`, and `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/network/v2/floating_ip_pool.py`, used only as pinned local oracle implementation sources.
