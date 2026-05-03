@@ -33,6 +33,12 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 		}
 
 		switch path {
+		case "availability zone list":
+			return availabilityZoneList(cmd.Context(), stdout, opts, clients)
+		case "extension list":
+			return extensionList(cmd.Context(), stdout, opts, clients)
+		case "extension show":
+			return extensionShow(cmd.Context(), stdout, opts, clients, args)
 		case "flavor list":
 			client, err := clients.computeV2()
 			if err != nil {
@@ -129,6 +135,8 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return keypairShow(cmd.Context(), stdout, opts, client, args)
+		case "limits show":
+			return limitsShow(cmd.Context(), stdout, opts, clients)
 		case "port list":
 			client, err := clients.networkV2()
 			if err != nil {

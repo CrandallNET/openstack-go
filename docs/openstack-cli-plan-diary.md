@@ -106,6 +106,16 @@ Sources consulted: Gophercloud package docs and local module sources for [Object
 
 Verification: `go test ./...`, `go build -o bin/openstack ./cmd/openstack`, live `cloud6` Placement JSON smoke checks, and live `flex-sjc` Object Store JSON smoke checks passed. The main command now prints returned errors to stderr before exiting non-zero, which made live endpoint and microversion failures diagnosable.
 
+## 2026-05-02: Common Read Command Expansion
+
+Work done: added Common command implementations for `availability zone list`, `extension list`, `extension show`, and `limits show`. Availability-zone output now combines Nova, Cinder, and Neutron rows to match the default Python OSC behavior observed on `cloud6`. Limits output requires `--absolute` or `--rate`, matching Python OSC, and normalizes absolute-limit names to the OSC JSON names observed from `openstack limits show --absolute -f json`.
+
+Compatibility note: Nova and Cinder availability zones, extensions, and limits use Gophercloud packages directly. Neutron availability zones are implemented as a narrow raw REST read through the authenticated Gophercloud Network v2 service client because no dedicated Neutron availability-zone package was found in the local Gophercloud v2.12.0 module inventory. That shim is intentionally recorded in the matrix and should move behind the service-scoped extras boundary when that plugin layer is ready. `quota list/show` and `versions show` remain unimplemented because they need broader service aggregation, project/domain policy handling, and oracle tests before they should replace their stubs.
+
+Sources consulted: Gophercloud package docs and local module sources for [Compute availability zones](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/compute/v2/availabilityzones), [Block Storage availability zones](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/availabilityzones), [common extensions](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/common/extensions), [Compute limits](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/compute/v2/limits), and [Block Storage limits](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/limits).
+
+Verification: `go test ./...`, `go build -o bin/openstack ./cmd/openstack`, `go run ./tools/compat-matrix`, and live `cloud6` JSON smoke checks passed for `availability zone list`, `availability zone list --long`, `extension list --network`, `extension show router`, `limits show --absolute`, and `limits show --rate`.
+
 ## 2026-05-02: Pre-Implementation Question Register
 
 Work done: reviewed the living plan for implementation-defining choices and added a decision and question register to the plan. The register separates questions that require user answers from assumptions that can be reviewed and reopened later.

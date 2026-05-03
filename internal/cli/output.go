@@ -21,6 +21,9 @@ type outputField struct {
 }
 
 func renderListOutput(stdout io.Writer, opts *Options, columns []string, rows []outputRow) error {
+	if rows == nil {
+		rows = []outputRow{}
+	}
 	columns = selectColumns(columns, opts.Columns)
 	sortRows(rows, columns, opts)
 

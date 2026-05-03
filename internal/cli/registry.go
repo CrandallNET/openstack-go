@@ -42,11 +42,14 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 	}
 	for _, path := range []string{
 		"allocation candidate list",
+		"availability zone list",
 		"container list", "container show",
+		"extension list", "extension show",
 		"flavor list", "flavor show",
 		"floating ip list", "floating ip show",
 		"image list", "image show",
 		"keypair list", "keypair show",
+		"limits show",
 		"network list", "network show",
 		"object list", "object show",
 		"object store account show",
@@ -183,6 +186,11 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().String("member-of", "", "aggregate membership")
 		cmd.Flags().String("group", "", "granular request group")
 		cmd.Flags().String("group-policy", "", "granular request group policy")
+	case "availability zone list":
+		cmd.Flags().Bool("compute", false, "list compute availability zones")
+		cmd.Flags().Bool("network", false, "list network availability zones")
+		cmd.Flags().Bool("volume", false, "list volume availability zones")
+		cmd.Flags().Bool("long", false, "list additional fields")
 	case "container list":
 		cmd.Flags().String("prefix", "", "filter by prefix")
 		cmd.Flags().Int("limit", 0, "maximum number of entries")
@@ -198,6 +206,12 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().String("end-marker", "", "pagination end marker")
 		cmd.Flags().Bool("long", false, "list additional fields")
 		cmd.Flags().Bool("all", false, "list all objects")
+	case "extension list":
+		cmd.Flags().Bool("compute", false, "list compute extensions")
+		cmd.Flags().Bool("identity", false, "list identity extensions")
+		cmd.Flags().Bool("network", false, "list network extensions")
+		cmd.Flags().Bool("volume", false, "list volume extensions")
+		cmd.Flags().Bool("long", false, "list additional fields")
 	case "subnet list":
 		cmd.Flags().Bool("long", false, "list additional fields")
 		cmd.Flags().Int("ip-version", 0, "filter by IP version")
@@ -250,6 +264,12 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().Bool("public-key", false, "show only the public key")
 		cmd.Flags().String("user", "", "keypair owner")
 		cmd.Flags().String("user-domain", "", "user domain")
+	case "limits show":
+		cmd.Flags().Bool("absolute", false, "show absolute limits")
+		cmd.Flags().Bool("rate", false, "show rate limits")
+		cmd.Flags().Bool("reserved", false, "include reserved limits")
+		cmd.Flags().String("project", "", "show limits for project")
+		cmd.Flags().String("domain", "", "project domain")
 	case "resource provider list":
 		cmd.Flags().String("uuid", "", "filter by UUID")
 		cmd.Flags().String("name", "", "filter by name")
@@ -321,11 +341,14 @@ func isIdentityReadCommand(path string) bool {
 func isCoreReadCommand(path string) bool {
 	switch path {
 	case "allocation candidate list",
+		"availability zone list",
 		"container list", "container show",
+		"extension list", "extension show",
 		"flavor list", "flavor show",
 		"floating ip list", "floating ip show",
 		"image list", "image show",
 		"keypair list", "keypair show",
+		"limits show",
 		"network list", "network show",
 		"object list", "object show",
 		"object store account show",

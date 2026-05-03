@@ -179,6 +179,9 @@ func newCommandEntry(group string, command string) commandEntry {
 	if packagePath, ok := coreReadPackages()[command]; ok {
 		entry.Status = "implemented"
 		entry.SDKPackage = packagePath
+		if coreReadShims()[command] {
+			entry.Shim = true
+		}
 		entry.ImplementedIn = "internal/cli"
 		entry.Tests = []string{"unit: command registry"}
 		entry.Notes = "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
@@ -241,8 +244,11 @@ func identityCloudVerified() map[string]bool {
 func coreReadPackages() map[string]string {
 	return map[string]string{
 		"allocation candidate list":         "github.com/gophercloud/gophercloud/v2/openstack/placement/v1/allocationcandidates",
+		"availability zone list":            "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/availabilityzones; github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/availabilityzones; Neutron availability_zones via gophercloud.ServiceClient",
 		"container list":                    "github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/containers",
 		"container show":                    "github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/containers",
+		"extension list":                    "github.com/gophercloud/gophercloud/v2/openstack/common/extensions",
+		"extension show":                    "github.com/gophercloud/gophercloud/v2/openstack/common/extensions",
 		"flavor list":                       "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/flavors",
 		"flavor show":                       "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/flavors",
 		"floating ip list":                  "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/floatingips",
@@ -251,6 +257,7 @@ func coreReadPackages() map[string]string {
 		"image show":                        "github.com/gophercloud/gophercloud/v2/openstack/image/v2/images",
 		"keypair list":                      "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/keypairs",
 		"keypair show":                      "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/keypairs",
+		"limits show":                       "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/limits; github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/limits",
 		"network list":                      "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/networks",
 		"network show":                      "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/networks",
 		"object list":                       "github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/objects",
@@ -285,11 +292,20 @@ func coreReadPackages() map[string]string {
 	}
 }
 
+func coreReadShims() map[string]bool {
+	return map[string]bool{
+		"availability zone list": true,
+	}
+}
+
 func coreCloudVerified() map[string]bool {
 	return map[string]bool{
 		"allocation candidate list":         true,
+		"availability zone list":            true,
 		"container list":                    true,
 		"container show":                    true,
+		"extension list":                    true,
+		"extension show":                    true,
 		"flavor list":                       true,
 		"flavor show":                       true,
 		"floating ip list":                  true,
@@ -298,6 +314,7 @@ func coreCloudVerified() map[string]bool {
 		"image show":                        true,
 		"keypair list":                      true,
 		"keypair show":                      true,
+		"limits show":                       true,
 		"network list":                      true,
 		"network show":                      true,
 		"object list":                       true,
