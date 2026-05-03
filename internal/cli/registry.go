@@ -85,11 +85,14 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"router list", "router show",
 		"security group list", "security group show",
 		"security group rule list", "security group rule show",
+		"server event list", "server event show",
 		"server list", "server show",
 		"server group list", "server group show",
+		"server volume list",
 		"subnet list", "subnet show",
 		"subnet pool list", "subnet pool show",
 		"trait list", "trait show",
+		"usage list", "usage show",
 		"versions show",
 		"volume attachment list", "volume attachment show",
 		"volume backend pool list",
@@ -444,6 +447,18 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().Bool("long", false, "list additional fields")
 		cmd.Flags().Int("limit", 0, "maximum number of entries")
 		cmd.Flags().Int("offset", 0, "collection offset")
+	case "server event list":
+		cmd.Flags().Bool("long", false, "list additional fields")
+		cmd.Flags().String("changes-since", "", "show events changed since this timestamp")
+		cmd.Flags().String("changes-before", "", "show events changed before this timestamp")
+		cmd.Flags().Int("limit", 0, "maximum number of entries")
+		cmd.Flags().String("marker", "", "pagination marker")
+	case "usage list", "usage show":
+		cmd.Flags().String("start", "", "usage range start date")
+		cmd.Flags().String("end", "", "usage range end date")
+		if path == "usage show" {
+			cmd.Flags().String("project", "", "project name or ID")
+		}
 	case "volume backend pool list":
 		cmd.Flags().Bool("long", false, "show detailed information about pools")
 	case "volume attachment list":
@@ -573,11 +588,14 @@ func isCoreReadCommand(path string) bool {
 		"router list", "router show",
 		"security group list", "security group show",
 		"security group rule list", "security group rule show",
+		"server event list", "server event show",
 		"server list", "server show",
 		"server group list", "server group show",
+		"server volume list",
 		"subnet list", "subnet show",
 		"subnet pool list", "subnet pool show",
 		"trait list", "trait show",
+		"usage list", "usage show",
 		"versions show",
 		"volume attachment list", "volume attachment show",
 		"volume backend pool list",

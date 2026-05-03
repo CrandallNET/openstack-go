@@ -194,6 +194,22 @@ Sources consulted:
 
 Verification: `go test ./...`, `go build -o bin/openstack ./cmd/openstack`, and `go run ./tools/compat-matrix` passed. Live `cloud6` checks matched Python OSC for `volume attachment list -f json`, `volume attachment show <existing-attachment> -f json`, `volume qos list --print-empty`, and `volume summary -f json`. A temporary QoS spec named `golang-osc-test-64fb7c64-bee7-47ed-8dba-65b585469eb5` was created with Python OSC to provide a show fixture; Python and Go matched for `volume qos show -f json` and `volume qos list -f json`, and the temporary QoS spec was deleted successfully.
 
+## 2026-05-03: Compute Events, Attachments, And Usage Read Expansion
+
+Work done: added Compute v2 read implementations for `server event list`, `server event show`, `server volume list`, `usage list`, and `usage show`. Server events use Gophercloud's instance actions package, server volume attachment reads use Gophercloud's Nova volume attachments package with an extended extraction struct for the `attachment_id` and `bdm_uuid` fields observed from Python OSC, and usage reads use Gophercloud's tenant usage package.
+
+Compatibility note: Python OSC/openstacksdk requested Compute microversion 2.89 for `server volume list` on `cloud6` so that `Attachment ID` and `BlockDeviceMapping UUID` appear instead of the older `ID` column. The Go command now discovers supported Compute microversions and uses the service maximum when no explicit `OS_COMPUTE_API_VERSION` is set for commands that need a higher minimum. If the user sets `OS_COMPUTE_API_VERSION`, the command honors it and returns a compatibility error when it is too low for the requested behavior. `usage show` also preserves Python's JSON detail shape for usage server rows, including the duplicate `name` key emitted by the local OSC oracle.
+
+Sources consulted:
+
+* [Gophercloud Compute instance actions](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/compute/v2/instanceactions), for server event list and show.
+* [Gophercloud Compute volume attachments](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/compute/v2/volumeattach), for Nova server volume attachment reads.
+* [Gophercloud Compute usage](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/compute/v2/usage), for tenant usage list and show.
+* [Gophercloud OpenStack utils](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/utils), for supported Compute microversion discovery.
+* Local Python OSC source files `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/compute/v2/server_event.py`, `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/compute/v2/server_volume.py`, and `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/compute/v2/usage.py`, used only as the pinned local oracle implementation source.
+
+Verification: `go test ./...`, `go build -o bin/openstack ./cmd/openstack`, and `go run ./tools/compat-matrix` passed with workspace-local Go caches. Live `cloud6` JSON checks matched Python OSC for `server event list`, `server event list --long`, `server event show`, `server volume list`, `usage list --start 2026-05-01 --end 2026-05-03`, and `usage show --start 2026-05-01 --end 2026-05-02`; `usage show` has dynamic `uptime` values, so only stable structure and non-time-varying fields should be used for golden tests.
+
 ## 2026-05-02: Pre-Implementation Question Register
 
 Work done: reviewed the living plan for implementation-defining choices and added a decision and question register to the plan. The register separates questions that require user answers from assumptions that can be reviewed and reopened later.

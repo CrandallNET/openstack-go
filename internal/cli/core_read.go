@@ -2,12 +2,15 @@ package cli
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gophercloud/gophercloud/v2"
 	bsattachments "github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/attachments"
@@ -22,10 +25,14 @@ import (
 	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/aggregates"
 	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/flavors"
 	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/hypervisors"
+	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/instanceactions"
 	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/keypairs"
 	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servergroups"
 	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servers"
 	computeservices "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/services"
+	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/usage"
+	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/volumeattach"
+	"github.com/gophercloud/gophercloud/v2/openstack/identity/v3/projects"
 	"github.com/gophercloud/gophercloud/v2/openstack/image/v2/images"
 	"github.com/gophercloud/gophercloud/v2/openstack/image/v2/members"
 	"github.com/gophercloud/gophercloud/v2/openstack/image/v2/tasks"
@@ -450,6 +457,18 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return computeServerShow(cmd.Context(), stdout, opts, client, args)
+		case "server event list":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return serverEventList(cmd.Context(), stdout, opts, client, args)
+		case "server event show":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return serverEventShow(cmd.Context(), stdout, opts, client, args)
 		case "server group list":
 			client, err := clients.computeV2()
 			if err != nil {
@@ -462,6 +481,12 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return serverGroupShow(cmd.Context(), stdout, opts, client, args)
+		case "server volume list":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return serverVolumeList(cmd.Context(), stdout, opts, client, args)
 		case "subnet list":
 			client, err := clients.networkV2()
 			if err != nil {
@@ -602,6 +627,18 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 			return volumeTransferShow(cmd.Context(), stdout, opts, client, args)
 		case "versions show":
 			return versionsShow(cmd.Context(), stdout, opts, clients)
+		case "usage list":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return usageList(cmd.Context(), stdout, opts, clients, client)
+		case "usage show":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return usageShow(cmd.Context(), stdout, opts, clients, client)
 		default:
 			return fmt.Errorf("core read command %q is not wired", path)
 		}
@@ -741,6 +778,218 @@ func computeServiceList(ctx context.Context, stdout io.Writer, opts *Options, cl
 		columns = append(columns, "Disabled Reason", "Forced Down")
 	}
 	return renderListOutput(stdout, opts, columns, rows)
+}
+
+func serverEventList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("server event list requires <server>")
+	}
+	minimum := "2.21"
+	if flagValue(opts, "changes-since") != "" || flagValue(opts, "limit") != "" || flagValue(opts, "marker") != "" {
+		minimum = "2.58"
+	}
+	if flagValue(opts, "changes-before") != "" {
+		minimum = "2.66"
+	}
+	client, err := computeClientWithMinimumMicroversion(ctx, client, minimum)
+	if err != nil {
+		return err
+	}
+	serverID, err := serverIDForEventLookup(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	listOpts := instanceactions.ListOpts{
+		Limit:  intFlag(opts, "limit"),
+		Marker: flagValue(opts, "marker"),
+	}
+	if value := flagValue(opts, "changes-since"); value != "" {
+		parsed, err := parseRFC3339Flag("changes-since", value)
+		if err != nil {
+			return err
+		}
+		listOpts.ChangesSince = &parsed
+	}
+	if value := flagValue(opts, "changes-before"); value != "" {
+		parsed, err := parseRFC3339Flag("changes-before", value)
+		if err != nil {
+			return err
+		}
+		listOpts.ChangesBefore = &parsed
+	}
+	page, err := instanceactions.List(client, serverID, listOpts).AllPages(ctx)
+	if err != nil {
+		return err
+	}
+	items, err := instanceactions.ExtractInstanceActions(page)
+	if err != nil {
+		return err
+	}
+	rows := make([]outputRow, 0, len(items))
+	for _, item := range items {
+		row := outputRow{
+			"Request ID": item.RequestID,
+			"Server ID":  item.InstanceUUID,
+			"Action":     item.Action,
+			"Start Time": oscTime(item.StartTime),
+		}
+		if boolFlag(opts, "long") {
+			row["Message"] = nilIfEmpty(item.Message)
+			row["Project ID"] = item.ProjectID
+			row["User ID"] = item.UserID
+		}
+		rows = append(rows, row)
+	}
+	columns := []string{"Request ID", "Server ID", "Action", "Start Time"}
+	if boolFlag(opts, "long") {
+		columns = append(columns, "Message", "Project ID", "User ID")
+	}
+	return renderListOutput(stdout, opts, columns, rows)
+}
+
+func serverEventShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("server event show requires <server> <request-id>")
+	}
+	client, err := computeClientWithMinimumMicroversion(ctx, client, "2.50")
+	if err != nil {
+		return err
+	}
+	serverID, err := serverIDForEventLookup(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	item, err := instanceactions.Get(ctx, client, serverID, args[1]).Extract()
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, []outputField{
+		{"action", item.Action},
+		{"events", serverEventDetails(item.Events)},
+		{"id", item.RequestID},
+		{"message", nilIfEmpty(item.Message)},
+		{"project_id", item.ProjectID},
+		{"request_id", item.RequestID},
+		{"start_time", oscTime(item.StartTime)},
+		{"user_id", item.UserID},
+	})
+}
+
+func serverVolumeList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("server volume list requires <server>")
+	}
+	client, err := computeClientWithMinimumMicroversion(ctx, client, "2.89")
+	if err != nil {
+		return err
+	}
+	server, err := findServer(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	page, err := volumeattach.List(client, server.ID).AllPages(ctx)
+	if err != nil {
+		return err
+	}
+	items, err := extractComputeServerVolumeAttachments(page)
+	if err != nil {
+		return err
+	}
+	rows := make([]outputRow, 0, len(items))
+	for _, item := range items {
+		rows = append(rows, outputRow{
+			"Device":                  item.Device,
+			"Server ID":               item.ServerID,
+			"Volume ID":               item.VolumeID,
+			"Tag":                     stringPtrValue(item.Tag),
+			"Delete On Termination?":  boolPtrValue(item.DeleteOnTermination),
+			"Attachment ID":           nilIfEmpty(item.AttachmentID),
+			"BlockDeviceMapping UUID": nilIfEmpty(item.BlockDeviceMappingUUID),
+		})
+	}
+	return renderListOutput(stdout, opts, []string{"Device", "Server ID", "Volume ID", "Tag", "Delete On Termination?", "Attachment ID", "BlockDeviceMapping UUID"}, rows)
+}
+
+func usageList(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, client *gophercloud.ServiceClient) error {
+	start, end, err := usageDateRange(opts)
+	if err != nil {
+		return err
+	}
+	page, err := usage.AllTenants(client, usage.AllTenantsOpts{
+		Detailed: true,
+		Start:    &start,
+		End:      &end,
+	}).AllPages(ctx)
+	if err != nil {
+		return err
+	}
+	items, err := usage.ExtractAllTenants(page)
+	if err != nil {
+		return err
+	}
+	projectNames := map[string]string{}
+	if outputWantsHumanProjectNames(opts) {
+		projectNames = projectNameMap(ctx, clients)
+	}
+	rows := make([]outputRow, 0, len(items))
+	for _, item := range items {
+		rows = append(rows, outputRow{
+			"Project":       usageProjectValue(item.TenantID, projectNames),
+			"Servers":       nil,
+			"RAM MB-Hours":  usageFloat(item.TotalMemoryMBUsage),
+			"CPU Hours":     usageFloat(item.TotalVCPUsUsage),
+			"Disk GB-Hours": usageFloat(item.TotalLocalGBUsage),
+		})
+	}
+	if opts.Format == "" || opts.Format == "table" {
+		if len(rows) > 0 {
+			if _, err := fmt.Fprintf(stdout, "Usage from %s to %s: \n", start.Format("2006-01-02"), end.Format("2006-01-02")); err != nil {
+				return err
+			}
+		}
+	}
+	return renderListOutput(stdout, opts, []string{"Project", "Servers", "RAM MB-Hours", "CPU Hours", "Disk GB-Hours"}, rows)
+}
+
+func usageShow(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, client *gophercloud.ServiceClient) error {
+	start, end, err := usageDateRange(opts)
+	if err != nil {
+		return err
+	}
+	projectID, err := usageProjectID(ctx, opts, clients)
+	if err != nil {
+		return err
+	}
+	var item *usage.TenantUsage
+	err = usage.SingleTenant(client, projectID, usage.SingleTenantOpts{
+		Start: &start,
+		End:   &end,
+	}).EachPage(ctx, func(_ context.Context, page pagination.Page) (bool, error) {
+		extracted, err := usage.ExtractSingleTenant(page)
+		if err != nil {
+			return false, err
+		}
+		item = extracted
+		return false, nil
+	})
+	if err != nil {
+		return err
+	}
+	if item == nil {
+		return fmt.Errorf("usage not found for project %s", projectID)
+	}
+	if opts.Format == "" || opts.Format == "table" {
+		if _, err := fmt.Fprintf(stdout, "Usage from %s to %s on project %s: \n", start.Format("2006-01-02"), end.Format("2006-01-02"), projectID); err != nil {
+			return err
+		}
+	}
+	return renderShowOutput(stdout, opts, []outputField{
+		{"Project", item.TenantID},
+		{"Servers", usageServerOutputs(item.ServerUsages)},
+		{"RAM MB-Hours", usageFloat(item.TotalMemoryMBUsage)},
+		{"CPU Hours", usageFloat(item.TotalVCPUsUsage)},
+		{"Disk GB-Hours", usageFloat(item.TotalLocalGBUsage)},
+	})
 }
 
 func hypervisorList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
@@ -2833,6 +3082,17 @@ func findServer(ctx context.Context, client *gophercloud.ServiceClient, value st
 	return singleByName(value, items, func(item servers.Server) string { return item.Name })
 }
 
+func serverIDForEventLookup(ctx context.Context, client *gophercloud.ServiceClient, value string) (string, error) {
+	server, err := findServer(ctx, client, value)
+	if err == nil {
+		return server.ID, nil
+	}
+	if isUUIDLike(value) {
+		return value, nil
+	}
+	return "", err
+}
+
 func findAggregate(ctx context.Context, client *gophercloud.ServiceClient, value string) (*aggregates.Aggregate, error) {
 	if id, err := strconv.Atoi(value); err == nil {
 		result := aggregates.Get(ctx, client, id)
@@ -3631,6 +3891,269 @@ func volumeTypeAvailabilityZoneMatches(specs map[string]string, availabilityZone
 		}
 	}
 	return false
+}
+
+type computeServerVolumeAttachment struct {
+	VolumeID                 string  `json:"volumeId"`
+	ServerID                 string  `json:"serverId"`
+	Device                   string  `json:"device"`
+	Tag                      *string `json:"tag"`
+	DeleteOnTermination      *bool   `json:"delete_on_termination"`
+	AttachmentID             string  `json:"attachment_id"`
+	BlockDeviceMappingUUID   string  `json:"bdm_uuid"`
+	LegacyVolumeAttachmentID string  `json:"id"`
+}
+
+func extractComputeServerVolumeAttachments(page pagination.Page) ([]computeServerVolumeAttachment, error) {
+	var body struct {
+		VolumeAttachments []computeServerVolumeAttachment `json:"volumeAttachments"`
+	}
+	err := page.(volumeattach.VolumeAttachmentPage).ExtractInto(&body)
+	return body.VolumeAttachments, err
+}
+
+func serverEventDetails(events *[]instanceactions.Event) []map[string]any {
+	if events == nil {
+		return nil
+	}
+	rows := make([]map[string]any, 0, len(*events))
+	for _, event := range *events {
+		rows = append(rows, map[string]any{
+			"details":     nil,
+			"event":       event.Event,
+			"finish_time": oscTime(event.FinishTime),
+			"host":        stringPtrValue(event.Host),
+			"host_id":     stringPtrValue(event.HostID),
+			"result":      event.Result,
+			"start_time":  oscTime(event.StartTime),
+			"traceback":   nilIfEmpty(event.Traceback),
+		})
+	}
+	return rows
+}
+
+func usageDateRange(opts *Options) (time.Time, time.Time, error) {
+	now := time.Now().UTC()
+	start := now.AddDate(0, 0, -28)
+	end := now.AddDate(0, 0, 1)
+	var err error
+	if value := flagValue(opts, "start"); value != "" {
+		start, err = parseUsageDate("start", value)
+		if err != nil {
+			return time.Time{}, time.Time{}, err
+		}
+	}
+	if value := flagValue(opts, "end"); value != "" {
+		end, err = parseUsageDate("end", value)
+		if err != nil {
+			return time.Time{}, time.Time{}, err
+		}
+	}
+	return start, end, nil
+}
+
+func parseUsageDate(name string, value string) (time.Time, error) {
+	parsed, err := time.ParseInLocation("2006-01-02", value, time.UTC)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("invalid %s value: %s", name, value)
+	}
+	return parsed, nil
+}
+
+func parseRFC3339Flag(name string, value string) (time.Time, error) {
+	layouts := []string{time.RFC3339Nano, time.RFC3339, "2006-01-02T15:04:05"}
+	for _, layout := range layouts {
+		parsed, err := time.Parse(layout, value)
+		if err == nil {
+			return parsed, nil
+		}
+	}
+	return time.Time{}, fmt.Errorf("invalid %s value: %s", name, value)
+}
+
+func usageProjectID(ctx context.Context, opts *Options, clients *openStackClients) (string, error) {
+	if project := flagValue(opts, "project"); project != "" {
+		identityClient, err := clients.identityV3()
+		if err != nil {
+			return "", err
+		}
+		item, err := findProject(ctx, identityClient, project)
+		if err != nil {
+			return "", err
+		}
+		return item.ID, nil
+	}
+	if projectID := currentProjectID(clients); projectID != "" {
+		return projectID, nil
+	}
+	if projectID := os.Getenv("OS_PROJECT_ID"); projectID != "" {
+		return projectID, nil
+	}
+	if projectID := os.Getenv("OS_TENANT_ID"); projectID != "" {
+		return projectID, nil
+	}
+	return "", fmt.Errorf("usage show requires --project when the current token is not project-scoped")
+}
+
+func projectNameMap(ctx context.Context, clients *openStackClients) map[string]string {
+	values := map[string]string{}
+	identityClient, err := clients.identityV3()
+	if err != nil {
+		return values
+	}
+	page, err := projects.List(identityClient, projects.ListOpts{}).AllPages(ctx)
+	if err != nil {
+		return values
+	}
+	items, err := projects.ExtractProjects(page)
+	if err != nil {
+		return values
+	}
+	for _, item := range items {
+		values[item.ID] = item.Name
+	}
+	return values
+}
+
+func outputWantsHumanProjectNames(opts *Options) bool {
+	return opts == nil || opts.Format == "" || opts.Format == "table" || opts.Format == "pretty"
+}
+
+func usageProjectValue(projectID string, projectNames map[string]string) string {
+	if name := projectNames[projectID]; name != "" {
+		return name
+	}
+	return projectID
+}
+
+type usageServerOutput struct {
+	Hours     usageFloat
+	Flavor    string
+	Instance  string
+	Name      string
+	ProjectID string
+	MemoryMB  int
+	LocalGB   int
+	VCPUs     int
+	StartedAt any
+	EndedAt   any
+	State     string
+	Uptime    int
+}
+
+func usageServerOutputs(items []usage.ServerUsage) []usageServerOutput {
+	rows := make([]usageServerOutput, 0, len(items))
+	for _, item := range items {
+		rows = append(rows, usageServerOutput{
+			Hours:     usageFloat(item.Hours),
+			Flavor:    item.Flavor,
+			Instance:  item.InstanceID,
+			Name:      item.Name,
+			ProjectID: item.TenantID,
+			MemoryMB:  item.MemoryMB,
+			LocalGB:   item.LocalGB,
+			VCPUs:     item.VCPUs,
+			StartedAt: oscTime(item.StartedAt),
+			EndedAt:   oscTime(item.EndedAt),
+			State:     item.State,
+			Uptime:    item.Uptime,
+		})
+	}
+	return rows
+}
+
+type usageFloat float64
+
+func (value usageFloat) MarshalJSON() ([]byte, error) {
+	formatted := strconv.FormatFloat(float64(value), 'f', -1, 64)
+	if !strings.ContainsAny(formatted, ".eE") {
+		formatted += ".0"
+	}
+	return []byte(formatted), nil
+}
+
+func (item usageServerOutput) MarshalJSON() ([]byte, error) {
+	fields := []struct {
+		name  string
+		value any
+	}{
+		{"hours", item.Hours},
+		{"flavor", item.Flavor},
+		{"instance_id", item.Instance},
+		{"name", item.Name},
+		{"project_id", item.ProjectID},
+		{"memory_mb", item.MemoryMB},
+		{"local_gb", item.LocalGB},
+		{"vcpus", item.VCPUs},
+		{"started_at", item.StartedAt},
+		{"ended_at", item.EndedAt},
+		{"state", item.State},
+		{"uptime", item.Uptime},
+		{"id", nil},
+		{"name", item.Name},
+		{"location", nil},
+	}
+	var builder strings.Builder
+	builder.WriteByte('{')
+	for i, field := range fields {
+		if i > 0 {
+			builder.WriteByte(',')
+		}
+		key, err := json.Marshal(field.name)
+		if err != nil {
+			return nil, err
+		}
+		value, err := json.Marshal(field.value)
+		if err != nil {
+			return nil, err
+		}
+		builder.Write(key)
+		builder.WriteByte(':')
+		builder.Write(value)
+	}
+	builder.WriteByte('}')
+	return []byte(builder.String()), nil
+}
+
+func boolPtrValue(value *bool) any {
+	if value == nil {
+		return nil
+	}
+	return *value
+}
+
+func isUUIDLike(value string) bool {
+	cleaned := strings.ToLower(strings.Trim(strings.TrimPrefix(strings.TrimPrefix(value, "urn:"), "uuid:"), "{}"))
+	cleaned = strings.ReplaceAll(cleaned, "-", "")
+	if len(cleaned) != 32 {
+		return false
+	}
+	for _, char := range cleaned {
+		if !((char >= '0' && char <= '9') || (char >= 'a' && char <= 'f')) {
+			return false
+		}
+	}
+	return true
+}
+
+func computeClientWithMinimumMicroversion(ctx context.Context, client *gophercloud.ServiceClient, minimum string) (*gophercloud.ServiceClient, error) {
+	if os.Getenv("OS_COMPUTE_API_VERSION") != "" {
+		if !microversionAtLeast(client.Microversion, minimum) {
+			return nil, fmt.Errorf("--os-compute-api-version %s or greater is required", minimum)
+		}
+		return client, nil
+	}
+	supported, err := osutils.GetSupportedMicroversions(ctx, client)
+	if err != nil {
+		client.Microversion = minimum
+		return client, nil
+	}
+	max := fmt.Sprintf("%d.%d", supported.MaxMajor, supported.MaxMinor)
+	if !microversionAtLeast(max, minimum) {
+		return nil, fmt.Errorf("--os-compute-api-version %s or greater is required", minimum)
+	}
+	client.Microversion = max
+	return client, nil
 }
 
 func blockStorageClientWithMinimumMicroversion(ctx context.Context, client *gophercloud.ServiceClient, minimum string) (*gophercloud.ServiceClient, error) {
