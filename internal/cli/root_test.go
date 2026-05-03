@@ -54,8 +54,8 @@ func TestStubCommand(t *testing.T) {
 	if stderr != "" {
 		t.Fatalf("expected empty stderr, got %q", stderr)
 	}
-	if got, want := strings.TrimSpace(stdout), notImplementedExitCodeText; got != want {
-		t.Fatalf("stub output mismatch: got %q want %q", got, want)
+	if !strings.Contains(stdout, "auth_type") {
+		t.Fatalf("configuration output missing auth_type:\n%s", stdout)
 	}
 }
 
@@ -222,8 +222,8 @@ func TestPrettyFlagParses(t *testing.T) {
 	if stderr != "" {
 		t.Fatalf("expected empty stderr, got %q", stderr)
 	}
-	if got, want := strings.TrimSpace(stdout), notImplementedExitCodeText; got != want {
-		t.Fatalf("stub output mismatch: got %q want %q", got, want)
+	if !strings.Contains(stdout, "auth_type") {
+		t.Fatalf("pretty configuration output missing auth_type:\n%s", stdout)
 	}
 }
 

@@ -25,6 +25,7 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		stdout:      stdout,
 	}
 	registry.implemented["command list"] = runCommandList(groups, stdout, opts, registry.implemented)
+	registry.implemented["configuration show"] = runConfigurationShow(stdout, opts)
 	registry.implemented["module list"] = runModuleList(stdout, opts)
 	registry.implemented["token issue"] = runTokenIssue(stdout, opts)
 	for _, path := range []string{
@@ -251,6 +252,9 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().String("project-domain", "", "project domain")
 		cmd.Flags().Bool("share", false, "list shared resources")
 		cmd.Flags().Bool("no-share", false, "list non-shared resources")
+	case "configuration show":
+		cmd.Flags().Bool("mask", true, "mask passwords")
+		cmd.Flags().Bool("unmask", false, "show passwords")
 	case "access rule list", "application credential list", "ec2 credentials list":
 		cmd.Flags().String("user", "", "filter by user")
 		cmd.Flags().String("user-domain", "", "user domain")

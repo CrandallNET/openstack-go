@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sort"
 
 	"github.com/gophercloud/gophercloud/v2"
 	"github.com/gophercloud/gophercloud/v2/openstack"
@@ -218,6 +219,105 @@ func renderTokenIssue(stdout io.Writer, opts *Options, row tokenIssueRow) error 
 			"project_id": row.ProjectID,
 			"user_id":    row.UserID,
 		})
+	}
+}
+
+func runConfigurationShow(stdout io.Writer, opts *Options) commandHandler {
+	return func(cmd *cobra.Command, args []string) error {
+		authOptions, endpointOptions, tlsConfig, err := resolveAuthOptions(opts)
+		if err != nil {
+			authOptions = configurationFallbackAuthOptions(opts)
+			endpointOptions = endpointOptionsFromOptions(opts)
+		}
+		fields := configurationFields(opts, authOptions, endpointOptions, tlsConfig)
+		return renderShowOutput(stdout, opts, fields)
+	}
+}
+
+func configurationFallbackAuthOptions(opts *Options) gophercloud.AuthOptions {
+	authOptions := gophercloud.AuthOptions{
+		IdentityEndpoint:            firstNonEmpty(opts.AuthURL, os.Getenv("OS_AUTH_URL")),
+		Username:                    firstNonEmpty(opts.Username, os.Getenv("OS_USERNAME")),
+		UserID:                      firstNonEmpty(opts.UserID, os.Getenv("OS_USER_ID")),
+		Password:                    firstNonEmpty(opts.Password, os.Getenv("OS_PASSWORD")),
+		DomainID:                    firstNonEmpty(opts.UserDomainID, opts.ProjectDomainID, os.Getenv("OS_USER_DOMAIN_ID"), os.Getenv("OS_PROJECT_DOMAIN_ID"), os.Getenv("OS_DOMAIN_ID")),
+		DomainName:                  firstNonEmpty(opts.UserDomainName, opts.ProjectDomainName, os.Getenv("OS_USER_DOMAIN_NAME"), os.Getenv("OS_PROJECT_DOMAIN_NAME"), os.Getenv("OS_DOMAIN_NAME")),
+		TenantID:                    firstNonEmpty(opts.ProjectID, os.Getenv("OS_PROJECT_ID")),
+		TenantName:                  firstNonEmpty(opts.ProjectName, os.Getenv("OS_PROJECT_NAME")),
+		TokenID:                     firstNonEmpty(opts.Token, os.Getenv("OS_TOKEN")),
+		ApplicationCredentialID:     firstNonEmpty(opts.ApplicationCredentialID, os.Getenv("OS_APPLICATION_CREDENTIAL_ID")),
+		ApplicationCredentialName:   firstNonEmpty(opts.ApplicationCredentialName, os.Getenv("OS_APPLICATION_CREDENTIAL_NAME")),
+		ApplicationCredentialSecret: firstNonEmpty(opts.ApplicationCredentialSecret, os.Getenv("OS_APPLICATION_CREDENTIAL_SECRET")),
+	}
+	return authOptions
+}
+
+func configurationFields(opts *Options, authOptions gophercloud.AuthOptions, endpointOptions gophercloud.EndpointOpts, tlsConfig *tls.Config) []outputField {
+	mask := !boolFlag(opts, "unmask")
+	values := map[string]any{
+		"auth.auth_url":                      nilIfEmpty(authOptions.IdentityEndpoint),
+		"auth.password":                      maskedSecret(authOptions.Password, mask),
+		"auth.project_domain_id":             nilIfEmpty(authOptions.DomainID),
+		"auth.project_domain_name":           nilIfEmpty(authOptions.DomainName),
+		"auth.project_id":                    nilIfEmpty(authOptions.TenantID),
+		"auth.project_name":                  nilIfEmpty(authOptions.TenantName),
+		"auth.token":                         maskedSecret(authOptions.TokenID, mask),
+		"auth.user_domain_id":                nilIfEmpty(authOptions.DomainID),
+		"auth.user_domain_name":              nilIfEmpty(authOptions.DomainName),
+		"auth.user_id":                       nilIfEmpty(authOptions.UserID),
+		"auth.username":                      nilIfEmpty(authOptions.Username),
+		"auth.application_credential_id":     nilIfEmpty(authOptions.ApplicationCredentialID),
+		"auth.application_credential_name":   nilIfEmpty(authOptions.ApplicationCredentialName),
+		"auth.application_credential_secret": maskedSecret(authOptions.ApplicationCredentialSecret, mask),
+		"auth_type":                          configurationAuthType(authOptions),
+		"cloud":                              nilIfEmpty(firstNonEmpty(opts.Cloud, os.Getenv("OS_CLOUD"))),
+		"interface":                          availabilityName(endpointOptions.Availability),
+		"region_name":                        nilIfEmpty(endpointOptions.Region),
+		"verify":                             tlsConfig == nil || !tlsConfig.InsecureSkipVerify,
+	}
+	keys := make([]string, 0, len(values))
+	for key, value := range values {
+		if value != nil {
+			keys = append(keys, key)
+		}
+	}
+	sort.Strings(keys)
+	fields := make([]outputField, 0, len(keys))
+	for _, key := range keys {
+		fields = append(fields, outputField{Name: key, Value: values[key]})
+	}
+	return fields
+}
+
+func maskedSecret(value string, mask bool) any {
+	if value == "" {
+		return nil
+	}
+	if mask {
+		return "<redacted>"
+	}
+	return value
+}
+
+func configurationAuthType(authOptions gophercloud.AuthOptions) string {
+	switch {
+	case authOptions.ApplicationCredentialID != "" || authOptions.ApplicationCredentialName != "":
+		return "v3applicationcredential"
+	case authOptions.TokenID != "":
+		return "token"
+	default:
+		return "password"
+	}
+}
+
+func availabilityName(value gophercloud.Availability) string {
+	switch value {
+	case gophercloud.AvailabilityInternal:
+		return "internal"
+	case gophercloud.AvailabilityAdmin:
+		return "admin"
+	default:
+		return "public"
 	}
 }
 

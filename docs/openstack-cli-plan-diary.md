@@ -712,3 +712,20 @@ Sources consulted:
 * Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/image/v2/image.py`, used only as the pinned local oracle implementation source.
 * Local OpenStackSDK source files `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/image/v2/image.py` and `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/image/v2/_proxy.py`, which document image update, activation, tag, and member behavior.
 * Gophercloud package docs for [Image v2 images](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/image/v2/images) and [Image v2 members](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/image/v2/members).
+
+## 2026-05-03: Configuration Show
+
+Work done: added initial `configuration show`.
+
+Implementation note: Python OSC marks this command as not requiring authentication, reads the resolved OpenStackSDK config dictionary, flattens `auth.*` values, and redacts secret auth options unless `--unmask` is used. The Go CLI now resolves the same auth and endpoint options it uses for service clients through Gophercloud's `clouds.Parse`, falls back to explicit `OS_*`/flag values when no auth config is present, and renders sorted show output through the shared formatter. This is intentionally self-contained and does not call the Python CLI.
+
+Compatibility note: this is not yet a full OpenStackSDK config dump. It covers the high-value auth, cloud, interface, region, and TLS verification fields, but omits OpenStackSDK defaults such as retry counts, vendor-agent settings, and some service-specific API version defaults until those have a Go-native config model.
+
+Live observations on `cloud6`: `configuration show -f json` returned masked auth fields, cloud, public interface, RegionOne, password auth type, and TLS verification status. `configuration show --unmask -f value -c auth.password` returned the clear configured secret as expected; do not include that output in committed artifacts.
+
+Sources consulted:
+
+* Local OSC oracle snapshot in `compat/osc/9.0.0/help/configuration/show.txt`.
+* Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/common/configuration.py`, used only as the pinned local oracle implementation source.
+* Local osc-lib source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/osc_lib/clientmanager.py`, which exposes `get_configuration()`.
+* Gophercloud package docs for [clouds.yaml parsing](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/config/clouds).
