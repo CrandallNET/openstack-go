@@ -75,8 +75,10 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"floating ip list", "floating ip pool list", "floating ip show",
 		"host list", "host show",
 		"hypervisor list", "hypervisor show", "hypervisor stats show",
+		"image add project",
 		"image import info", "image list",
 		"image member get", "image member list", "image show",
+		"image remove project",
 		"image metadef namespace create", "image metadef namespace delete",
 		"image metadef namespace list", "image metadef namespace set",
 		"image metadef namespace show",
@@ -425,6 +427,8 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().Bool("with-servers", false, "include servers")
 	case "image member get", "image member list":
 		cmd.Flags().String("project-domain", "", "project domain")
+	case "image add project", "image remove project":
+		cmd.Flags().String("project-domain", "", "project domain")
 	case "image metadef namespace create", "image metadef namespace set":
 		cmd.Flags().String("display-name", "", "display name")
 		cmd.Flags().String("description", "", "description")
@@ -727,8 +731,10 @@ func isCoreReadCommand(path string) bool {
 		"floating ip list", "floating ip pool list", "floating ip show",
 		"host list", "host show",
 		"hypervisor list", "hypervisor show", "hypervisor stats show",
+		"image add project",
 		"image import info", "image list",
 		"image member get", "image member list", "image show",
+		"image remove project",
 		"image metadef namespace create", "image metadef namespace delete",
 		"image metadef namespace list", "image metadef namespace set",
 		"image metadef namespace show",

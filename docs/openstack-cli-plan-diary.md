@@ -649,3 +649,17 @@ Sources consulted:
 * Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/image/v2/info.py`, used only as the pinned local oracle implementation source.
 * Local OpenStackSDK source files `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/image/v2/service_info.py` and `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/image/v2/_proxy.py`, which document the `/info/import` path and import methods field.
 * Local Gophercloud source package `github.com/gophercloud/gophercloud/v2/openstack/image/v2/imageimport`, which provides the typed `Get` call used by the Go CLI.
+
+## 2026-05-03: Image Project Membership Commands
+
+Work done: added `image add project` and `image remove project`.
+
+Implementation note: Python OSC resolves the target project through Identity, resolves the target image through Glance, and then creates or deletes an image member. Gophercloud v2.12.0 has typed Image v2 member helpers, so the Go CLI uses `members.Create` and `members.Delete`.
+
+Live observations on `cloud6`: `cloud6` currently has no private image fixture returned by `openstack image list --private -f json`, so successful share/unshare lifecycle verification is deferred until the image lifecycle test fixture exists. The commands are marked implemented, not cloud-verified, in `compat/matrix.yaml`.
+
+Sources consulted:
+
+* Local OSC oracle snapshots in `compat/osc/9.0.0/help/image/add/project.txt` and `compat/osc/9.0.0/help/image/remove/project.txt`.
+* Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/image/v2/image.py`, used only as the pinned local oracle implementation source.
+* Local Gophercloud source package `github.com/gophercloud/gophercloud/v2/openstack/image/v2/members`, which provides the typed create and delete calls used by the Go CLI.

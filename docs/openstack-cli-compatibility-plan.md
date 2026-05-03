@@ -80,7 +80,7 @@ Gaps to validate are endpoint group commands, service-provider write commands, r
 
 ### Image v2
 
-Gophercloud has documented Image v2 packages for image data, image import, images, members, and tasks. That should cover core `image create/delete/list/save/set/show/stage/import`, import discovery, image members, and tasks. `image import info` now uses Gophercloud's typed `imageimport` package.
+Gophercloud has documented Image v2 packages for image data, image import, images, members, and tasks. That should cover core `image create/delete/list/save/set/show/stage/import`, import discovery, image members, and tasks. `image import info` uses Gophercloud's typed `imageimport` package, and `image add project`/`image remove project` use the typed image member package.
 
 The current local command surface includes cached image operations, stores, and extensive metadef namespace/object/property/resource-type commands. Those packages were not visible in the cited Gophercloud v2 package index, so they are initial SDK gaps until module inspection proves otherwise. `cached image clear/delete/list/queue`, `image metadef namespace create/delete/list/set/show`, `image metadef object create/delete/list/show/update`, `image metadef object property show`, `image metadef property create/delete/list/set/show`, `image metadef resource type list`, and `image metadef resource type association create/delete/list` now use narrow Glance REST operations because no typed local Gophercloud helpers exist in v2.12.0. Plan for raw REST shims for stores and any import workflow details not covered by `imageimport`.
 

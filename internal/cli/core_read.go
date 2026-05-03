@@ -411,6 +411,26 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return imageImportInfo(cmd.Context(), stdout, opts, client)
+		case "image add project":
+			imageClient, err := clients.imageV2()
+			if err != nil {
+				return err
+			}
+			identityClient, err := clients.identityV3()
+			if err != nil {
+				return err
+			}
+			return imageAddProject(cmd.Context(), stdout, opts, imageClient, identityClient, args)
+		case "image remove project":
+			imageClient, err := clients.imageV2()
+			if err != nil {
+				return err
+			}
+			identityClient, err := clients.identityV3()
+			if err != nil {
+				return err
+			}
+			return imageRemoveProject(cmd.Context(), opts, imageClient, identityClient, args)
 		case "image show":
 			client, err := clients.imageV2()
 			if err != nil {
@@ -2462,6 +2482,40 @@ func imageMemberList(ctx context.Context, stdout io.Writer, opts *Options, clien
 	return renderListOutput(stdout, opts, []string{"Image ID", "Member ID", "Status"}, rows)
 }
 
+func imageAddProject(ctx context.Context, stdout io.Writer, opts *Options, imageClient *gophercloud.ServiceClient, identityClient *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("image add project requires <image> <project>")
+	}
+	image, err := findImage(ctx, imageClient, args[0])
+	if err != nil {
+		return err
+	}
+	project, err := findProjectWithDomain(ctx, identityClient, args[1], flagValue(opts, "project-domain"))
+	if err != nil {
+		return err
+	}
+	item, err := members.Create(ctx, imageClient, image.ID, project.ID).Extract()
+	if err != nil {
+		return err
+	}
+	return renderImageMemberShow(stdout, opts, item)
+}
+
+func imageRemoveProject(ctx context.Context, opts *Options, imageClient *gophercloud.ServiceClient, identityClient *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("image remove project requires <image> <project>")
+	}
+	image, err := findImage(ctx, imageClient, args[0])
+	if err != nil {
+		return err
+	}
+	project, err := findProjectWithDomain(ctx, identityClient, args[1], flagValue(opts, "project-domain"))
+	if err != nil {
+		return err
+	}
+	return members.Delete(ctx, imageClient, image.ID, project.ID).ExtractErr()
+}
+
 func imageMemberGet(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
 	if len(args) < 2 {
 		return fmt.Errorf("image member get requires <image> <project>")
@@ -2474,6 +2528,10 @@ func imageMemberGet(ctx context.Context, stdout io.Writer, opts *Options, client
 	if err != nil {
 		return err
 	}
+	return renderImageMemberShow(stdout, opts, item)
+}
+
+func renderImageMemberShow(stdout io.Writer, opts *Options, item *members.Member) error {
 	return renderShowOutput(stdout, opts, []outputField{
 		{"created_at", oscTime(item.CreatedAt)},
 		{"image_id", item.ImageID},
