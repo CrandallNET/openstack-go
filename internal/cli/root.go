@@ -32,10 +32,11 @@ type Options struct {
 	Prefix     string
 	Quote      string
 
-	SortColumns    []string
-	SortAscending  bool
-	SortDescending bool
-	CommandFlags   map[string]string
+	SortColumns     []string
+	SortAscending   bool
+	SortDescending  bool
+	CommandFlags    map[string]string
+	CommandFlagList map[string][]string
 
 	Cloud                       string
 	AuthURL                     string
@@ -97,6 +98,7 @@ func NewRootCommand(stdout io.Writer, stderr io.Writer) *cobra.Command {
 			opts.Format = "pretty"
 		}
 		opts.CommandFlags = commandFlagValues(cmd)
+		opts.CommandFlagList = commandFlagLists(cmd)
 		return nil
 	}
 
@@ -147,6 +149,19 @@ func commandFlagValues(cmd *cobra.Command) map[string]string {
 	cmd.Flags().VisitAll(func(flag *pflag.Flag) {
 		if flag.Changed {
 			values[flag.Name] = flag.Value.String()
+		}
+	})
+	return values
+}
+
+func commandFlagLists(cmd *cobra.Command) map[string][]string {
+	values := map[string][]string{}
+	cmd.Flags().VisitAll(func(flag *pflag.Flag) {
+		if !flag.Changed {
+			return
+		}
+		if sliceValue, ok := flag.Value.(pflag.SliceValue); ok {
+			values[flag.Name] = sliceValue.GetSlice()
 		}
 	})
 	return values

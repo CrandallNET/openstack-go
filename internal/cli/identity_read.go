@@ -1736,6 +1736,21 @@ func flagValue(opts *Options, name string) string {
 	return opts.CommandFlags[name]
 }
 
+func flagValues(opts *Options, name string) []string {
+	if opts == nil || opts.CommandFlagList == nil {
+		return nil
+	}
+	return opts.CommandFlagList[name]
+}
+
+func flagChanged(opts *Options, name string) bool {
+	if opts == nil || opts.CommandFlags == nil {
+		return false
+	}
+	_, ok := opts.CommandFlags[name]
+	return ok
+}
+
 func boolFlag(opts *Options, name string) bool {
 	return flagValue(opts, name) == "true"
 }

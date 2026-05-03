@@ -663,3 +663,20 @@ Sources consulted:
 * Local OSC oracle snapshots in `compat/osc/9.0.0/help/image/add/project.txt` and `compat/osc/9.0.0/help/image/remove/project.txt`.
 * Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/image/v2/image.py`, used only as the pinned local oracle implementation source.
 * Local Gophercloud source package `github.com/gophercloud/gophercloud/v2/openstack/image/v2/members`, which provides the typed create and delete calls used by the Go CLI.
+
+## 2026-05-03: Image Create And Delete Lifecycle
+
+Work done: added `image create` and `image delete`.
+
+Implementation note: `image create` uses Gophercloud's typed Image v2 metadata create API, typed image data upload/stage APIs for file data, and the typed image import request when `--import` is selected with upload data. The implementation mirrors Python OSC's default `container_format=bare` and `disk_format=raw`, repeated `--property` and `--tag` handling, visibility/protected flags, project owner lookup, and OpenStackSDK's `owner_specified.openstack.*` metadata defaults. `image create --volume` is wired through Gophercloud's Block Storage v3 `volumes.UploadImage` helper, but still needs a live volume fixture before it can be marked cloud-verified.
+
+Implementation note: normal `image delete` uses Gophercloud's typed Image v2 delete API. `image delete --store` uses a narrow authenticated Glance REST delete at `/stores/{store}/{image_id}` because the local Gophercloud v2.12.0 module has no typed multi-store delete helper. Python OSC currently reports `Multi Backend support not enabled.` for a nonexistent image delete on `cloud6`; the Go CLI mirrors that observed oracle behavior for this command.
+
+Live observations on `cloud6`: Python OSC was used as the output oracle for metadata shape and direct zero-byte upload. The Go CLI created and deleted disposable images `gocli-test-go-20260503-image-tty-001`, `gocli-test-go-20260503-image-stdin-001`, and `gocli-test-go-20260503-image-file-002`, covering TTY metadata-only queued create, non-interactive stdin zero-byte upload, direct `--file` upload, properties/tags, and cleanup. The Go CLI also matched the Python OSC nonexistent-image delete message for `does-not-exist-gocli-test-20260503`.
+
+Sources consulted:
+
+* Local OSC oracle snapshots in `compat/osc/9.0.0/help/image/create.txt` and `compat/osc/9.0.0/help/image/delete.txt`.
+* Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/image/v2/image.py`, used only as the pinned local oracle implementation source.
+* Local OpenStackSDK source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/image/v2/_proxy.py`, which documents the `create_image` owner-specified metadata defaults and `delete_image(..., store=...)` behavior.
+* Gophercloud package docs for [Image v2 images](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/image/v2/images), [Image v2 image data](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/image/v2/imagedata), [Image v2 import](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/image/v2/imageimport), and [Block Storage v3 volumes](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/volumes).

@@ -37,6 +37,7 @@ import (
 	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/usage"
 	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/volumeattach"
 	"github.com/gophercloud/gophercloud/v2/openstack/identity/v3/projects"
+	"github.com/gophercloud/gophercloud/v2/openstack/image/v2/imagedata"
 	"github.com/gophercloud/gophercloud/v2/openstack/image/v2/imageimport"
 	"github.com/gophercloud/gophercloud/v2/openstack/image/v2/images"
 	"github.com/gophercloud/gophercloud/v2/openstack/image/v2/members"
@@ -61,6 +62,7 @@ import (
 	osutils "github.com/gophercloud/gophercloud/v2/openstack/utils"
 	"github.com/gophercloud/gophercloud/v2/pagination"
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 )
 
 func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
@@ -273,6 +275,26 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return imageList(cmd.Context(), stdout, opts, client)
+		case "image create":
+			imageClient, err := clients.imageV2()
+			if err != nil {
+				return err
+			}
+			identityClient, err := clients.identityV3()
+			if err != nil {
+				return err
+			}
+			volumeClient, err := clients.blockStorageV3()
+			if err != nil {
+				volumeClient = nil
+			}
+			return imageCreate(cmd.Context(), stdout, opts, imageClient, identityClient, volumeClient, args)
+		case "image delete":
+			client, err := clients.imageV2()
+			if err != nil {
+				return err
+			}
+			return imageDelete(cmd.Context(), cmd.ErrOrStderr(), opts, client, args)
 		case "image member get":
 			client, err := clients.imageV2()
 			if err != nil {
@@ -1762,6 +1784,380 @@ func imageImportInfo(ctx context.Context, stdout io.Writer, opts *Options, clien
 		return err
 	}
 	return renderShowOutput(stdout, opts, []outputField{{Name: "import-methods", Value: info.ImportMethods.Value}})
+}
+
+type imageCreateOpts struct {
+	images.CreateOpts
+	Owner string
+}
+
+func (opts imageCreateOpts) ToImageCreateMap() (map[string]any, error) {
+	body, err := opts.CreateOpts.ToImageCreateMap()
+	if err != nil {
+		return nil, err
+	}
+	if opts.Owner != "" {
+		body["owner"] = opts.Owner
+	}
+	return body, nil
+}
+
+func imageCreate(ctx context.Context, stdout io.Writer, opts *Options, imageClient *gophercloud.ServiceClient, identityClient *gophercloud.ServiceClient, volumeClient *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("image create requires <image-name>")
+	}
+	if flagChanged(opts, "file") && flagChanged(opts, "volume") {
+		return fmt.Errorf("argument --volume: not allowed with argument --file")
+	}
+	if volume := flagValue(opts, "volume"); volume != "" {
+		return imageCreateFromVolume(ctx, stdout, opts, volumeClient, args[0], volume)
+	}
+	if flagValue(opts, "sign-key-path") != "" || flagValue(opts, "sign-cert-id") != "" {
+		if flagValue(opts, "file") == "" {
+			return fmt.Errorf("signing an image requires the --file option, passing files via stdin when signing is not supported.")
+		}
+		if flagValue(opts, "sign-key-path") == "" || flagValue(opts, "sign-cert-id") == "" {
+			return fmt.Errorf("'sign-key-path' and 'sign-cert-id' must both be specified when attempting to sign an image.")
+		}
+		return fmt.Errorf("image signing is not yet implemented")
+	}
+
+	data, closeData, err := imageCreateDataReader(opts)
+	if err != nil {
+		return err
+	}
+	if closeData != nil {
+		defer closeData.Close()
+	}
+
+	createOpts, err := buildImageCreateOpts(ctx, opts, identityClient, args[0])
+	if err != nil {
+		return err
+	}
+	item, err := images.Create(ctx, imageClient, createOpts).Extract()
+	if err != nil {
+		return err
+	}
+
+	if data != nil {
+		if boolFlag(opts, "import") {
+			if err := imagedata.Stage(ctx, imageClient, item.ID, data).ExtractErr(); err != nil {
+				return err
+			}
+			if err := imageimport.Create(ctx, imageClient, item.ID, imageimport.CreateOpts{Name: imageimport.GlanceDirectMethod}).ExtractErr(); err != nil {
+				return err
+			}
+		} else {
+			if err := imagedata.Upload(ctx, imageClient, item.ID, data).ExtractErr(); err != nil {
+				return err
+			}
+		}
+	}
+
+	refreshed, err := images.Get(ctx, imageClient, item.ID).Extract()
+	if err == nil {
+		item = refreshed
+	}
+	return renderShowOutput(stdout, opts, imageCreateFields(item))
+}
+
+func imageCreateFromVolume(ctx context.Context, stdout io.Writer, opts *Options, volumeClient *gophercloud.ServiceClient, imageName string, volumeNameOrID string) error {
+	if volumeClient == nil {
+		return fmt.Errorf("volume service is required for image create --volume")
+	}
+	data, closeData, err := imageCreateDataReader(opts)
+	if err != nil {
+		return err
+	}
+	if closeData != nil {
+		defer closeData.Close()
+	}
+	if data != nil {
+		return fmt.Errorf("Uploading data and using container are not allowed at the same time")
+	}
+	volumeClient, err = blockStorageClientForImageUpload(ctx, volumeClient, opts)
+	if err != nil {
+		return err
+	}
+	volume, err := findVolume(ctx, volumeClient, volumeNameOrID)
+	if err != nil {
+		return err
+	}
+	uploadOpts := volumes.UploadImageOpts{
+		ImageName:       imageName,
+		ContainerFormat: imageCreateContainerFormat(opts),
+		DiskFormat:      imageCreateDiskFormat(opts),
+		Force:           boolFlag(opts, "force"),
+	}
+	if visibility, err := imageCreateVisibility(opts); err != nil {
+		return err
+	} else if visibility != nil {
+		uploadOpts.Visibility = string(*visibility)
+	} else if volumeClient.Microversion != "" && microversionAtLeast(volumeClient.Microversion, "3.1") {
+		uploadOpts.Visibility = "private"
+	}
+	if protected, err := imageCreateProtected(opts); err != nil {
+		return err
+	} else if protected != nil {
+		uploadOpts.Protected = *protected
+	}
+	item, err := volumes.UploadImage(ctx, volumeClient, volume.ID, uploadOpts).Extract()
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, imageCreateVolumeFields(item))
+}
+
+func buildImageCreateOpts(ctx context.Context, opts *Options, identityClient *gophercloud.ServiceClient, name string) (imageCreateOpts, error) {
+	visibility, err := imageCreateVisibility(opts)
+	if err != nil {
+		return imageCreateOpts{}, err
+	}
+	protected, err := imageCreateProtected(opts)
+	if err != nil {
+		return imageCreateOpts{}, err
+	}
+	properties, err := imageCreateProperties(opts)
+	if err != nil {
+		return imageCreateOpts{}, err
+	}
+	if properties == nil {
+		properties = map[string]string{}
+	}
+	properties["owner_specified.openstack.md5"] = ""
+	properties["owner_specified.openstack.object"] = "images/" + name
+	properties["owner_specified.openstack.sha256"] = ""
+	createOpts := imageCreateOpts{
+		CreateOpts: images.CreateOpts{
+			Name:            name,
+			ID:              flagValue(opts, "id"),
+			ContainerFormat: imageCreateContainerFormat(opts),
+			DiskFormat:      imageCreateDiskFormat(opts),
+			Visibility:      visibility,
+			Protected:       protected,
+			Tags:            flagValues(opts, "tag"),
+			Properties:      properties,
+		},
+	}
+	if value := flagValue(opts, "min-disk"); value != "" {
+		createOpts.MinDisk, _ = strconv.Atoi(value)
+	}
+	if value := flagValue(opts, "min-ram"); value != "" {
+		createOpts.MinRAM, _ = strconv.Atoi(value)
+	}
+	if projectNameOrID := flagValue(opts, "project"); projectNameOrID != "" {
+		project, err := findProjectWithDomain(ctx, identityClient, projectNameOrID, flagValue(opts, "project-domain"))
+		if err != nil {
+			return imageCreateOpts{}, err
+		}
+		createOpts.Owner = project.ID
+	}
+	return createOpts, nil
+}
+
+func imageDelete(ctx context.Context, stderr io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("image delete requires <image> [<image> ...]")
+	}
+	failures := 0
+	store := flagValue(opts, "store")
+	for _, imageArg := range args {
+		image, err := findImage(ctx, client, imageArg)
+		if err == nil {
+			if store != "" {
+				resp, deleteErr := client.Delete(ctx, client.ServiceURL("stores", url.PathEscape(store), url.PathEscape(image.ID)), nil)
+				_, _, err = gophercloud.ParseResponse(resp, deleteErr)
+				if gophercloud.ResponseCodeIs(err, http.StatusNotFound) {
+					return fmt.Errorf("Multi Backend support not enabled.")
+				}
+			} else {
+				err = images.Delete(ctx, client, image.ID).ExtractErr()
+			}
+		} else if strings.Contains(err.Error(), "no resource found") {
+			return fmt.Errorf("Multi Backend support not enabled.")
+		}
+		if err != nil {
+			failures++
+			fmt.Fprintf(stderr, "Failed to delete image with name or ID '%s': %s\n", imageArg, err)
+		}
+	}
+	if failures > 0 {
+		return fmt.Errorf("Failed to delete %d of %d images.", failures, len(args))
+	}
+	return nil
+}
+
+func imageCreateDataReader(opts *Options) (io.Reader, io.Closer, error) {
+	return imageCreateDataReaderForFile(flagValue(opts, "file"))
+}
+
+func imageCreateDataReaderForFile(filename string) (io.Reader, io.Closer, error) {
+	if filename != "" {
+		file, err := os.Open(filename)
+		if err != nil {
+			return nil, nil, fmt.Errorf("'%s' is not a valid file", filename)
+		}
+		return file, file, nil
+	}
+	_, err := os.Stdin.Stat()
+	if err != nil {
+		return nil, nil, nil
+	}
+	if !term.IsTerminal(int(os.Stdin.Fd())) {
+		return os.Stdin, nil, nil
+	}
+	return nil, nil, nil
+}
+
+func imageCreateContainerFormat(opts *Options) string {
+	if value := flagValue(opts, "container-format"); value != "" {
+		return value
+	}
+	return "bare"
+}
+
+func imageCreateDiskFormat(opts *Options) string {
+	if value := flagValue(opts, "disk-format"); value != "" {
+		return value
+	}
+	return "raw"
+}
+
+func imageCreateVisibility(opts *Options) (*images.ImageVisibility, error) {
+	choices := []string{"public", "private", "community", "shared"}
+	var selected []string
+	for _, choice := range choices {
+		if boolFlag(opts, choice) {
+			selected = append(selected, choice)
+		}
+	}
+	if len(selected) > 1 {
+		return nil, fmt.Errorf("only one image visibility option may be specified")
+	}
+	if len(selected) == 0 {
+		return nil, nil
+	}
+	visibility := images.ImageVisibility(selected[0])
+	return &visibility, nil
+}
+
+func imageCreateProtected(opts *Options) (*bool, error) {
+	protected := boolFlag(opts, "protected")
+	unprotected := boolFlag(opts, "unprotected")
+	if protected && unprotected {
+		return nil, fmt.Errorf("only one protected option may be specified")
+	}
+	if protected {
+		value := true
+		return &value, nil
+	}
+	if unprotected {
+		value := false
+		return &value, nil
+	}
+	return nil, nil
+}
+
+func imageCreateProperties(opts *Options) (map[string]string, error) {
+	properties := map[string]string{}
+	for _, property := range flagValues(opts, "property") {
+		key, value, ok := strings.Cut(property, "=")
+		if !ok || key == "" {
+			return nil, fmt.Errorf("invalid property %q, expected <key=value>", property)
+		}
+		properties[key] = value
+	}
+	if len(properties) == 0 {
+		return nil, nil
+	}
+	return properties, nil
+}
+
+func imageCreateFields(item *images.Image) []outputField {
+	properties := map[string]any{}
+	for key, value := range item.Properties {
+		if value == nil {
+			continue
+		}
+		properties[key] = value
+	}
+	if _, ok := properties["os_hidden"]; !ok {
+		properties["os_hidden"] = item.Hidden
+	}
+	fields := []outputField{}
+	add := func(name string, value any, include bool) {
+		if include {
+			fields = append(fields, outputField{Name: name, Value: value})
+		}
+	}
+	add("checksum", item.Checksum, item.Checksum != "")
+	add("container_format", item.ContainerFormat, item.ContainerFormat != "")
+	add("created_at", imageTime(item.CreatedAt), !item.CreatedAt.IsZero())
+	add("disk_format", item.DiskFormat, item.DiskFormat != "")
+	add("file", item.File, item.File != "")
+	add("id", item.ID, item.ID != "")
+	add("min_disk", item.MinDiskGigabytes, true)
+	add("min_ram", item.MinRAMMegabytes, true)
+	add("name", item.Name, item.Name != "")
+	add("owner", item.Owner, item.Owner != "")
+	if len(properties) > 0 {
+		add("properties", properties, true)
+	}
+	add("protected", item.Protected, true)
+	add("schema", item.Schema, item.Schema != "")
+	add("size", item.SizeBytes, item.SizeBytes > 0 || item.Status == images.ImageStatusActive)
+	add("status", string(item.Status), item.Status != "")
+	tags := item.Tags
+	if tags == nil {
+		tags = []string{}
+	}
+	add("tags", tags, true)
+	add("updated_at", imageTime(item.UpdatedAt), !item.UpdatedAt.IsZero())
+	add("virtual_size", item.VirtualSize, item.VirtualSize > 0)
+	add("visibility", string(item.Visibility), item.Visibility != "")
+	return fields
+}
+
+func imageCreateVolumeFields(item volumes.VolumeImage) []outputField {
+	volumeType := any(nil)
+	if item.VolumeType.Name != "" {
+		volumeType = item.VolumeType.Name
+	}
+	fields := []outputField{
+		{"container_format", item.ContainerFormat},
+		{"disk_format", item.DiskFormat},
+		{"display_description", nilIfEmpty(item.Description)},
+		{"id", item.VolumeID},
+		{"image_id", item.ImageID},
+		{"image_name", item.ImageName},
+		{"protected", item.Protected},
+		{"size", item.Size},
+		{"status", item.Status},
+		{"updated_at", imageTime(item.UpdatedAt)},
+		{"visibility", nilIfEmpty(item.Visibility)},
+		{"volume_type", volumeType},
+	}
+	sort.Slice(fields, func(i int, j int) bool { return fields[i].Name < fields[j].Name })
+	return fields
+}
+
+func imageTime(value time.Time) any {
+	if value.IsZero() {
+		return nil
+	}
+	return value.UTC().Format(time.RFC3339)
+}
+
+func blockStorageClientForImageUpload(ctx context.Context, client *gophercloud.ServiceClient, opts *Options) (*gophercloud.ServiceClient, error) {
+	needsMicroversion := boolFlag(opts, "public") || boolFlag(opts, "private") || boolFlag(opts, "community") || boolFlag(opts, "shared") || boolFlag(opts, "protected") || boolFlag(opts, "unprotected")
+	withMinimum, err := blockStorageClientWithMinimumMicroversion(ctx, client, "3.1")
+	if err != nil {
+		if needsMicroversion {
+			return nil, fmt.Errorf("--os-volume-api-version 3.1 or greater is required to support the --public, --private, --community, --shared or --protected option.")
+		}
+		return client, nil
+	}
+	return withMinimum, nil
 }
 
 func imageShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {

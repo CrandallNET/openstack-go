@@ -76,6 +76,7 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"host list", "host show",
 		"hypervisor list", "hypervisor show", "hypervisor stats show",
 		"image add project",
+		"image create", "image delete",
 		"image import info", "image list",
 		"image member get", "image member list", "image show",
 		"image remove project",
@@ -429,6 +430,31 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().String("project-domain", "", "project domain")
 	case "image add project", "image remove project":
 		cmd.Flags().String("project-domain", "", "project domain")
+	case "image create":
+		cmd.Flags().String("id", "", "image ID to reserve")
+		cmd.Flags().String("container-format", "bare", "image container format")
+		cmd.Flags().String("disk-format", "raw", "image disk format")
+		cmd.Flags().Int("min-disk", 0, "minimum disk size in GB")
+		cmd.Flags().Int("min-ram", 0, "minimum RAM size in MB")
+		cmd.Flags().String("file", "", "upload image from local file")
+		cmd.Flags().String("volume", "", "create image from a volume")
+		cmd.Flags().Bool("force", false, "force image creation from volume")
+		cmd.Flags().Bool("progress", false, "show upload progress")
+		cmd.Flags().String("sign-key-path", "", "private key path for image signing")
+		cmd.Flags().String("sign-cert-id", "", "certificate ID for image signing")
+		cmd.Flags().Bool("protected", false, "prevent image deletion")
+		cmd.Flags().Bool("unprotected", false, "allow image deletion")
+		cmd.Flags().Bool("public", false, "public image visibility")
+		cmd.Flags().Bool("private", false, "private image visibility")
+		cmd.Flags().Bool("community", false, "community image visibility")
+		cmd.Flags().Bool("shared", false, "shared image visibility")
+		cmd.Flags().StringArray("property", nil, "image property key=value")
+		cmd.Flags().StringArray("tag", nil, "image tag")
+		cmd.Flags().String("project", "", "alternate project owner")
+		cmd.Flags().Bool("import", false, "use Glance image import")
+		cmd.Flags().String("project-domain", "", "project domain")
+	case "image delete":
+		cmd.Flags().String("store", "", "store to delete image from")
 	case "image metadef namespace create", "image metadef namespace set":
 		cmd.Flags().String("display-name", "", "display name")
 		cmd.Flags().String("description", "", "description")
@@ -732,6 +758,7 @@ func isCoreReadCommand(path string) bool {
 		"host list", "host show",
 		"hypervisor list", "hypervisor show", "hypervisor stats show",
 		"image add project",
+		"image create", "image delete",
 		"image import info", "image list",
 		"image member get", "image member list", "image show",
 		"image remove project",

@@ -1882,24 +1882,28 @@ commands:
     group: "openstack.image.v2"
     service: "image"
     api: "v2"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/image/v2/images; github.com/gophercloud/gophercloud/v2/openstack/image/v2/imagedata; github.com/gophercloud/gophercloud/v2/openstack/image/v2/imageimport"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "image delete"
     group: "openstack.image.v2"
     service: "image"
     api: "v2"
-    status: "unknown"
-    sdk_package: ""
-    shim: false
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/image/v2/images; Glance multi-store delete via gophercloud.ServiceClient"
+    shim: true
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "image import"
     group: "openstack.image.v2"
     service: "image"
