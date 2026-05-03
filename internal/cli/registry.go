@@ -28,14 +28,22 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 	registry.implemented["module list"] = runModuleList(stdout, opts)
 	registry.implemented["token issue"] = runTokenIssue(stdout, opts)
 	for _, path := range []string{
+		"access rule list", "access rule show",
+		"application credential list", "application credential show",
 		"catalog list", "catalog show",
+		"credential list", "credential show",
 		"domain list", "domain show",
+		"ec2 credentials list", "ec2 credentials show",
 		"endpoint list", "endpoint show",
 		"group list", "group show",
+		"limit list", "limit show",
+		"policy list", "policy show",
 		"project list", "project show",
 		"region list", "region show",
+		"registered limit list", "registered limit show",
 		"role list", "role show",
 		"service list", "service show",
+		"trust list", "trust show",
 		"user list", "user show",
 	} {
 		registry.implemented[path] = runIdentityRead(path, stdout, opts)
@@ -197,6 +205,9 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().String("project-domain", "", "project domain")
 		cmd.Flags().Bool("share", false, "list shared resources")
 		cmd.Flags().Bool("no-share", false, "list non-shared resources")
+	case "access rule list", "application credential list", "ec2 credentials list":
+		cmd.Flags().String("user", "", "filter by user")
+		cmd.Flags().String("user-domain", "", "user domain")
 	case "aggregate list":
 		cmd.Flags().Bool("long", false, "list additional fields")
 	case "project show", "user show", "group show", "role show", "domain show":
@@ -209,10 +220,17 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 	case "user list":
 		cmd.Flags().String("group", "", "filter by group")
 		cmd.Flags().String("project", "", "filter by project")
+	case "credential list":
+		cmd.Flags().String("user", "", "filter by user")
+		cmd.Flags().String("user-domain", "", "user domain")
+		cmd.Flags().String("type", "", "filter by credential type")
 	case "endpoint list":
 		cmd.Flags().String("endpoint", "", "endpoint group")
 		cmd.Flags().String("project", "", "filter by project")
 		cmd.Flags().String("project-domain", "", "project domain")
+	case "ec2 credentials show":
+		cmd.Flags().String("user", "", "filter by user")
+		cmd.Flags().String("user-domain", "", "user domain")
 	case "allocation candidate list":
 		cmd.Flags().String("resource", "", "resource class amount")
 		cmd.Flags().Int("limit", 0, "maximum number of entries")
@@ -359,6 +377,10 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().Bool("reserved", false, "include reserved limits")
 		cmd.Flags().String("project", "", "show limits for project")
 		cmd.Flags().String("domain", "", "project domain")
+	case "limit list":
+		cmd.Flags().String("resource-name", "", "filter by resource name")
+		cmd.Flags().String("project", "", "filter by project")
+		cmd.Flags().String("project-domain", "", "project domain")
 	case "quota list":
 		cmd.Flags().Bool("compute", false, "list compute quotas")
 		cmd.Flags().Bool("volume", false, "list volume quotas")
@@ -380,6 +402,8 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().String("member-of", "", "aggregate membership")
 	case "resource provider show":
 		cmd.Flags().Bool("allocations", false, "include resource allocations")
+	case "registered limit list":
+		cmd.Flags().String("resource-name", "", "filter by resource name")
 	case "router list":
 		cmd.Flags().String("name", "", "filter by name")
 		cmd.Flags().Bool("enable", false, "list enabled routers")
@@ -406,6 +430,12 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 	case "trait list":
 		cmd.Flags().String("name", "", "filter by name")
 		cmd.Flags().Bool("associated", false, "filter to associated traits")
+	case "trust list":
+		cmd.Flags().String("trustor", "", "filter by trustor user")
+		cmd.Flags().String("trustee", "", "filter by trustee user")
+		cmd.Flags().String("trustor-domain", "", "trustor domain")
+		cmd.Flags().String("trustee-domain", "", "trustee domain")
+		cmd.Flags().Bool("auth-user", false, "filter to authenticated user")
 	case "server group list":
 		cmd.Flags().Bool("all-projects", false, "include all projects")
 		cmd.Flags().Bool("long", false, "list additional fields")
@@ -469,14 +499,22 @@ func addTagFilterFlags(cmd *cobra.Command) {
 
 func isIdentityReadCommand(path string) bool {
 	switch path {
-	case "catalog list", "catalog show",
+	case "access rule list", "access rule show",
+		"application credential list", "application credential show",
+		"catalog list", "catalog show",
+		"credential list", "credential show",
 		"domain list", "domain show",
+		"ec2 credentials list", "ec2 credentials show",
 		"endpoint list", "endpoint show",
 		"group list", "group show",
+		"limit list", "limit show",
+		"policy list", "policy show",
 		"project list", "project show",
 		"region list", "region show",
+		"registered limit list", "registered limit show",
 		"role list", "role show",
 		"service list", "service show",
+		"trust list", "trust show",
 		"user list", "user show":
 		return true
 	default:

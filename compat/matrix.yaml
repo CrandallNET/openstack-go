@@ -24,24 +24,28 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/applicationcredentials"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: cloud6 identity read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, sorting, and oracle parity coverage still need completion."
   - command: "access rule show"
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/applicationcredentials"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: cloud6 identity read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, sorting, and oracle parity coverage still need completion."
   - command: "access token create"
     group: "openstack.identity.v3"
     service: "identity"
@@ -321,24 +325,28 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/applicationcredentials"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: cloud6 identity read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, sorting, and oracle parity coverage still need completion."
   - command: "application credential show"
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/applicationcredentials"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: cloud6 identity read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, sorting, and oracle parity coverage still need completion."
   - command: "availability zone list"
     group: "openstack.common"
     service: "common"
@@ -949,13 +957,15 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/credentials"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: cloud6 identity read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, sorting, and oracle parity coverage still need completion."
   - command: "credential set"
     group: "openstack.identity.v3"
     service: "identity"
@@ -971,13 +981,15 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/credentials"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: cloud6 identity read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, sorting, and oracle parity coverage still need completion."
   - command: "default security group rule create"
     group: "openstack.network.v2"
     service: "network"
@@ -1107,24 +1119,28 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/ec2credentials"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: cloud6 identity read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, sorting, and oracle parity coverage still need completion."
   - command: "ec2 credentials show"
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/ec2credentials"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: cloud6 identity read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, sorting, and oracle parity coverage still need completion."
   - command: "endpoint add project"
     group: "openstack.identity.v3"
     service: "identity"
@@ -2359,13 +2375,15 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/limits"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: cloud6 identity read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, sorting, and oracle parity coverage still need completion."
   - command: "limit set"
     group: "openstack.identity.v3"
     service: "identity"
@@ -2381,13 +2399,15 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/limits"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: cloud6 identity read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, sorting, and oracle parity coverage still need completion."
   - command: "limits show"
     group: "openstack.common"
     service: "common"
@@ -3553,13 +3573,15 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/policies"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: cloud6 identity read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, sorting, and oracle parity coverage still need completion."
   - command: "policy set"
     group: "openstack.identity.v3"
     service: "identity"
@@ -3575,13 +3597,15 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/policies"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: cloud6 identity read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, sorting, and oracle parity coverage still need completion."
   - command: "port create"
     group: "openstack.network.v2"
     service: "network"
@@ -3855,13 +3879,15 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/registeredlimits"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: cloud6 identity read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, sorting, and oracle parity coverage still need completion."
   - command: "registered limit set"
     group: "openstack.identity.v3"
     service: "identity"
@@ -3877,13 +3903,15 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/registeredlimits"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: cloud6 identity read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, sorting, and oracle parity coverage still need completion."
   - command: "request token authorize"
     group: "openstack.identity.v3"
     service: "identity"
@@ -5807,24 +5835,28 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/trusts"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: cloud6 identity read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, sorting, and oracle parity coverage still need completion."
   - command: "trust show"
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/trusts"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: cloud6 identity read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, sorting, and oracle parity coverage still need completion."
   - command: "usage list"
     group: "openstack.compute.v2"
     service: "compute"

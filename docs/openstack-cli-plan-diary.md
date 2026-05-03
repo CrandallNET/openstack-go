@@ -325,3 +325,22 @@ Sources consulted:
 * [Gophercloud QoS policies](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/qos/policies)
 * [Gophercloud QoS rule types](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/qos/ruletypes)
 * Local OSC oracle snapshots in `compat/osc/9.0.0/help/address/group/list.txt`, `compat/osc/9.0.0/help/address/scope/list.txt`, `compat/osc/9.0.0/help/subnet/pool/list.txt`, `compat/osc/9.0.0/help/network/agent/list.txt`, `compat/osc/9.0.0/help/network/rbac/list.txt`, `compat/osc/9.0.0/help/network/segment/list.txt`, `compat/osc/9.0.0/help/network/trunk/list.txt`, and `compat/osc/9.0.0/help/network/qos/rule/type/list.txt`.
+
+## 2026-05-03: Keystone Read Slice
+
+Decision: expand Identity v3 read coverage with Gophercloud-backed list/show commands for Keystone resources that are low-risk and directly supported by the SDK. The implemented list commands were live-smoked on `cloud6`; most returned empty tables, which is still useful because the Python oracle exposes the expected default columns for empty output.
+
+Implemented commands: `access rule list/show`, `application credential list/show`, `credential list/show`, `ec2 credentials list/show`, `limit list/show`, `policy list/show`, `registered limit list/show`, and `trust list/show`.
+
+The user-scoped commands use the authenticated token's user ID when `--user` is not supplied. That matches the OSC command shape for application credentials, access rules, and EC2 credentials while keeping production behavior self-contained in Go. Show commands for these resources still need live fixtures before being marked cloud-verified.
+
+Sources consulted:
+
+* [Gophercloud application credentials](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/identity/v3/applicationcredentials)
+* [Gophercloud credentials](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/identity/v3/credentials)
+* [Gophercloud EC2 credentials](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/identity/v3/ec2credentials)
+* [Gophercloud limits](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/identity/v3/limits)
+* [Gophercloud policies](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/identity/v3/policies)
+* [Gophercloud registered limits](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/identity/v3/registeredlimits)
+* [Gophercloud trusts](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/identity/v3/trusts)
+* Local OSC oracle snapshots in `compat/osc/9.0.0/help/access/rule/list.txt`, `compat/osc/9.0.0/help/application/credential/list.txt`, `compat/osc/9.0.0/help/credential/list.txt`, `compat/osc/9.0.0/help/ec2/credentials/list.txt`, `compat/osc/9.0.0/help/limit/list.txt`, `compat/osc/9.0.0/help/policy/list.txt`, `compat/osc/9.0.0/help/registered/limit/list.txt`, and `compat/osc/9.0.0/help/trust/list.txt`.
