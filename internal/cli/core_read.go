@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/http"
 	"sort"
 	"strconv"
 	"strings"
@@ -20,6 +21,8 @@ import (
 	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servers"
 	computeservices "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/services"
 	"github.com/gophercloud/gophercloud/v2/openstack/image/v2/images"
+	"github.com/gophercloud/gophercloud/v2/openstack/image/v2/members"
+	"github.com/gophercloud/gophercloud/v2/openstack/image/v2/tasks"
 	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/floatingips"
 	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/networks"
 	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/ports"
@@ -108,12 +111,42 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return imageList(cmd.Context(), stdout, opts, client)
+		case "image member get":
+			client, err := clients.imageV2()
+			if err != nil {
+				return err
+			}
+			return imageMemberGet(cmd.Context(), stdout, opts, client, args)
+		case "image member list":
+			client, err := clients.imageV2()
+			if err != nil {
+				return err
+			}
+			return imageMemberList(cmd.Context(), stdout, opts, client, args)
 		case "image show":
 			client, err := clients.imageV2()
 			if err != nil {
 				return err
 			}
 			return imageShow(cmd.Context(), stdout, opts, client, args)
+		case "image stores list":
+			client, err := clients.imageV2()
+			if err != nil {
+				return err
+			}
+			return imageStoresList(cmd.Context(), stdout, opts, client)
+		case "image task list":
+			client, err := clients.imageV2()
+			if err != nil {
+				return err
+			}
+			return imageTaskList(cmd.Context(), stdout, opts, client)
+		case "image task show":
+			client, err := clients.imageV2()
+			if err != nil {
+				return err
+			}
+			return imageTaskShow(cmd.Context(), stdout, opts, client, args)
 		case "network list":
 			client, err := clients.networkV2()
 			if err != nil {
@@ -653,9 +686,180 @@ func imageShow(ctx context.Context, stdout io.Writer, opts *Options, client *gop
 		{"size", item.SizeBytes},
 		{"checksum", item.Checksum},
 		{"tags", item.Tags},
-		{"created_at", item.CreatedAt},
-		{"updated_at", item.UpdatedAt},
+		{"created_at", oscTime(item.CreatedAt)},
+		{"updated_at", oscTime(item.UpdatedAt)},
 	})
+}
+
+func imageMemberList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("image member list requires <image>")
+	}
+	image, err := findImage(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	page, err := members.List(client, image.ID).AllPages(ctx)
+	if err != nil {
+		return err
+	}
+	items, err := members.ExtractMembers(page)
+	if err != nil {
+		return err
+	}
+	rows := make([]outputRow, 0, len(items))
+	for _, item := range items {
+		rows = append(rows, outputRow{
+			"Image ID":  item.ImageID,
+			"Member ID": item.MemberID,
+			"Status":    item.Status,
+		})
+	}
+	return renderListOutput(stdout, opts, []string{"Image ID", "Member ID", "Status"}, rows)
+}
+
+func imageMemberGet(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("image member get requires <image> <project>")
+	}
+	image, err := findImage(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	item, err := members.Get(ctx, client, image.ID, args[1]).Extract()
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, []outputField{
+		{"created_at", oscTime(item.CreatedAt)},
+		{"image_id", item.ImageID},
+		{"member_id", item.MemberID},
+		{"schema", item.Schema},
+		{"status", item.Status},
+		{"updated_at", oscTime(item.UpdatedAt)},
+	})
+}
+
+type imageTaskListOpts struct {
+	Limit   int    `q:"limit"`
+	Marker  string `q:"marker"`
+	SortDir string `q:"sort_dir"`
+	SortKey string `q:"sort_key"`
+	Type    string `q:"type"`
+	Status  string `q:"status"`
+}
+
+func (opts imageTaskListOpts) ToTaskListQuery() (string, error) {
+	query, err := gophercloud.BuildQueryString(opts)
+	return query.String(), err
+}
+
+func imageTaskList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	page, err := tasks.List(client, imageTaskListOpts{
+		Limit:   intFlag(opts, "limit"),
+		Marker:  flagValue(opts, "marker"),
+		SortDir: flagValue(opts, "sort-dir"),
+		SortKey: flagValue(opts, "sort-key"),
+		Type:    flagValue(opts, "type"),
+		Status:  flagValue(opts, "status"),
+	}).AllPages(ctx)
+	if err != nil {
+		return err
+	}
+	items, err := tasks.ExtractTasks(page)
+	if err != nil {
+		return err
+	}
+	rows := make([]outputRow, 0, len(items))
+	for _, item := range items {
+		rows = append(rows, outputRow{
+			"ID":     item.ID,
+			"Type":   item.Type,
+			"Status": item.Status,
+			"Owner":  item.Owner,
+		})
+	}
+	return renderListOutput(stdout, opts, []string{"ID", "Type", "Status", "Owner"}, rows)
+}
+
+func imageTaskShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("image task show requires <Task ID>")
+	}
+	item, err := tasks.Get(ctx, client, args[0]).Extract()
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, []outputField{
+		{"created_at", oscTime(item.CreatedAt)},
+		{"expires_at", oscTime(item.ExpiresAt)},
+		{"id", item.ID},
+		{"input", item.Input},
+		{"message", nilIfEmpty(item.Message)},
+		{"owner_id", item.Owner},
+		{"properties", map[string]any{}},
+		{"result", item.Result},
+		{"status", item.Status},
+		{"type", item.Type},
+		{"updated_at", oscTime(item.UpdatedAt)},
+	})
+}
+
+type imageStore struct {
+	ID          string         `json:"id"`
+	Description any            `json:"description"`
+	Default     any            `json:"default"`
+	Properties  map[string]any `json:"properties"`
+}
+
+func imageStoresList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	url := client.ServiceURL("info", "stores")
+	if boolFlag(opts, "detail") {
+		url = client.ServiceURL("info", "stores", "detail")
+	}
+	var response struct {
+		Stores []imageStore `json:"stores"`
+	}
+	_, err := client.Get(ctx, url, &response, &gophercloud.RequestOpts{OkCodes: []int{http.StatusOK}})
+	if err != nil {
+		if gophercloud.ResponseCodeIs(err, http.StatusNotFound) {
+			return fmt.Errorf("Multi Backend support not enabled")
+		}
+		return err
+	}
+	rows := make([]outputRow, 0, len(response.Stores))
+	for _, item := range response.Stores {
+		row := outputRow{
+			"ID":          item.ID,
+			"Description": item.Description,
+			"Default":     storeDefault(item.Default),
+		}
+		if boolFlag(opts, "detail") {
+			row["Properties"] = item.Properties
+		}
+		rows = append(rows, row)
+	}
+	columns := []string{"ID", "Description", "Default"}
+	if boolFlag(opts, "detail") {
+		columns = append(columns, "Properties")
+	}
+	return renderListOutput(stdout, opts, columns, rows)
+}
+
+func storeDefault(value any) any {
+	switch typed := value.(type) {
+	case nil:
+		return nil
+	case bool:
+		return typed
+	case string:
+		if typed == "" {
+			return nil
+		}
+		return strings.EqualFold(typed, "true")
+	default:
+		return typed
+	}
 }
 
 func networkList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {

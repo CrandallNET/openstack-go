@@ -50,7 +50,8 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"flavor list", "flavor show",
 		"floating ip list", "floating ip show",
 		"hypervisor list", "hypervisor show", "hypervisor stats show",
-		"image list", "image show",
+		"image list", "image member get", "image member list", "image show",
+		"image stores list", "image task list", "image task show",
 		"keypair list", "keypair show",
 		"limits show",
 		"network list", "network show",
@@ -279,6 +280,17 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().Bool("long", false, "list additional fields")
 		cmd.Flags().String("matching", "", "filter by hypervisor hostname")
 		cmd.Flags().Bool("with-servers", false, "include servers")
+	case "image member get", "image member list":
+		cmd.Flags().String("project-domain", "", "project domain")
+	case "image stores list":
+		cmd.Flags().Bool("detail", false, "show store details")
+	case "image task list":
+		cmd.Flags().String("sort-key", "", "sort key")
+		cmd.Flags().String("sort-dir", "", "sort direction")
+		cmd.Flags().Int("limit", 0, "maximum number of entries")
+		cmd.Flags().String("marker", "", "pagination marker")
+		cmd.Flags().String("type", "", "filter by task type")
+		cmd.Flags().String("status", "", "filter by task status")
 	case "limits show":
 		cmd.Flags().Bool("absolute", false, "show absolute limits")
 		cmd.Flags().Bool("rate", false, "show rate limits")
@@ -381,7 +393,8 @@ func isCoreReadCommand(path string) bool {
 		"flavor list", "flavor show",
 		"floating ip list", "floating ip show",
 		"hypervisor list", "hypervisor show", "hypervisor stats show",
-		"image list", "image show",
+		"image list", "image member get", "image member list", "image show",
+		"image stores list", "image task list", "image task show",
 		"keypair list", "keypair show",
 		"limits show",
 		"network list", "network show",

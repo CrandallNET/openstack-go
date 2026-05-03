@@ -51,7 +51,12 @@ func (clients *openStackClients) computeV2() (*gophercloud.ServiceClient, error)
 }
 
 func (clients *openStackClients) imageV2() (*gophercloud.ServiceClient, error) {
-	return openstack.NewImageV2(clients.Provider, clients.EndpointOpts)
+	client, err := openstack.NewImageV2(clients.Provider, clients.EndpointOpts)
+	if err != nil {
+		return nil, err
+	}
+	client.Microversion = os.Getenv("OS_IMAGE_API_VERSION")
+	return client, nil
 }
 
 func (clients *openStackClients) networkV2() (*gophercloud.ServiceClient, error) {

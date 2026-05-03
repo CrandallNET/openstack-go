@@ -146,6 +146,16 @@ Sources consulted: Gophercloud package docs and local module sources for [Comput
 
 Verification: `go test ./...`, `go build -o bin/openstack ./cmd/openstack`, and live `cloud6` JSON smoke checks passed for `aggregate list`, `compute service list`, `compute service list --long`, `hypervisor list`, `hypervisor list --long`, `hypervisor show`, `hypervisor stats show`, and `server list` after the Compute microversion default changed. `aggregate show` is implemented but still needs a live fixture because `cloud6` returned no aggregates during this run.
 
+## 2026-05-02: Image Member, Task, And Store Read Expansion
+
+Work done: added Image v2 read implementations for `image member list`, `image member get`, `image task list`, `image task show`, and `image stores list`. Member and task commands use Gophercloud packages. Store discovery uses a narrow raw REST read through the authenticated Image v2 service client because no dedicated Gophercloud store-discovery package exists in v2.12.0.
+
+Compatibility note: `image stores list --detail` requires an Image API microversion that exposes detailed store discovery. The Image client now honors `OS_IMAGE_API_VERSION`; no default is set yet because the safe default needs broader cloud testing. The live `cloud6` check used `OS_IMAGE_API_VERSION=2.15`, matching the Python help text requirement for `--detail`.
+
+Sources consulted: Gophercloud package docs and local module sources for [Image members](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/image/v2/members) and [Image tasks](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/image/v2/tasks), plus the OpenStack Image API reference for [store discovery and detailed store discovery](https://docs.openstack.org/api-ref/image/v2/index.html#image-service-info-discovery).
+
+Verification: `go test ./...`, `go build -o bin/openstack ./cmd/openstack`, and live `cloud6` JSON smoke checks passed for `image member list`, `image task list`, `image stores list`, and `OS_IMAGE_API_VERSION=2.15 image stores list --detail`. `image member get` and `image task show` are implemented but still need live fixtures because the tested image had no members and `cloud6` returned no image tasks during this run.
+
 ## 2026-05-02: Pre-Implementation Question Register
 
 Work done: reviewed the living plan for implementation-defining choices and added a decision and question register to the plan. The register separates questions that require user answers from assumptions that can be reviewed and reopened later.
