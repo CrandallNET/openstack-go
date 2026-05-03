@@ -277,6 +277,18 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return imageMetadefNamespaceShow(cmd.Context(), stdout, opts, client, args)
+		case "image metadef resource type association list":
+			client, err := clients.imageV2()
+			if err != nil {
+				return err
+			}
+			return imageMetadefResourceTypeAssociationList(cmd.Context(), stdout, opts, client, args)
+		case "image metadef resource type list":
+			client, err := clients.imageV2()
+			if err != nil {
+				return err
+			}
+			return imageMetadefResourceTypeList(cmd.Context(), stdout, opts, client)
 		case "image show":
 			client, err := clients.imageV2()
 			if err != nil {
@@ -1682,6 +1694,44 @@ func imageMetadefNamespaceShow(ctx context.Context, stdout io.Writer, opts *Opti
 		fields = appendMapField(fields, body, name, name)
 	}
 	return renderShowOutput(stdout, opts, fields)
+}
+
+func imageMetadefResourceTypeList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	rows, err := imageMetadefNameRows(ctx, client, client.ServiceURL("metadefs", "resource_types"), "resource_types")
+	if err != nil {
+		return err
+	}
+	return renderListOutput(stdout, opts, []string{"Name"}, rows)
+}
+
+func imageMetadefResourceTypeAssociationList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("image metadef resource type association list requires <metadef_namespace>")
+	}
+	rows, err := imageMetadefNameRows(ctx, client, client.ServiceURL("metadefs", "namespaces", args[0], "resource_types"), "resource_type_associations")
+	if err != nil {
+		return err
+	}
+	return renderListOutput(stdout, opts, []string{"Name"}, rows)
+}
+
+func imageMetadefNameRows(ctx context.Context, client *gophercloud.ServiceClient, requestURL string, key string) ([]outputRow, error) {
+	var rows []outputRow
+	for requestURL != "" {
+		var body map[string]any
+		resp, err := client.Get(ctx, requestURL, &body, nil)
+		_, _, err = gophercloud.ParseResponse(resp, err)
+		if err != nil {
+			return nil, oscHTTPException(err)
+		}
+		for _, item := range anySlice(body[key]) {
+			if itemMap, ok := item.(map[string]any); ok {
+				rows = append(rows, outputRow{"Name": mapValueOrEmpty(itemMap, "name")})
+			}
+		}
+		requestURL = resolveServiceNextURL(client, valueString(body["next"]))
+	}
+	return rows, nil
 }
 
 func imageMemberList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {

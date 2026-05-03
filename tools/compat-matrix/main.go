@@ -295,7 +295,7 @@ func identityCloudVerified() map[string]bool {
 }
 
 func coreReadPackages() map[string]string {
-	return map[string]string{
+	packages := map[string]string{
 		"address group list":                 "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/security/addressgroups",
 		"address group show":                 "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/security/addressgroups",
 		"address scope list":                 "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/addressscopes",
@@ -334,6 +334,7 @@ func coreReadPackages() map[string]string {
 		"image member list":                  "github.com/gophercloud/gophercloud/v2/openstack/image/v2/members",
 		"image metadef namespace list":       "Glance metadef namespaces via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0",
 		"image metadef namespace show":       "Glance metadef namespaces via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0",
+		"image metadef resource type list":   "Glance metadef resource types via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0",
 		"image show":                         "github.com/gophercloud/gophercloud/v2/openstack/image/v2/images",
 		"image stores list":                  "Image store discovery via gophercloud.ServiceClient",
 		"image task list":                    "github.com/gophercloud/gophercloud/v2/openstack/image/v2/tasks",
@@ -424,10 +425,12 @@ func coreReadPackages() map[string]string {
 		"volume type list":                   "github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/volumetypes",
 		"volume type show":                   "github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/volumetypes",
 	}
+	packages["image metadef resource type association list"] = "Glance metadef namespace resource type associations via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
+	return packages
 }
 
 func coreReadShims() map[string]bool {
-	return map[string]bool{
+	shims := map[string]bool{
 		"availability zone list":             true,
 		"block storage cluster list":         true,
 		"block storage cluster show":         true,
@@ -443,6 +446,7 @@ func coreReadShims() map[string]bool {
 		"image stores list":                  true,
 		"image metadef namespace list":       true,
 		"image metadef namespace show":       true,
+		"image metadef resource type list":   true,
 		"network service provider list":      true,
 		"quota list":                         true,
 		"quota show":                         true,
@@ -458,10 +462,12 @@ func coreReadShims() map[string]bool {
 		"volume summary":                     true,
 		"versions show":                      true,
 	}
+	shims["image metadef resource type association list"] = true
+	return shims
 }
 
 func coreCloudVerified() map[string]bool {
-	return map[string]bool{
+	verified := map[string]bool{
 		"address group list":                 true,
 		"address scope list":                 true,
 		"aggregate list":                     true,
@@ -495,6 +501,7 @@ func coreCloudVerified() map[string]bool {
 		"image member list":                  true,
 		"image metadef namespace list":       true,
 		"image metadef namespace show":       true,
+		"image metadef resource type list":   true,
 		"image show":                         true,
 		"image stores list":                  true,
 		"image task list":                    true,
@@ -568,6 +575,8 @@ func coreCloudVerified() map[string]bool {
 		"volume type list":                   true,
 		"volume type show":                   true,
 	}
+	verified["image metadef resource type association list"] = true
+	return verified
 }
 
 func serviceForGroup(group string) (string, string) {

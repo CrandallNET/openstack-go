@@ -564,3 +564,17 @@ Sources consulted:
 * Local OSC oracle snapshots in `compat/osc/9.0.0/help/image/metadef/namespace/list.txt` and `compat/osc/9.0.0/help/image/metadef/namespace/show.txt`.
 * Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/image/v2/metadef_namespaces.py`, used only as the pinned local oracle implementation source.
 * Local OpenStackSDK source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/image/v2/metadef_namespace.py`, which documents the `/metadefs/namespaces` path, query mapping, and SDK resource fields.
+
+## 2026-05-03: Glance Metadef Resource Type Reads
+
+Work done: added `image metadef resource type list` and `image metadef resource type association list`.
+
+Implementation note: Python OSC uses OpenStackSDK metadef resource type resources at `/metadefs/resource_types` and `/metadefs/namespaces/{namespace}/resource_types`. The local Gophercloud v2.12.0 module has no typed metadef resource type helper, so the Go CLI uses narrow authenticated Glance REST reads and preserves the Python `Name` column shape.
+
+Live observations on `cloud6`: Python OSC and the Go CLI matched for `image metadef resource type list -f json` and `image metadef resource type association list OS::OperatingSystem -f json`.
+
+Sources consulted:
+
+* Local OSC oracle snapshots in `compat/osc/9.0.0/help/image/metadef/resource/type/list.txt` and `compat/osc/9.0.0/help/image/metadef/resource/type/association/list.txt`.
+* Local Python OSC source files `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/image/v2/metadef_resource_types.py` and `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/image/v2/metadef_resource_type_association.py`, used only as pinned local oracle implementation sources.
+* Local OpenStackSDK source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/image/v2/metadef_resource_type.py`, which documents the resource type and association paths and response fields.
