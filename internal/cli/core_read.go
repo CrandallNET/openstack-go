@@ -137,6 +137,12 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 			return aggregateShow(cmd.Context(), stdout, opts, client, args)
 		case "availability zone list":
 			return availabilityZoneList(cmd.Context(), stdout, opts, clients)
+		case "cached image list":
+			client, err := clients.imageV2()
+			if err != nil {
+				return err
+			}
+			return cachedImageList(cmd.Context(), stdout, opts, client)
 		case "compute agent list":
 			client, err := clients.computeV2()
 			if err != nil {
@@ -1531,6 +1537,41 @@ func computeFlavorShow(ctx context.Context, stdout io.Writer, opts *Options, cli
 		{"rxtx_factor", item.RxTxFactor},
 		{"properties", item.ExtraSpecs},
 	})
+}
+
+func cachedImageList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	client.Microversion = imageMicroversionAtMost(client.Microversion, "2.14")
+	var body struct {
+		CachedImages []map[string]any `json:"cached_images"`
+		QueuedImages []string         `json:"queued_images"`
+	}
+	resp, err := client.Get(ctx, client.ServiceURL("cache"), &body, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return oscResourceNotFoundError(err, "Cache", "None")
+	}
+	rows := make([]outputRow, 0, len(body.CachedImages)+len(body.QueuedImages))
+	for _, item := range body.CachedImages {
+		rows = append(rows, outputRow{
+			"ID":                  mapValueOrEmpty(item, "image_id"),
+			"State":               "cached",
+			"Last Accessed (UTC)": unixSecondsISO(mapValueOrEmpty(item, "last_accessed")),
+			"Last Modified (UTC)": unixSecondsISO(mapValueOrEmpty(item, "last_modified")),
+			"Size":                mapValueOrEmpty(item, "size"),
+			"Hits":                mapValueOrEmpty(item, "hits"),
+		})
+	}
+	for _, imageID := range body.QueuedImages {
+		rows = append(rows, outputRow{
+			"ID":                  imageID,
+			"State":               "queued",
+			"Last Accessed (UTC)": "N/A",
+			"Last Modified (UTC)": "N/A",
+			"Size":                "N/A",
+			"Hits":                "N/A",
+		})
+	}
+	return renderListOutput(stdout, opts, []string{"ID", "State", "Last Accessed (UTC)", "Last Modified (UTC)", "Size", "Hits"}, rows)
 }
 
 func imageList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
@@ -4862,15 +4903,41 @@ func formatOSCHTTPException(err gophercloud.ErrUnexpectedResponseCode) error {
 
 func openStackFaultMessage(body []byte) string {
 	var decoded map[string]map[string]any
-	if err := json.Unmarshal(body, &decoded); err != nil {
-		return ""
-	}
-	for _, value := range decoded {
-		if message, ok := value["message"].(string); ok {
-			return message
+	if err := json.Unmarshal(body, &decoded); err == nil {
+		for _, value := range decoded {
+			if message, ok := value["message"].(string); ok {
+				return cleanOpenStackMessage(message)
+			}
 		}
 	}
-	return ""
+	var flat map[string]any
+	if err := json.Unmarshal(body, &flat); err != nil {
+		return ""
+	}
+	message, _ := flat["message"].(string)
+	message = cleanOpenStackMessage(message)
+	if message == "" {
+		return ""
+	}
+	if code := valueString(flat["code"]); code != "" {
+		return code + ": " + message
+	}
+	return message
+}
+
+func cleanOpenStackMessage(message string) string {
+	for _, value := range []string{"<br />", "<br/>", "<br>"} {
+		message = strings.ReplaceAll(message, value, "\n")
+	}
+	lines := strings.Split(message, "\n")
+	compact := make([]string, 0, len(lines))
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line != "" {
+			compact = append(compact, line)
+		}
+	}
+	return strings.Join(compact, "\n")
 }
 
 func serverMigrationListColumns(microversion string, opts *Options) ([]string, []string) {
@@ -4931,6 +4998,37 @@ func insertStringAt(values []string, index int, value string) []string {
 	copy(values[index+1:], values[index:])
 	values[index] = value
 	return values
+}
+
+func imageMicroversionAtMost(current string, maximum string) string {
+	if current == "" || microversionAtLeast(current, maximum) {
+		return maximum
+	}
+	return current
+}
+
+func unixSecondsISO(value any) any {
+	switch typed := value.(type) {
+	case nil:
+		return nil
+	case float64:
+		return time.Unix(int64(typed), 0).UTC().Format("2006-01-02T15:04:05")
+	case int64:
+		return time.Unix(typed, 0).UTC().Format("2006-01-02T15:04:05")
+	case int:
+		return time.Unix(int64(typed), 0).UTC().Format("2006-01-02T15:04:05")
+	case json.Number:
+		seconds, err := typed.Int64()
+		if err == nil {
+			return time.Unix(seconds, 0).UTC().Format("2006-01-02T15:04:05")
+		}
+	case string:
+		seconds, err := strconv.ParseInt(typed, 10, 64)
+		if err == nil {
+			return time.Unix(seconds, 0).UTC().Format("2006-01-02T15:04:05")
+		}
+	}
+	return value
 }
 
 func intFlag(opts *Options, name string) int {

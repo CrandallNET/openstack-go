@@ -266,6 +266,13 @@ func TestOSCResourceNotFoundFormatsSDKLookupError(t *testing.T) {
 	}
 }
 
+func TestOpenStackFaultMessageFormatsFlatGlanceError(t *testing.T) {
+	body := []byte(`{"message":"Caching via API is not supported at this site.<br /><br />\n\n\n","code":"404 Not Found","title":"Not Found"}`)
+	if got, want := openStackFaultMessage(body), "404 Not Found: Caching via API is not supported at this site."; got != want {
+		t.Fatalf("fault message mismatch: got %q want %q", got, want)
+	}
+}
+
 func TestServerMigrationListColumnsMatchMicroversion(t *testing.T) {
 	columns, keys := serverMigrationListColumns("2.80", &Options{CommandFlags: map[string]string{
 		"project": "admin",
@@ -278,6 +285,12 @@ func TestServerMigrationListColumnsMatchMicroversion(t *testing.T) {
 	}
 	if strings.Join(keys, "|") != strings.Join(wantKeys, "|") {
 		t.Fatalf("keys mismatch: got %#v want %#v", keys, wantKeys)
+	}
+}
+
+func TestUnixSecondsISOFormatsUTC(t *testing.T) {
+	if got, want := unixSecondsISO(float64(1700000000)), "2023-11-14T22:13:20"; got != want {
+		t.Fatalf("timestamp mismatch: got %v want %v", got, want)
 	}
 }
 

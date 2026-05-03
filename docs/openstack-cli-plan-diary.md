@@ -536,3 +536,17 @@ Sources consulted:
 * Local OSC oracle snapshot in `compat/osc/9.0.0/help/console/connection/show.txt`.
 * Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/compute/v2/console_connection.py`, used only as the pinned local oracle implementation source.
 * Local OpenStackSDK source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/compute/v2/console_auth_token.py`, which documents the `/os-console-auth-tokens` path, fields, and 2.99 resource microversion cap.
+
+## 2026-05-03: Glance Cached Image List Read
+
+Work done: added `cached image list`.
+
+Implementation note: Python OSC calls OpenStackSDK's image cache resource at `/cache` and formats the response into normal list rows. The local Gophercloud v2.12.0 module has no typed image cache helper, so the Go CLI uses a narrow authenticated Glance REST read, caps the Image API microversion to 2.14 to match the pinned SDK resource, converts cached image epoch timestamps to UTC ISO strings, and adds queued-image rows with Python's `N/A` placeholders.
+
+Live observations on `cloud6`: Python OSC and the Go CLI matched for the unsupported-cache error path on `cached image list -f json`. `cloud6` returns `404 Not Found: Caching via API is not supported at this site.`, so non-empty cache and queue rows still need a cloud with Glance API caching enabled.
+
+Sources consulted:
+
+* Local OSC oracle snapshot in `compat/osc/9.0.0/help/cached/image/list.txt`.
+* Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/image/v2/cache.py`, used only as the pinned local oracle implementation source.
+* Local OpenStackSDK source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/image/v2/cache.py`, which documents the `/cache` path, response fields, and 2.14 resource microversion cap.
