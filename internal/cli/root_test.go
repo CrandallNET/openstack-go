@@ -254,6 +254,21 @@ func TestOSCHTTPExceptionFormatsOpenStackFault(t *testing.T) {
 	}
 }
 
+func TestServerMigrationListColumnsMatchMicroversion(t *testing.T) {
+	columns, keys := serverMigrationListColumns("2.80", &Options{CommandFlags: map[string]string{
+		"project": "admin",
+		"user":    "admin",
+	}})
+	wantColumns := []string{"Id", "UUID", "Source Node", "Dest Node", "Source Compute", "Dest Compute", "Dest Host", "Status", "Server UUID", "Old Flavor", "New Flavor", "Type", "Project", "User", "Created At", "Updated At"}
+	wantKeys := []string{"id", "uuid", "source_node", "dest_node", "source_compute", "dest_compute", "dest_host", "status", "instance_uuid", "old_instance_type_id", "new_instance_type_id", "migration_type", "project_id", "user_id", "created_at", "updated_at"}
+	if strings.Join(columns, "|") != strings.Join(wantColumns, "|") {
+		t.Fatalf("columns mismatch: got %#v want %#v", columns, wantColumns)
+	}
+	if strings.Join(keys, "|") != strings.Join(wantKeys, "|") {
+		t.Fatalf("keys mismatch: got %#v want %#v", keys, wantKeys)
+	}
+}
+
 func TestTokenIssueUsesInjectedIssuer(t *testing.T) {
 	previous := issueToken
 	issueToken = func(ctx context.Context, opts *Options) (tokenIssueRow, error) {

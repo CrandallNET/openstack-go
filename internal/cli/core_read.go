@@ -567,6 +567,12 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return serverGroupShow(cmd.Context(), stdout, opts, client, args)
+		case "server migration list":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return serverMigrationList(cmd.Context(), stdout, opts, clients, client)
 		case "server volume list":
 			client, err := clients.computeV2()
 			if err != nil {
@@ -1142,6 +1148,107 @@ func serverEventShow(ctx context.Context, stdout io.Writer, opts *Options, clien
 		{"start_time", oscTime(item.StartTime)},
 		{"user_id", item.UserID},
 	})
+}
+
+func serverMigrationList(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, client *gophercloud.ServiceClient) error {
+	client, err := computeClientWithMaximumMicroversion(ctx, client, "2.80")
+	if err != nil {
+		return err
+	}
+	query := url.Values{}
+	if value := flagValue(opts, "host"); value != "" {
+		query.Set("host", value)
+	}
+	if value := flagValue(opts, "status"); value != "" {
+		query.Set("status", value)
+	}
+	if value := flagValue(opts, "server"); value != "" {
+		server, err := findServer(ctx, client, value)
+		if err != nil {
+			return err
+		}
+		query.Set("instance_uuid", server.ID)
+	}
+	if value := flagValue(opts, "type"); value != "" {
+		if value == "cold-migration" {
+			value = "migration"
+		}
+		query.Set("migration_type", value)
+	}
+	if value := flagValue(opts, "marker"); value != "" {
+		if !microversionAtLeast(client.Microversion, "2.59") {
+			return fmt.Errorf("--os-compute-api-version 2.59 or greater is required to support the --marker option")
+		}
+		query.Set("marker", value)
+	}
+	if value := intFlag(opts, "limit"); value > 0 {
+		if !microversionAtLeast(client.Microversion, "2.59") {
+			return fmt.Errorf("--os-compute-api-version 2.59 or greater is required to support the --limit option")
+		}
+		query.Set("limit", strconv.Itoa(value))
+	}
+	if value := flagValue(opts, "changes-since"); value != "" {
+		if !microversionAtLeast(client.Microversion, "2.59") {
+			return fmt.Errorf("--os-compute-api-version 2.59 or greater is required to support the --changes-since option")
+		}
+		query.Set("changes-since", value)
+	}
+	if value := flagValue(opts, "changes-before"); value != "" {
+		if !microversionAtLeast(client.Microversion, "2.66") {
+			return fmt.Errorf("--os-compute-api-version 2.66 or greater is required to support the --changes-before option")
+		}
+		query.Set("changes-before", value)
+	}
+	if value := flagValue(opts, "project"); value != "" {
+		if !microversionAtLeast(client.Microversion, "2.80") {
+			return fmt.Errorf("--os-compute-api-version 2.80 or greater is required to support the --project option")
+		}
+		identityClient, err := clients.identityV3()
+		if err != nil {
+			return err
+		}
+		project, err := findProjectWithDomain(ctx, identityClient, value, flagValue(opts, "project-domain"))
+		if err != nil {
+			return err
+		}
+		query.Set("project_id", project.ID)
+	}
+	if value := flagValue(opts, "user"); value != "" {
+		if !microversionAtLeast(client.Microversion, "2.80") {
+			return fmt.Errorf("--os-compute-api-version 2.80 or greater is required to support the --user option")
+		}
+		identityClient, err := clients.identityV3()
+		if err != nil {
+			return err
+		}
+		user, err := findUserWithDomain(ctx, identityClient, value, flagValue(opts, "user-domain"))
+		if err != nil {
+			return err
+		}
+		query.Set("user_id", user.ID)
+	}
+	requestURL := client.ServiceURL("os-migrations")
+	if encoded := query.Encode(); encoded != "" {
+		requestURL += "?" + encoded
+	}
+	var body struct {
+		Migrations []map[string]any `json:"migrations"`
+	}
+	resp, err := client.Get(ctx, requestURL, &body, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return oscHTTPException(err)
+	}
+	columns, keys := serverMigrationListColumns(client.Microversion, opts)
+	rows := make([]outputRow, 0, len(body.Migrations))
+	for _, item := range body.Migrations {
+		row := outputRow{}
+		for i, column := range columns {
+			row[column] = mapValueOrEmpty(item, keys[i])
+		}
+		rows = append(rows, row)
+	}
+	return renderListOutput(stdout, opts, columns, rows)
 }
 
 func serverVolumeList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
@@ -4716,6 +4823,66 @@ func openStackFaultMessage(body []byte) string {
 	return ""
 }
 
+func serverMigrationListColumns(microversion string, opts *Options) ([]string, []string) {
+	columns := []string{
+		"Source Node",
+		"Dest Node",
+		"Source Compute",
+		"Dest Compute",
+		"Dest Host",
+		"Status",
+		"Server UUID",
+		"Old Flavor",
+		"New Flavor",
+		"Created At",
+		"Updated At",
+	}
+	keys := []string{
+		"source_node",
+		"dest_node",
+		"source_compute",
+		"dest_compute",
+		"dest_host",
+		"status",
+		"instance_uuid",
+		"old_instance_type_id",
+		"new_instance_type_id",
+		"created_at",
+		"updated_at",
+	}
+	if microversionAtLeast(microversion, "2.59") {
+		columns = insertStringAt(columns, 0, "UUID")
+		keys = insertStringAt(keys, 0, "uuid")
+	}
+	if microversionAtLeast(microversion, "2.23") {
+		columns = insertStringAt(columns, 0, "Id")
+		keys = insertStringAt(keys, 0, "id")
+		index := len(columns) - 2
+		columns = insertStringAt(columns, index, "Type")
+		keys = insertStringAt(keys, index, "migration_type")
+	}
+	if microversionAtLeast(microversion, "2.80") {
+		if flagValue(opts, "project") != "" {
+			index := len(columns) - 2
+			columns = insertStringAt(columns, index, "Project")
+			keys = insertStringAt(keys, index, "project_id")
+		}
+		if flagValue(opts, "user") != "" {
+			index := len(columns) - 2
+			columns = insertStringAt(columns, index, "User")
+			keys = insertStringAt(keys, index, "user_id")
+		}
+	}
+	return columns, keys
+}
+
+func insertStringAt(values []string, index int, value string) []string {
+	values = append(values, "")
+	copy(values[index+1:], values[index:])
+	values[index] = value
+	return values
+}
+
 func intFlag(opts *Options, name string) int {
 	value := flagValue(opts, name)
 	if value == "" {
@@ -5265,6 +5432,29 @@ func computeClientWithMinimumMicroversion(ctx context.Context, client *gopherclo
 		return nil, fmt.Errorf("--os-compute-api-version %s or greater is required", minimum)
 	}
 	client.Microversion = max
+	return client, nil
+}
+
+func computeClientWithMaximumMicroversion(ctx context.Context, client *gophercloud.ServiceClient, maximum string) (*gophercloud.ServiceClient, error) {
+	if os.Getenv("OS_COMPUTE_API_VERSION") != "" {
+		if microversionAtLeast(client.Microversion, maximum) {
+			client.Microversion = maximum
+		}
+		return client, nil
+	}
+	supported, err := osutils.GetSupportedMicroversions(ctx, client)
+	if err != nil {
+		if microversionAtLeast(client.Microversion, maximum) {
+			client.Microversion = maximum
+		}
+		return client, nil
+	}
+	maximumSupported := fmt.Sprintf("%d.%d", supported.MaxMajor, supported.MaxMinor)
+	if microversionAtLeast(maximumSupported, maximum) {
+		client.Microversion = maximum
+	} else {
+		client.Microversion = maximumSupported
+	}
 	return client, nil
 }
 

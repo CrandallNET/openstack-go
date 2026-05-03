@@ -102,6 +102,7 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"server event list", "server event show",
 		"server list", "server show",
 		"server group list", "server group show",
+		"server migration list",
 		"server volume list",
 		"subnet list", "subnet show",
 		"subnet pool list", "subnet pool show",
@@ -504,6 +505,19 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().String("changes-before", "", "show events changed before this timestamp")
 		cmd.Flags().Int("limit", 0, "maximum number of entries")
 		cmd.Flags().String("marker", "", "pagination marker")
+	case "server migration list":
+		cmd.Flags().String("server", "", "filter migrations by server")
+		cmd.Flags().String("host", "", "filter migrations by source or destination host")
+		cmd.Flags().String("status", "", "filter migrations by status")
+		cmd.Flags().String("type", "", "filter migrations by type")
+		cmd.Flags().Int("limit", 0, "maximum number of entries")
+		cmd.Flags().String("marker", "", "pagination marker")
+		cmd.Flags().String("changes-since", "", "show migrations changed since this timestamp")
+		cmd.Flags().String("changes-before", "", "show migrations changed before this timestamp")
+		cmd.Flags().String("project", "", "filter migrations by project")
+		cmd.Flags().String("project-domain", "", "project domain")
+		cmd.Flags().String("user", "", "filter migrations by user")
+		cmd.Flags().String("user-domain", "", "user domain")
 	case "usage list", "usage show":
 		cmd.Flags().String("start", "", "usage range start date")
 		cmd.Flags().String("end", "", "usage range end date")
@@ -692,6 +706,7 @@ func isCoreReadCommand(path string) bool {
 		"server event list", "server event show",
 		"server list", "server show",
 		"server group list", "server group show",
+		"server migration list",
 		"server volume list",
 		"subnet list", "subnet show",
 		"subnet pool list", "subnet pool show",

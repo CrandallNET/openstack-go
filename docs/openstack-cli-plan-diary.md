@@ -508,3 +508,17 @@ Sources consulted:
 
 * Local OSC oracle snapshot in `compat/osc/9.0.0/help/compute/agent/list.txt`.
 * Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/compute/v2/agent.py`, used only as the pinned local oracle implementation source.
+
+## 2026-05-03: Nova Server Migration List Read
+
+Work done: added `server migration list`.
+
+Implementation note: the local Gophercloud v2.12.0 module has no typed Compute migration package, while Python OSC uses OpenStackSDK's `Migration` resource at `/os-migrations`. The Go CLI uses a narrow authenticated Nova REST read, mirrors the Python query names, resolves `--server`, `--project`, and `--user` filters before querying, maps `--type cold-migration` to Nova's `migration` value, and caps automatic Compute microversion discovery to 2.80 because the pinned OpenStackSDK migration resource declares `_max_microversion = '2.80'`. The output column set follows the Python source's microversion-dependent columns.
+
+Live observations on `cloud6`: Python OSC and the Go CLI matched for `server migration list -f json`, `server migration list --limit 1 -f json`, and `server migration list --project admin -f json`. The cloud currently returns an empty migration list, so non-empty row golden fixtures are still needed.
+
+Sources consulted:
+
+* Local OSC oracle snapshots in `compat/osc/9.0.0/help/server/migration/list.txt` and `compat/osc/9.0.0/help/server/migration/show.txt`.
+* Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/compute/v2/server_migration.py`, used only as the pinned local oracle implementation source.
+* Local OpenStackSDK source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/compute/v2/migration.py`, which documents the `/os-migrations` path, query mapping, response fields, and 2.80 resource microversion cap.
