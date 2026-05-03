@@ -243,8 +243,11 @@ func identityCloudVerified() map[string]bool {
 
 func coreReadPackages() map[string]string {
 	return map[string]string{
+		"aggregate list":                    "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/aggregates",
+		"aggregate show":                    "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/aggregates",
 		"allocation candidate list":         "github.com/gophercloud/gophercloud/v2/openstack/placement/v1/allocationcandidates",
 		"availability zone list":            "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/availabilityzones; github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/availabilityzones; Neutron availability_zones via gophercloud.ServiceClient",
+		"compute service list":              "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/services",
 		"container list":                    "github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/containers",
 		"container show":                    "github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/containers",
 		"extension list":                    "github.com/gophercloud/gophercloud/v2/openstack/common/extensions",
@@ -253,6 +256,9 @@ func coreReadPackages() map[string]string {
 		"flavor show":                       "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/flavors",
 		"floating ip list":                  "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/floatingips",
 		"floating ip show":                  "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/floatingips",
+		"hypervisor list":                   "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/hypervisors",
+		"hypervisor show":                   "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/hypervisors",
+		"hypervisor stats show":             "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/hypervisors",
 		"image list":                        "github.com/gophercloud/gophercloud/v2/openstack/image/v2/images",
 		"image show":                        "github.com/gophercloud/gophercloud/v2/openstack/image/v2/images",
 		"keypair list":                      "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/keypairs",
@@ -306,8 +312,10 @@ func coreReadShims() map[string]bool {
 
 func coreCloudVerified() map[string]bool {
 	return map[string]bool{
+		"aggregate list":                    true,
 		"allocation candidate list":         true,
 		"availability zone list":            true,
+		"compute service list":              true,
 		"container list":                    true,
 		"container show":                    true,
 		"extension list":                    true,
@@ -316,6 +324,9 @@ func coreCloudVerified() map[string]bool {
 		"flavor show":                       true,
 		"floating ip list":                  true,
 		"floating ip show":                  true,
+		"hypervisor list":                   true,
+		"hypervisor show":                   true,
+		"hypervisor stats show":             true,
 		"image list":                        true,
 		"image show":                        true,
 		"keypair list":                      true,

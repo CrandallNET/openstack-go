@@ -39,7 +39,15 @@ func (clients *openStackClients) identityV3() (*gophercloud.ServiceClient, error
 }
 
 func (clients *openStackClients) computeV2() (*gophercloud.ServiceClient, error) {
-	return openstack.NewComputeV2(clients.Provider, clients.EndpointOpts)
+	client, err := openstack.NewComputeV2(clients.Provider, clients.EndpointOpts)
+	if err != nil {
+		return nil, err
+	}
+	client.Microversion = os.Getenv("OS_COMPUTE_API_VERSION")
+	if client.Microversion == "" {
+		client.Microversion = "2.53"
+	}
+	return client, nil
 }
 
 func (clients *openStackClients) imageV2() (*gophercloud.ServiceClient, error) {

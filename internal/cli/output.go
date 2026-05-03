@@ -213,6 +213,13 @@ func fieldsToMap(fields []outputField) map[string]any {
 	return values
 }
 
+func oscTime(value time.Time) any {
+	if value.IsZero() {
+		return nil
+	}
+	return value.UTC().Format("2006-01-02T15:04:05.000000")
+}
+
 func valueString(value any) string {
 	switch typed := value.(type) {
 	case nil:

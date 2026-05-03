@@ -41,12 +41,15 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		registry.implemented[path] = runIdentityRead(path, stdout, opts)
 	}
 	for _, path := range []string{
+		"aggregate list", "aggregate show",
 		"allocation candidate list",
 		"availability zone list",
+		"compute service list",
 		"container list", "container show",
 		"extension list", "extension show",
 		"flavor list", "flavor show",
 		"floating ip list", "floating ip show",
+		"hypervisor list", "hypervisor show", "hypervisor stats show",
 		"image list", "image show",
 		"keypair list", "keypair show",
 		"limits show",
@@ -166,6 +169,8 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().String("name", "", "filter by name")
 	}
 	switch path {
+	case "aggregate list":
+		cmd.Flags().Bool("long", false, "list additional fields")
 	case "project show", "user show", "group show", "role show", "domain show":
 		cmd.Flags().String("domain", "", "domain name or ID")
 	case "project list":
@@ -213,6 +218,10 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().Bool("identity", false, "list identity extensions")
 		cmd.Flags().Bool("network", false, "list network extensions")
 		cmd.Flags().Bool("volume", false, "list volume extensions")
+		cmd.Flags().Bool("long", false, "list additional fields")
+	case "compute service list":
+		cmd.Flags().String("host", "", "filter by host")
+		cmd.Flags().String("service", "", "filter by service binary")
 		cmd.Flags().Bool("long", false, "list additional fields")
 	case "subnet list":
 		cmd.Flags().Bool("long", false, "list additional fields")
@@ -266,6 +275,10 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().Bool("public-key", false, "show only the public key")
 		cmd.Flags().String("user", "", "keypair owner")
 		cmd.Flags().String("user-domain", "", "user domain")
+	case "hypervisor list":
+		cmd.Flags().Bool("long", false, "list additional fields")
+		cmd.Flags().String("matching", "", "filter by hypervisor hostname")
+		cmd.Flags().Bool("with-servers", false, "include servers")
 	case "limits show":
 		cmd.Flags().Bool("absolute", false, "show absolute limits")
 		cmd.Flags().Bool("rate", false, "show rate limits")
@@ -359,12 +372,15 @@ func isIdentityReadCommand(path string) bool {
 
 func isCoreReadCommand(path string) bool {
 	switch path {
-	case "allocation candidate list",
+	case "aggregate list", "aggregate show",
+		"allocation candidate list",
 		"availability zone list",
+		"compute service list",
 		"container list", "container show",
 		"extension list", "extension show",
 		"flavor list", "flavor show",
 		"floating ip list", "floating ip show",
+		"hypervisor list", "hypervisor show", "hypervisor stats show",
 		"image list", "image show",
 		"keypair list", "keypair show",
 		"limits show",

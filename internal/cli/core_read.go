@@ -12,10 +12,13 @@ import (
 	"github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/snapshots"
 	"github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/volumes"
 	"github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/volumetypes"
+	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/aggregates"
 	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/flavors"
+	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/hypervisors"
 	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/keypairs"
 	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servergroups"
 	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servers"
+	computeservices "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/services"
 	"github.com/gophercloud/gophercloud/v2/openstack/image/v2/images"
 	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/floatingips"
 	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/networks"
@@ -33,8 +36,26 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 		}
 
 		switch path {
+		case "aggregate list":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return aggregateList(cmd.Context(), stdout, opts, client)
+		case "aggregate show":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return aggregateShow(cmd.Context(), stdout, opts, client, args)
 		case "availability zone list":
 			return availabilityZoneList(cmd.Context(), stdout, opts, clients)
+		case "compute service list":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return computeServiceList(cmd.Context(), stdout, opts, client)
 		case "extension list":
 			return extensionList(cmd.Context(), stdout, opts, clients)
 		case "extension show":
@@ -139,6 +160,24 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return keypairShow(cmd.Context(), stdout, opts, client, args)
+		case "hypervisor list":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return hypervisorList(cmd.Context(), stdout, opts, client)
+		case "hypervisor show":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return hypervisorShow(cmd.Context(), stdout, opts, client, args)
+		case "hypervisor stats show":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return hypervisorStatsShow(cmd.Context(), stdout, opts, client)
 		case "limits show":
 			return limitsShow(cmd.Context(), stdout, opts, clients)
 		case "port list":
@@ -353,6 +392,180 @@ func computeServerShow(ctx context.Context, stdout io.Writer, opts *Options, cli
 		{"addresses", serverNetworks(item.Addresses)},
 		{"metadata", item.Metadata},
 		{"key_name", nilIfEmpty(item.KeyName)},
+	})
+}
+
+func aggregateList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	page, err := aggregates.List(client).AllPages(ctx)
+	if err != nil {
+		return err
+	}
+	items, err := aggregates.ExtractAggregates(page)
+	if err != nil {
+		return err
+	}
+	rows := make([]outputRow, 0, len(items))
+	for _, item := range items {
+		row := outputRow{
+			"ID":                item.ID,
+			"Name":              item.Name,
+			"Availability Zone": item.AvailabilityZone,
+		}
+		if boolFlag(opts, "long") {
+			row["Hosts"] = item.Hosts
+			row["Properties"] = item.Metadata
+		}
+		rows = append(rows, row)
+	}
+	columns := []string{"ID", "Name", "Availability Zone"}
+	if boolFlag(opts, "long") {
+		columns = append(columns, "Hosts", "Properties")
+	}
+	return renderListOutput(stdout, opts, columns, rows)
+}
+
+func aggregateShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("aggregate show requires <aggregate>")
+	}
+	item, err := findAggregate(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, []outputField{
+		{"id", item.ID},
+		{"name", item.Name},
+		{"availability_zone", item.AvailabilityZone},
+		{"hosts", item.Hosts},
+		{"metadata", item.Metadata},
+		{"uuid", item.UUID},
+		{"created_at", oscTime(item.CreatedAt)},
+		{"updated_at", oscTime(item.UpdatedAt)},
+		{"deleted", item.Deleted},
+	})
+}
+
+func computeServiceList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	page, err := computeservices.List(client, computeservices.ListOpts{
+		Binary: flagValue(opts, "service"),
+		Host:   flagValue(opts, "host"),
+	}).AllPages(ctx)
+	if err != nil {
+		return err
+	}
+	items, err := computeservices.ExtractServices(page)
+	if err != nil {
+		return err
+	}
+	rows := make([]outputRow, 0, len(items))
+	for _, item := range items {
+		row := outputRow{
+			"ID":         item.ID,
+			"Binary":     item.Binary,
+			"Host":       item.Host,
+			"Zone":       item.Zone,
+			"Status":     item.Status,
+			"State":      item.State,
+			"Updated At": oscTime(item.UpdatedAt),
+		}
+		if boolFlag(opts, "long") {
+			row["Disabled Reason"] = nilIfEmpty(item.DisabledReason)
+			row["Forced Down"] = item.ForcedDown
+		}
+		rows = append(rows, row)
+	}
+	columns := []string{"ID", "Binary", "Host", "Zone", "Status", "State", "Updated At"}
+	if boolFlag(opts, "long") {
+		columns = append(columns, "Disabled Reason", "Forced Down")
+	}
+	return renderListOutput(stdout, opts, columns, rows)
+}
+
+func hypervisorList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	listOpts := hypervisors.ListOpts{}
+	if matching := flagValue(opts, "matching"); matching != "" {
+		listOpts.HypervisorHostnamePattern = &matching
+	}
+	if boolFlag(opts, "with-servers") {
+		withServers := true
+		listOpts.WithServers = &withServers
+	}
+	page, err := hypervisors.List(client, listOpts).AllPages(ctx)
+	if err != nil {
+		return err
+	}
+	items, err := hypervisors.ExtractHypervisors(page)
+	if err != nil {
+		return err
+	}
+	rows := make([]outputRow, 0, len(items))
+	for _, item := range items {
+		rows = append(rows, outputRow{
+			"ID":                  item.ID,
+			"Hypervisor Hostname": item.HypervisorHostname,
+			"Hypervisor Type":     item.HypervisorType,
+			"Host IP":             item.HostIP,
+			"State":               item.State,
+		})
+	}
+	return renderListOutput(stdout, opts, []string{"ID", "Hypervisor Hostname", "Hypervisor Type", "Host IP", "State"}, rows)
+}
+
+func hypervisorShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("hypervisor show requires <hypervisor>")
+	}
+	item, err := findHypervisor(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	uptime, _ := hypervisors.GetUptime(ctx, client, item.ID).Extract()
+	fields := []outputField{
+		{"id", item.ID},
+		{"hypervisor_hostname", item.HypervisorHostname},
+		{"hypervisor_type", item.HypervisorType},
+		{"hypervisor_version", item.HypervisorVersion},
+		{"host_ip", item.HostIP},
+		{"state", item.State},
+		{"status", item.Status},
+		{"service_host", item.Service.Host},
+		{"service_id", item.Service.ID},
+		{"vcpus", item.VCPUs},
+		{"vcpus_used", item.VCPUsUsed},
+		{"memory_mb", item.MemoryMB},
+		{"memory_mb_used", item.MemoryMBUsed},
+		{"local_gb", item.LocalGB},
+		{"local_gb_used", item.LocalGBUsed},
+		{"free_disk_gb", item.FreeDiskGB},
+		{"free_ram_mb", item.FreeRamMB},
+		{"running_vms", item.RunningVMs},
+		{"current_workload", item.CurrentWorkload},
+		{"cpu_info", item.CPUInfo},
+	}
+	if uptime != nil {
+		fields = append(fields, outputField{"uptime", uptime.Uptime})
+	}
+	return renderShowOutput(stdout, opts, fields)
+}
+
+func hypervisorStatsShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	stats, err := hypervisors.GetStatistics(ctx, client).Extract()
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, []outputField{
+		{"count", stats.Count},
+		{"current_workload", stats.CurrentWorkload},
+		{"disk_available_least", stats.DiskAvailableLeast},
+		{"free_disk_gb", stats.FreeDiskGB},
+		{"free_ram_mb", stats.FreeRamMB},
+		{"local_gb", stats.LocalGB},
+		{"local_gb_used", stats.LocalGBUsed},
+		{"memory_mb", stats.MemoryMB},
+		{"memory_mb_used", stats.MemoryMBUsed},
+		{"running_vms", stats.RunningVMs},
+		{"vcpus", stats.VCPUs},
+		{"vcpus_used", stats.VCPUsUsed},
 	})
 }
 
@@ -1005,6 +1218,46 @@ func findServer(ctx context.Context, client *gophercloud.ServiceClient, value st
 		return nil, err
 	}
 	return singleByName(value, items, func(item servers.Server) string { return item.Name })
+}
+
+func findAggregate(ctx context.Context, client *gophercloud.ServiceClient, value string) (*aggregates.Aggregate, error) {
+	if id, err := strconv.Atoi(value); err == nil {
+		result := aggregates.Get(ctx, client, id)
+		if result.Err == nil {
+			return result.Extract()
+		}
+	}
+	page, err := aggregates.List(client).AllPages(ctx)
+	if err != nil {
+		return nil, err
+	}
+	items, err := aggregates.ExtractAggregates(page)
+	if err != nil {
+		return nil, err
+	}
+	return singleByName(value, items, func(item aggregates.Aggregate) string { return item.Name })
+}
+
+func findHypervisor(ctx context.Context, client *gophercloud.ServiceClient, value string) (*hypervisors.Hypervisor, error) {
+	result := hypervisors.Get(ctx, client, value)
+	if result.Err == nil {
+		return result.Extract()
+	}
+	page, err := hypervisors.List(client, hypervisors.ListOpts{}).AllPages(ctx)
+	if err != nil {
+		return nil, result.Err
+	}
+	items, err := hypervisors.ExtractHypervisors(page)
+	if err != nil {
+		return nil, err
+	}
+	var matches []hypervisors.Hypervisor
+	for _, item := range items {
+		if item.HypervisorHostname == value || item.ID == value {
+			matches = append(matches, item)
+		}
+	}
+	return singleMatch(value, matches)
 }
 
 func findFlavor(ctx context.Context, client *gophercloud.ServiceClient, value string) (*flavors.Flavor, error) {

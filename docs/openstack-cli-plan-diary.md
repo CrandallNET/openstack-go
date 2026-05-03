@@ -136,6 +136,16 @@ Sources consulted: local Gophercloud module sources for service-specific API ver
 
 Verification: `go test ./...`, `go build -o bin/openstack ./cmd/openstack`, and live `cloud6` JSON smoke checks passed for `versions show`, `versions show --service compute`, `versions show --service image --status CURRENT`, and `versions show --service identity`.
 
+## 2026-05-02: Compute Admin Read Expansion
+
+Work done: added Gophercloud-backed read implementations for `aggregate list/show`, `compute service list`, `hypervisor list/show`, and `hypervisor stats show`. `compute service list --long` includes the Python-observed `Disabled Reason` and `Forced Down` fields. `hypervisor list --long` currently keeps the Python-observed `cloud6` column shape, which matched the default output even though the help snapshot advertises `--long`.
+
+Compatibility note: Nova service and hypervisor IDs changed from integer-shaped to UUID-shaped when the Compute microversion was set high enough. The Compute client now honors `OS_COMPUTE_API_VERSION` and defaults to microversion `2.53` when no explicit value is present, because Gophercloud's service and hypervisor result structs document that Compute returns service IDs as strings starting with microversion `2.53`. This matches the Python OSC JSON output observed on `cloud6` for `compute service list`, `hypervisor list`, and `server list`. Exact global flag parsing, microversion negotiation, and older-cloud behavior still need oracle-backed tests.
+
+Sources consulted: Gophercloud package docs and local module sources for [Compute aggregates](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/compute/v2/aggregates), [Compute services](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/compute/v2/services), and [Compute hypervisors](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/compute/v2/hypervisors).
+
+Verification: `go test ./...`, `go build -o bin/openstack ./cmd/openstack`, and live `cloud6` JSON smoke checks passed for `aggregate list`, `compute service list`, `compute service list --long`, `hypervisor list`, `hypervisor list --long`, `hypervisor show`, `hypervisor stats show`, and `server list` after the Compute microversion default changed. `aggregate show` is implemented but still needs a live fixture because `cloud6` returned no aggregates during this run.
+
 ## 2026-05-02: Pre-Implementation Question Register
 
 Work done: reviewed the living plan for implementation-defining choices and added a decision and question register to the plan. The register separates questions that require user answers from assumptions that can be reviewed and reopened later.
