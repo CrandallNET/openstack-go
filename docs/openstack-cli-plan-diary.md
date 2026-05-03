@@ -695,3 +695,20 @@ Sources consulted:
 * Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/image/v2/image.py`, used only as the pinned local oracle implementation source.
 * Local OpenStackSDK source files `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/image/v2/image.py` and `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/image/v2/_proxy.py`, which document image stage and import request bodies.
 * Gophercloud package docs for [Image v2 image data](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/image/v2/imagedata) and [Image v2 import](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/image/v2/imageimport).
+
+## 2026-05-03: Image Set And Unset
+
+Work done: added `image set` and `image unset`.
+
+Implementation note: `image set` uses Gophercloud Image v2 JSON Patch helpers for name, min disk, min RAM, protected, visibility, hidden, tags, and arbitrary properties. It uses Gophercloud Image v2 member update for explicit `--project` membership state changes. Image activation and reactivation use narrow authenticated Glance REST action calls because the local Gophercloud v2.12.0 module has no typed helper for `/actions/deactivate` or `/actions/reactivate`. The Python OSC shortcut that updates the current project's image membership without `--project` is not guessed yet; the Go command currently requires `--project` for membership changes until auth-ref project lookup is wired.
+
+Implementation note: `image unset` removes properties through Image v2 JSON Patch and removes tags through a narrow authenticated Glance REST `DELETE /v2/images/{image_id}/tags/{tag}` call because the local Gophercloud module has no typed tag-delete helper.
+
+Live observations on `cloud6`: the Go CLI created and deleted disposable image `gocli-test-go-20260503-image-set-001`, set a new name, `min_ram`, a custom property, a tag, and the hidden flag, then unset the custom property and tag before cleanup.
+
+Sources consulted:
+
+* Local OSC oracle snapshots in `compat/osc/9.0.0/help/image/set.txt` and `compat/osc/9.0.0/help/image/unset.txt`.
+* Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/image/v2/image.py`, used only as the pinned local oracle implementation source.
+* Local OpenStackSDK source files `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/image/v2/image.py` and `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/image/v2/_proxy.py`, which document image update, activation, tag, and member behavior.
+* Gophercloud package docs for [Image v2 images](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/image/v2/images) and [Image v2 members](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/image/v2/members).

@@ -80,7 +80,7 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"image import", "image import info", "image list",
 		"image member get", "image member list", "image show",
 		"image remove project",
-		"image save", "image stage",
+		"image save", "image set", "image stage", "image unset",
 		"image metadef namespace create", "image metadef namespace delete",
 		"image metadef namespace list", "image metadef namespace set",
 		"image metadef namespace show",
@@ -470,9 +470,42 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 	case "image save":
 		cmd.Flags().Int("chunk-size", 1024, "download buffer size")
 		cmd.Flags().String("file", "", "downloaded image filename")
+	case "image set":
+		cmd.Flags().String("name", "", "new image name")
+		cmd.Flags().Int("min-disk", 0, "minimum disk size in GB")
+		cmd.Flags().Int("min-ram", 0, "minimum RAM size in MB")
+		cmd.Flags().String("container-format", "", "image container format")
+		cmd.Flags().String("disk-format", "", "image disk format")
+		cmd.Flags().Bool("protected", false, "prevent image deletion")
+		cmd.Flags().Bool("unprotected", false, "allow image deletion")
+		cmd.Flags().Bool("public", false, "public image visibility")
+		cmd.Flags().Bool("private", false, "private image visibility")
+		cmd.Flags().Bool("community", false, "community image visibility")
+		cmd.Flags().Bool("shared", false, "shared image visibility")
+		cmd.Flags().StringArray("property", nil, "image property key=value")
+		cmd.Flags().StringArray("tag", nil, "image tag")
+		cmd.Flags().String("architecture", "", "operating system architecture")
+		cmd.Flags().String("instance-id", "", "server instance ID")
+		cmd.Flags().String("instance-uuid", "", "server instance ID")
+		cmd.Flags().String("kernel-id", "", "kernel image ID")
+		cmd.Flags().String("os-distro", "", "operating system distribution")
+		cmd.Flags().String("os-version", "", "operating system version")
+		cmd.Flags().String("ramdisk-id", "", "ramdisk image ID")
+		cmd.Flags().Bool("deactivate", false, "deactivate image")
+		cmd.Flags().Bool("activate", false, "activate image")
+		cmd.Flags().String("project", "", "alternate project")
+		cmd.Flags().String("project-domain", "", "project domain")
+		cmd.Flags().Bool("accept", false, "accept image membership")
+		cmd.Flags().Bool("reject", false, "reject image membership")
+		cmd.Flags().Bool("pending", false, "reset image membership to pending")
+		cmd.Flags().Bool("hidden", false, "hide image")
+		cmd.Flags().Bool("unhidden", false, "unhide image")
 	case "image stage":
 		cmd.Flags().String("file", "", "local file to stage")
 		cmd.Flags().Bool("progress", false, "show upload progress")
+	case "image unset":
+		cmd.Flags().StringArray("tag", nil, "image tag")
+		cmd.Flags().StringArray("property", nil, "image property key")
 	case "image metadef namespace create", "image metadef namespace set":
 		cmd.Flags().String("display-name", "", "display name")
 		cmd.Flags().String("description", "", "description")
@@ -780,7 +813,7 @@ func isCoreReadCommand(path string) bool {
 		"image import", "image import info", "image list",
 		"image member get", "image member list", "image show",
 		"image remove project",
-		"image save", "image stage",
+		"image save", "image set", "image stage", "image unset",
 		"image metadef namespace create", "image metadef namespace delete",
 		"image metadef namespace list", "image metadef namespace set",
 		"image metadef namespace show",

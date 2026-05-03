@@ -465,6 +465,16 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return imageSave(cmd.Context(), stdout, opts, client, args)
+		case "image set":
+			imageClient, err := clients.imageV2()
+			if err != nil {
+				return err
+			}
+			identityClient, err := clients.identityV3()
+			if err != nil {
+				return err
+			}
+			return imageSet(cmd.Context(), opts, imageClient, identityClient, args)
 		case "image show":
 			client, err := clients.imageV2()
 			if err != nil {
@@ -477,6 +487,12 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return imageStage(cmd.Context(), opts, client, args)
+		case "image unset":
+			client, err := clients.imageV2()
+			if err != nil {
+				return err
+			}
+			return imageUnset(cmd.Context(), cmd.ErrOrStderr(), opts, client, args)
 		case "image stores list":
 			client, err := clients.imageV2()
 			if err != nil {
@@ -2178,6 +2194,282 @@ func stringInSlice(value string, values []string) bool {
 		}
 	}
 	return false
+}
+
+func imageSet(ctx context.Context, opts *Options, imageClient *gophercloud.ServiceClient, identityClient *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("image set requires <image>")
+	}
+	image, err := findImage(ctx, imageClient, args[0])
+	if err != nil {
+		return err
+	}
+	if boolFlag(opts, "deactivate") && boolFlag(opts, "activate") {
+		return fmt.Errorf("only one activation option may be specified")
+	}
+	if boolFlag(opts, "deactivate") {
+		if err := imageAction(ctx, imageClient, image.ID, "deactivate"); err != nil {
+			return err
+		}
+	}
+	if boolFlag(opts, "activate") {
+		if err := imageAction(ctx, imageClient, image.ID, "reactivate"); err != nil {
+			return err
+		}
+	}
+
+	projectID := ""
+	if projectNameOrID := flagValue(opts, "project"); projectNameOrID != "" {
+		project, err := findProjectWithDomain(ctx, identityClient, projectNameOrID, flagValue(opts, "project-domain"))
+		if err != nil {
+			return err
+		}
+		projectID = project.ID
+	}
+	membership, err := imageMembershipStatus(opts)
+	if err != nil {
+		return err
+	}
+	if membership != "" {
+		if projectID == "" {
+			return fmt.Errorf("image set membership requires --project")
+		}
+		if _, err := members.Update(ctx, imageClient, image.ID, projectID, members.UpdateOpts{Status: membership}).Extract(); err != nil {
+			return err
+		}
+	}
+
+	patches, err := imageSetPatches(opts, image, projectID, membership != "")
+	if err != nil {
+		return err
+	}
+	if len(patches) == 0 {
+		return nil
+	}
+	_, err = images.Update(ctx, imageClient, image.ID, patches).Extract()
+	return err
+}
+
+func imageSetPatches(opts *Options, image *images.Image, projectID string, membershipOnlyProject bool) (images.UpdateOpts, error) {
+	patches := images.UpdateOpts{}
+	if value := flagValue(opts, "name"); value != "" {
+		patches = append(patches, images.ReplaceImageName{NewName: value})
+	}
+	if value := flagValue(opts, "min-disk"); value != "" {
+		parsed, _ := strconv.Atoi(value)
+		patches = append(patches, images.ReplaceImageMinDisk{NewMinDisk: parsed})
+	}
+	if value := flagValue(opts, "min-ram"); value != "" {
+		parsed, _ := strconv.Atoi(value)
+		patches = append(patches, images.ReplaceImageMinRam{NewMinRam: parsed})
+	}
+	if value := flagValue(opts, "container-format"); value != "" {
+		patches = append(patches, images.UpdateImageProperty{Op: images.AddOp, Name: "container_format", Value: value})
+	}
+	if value := flagValue(opts, "disk-format"); value != "" {
+		patches = append(patches, images.UpdateImageProperty{Op: images.AddOp, Name: "disk_format", Value: value})
+	}
+	if protected, err := imageCreateProtected(opts); err != nil {
+		return nil, err
+	} else if protected != nil {
+		patches = append(patches, images.ReplaceImageProtected{NewProtected: *protected})
+	}
+	if visibility, err := imageCreateVisibility(opts); err != nil {
+		return nil, err
+	} else if visibility != nil {
+		patches = append(patches, images.UpdateVisibility{Visibility: *visibility})
+	}
+	if hidden, ok, err := imageHiddenFlag(opts); err != nil {
+		return nil, err
+	} else if ok {
+		patches = append(patches, images.ReplaceImageHidden{NewHidden: hidden})
+	}
+	if projectID != "" && !membershipOnlyProject {
+		patches = append(patches, images.UpdateImageProperty{Op: images.AddOp, Name: "owner", Value: projectID})
+	}
+	tags := flagValues(opts, "tag")
+	if len(tags) > 0 {
+		patches = append(patches, images.ReplaceImageTags{NewTags: mergeImageTags(image.Tags, tags)})
+	}
+	properties, err := imageCreateProperties(opts)
+	if err != nil {
+		return nil, err
+	}
+	for key, value := range properties {
+		patches = append(patches, images.UpdateImageProperty{Op: images.AddOp, Name: key, Value: value})
+	}
+	for _, field := range []string{"architecture", "instance-id", "instance-uuid", "kernel-id", "os-distro", "os-version", "ramdisk-id"} {
+		if value := flagValue(opts, field); value != "" {
+			patches = append(patches, images.UpdateImageProperty{Op: images.AddOp, Name: imagePropertyFieldName(field), Value: value})
+		}
+	}
+	return patches, nil
+}
+
+func imageUnset(ctx context.Context, stderr io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("image unset requires <image>")
+	}
+	image, err := findImage(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	tagFailures := 0
+	tags := flagValues(opts, "tag")
+	for _, tag := range tags {
+		resp, deleteErr := client.Delete(ctx, client.ServiceURL("images", url.PathEscape(image.ID), "tags", url.PathEscape(tag)), nil)
+		_, _, err = gophercloud.ParseResponse(resp, deleteErr)
+		if err != nil {
+			tagFailures++
+			fmt.Fprintf(stderr, "tag unset failed, '%s' is a nonexistent tag \n", tag)
+		}
+	}
+
+	propertyFailures := 0
+	properties := flagValues(opts, "property")
+	patches := images.UpdateOpts{}
+	for _, property := range properties {
+		path, ok := imageUnsetPropertyPath(image, property)
+		if !ok {
+			propertyFailures++
+			fmt.Fprintf(stderr, "property unset failed, '%s' is a nonexistent property \n", property)
+			continue
+		}
+		patches = append(patches, images.UpdateImageProperty{Op: images.RemoveOp, Name: path})
+	}
+	if len(patches) > 0 {
+		if _, err := images.Update(ctx, client, image.ID, patches).Extract(); err != nil {
+			return err
+		}
+	}
+	if tagFailures > 0 && propertyFailures > 0 {
+		return fmt.Errorf("Failed to unset %d of %d tags,Failed to unset %d of %d properties.", tagFailures, len(tags), propertyFailures, len(properties))
+	}
+	if tagFailures > 0 {
+		return fmt.Errorf("Failed to unset %d of %d tags.", tagFailures, len(tags))
+	}
+	if propertyFailures > 0 {
+		return fmt.Errorf("Failed to unset %d of %d properties.", propertyFailures, len(properties))
+	}
+	return nil
+}
+
+func imageAction(ctx context.Context, client *gophercloud.ServiceClient, imageID string, action string) error {
+	resp, err := client.Post(ctx, client.ServiceURL("images", url.PathEscape(imageID), "actions", action), nil, nil, &gophercloud.RequestOpts{OkCodes: []int{http.StatusOK, http.StatusAccepted, http.StatusNoContent}})
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	return err
+}
+
+func imageMembershipStatus(opts *Options) (string, error) {
+	selected := []string{}
+	if boolFlag(opts, "accept") {
+		selected = append(selected, "accepted")
+	}
+	if boolFlag(opts, "reject") {
+		selected = append(selected, "rejected")
+	}
+	if boolFlag(opts, "pending") {
+		selected = append(selected, "pending")
+	}
+	if len(selected) > 1 {
+		return "", fmt.Errorf("only one membership option may be specified")
+	}
+	if len(selected) == 0 {
+		return "", nil
+	}
+	return selected[0], nil
+}
+
+func imageHiddenFlag(opts *Options) (bool, bool, error) {
+	hidden := boolFlag(opts, "hidden")
+	unhidden := boolFlag(opts, "unhidden")
+	if hidden && unhidden {
+		return false, false, fmt.Errorf("only one hidden option may be specified")
+	}
+	if hidden {
+		return true, true, nil
+	}
+	if unhidden {
+		return false, true, nil
+	}
+	return false, false, nil
+}
+
+func mergeImageTags(existing []string, additions []string) []string {
+	seen := map[string]bool{}
+	var merged []string
+	for _, tag := range existing {
+		if !seen[tag] {
+			seen[tag] = true
+			merged = append(merged, tag)
+		}
+	}
+	for _, tag := range additions {
+		if !seen[tag] {
+			seen[tag] = true
+			merged = append(merged, tag)
+		}
+	}
+	sort.Strings(merged)
+	return merged
+}
+
+func imagePropertyFieldName(flag string) string {
+	switch flag {
+	case "instance-id", "instance-uuid":
+		return "instance_id"
+	case "kernel-id":
+		return "kernel_id"
+	case "os-distro":
+		return "os_distro"
+	case "os-version":
+		return "os_version"
+	case "ramdisk-id":
+		return "ramdisk_id"
+	default:
+		return flag
+	}
+}
+
+func imageUnsetPropertyPath(image *images.Image, property string) (string, bool) {
+	if _, ok := image.Properties[property]; ok {
+		return property, true
+	}
+	attributeNames := map[string]bool{
+		"architecture":     true,
+		"container_format": true,
+		"disk_format":      true,
+		"instance_id":      true,
+		"kernel_id":        true,
+		"min_disk":         true,
+		"min_ram":          true,
+		"name":             true,
+		"os_distro":        true,
+		"os_hidden":        true,
+		"os_version":       true,
+		"owner":            true,
+		"protected":        true,
+		"ramdisk_id":       true,
+		"visibility":       true,
+	}
+	if attributeNames[property] {
+		return property, true
+	}
+	customNames := map[string]string{
+		"is_hidden":                    "os_hidden",
+		"is_protected":                 "protected",
+		"hash_algo":                    "os_hash_algo",
+		"hash_value":                   "os_hash_value",
+		"needs_config_drive":           "img_config_drive",
+		"needs_secure_boot":            "os_secure_boot",
+		"is_hw_vif_multiqueue_enabled": "hw_vif_multiqueue_enabled",
+		"is_hw_boot_menu_enabled":      "hw_boot_menu",
+		"has_auto_disk_config":         "auto_disk_config",
+	}
+	if mapped, ok := customNames[property]; ok {
+		return mapped, true
+	}
+	return "", false
 }
 
 func imageCreateDataReader(opts *Options) (io.Reader, io.Closer, error) {
