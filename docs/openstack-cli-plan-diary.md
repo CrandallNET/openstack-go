@@ -550,3 +550,17 @@ Sources consulted:
 * Local OSC oracle snapshot in `compat/osc/9.0.0/help/cached/image/list.txt`.
 * Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/image/v2/cache.py`, used only as the pinned local oracle implementation source.
 * Local OpenStackSDK source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/image/v2/cache.py`, which documents the `/cache` path, response fields, and 2.14 resource microversion cap.
+
+## 2026-05-03: Glance Metadef Namespace Reads
+
+Work done: added `image metadef namespace list` and `image metadef namespace show`.
+
+Implementation note: Python OSC uses OpenStackSDK metadef namespace resources at `/metadefs/namespaces`. The local Gophercloud v2.12.0 module has no typed metadef namespace helper, so the Go CLI uses narrow authenticated Glance REST reads. List follows Glance pagination and supports the Python filters `--resource-types` and `--visibility`. Show intentionally formats the SDK-shaped resource rather than the raw Glance response, because the SDK drops raw `properties` and `schema` keys before Python OSC formats namespace show output.
+
+Live observations on `cloud6`: Python OSC and the Go CLI matched for `image metadef namespace list -f json`, `image metadef namespace list --visibility private -f json`, and `image metadef namespace show OS::OperatingSystem -f json`.
+
+Sources consulted:
+
+* Local OSC oracle snapshots in `compat/osc/9.0.0/help/image/metadef/namespace/list.txt` and `compat/osc/9.0.0/help/image/metadef/namespace/show.txt`.
+* Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/image/v2/metadef_namespaces.py`, used only as the pinned local oracle implementation source.
+* Local OpenStackSDK source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/image/v2/metadef_namespace.py`, which documents the `/metadefs/namespaces` path, query mapping, and SDK resource fields.

@@ -75,6 +75,7 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"host list", "host show",
 		"hypervisor list", "hypervisor show", "hypervisor stats show",
 		"image list", "image member get", "image member list", "image show",
+		"image metadef namespace list", "image metadef namespace show",
 		"image stores list", "image task list", "image task show",
 		"ip availability list", "ip availability show",
 		"keypair list", "keypair show",
@@ -407,6 +408,9 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().Bool("with-servers", false, "include servers")
 	case "image member get", "image member list":
 		cmd.Flags().String("project-domain", "", "project domain")
+	case "image metadef namespace list":
+		cmd.Flags().String("resource-types", "", "filter resource types")
+		cmd.Flags().String("visibility", "", "filter on visibility")
 	case "image stores list":
 		cmd.Flags().Bool("detail", false, "show store details")
 	case "image task list":
@@ -681,6 +685,7 @@ func isCoreReadCommand(path string) bool {
 		"host list", "host show",
 		"hypervisor list", "hypervisor show", "hypervisor stats show",
 		"image list", "image member get", "image member list", "image show",
+		"image metadef namespace list", "image metadef namespace show",
 		"image stores list", "image task list", "image task show",
 		"ip availability list", "ip availability show",
 		"keypair list", "keypair show",

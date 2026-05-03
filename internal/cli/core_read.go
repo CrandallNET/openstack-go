@@ -265,6 +265,18 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return imageMemberList(cmd.Context(), stdout, opts, client, args)
+		case "image metadef namespace list":
+			client, err := clients.imageV2()
+			if err != nil {
+				return err
+			}
+			return imageMetadefNamespaceList(cmd.Context(), stdout, opts, client)
+		case "image metadef namespace show":
+			client, err := clients.imageV2()
+			if err != nil {
+				return err
+			}
+			return imageMetadefNamespaceShow(cmd.Context(), stdout, opts, client, args)
 		case "image show":
 			client, err := clients.imageV2()
 			if err != nil {
@@ -1615,6 +1627,61 @@ func imageShow(ctx context.Context, stdout io.Writer, opts *Options, client *gop
 		{"created_at", oscTime(item.CreatedAt)},
 		{"updated_at", oscTime(item.UpdatedAt)},
 	})
+}
+
+func imageMetadefNamespaceList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	requestURL := client.ServiceURL("metadefs", "namespaces")
+	query := url.Values{}
+	if value := flagValue(opts, "resource-types"); value != "" {
+		query.Set("resource_types", value)
+	}
+	if value := flagValue(opts, "visibility"); value != "" {
+		query.Set("visibility", value)
+	}
+	if encoded := query.Encode(); encoded != "" {
+		requestURL += "?" + encoded
+	}
+	var rows []outputRow
+	for requestURL != "" {
+		var body struct {
+			Namespaces []map[string]any `json:"namespaces"`
+			Next       string           `json:"next"`
+		}
+		resp, err := client.Get(ctx, requestURL, &body, nil)
+		_, _, err = gophercloud.ParseResponse(resp, err)
+		if err != nil {
+			return oscHTTPException(err)
+		}
+		for _, item := range body.Namespaces {
+			rows = append(rows, outputRow{"namespace": mapValueOrEmpty(item, "namespace")})
+		}
+		requestURL = resolveServiceNextURL(client, body.Next)
+	}
+	return renderListOutput(stdout, opts, []string{"namespace"}, rows)
+}
+
+func imageMetadefNamespaceShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("image metadef namespace show requires <namespace>")
+	}
+	var body map[string]any
+	resp, err := client.Get(ctx, client.ServiceURL("metadefs", "namespaces", args[0]), &body, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return oscResourceNotFoundError(err, "MetadefNamespace", args[0])
+	}
+	fields := make([]outputField, 0, 11)
+	for _, name := range []string{"created_at", "description", "display_name", "namespace", "owner"} {
+		fields = appendMapField(fields, body, name, name)
+	}
+	fields = appendMapField(fields, body, "protected", "protected")
+	if associations, ok := body["resource_type_associations"]; ok && associations != nil {
+		fields = append(fields, outputField{Name: "resource_type_associations", Value: metadefResourceTypeNames(associations)})
+	}
+	for _, name := range []string{"updated_at", "visibility"} {
+		fields = appendMapField(fields, body, name, name)
+	}
+	return renderShowOutput(stdout, opts, fields)
 }
 
 func imageMemberList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
@@ -4851,6 +4918,47 @@ func mapValueOrEmpty(item map[string]any, keys ...string) any {
 
 func mapValueString(item map[string]any, keys ...string) string {
 	return valueString(mapValueOrEmpty(item, keys...))
+}
+
+func appendMapField(fields []outputField, item map[string]any, key string, name string) []outputField {
+	value, ok := item[key]
+	if !ok || value == nil {
+		return fields
+	}
+	return append(fields, outputField{Name: name, Value: value})
+}
+
+func metadefResourceTypeNames(value any) []string {
+	items := anySlice(value)
+	names := make([]string, 0, len(items))
+	for _, item := range items {
+		switch typed := item.(type) {
+		case map[string]any:
+			if name := valueString(typed["name"]); name != "" {
+				names = append(names, name)
+			}
+		case map[string]string:
+			if name := typed["name"]; name != "" {
+				names = append(names, name)
+			}
+		}
+	}
+	return names
+}
+
+func resolveServiceNextURL(client *gophercloud.ServiceClient, next string) string {
+	if strings.TrimSpace(next) == "" {
+		return ""
+	}
+	parsedNext, err := url.Parse(next)
+	if err != nil || parsedNext.IsAbs() {
+		return next
+	}
+	parsedEndpoint, err := url.Parse(client.Endpoint)
+	if err != nil {
+		return next
+	}
+	return parsedEndpoint.ResolveReference(parsedNext).String()
 }
 
 func oscHTTPException(err error) error {
