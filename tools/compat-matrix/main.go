@@ -435,10 +435,16 @@ func coreReadPackages() map[string]string {
 	packages["image metadef namespace create"] = "Glance metadef namespaces via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
 	packages["image metadef namespace delete"] = "Glance metadef namespaces via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
 	packages["image metadef namespace set"] = "Glance metadef namespaces via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
+	packages["image metadef object create"] = "Glance metadef objects via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
+	packages["image metadef object delete"] = "Glance metadef objects via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
 	packages["image metadef object list"] = "Glance metadef objects via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
 	packages["image metadef object property show"] = "Glance metadef object properties via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
 	packages["image metadef object show"] = "Glance metadef objects via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
+	packages["image metadef object update"] = "Glance metadef objects via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
+	packages["image metadef property create"] = "Glance metadef namespace properties via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
+	packages["image metadef property delete"] = "Glance metadef namespace properties via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
 	packages["image metadef property list"] = "Glance metadef namespace properties via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
+	packages["image metadef property set"] = "Glance metadef namespace properties via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
 	packages["image metadef property show"] = "Glance metadef namespace properties via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
 	packages["image metadef resource type association create"] = "Glance metadef namespace resource type associations via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
 	packages["image metadef resource type association delete"] = "Glance metadef namespace resource type associations via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
@@ -482,10 +488,16 @@ func coreReadShims() map[string]bool {
 	shims["image metadef namespace create"] = true
 	shims["image metadef namespace delete"] = true
 	shims["image metadef namespace set"] = true
+	shims["image metadef object create"] = true
+	shims["image metadef object delete"] = true
 	shims["image metadef object list"] = true
 	shims["image metadef object property show"] = true
 	shims["image metadef object show"] = true
+	shims["image metadef object update"] = true
+	shims["image metadef property create"] = true
+	shims["image metadef property delete"] = true
 	shims["image metadef property list"] = true
+	shims["image metadef property set"] = true
 	shims["image metadef property show"] = true
 	shims["image metadef resource type association create"] = true
 	shims["image metadef resource type association delete"] = true
@@ -605,10 +617,16 @@ func coreCloudVerified() map[string]bool {
 	verified["image metadef namespace create"] = true
 	verified["image metadef namespace delete"] = true
 	verified["image metadef namespace set"] = true
+	verified["image metadef object create"] = true
+	verified["image metadef object delete"] = true
 	verified["image metadef object list"] = true
 	verified["image metadef object property show"] = true
 	verified["image metadef object show"] = true
+	verified["image metadef object update"] = true
+	verified["image metadef property create"] = true
+	verified["image metadef property delete"] = true
 	verified["image metadef property list"] = true
+	verified["image metadef property set"] = true
 	verified["image metadef property show"] = true
 	verified["image metadef resource type association create"] = true
 	verified["image metadef resource type association delete"] = true
@@ -621,6 +639,12 @@ func coreWriteCommands() map[string]bool {
 		"image metadef namespace create":                 true,
 		"image metadef namespace delete":                 true,
 		"image metadef namespace set":                    true,
+		"image metadef object create":                    true,
+		"image metadef object delete":                    true,
+		"image metadef object update":                    true,
+		"image metadef property create":                  true,
+		"image metadef property delete":                  true,
+		"image metadef property set":                     true,
 		"image metadef resource type association create": true,
 		"image metadef resource type association delete": true,
 	}

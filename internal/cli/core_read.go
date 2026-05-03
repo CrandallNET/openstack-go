@@ -296,6 +296,18 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return imageMetadefNamespaceShow(cmd.Context(), stdout, opts, client, args)
+		case "image metadef object create":
+			client, err := clients.imageV2()
+			if err != nil {
+				return err
+			}
+			return imageMetadefObjectCreate(cmd.Context(), stdout, opts, client, args)
+		case "image metadef object delete":
+			client, err := clients.imageV2()
+			if err != nil {
+				return err
+			}
+			return imageMetadefObjectDelete(cmd.Context(), client, args)
 		case "image metadef object list":
 			client, err := clients.imageV2()
 			if err != nil {
@@ -314,12 +326,36 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return imageMetadefObjectShow(cmd.Context(), stdout, opts, client, args)
+		case "image metadef object update":
+			client, err := clients.imageV2()
+			if err != nil {
+				return err
+			}
+			return imageMetadefObjectUpdate(cmd.Context(), opts, client, args)
+		case "image metadef property create":
+			client, err := clients.imageV2()
+			if err != nil {
+				return err
+			}
+			return imageMetadefPropertyCreate(cmd.Context(), stdout, opts, client, args)
+		case "image metadef property delete":
+			client, err := clients.imageV2()
+			if err != nil {
+				return err
+			}
+			return imageMetadefPropertyDelete(cmd.Context(), client, args)
 		case "image metadef property list":
 			client, err := clients.imageV2()
 			if err != nil {
 				return err
 			}
 			return imageMetadefPropertyList(cmd.Context(), stdout, opts, client, args)
+		case "image metadef property set":
+			client, err := clients.imageV2()
+			if err != nil {
+				return err
+			}
+			return imageMetadefPropertySet(cmd.Context(), opts, client, args)
 		case "image metadef property show":
 			client, err := clients.imageV2()
 			if err != nil {
@@ -1830,6 +1866,59 @@ func imageMetadefNamespaceFields(body map[string]any) []outputField {
 	return sortedFieldsFromMap(values, true)
 }
 
+func imageMetadefObjectCreate(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("image metadef object create requires <metadef-object-name>")
+	}
+	namespace := flagValue(opts, "namespace")
+	if namespace == "" {
+		return fmt.Errorf("image metadef object create requires --namespace <namespace>")
+	}
+	request := map[string]any{"name": args[0]}
+	var body []byte
+	resp, err := client.Post(ctx, client.ServiceURL("metadefs", "namespaces", url.PathEscape(namespace), "objects"), request, nil, &gophercloud.RequestOpts{KeepResponseBody: true})
+	reader, _, err := gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return oscHTTPException(err)
+	}
+	if reader != nil {
+		defer reader.Close()
+		body, err = io.ReadAll(reader)
+		if err != nil {
+			return err
+		}
+	}
+	item, err := orderedJSONTopObject(body)
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, imageMetadefObjectFields(item, namespace, args[0], false))
+}
+
+func imageMetadefObjectDelete(ctx context.Context, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("image metadef object delete requires <namespace> [<object> ...]")
+	}
+	namespace := args[0]
+	if len(args) == 1 {
+		resp, err := client.Delete(ctx, client.ServiceURL("metadefs", "namespaces", url.PathEscape(namespace), "objects"), nil)
+		_, _, err = gophercloud.ParseResponse(resp, err)
+		return oscHTTPException(err)
+	}
+	failures := 0
+	for _, objectName := range args[1:] {
+		resp, err := client.Delete(ctx, client.ServiceURL("metadefs", "namespaces", url.PathEscape(namespace), "objects", url.PathEscape(objectName)), nil)
+		_, _, err = gophercloud.ParseResponse(resp, err)
+		if err != nil {
+			failures++
+		}
+	}
+	if failures > 0 {
+		return fmt.Errorf("%d of %d object failed to delete.", failures, len(namespace))
+	}
+	return nil
+}
+
 func imageMetadefObjectList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
 	if len(args) < 1 {
 		return fmt.Errorf("image metadef object list requires <namespace>")
@@ -1865,16 +1954,39 @@ func imageMetadefObjectShow(ctx context.Context, stdout io.Writer, opts *Options
 	if err != nil {
 		return oscResourceNotFoundError(err, "MetadefObject", "None")
 	}
-	fields := []outputField{
+	return renderShowOutput(stdout, opts, imageMetadefObjectFields(item, args[0], args[1], true))
+}
+
+func imageMetadefObjectUpdate(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("image metadef object update requires <namespace> <object>")
+	}
+	request := map[string]any{}
+	if value := flagValue(opts, "name"); value != "" {
+		request["name"] = value
+	}
+	resp, err := client.Put(ctx, client.ServiceURL("metadefs", "namespaces", url.PathEscape(args[0]), "objects", url.PathEscape(args[1])), request, nil, &gophercloud.RequestOpts{OkCodes: []int{http.StatusOK}})
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return oscHTTPException(err)
+	}
+	return nil
+}
+
+func imageMetadefObjectFields(item orderedJSONObject, namespace string, objectName string, defaultRequiredEmpty bool) []outputField {
+	required := orderedMapValueOrNil(item, "required")
+	if defaultRequiredEmpty && required == nil {
+		required = []any{}
+	}
+	return []outputField{
 		{Name: "created_at", Value: orderedMapValueOrNil(item, "created_at")},
 		{Name: "description", Value: orderedMapValueOrNil(item, "description")},
-		{Name: "name", Value: orderedMapValueOrDefault(item, "name", args[1])},
-		{Name: "namespace_name", Value: orderedMapValueOrDefault(item, "namespace_name", args[0])},
+		{Name: "name", Value: orderedMapValueOrDefault(item, "name", objectName)},
+		{Name: "namespace_name", Value: orderedMapValueOrDefault(item, "namespace_name", namespace)},
 		{Name: "properties", Value: orderedMapValueOrNil(item, "properties")},
-		{Name: "required", Value: orderedMapValueOrDefault(item, "required", []any{})},
+		{Name: "required", Value: required},
 		{Name: "updated_at", Value: orderedMapValueOrNil(item, "updated_at")},
 	}
-	return renderShowOutput(stdout, opts, fields)
 }
 
 func imageMetadefObjectPropertyShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
@@ -1899,6 +2011,52 @@ func imageMetadefObjectPropertyShow(ctx context.Context, stdout io.Writer, opts 
 	}
 	values["name"] = args[2]
 	return renderShowOutput(stdout, opts, sortedFieldsFromMap(values, false))
+}
+
+func imageMetadefPropertyCreate(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("image metadef property create requires <namespace>")
+	}
+	request, err := imageMetadefPropertyRequest(opts, true)
+	if err != nil {
+		return err
+	}
+	var body map[string]any
+	resp, err := client.Post(ctx, client.ServiceURL("metadefs", "namespaces", url.PathEscape(args[0]), "properties"), request, &body, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return oscHTTPException(err)
+	}
+	item := orderedJSONObject{values: map[string]any{}}
+	for key, value := range body {
+		item.keys = append(item.keys, key)
+		item.values[key] = value
+	}
+	return renderShowOutput(stdout, opts, metadefPropertyFields(item, flagValue(opts, "name")))
+}
+
+func imageMetadefPropertyDelete(ctx context.Context, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("image metadef property delete requires <namespace> [<property> ...]")
+	}
+	namespace := args[0]
+	if len(args) == 1 {
+		resp, err := client.Delete(ctx, client.ServiceURL("metadefs", "namespaces", url.PathEscape(namespace), "properties"), nil)
+		_, _, err = gophercloud.ParseResponse(resp, err)
+		return oscHTTPException(err)
+	}
+	failures := 0
+	for _, property := range args[1:] {
+		resp, err := client.Delete(ctx, client.ServiceURL("metadefs", "namespaces", url.PathEscape(namespace), "properties", url.PathEscape(property)), nil)
+		_, _, err = gophercloud.ParseResponse(resp, err)
+		if err != nil {
+			failures++
+		}
+	}
+	if failures > 0 {
+		return fmt.Errorf("%d of %d properties failed to delete.", failures, len(namespace))
+	}
+	return nil
 }
 
 func imageMetadefPropertyList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
@@ -1926,6 +2084,37 @@ func imageMetadefPropertyList(ctx context.Context, stdout io.Writer, opts *Optio
 	return renderListOutput(stdout, opts, []string{"name", "title", "type"}, rows)
 }
 
+func imageMetadefPropertySet(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("image metadef property set requires <namespace> <property>")
+	}
+	current, err := readServiceJSONRaw(ctx, client, client.ServiceURL("metadefs", "namespaces", url.PathEscape(args[0]), "properties", url.PathEscape(args[1])))
+	if err != nil {
+		return oscResourceNotFoundError(err, "MetadefProperty", args[1])
+	}
+	item, err := orderedJSONTopObject(current)
+	if err != nil {
+		return err
+	}
+	request := make(map[string]any, len(item.values))
+	for key, value := range item.values {
+		request[key] = value
+	}
+	updates, err := imageMetadefPropertyRequest(opts, false)
+	if err != nil {
+		return err
+	}
+	for key, value := range updates {
+		request[key] = value
+	}
+	resp, err := client.Put(ctx, client.ServiceURL("metadefs", "namespaces", url.PathEscape(args[0]), "properties", url.PathEscape(args[1])), request, nil, &gophercloud.RequestOpts{OkCodes: []int{http.StatusOK}})
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return oscHTTPException(err)
+	}
+	return nil
+}
+
 func imageMetadefPropertyShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
 	if len(args) < 2 {
 		return fmt.Errorf("image metadef property show requires <namespace> <property>")
@@ -1939,6 +2128,35 @@ func imageMetadefPropertyShow(ctx context.Context, stdout io.Writer, opts *Optio
 		return err
 	}
 	return renderShowOutput(stdout, opts, metadefPropertyFields(item, args[1]))
+}
+
+func imageMetadefPropertyRequest(opts *Options, requireCore bool) (map[string]any, error) {
+	request := map[string]any{}
+	for _, key := range []string{"name", "title", "type"} {
+		value := flagValue(opts, key)
+		if value == "" {
+			if requireCore {
+				return nil, fmt.Errorf("image metadef property create requires --%s", key)
+			}
+			continue
+		}
+		request[key] = value
+	}
+	schema := flagValue(opts, "schema")
+	if schema == "" {
+		if requireCore {
+			return nil, fmt.Errorf("image metadef property create requires --schema")
+		}
+		return request, nil
+	}
+	var schemaValues map[string]any
+	if err := json.Unmarshal([]byte(schema), &schemaValues); err != nil {
+		return nil, fmt.Errorf("Failed to load JSON schema: %v", err)
+	}
+	for key, value := range schemaValues {
+		request[key] = value
+	}
+	return request, nil
 }
 
 func imageMetadefObject(ctx context.Context, client *gophercloud.ServiceClient, namespace string, object string) (orderedJSONObject, error) {

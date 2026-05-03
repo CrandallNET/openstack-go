@@ -78,8 +78,11 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"image metadef namespace create", "image metadef namespace delete",
 		"image metadef namespace list", "image metadef namespace set",
 		"image metadef namespace show",
+		"image metadef object create", "image metadef object delete",
 		"image metadef object list", "image metadef object property show",
-		"image metadef object show", "image metadef property list",
+		"image metadef object show", "image metadef object update",
+		"image metadef property create", "image metadef property delete",
+		"image metadef property list", "image metadef property set",
 		"image metadef property show",
 		"image metadef resource type association create",
 		"image metadef resource type association delete",
@@ -427,6 +430,20 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 	case "image metadef namespace list":
 		cmd.Flags().String("resource-types", "", "filter resource types")
 		cmd.Flags().String("visibility", "", "filter on visibility")
+	case "image metadef object create":
+		cmd.Flags().String("namespace", "", "metadef namespace")
+	case "image metadef object update":
+		cmd.Flags().String("name", "", "new object name")
+	case "image metadef property create":
+		cmd.Flags().String("name", "", "property name")
+		cmd.Flags().String("title", "", "property title")
+		cmd.Flags().String("type", "", "property type")
+		cmd.Flags().String("schema", "", "property JSON schema")
+	case "image metadef property set":
+		cmd.Flags().String("name", "", "property name")
+		cmd.Flags().String("title", "", "property title")
+		cmd.Flags().String("type", "", "property type")
+		cmd.Flags().String("schema", "", "property JSON schema")
 	case "image metadef resource type association create":
 		cmd.Flags().String("properties-target", "", "properties target")
 	case "image metadef resource type association delete":
@@ -708,8 +725,11 @@ func isCoreReadCommand(path string) bool {
 		"image metadef namespace create", "image metadef namespace delete",
 		"image metadef namespace list", "image metadef namespace set",
 		"image metadef namespace show",
+		"image metadef object create", "image metadef object delete",
 		"image metadef object list", "image metadef object property show",
-		"image metadef object show", "image metadef property list",
+		"image metadef object show", "image metadef object update",
+		"image metadef property create", "image metadef property delete",
+		"image metadef property list", "image metadef property set",
 		"image metadef property show",
 		"image metadef resource type association create",
 		"image metadef resource type association delete",

@@ -606,3 +606,17 @@ Sources consulted:
 * Local OSC oracle snapshots in `compat/osc/9.0.0/help/image/metadef/namespace/create.txt`, `compat/osc/9.0.0/help/image/metadef/namespace/set.txt`, `compat/osc/9.0.0/help/image/metadef/namespace/delete.txt`, `compat/osc/9.0.0/help/image/metadef/resource/type/association/create.txt`, and `compat/osc/9.0.0/help/image/metadef/resource/type/association/delete.txt`.
 * Local Python OSC source files `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/image/v2/metadef_namespaces.py` and `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/image/v2/metadef_resource_type_association.py`, used only as pinned local oracle implementation sources.
 * Local OpenStackSDK source files `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/image/v2/metadef_namespace.py` and `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/image/v2/metadef_resource_type.py`, which document the namespace and resource type association paths and fields.
+
+## 2026-05-03: Glance Metadef Object and Property Writes
+
+Work done: added `image metadef object create`, `image metadef object update`, `image metadef object delete`, `image metadef property create`, `image metadef property set`, and `image metadef property delete`.
+
+Implementation note: Python OSC uses OpenStackSDK metadef object and property resources for these operations. The local Gophercloud v2.12.0 module has no typed helpers, so the Go CLI uses authenticated Glance REST calls. Property set first fetches the current property and merges updates into the full property body, matching the Python OSC behavior that avoids resetting omitted attributes.
+
+Live observations on `cloud6`: Python OSC was used as the output oracle for object create/update/show/delete and property create/set/show/delete with a disposable namespace. The Go CLI completed the same lifecycle with `gocli-test-ns-go-20260503b`, including final object, property, and namespace cleanup.
+
+Sources consulted:
+
+* Local OSC oracle snapshots in `compat/osc/9.0.0/help/image/metadef/object/create.txt`, `compat/osc/9.0.0/help/image/metadef/object/update.txt`, `compat/osc/9.0.0/help/image/metadef/object/delete.txt`, `compat/osc/9.0.0/help/image/metadef/property/create.txt`, `compat/osc/9.0.0/help/image/metadef/property/set.txt`, and `compat/osc/9.0.0/help/image/metadef/property/delete.txt`.
+* Local Python OSC source files `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/image/v2/metadef_objects.py` and `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/image/v2/metadef_properties.py`, used only as pinned local oracle implementation sources.
+* Local OpenStackSDK source files `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/image/v2/metadef_object.py` and `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/image/v2/metadef_property.py`, which document the object and property paths and fields.
