@@ -45,6 +45,24 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return computeFlavorShow(cmd.Context(), stdout, opts, client, args)
+		case "allocation candidate list":
+			client, err := clients.placementV1()
+			if err != nil {
+				return err
+			}
+			return allocationCandidateList(cmd.Context(), stdout, opts, client)
+		case "container list":
+			client, err := clients.objectStorageV1()
+			if err != nil {
+				return err
+			}
+			return containerList(cmd.Context(), stdout, opts, client)
+		case "container show":
+			client, err := clients.objectStorageV1()
+			if err != nil {
+				return err
+			}
+			return containerShow(cmd.Context(), stdout, opts, client, args)
 		case "floating ip list":
 			client, err := clients.networkV2()
 			if err != nil {
@@ -81,6 +99,24 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return networkShow(cmd.Context(), stdout, opts, client, args)
+		case "object list":
+			client, err := clients.objectStorageV1()
+			if err != nil {
+				return err
+			}
+			return objectList(cmd.Context(), stdout, opts, client, args)
+		case "object show":
+			client, err := clients.objectStorageV1()
+			if err != nil {
+				return err
+			}
+			return objectShow(cmd.Context(), stdout, opts, client, args)
+		case "object store account show":
+			client, err := clients.objectStorageV1()
+			if err != nil {
+				return err
+			}
+			return objectStoreAccountShow(cmd.Context(), stdout, opts, client)
 		case "keypair list":
 			client, err := clients.computeV2()
 			if err != nil {
@@ -106,6 +142,66 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return portShow(cmd.Context(), stdout, opts, client, args)
+		case "resource class list":
+			client, err := clients.placementV1()
+			if err != nil {
+				return err
+			}
+			return resourceClassList(cmd.Context(), stdout, opts, client)
+		case "resource class show":
+			client, err := clients.placementV1()
+			if err != nil {
+				return err
+			}
+			return resourceClassShow(cmd.Context(), stdout, opts, client, args)
+		case "resource provider aggregate list":
+			client, err := clients.placementV1()
+			if err != nil {
+				return err
+			}
+			return resourceProviderAggregateList(cmd.Context(), stdout, opts, client, args)
+		case "resource provider allocation show":
+			client, err := clients.placementV1()
+			if err != nil {
+				return err
+			}
+			return resourceProviderAllocationShow(cmd.Context(), stdout, opts, client, args)
+		case "resource provider inventory list":
+			client, err := clients.placementV1()
+			if err != nil {
+				return err
+			}
+			return resourceProviderInventoryList(cmd.Context(), stdout, opts, client, args)
+		case "resource provider inventory show":
+			client, err := clients.placementV1()
+			if err != nil {
+				return err
+			}
+			return resourceProviderInventoryShow(cmd.Context(), stdout, opts, client, args)
+		case "resource provider list":
+			client, err := clients.placementV1()
+			if err != nil {
+				return err
+			}
+			return resourceProviderList(cmd.Context(), stdout, opts, client)
+		case "resource provider show":
+			client, err := clients.placementV1()
+			if err != nil {
+				return err
+			}
+			return resourceProviderShow(cmd.Context(), stdout, opts, client, args)
+		case "resource provider trait list":
+			client, err := clients.placementV1()
+			if err != nil {
+				return err
+			}
+			return resourceProviderTraitList(cmd.Context(), stdout, opts, client, args)
+		case "resource provider usage show":
+			client, err := clients.placementV1()
+			if err != nil {
+				return err
+			}
+			return resourceProviderUsageShow(cmd.Context(), stdout, opts, client, args)
 		case "server list":
 			client, err := clients.computeV2()
 			if err != nil {
@@ -143,6 +239,18 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return subnetShow(cmd.Context(), stdout, opts, client, args)
+		case "trait list":
+			client, err := clients.placementV1()
+			if err != nil {
+				return err
+			}
+			return traitList(cmd.Context(), stdout, opts, client)
+		case "trait show":
+			client, err := clients.placementV1()
+			if err != nil {
+				return err
+			}
+			return traitShow(cmd.Context(), stdout, opts, client, args)
 		case "volume list":
 			client, err := clients.blockStorageV3()
 			if err != nil {

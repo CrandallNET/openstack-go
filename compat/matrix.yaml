@@ -277,13 +277,15 @@ commands:
     group: "openstack.placement.v1"
     service: "placement"
     api: "v1"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/placement/v1/allocationcandidates"
     shim: false
     plugin_scope: true
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
   - command: "application credential create"
     group: "openstack.identity.v3"
     service: "identity"
@@ -853,13 +855,15 @@ commands:
     group: "openstack.object_store.v1"
     service: "object-store"
     api: "v1"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/containers"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
   - command: "container save"
     group: "openstack.object_store.v1"
     service: "object-store"
@@ -886,13 +890,15 @@ commands:
     group: "openstack.object_store.v1"
     service: "object-store"
     api: "v1"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/containers"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
   - command: "container unset"
     group: "openstack.object_store.v1"
     service: "object-store"
@@ -1396,7 +1402,7 @@ commands:
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-      - "live: cloud6 core read smoke"
+      - "live: configured cloud read smoke"
     notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
   - command: "flavor set"
     group: "openstack.compute.v2"
@@ -1420,7 +1426,7 @@ commands:
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-      - "live: cloud6 core read smoke"
+      - "live: configured cloud read smoke"
     notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
   - command: "flavor unset"
     group: "openstack.compute.v2"
@@ -1466,7 +1472,7 @@ commands:
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-      - "live: cloud6 core read smoke"
+      - "live: configured cloud read smoke"
     notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
   - command: "floating ip pool list"
     group: "openstack.network.v2"
@@ -1556,7 +1562,7 @@ commands:
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-      - "live: cloud6 core read smoke"
+      - "live: configured cloud read smoke"
     notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
   - command: "floating ip unset"
     group: "openstack.network.v2"
@@ -1848,7 +1854,7 @@ commands:
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-      - "live: cloud6 core read smoke"
+      - "live: configured cloud read smoke"
     notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
   - command: "image member get"
     group: "openstack.image.v2"
@@ -2136,7 +2142,7 @@ commands:
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-      - "live: cloud6 core read smoke"
+      - "live: configured cloud read smoke"
     notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
   - command: "image stage"
     group: "openstack.image.v2"
@@ -2281,7 +2287,7 @@ commands:
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-      - "live: cloud6 core read smoke"
+      - "live: configured cloud read smoke"
     notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
   - command: "keypair show"
     group: "openstack.compute.v2"
@@ -2294,7 +2300,7 @@ commands:
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-      - "live: cloud6 core read smoke"
+      - "live: configured cloud read smoke"
     notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
   - command: "limit create"
     group: "openstack.identity.v3"
@@ -2846,7 +2852,7 @@ commands:
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-      - "live: cloud6 core read smoke"
+      - "live: configured cloud read smoke"
     notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
   - command: "network meter create"
     group: "openstack.network.v2"
@@ -3266,7 +3272,7 @@ commands:
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-      - "live: cloud6 core read smoke"
+      - "live: configured cloud read smoke"
     notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
   - command: "network subport list"
     group: "openstack.network.v2"
@@ -3382,13 +3388,15 @@ commands:
     group: "openstack.object_store.v1"
     service: "object-store"
     api: "v1"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/objects"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
   - command: "object save"
     group: "openstack.object_store.v1"
     service: "object-store"
@@ -3415,13 +3423,15 @@ commands:
     group: "openstack.object_store.v1"
     service: "object-store"
     api: "v1"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/objects"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
   - command: "object store account set"
     group: "openstack.object_store.v1"
     service: "object-store"
@@ -3437,13 +3447,15 @@ commands:
     group: "openstack.object_store.v1"
     service: "object-store"
     api: "v1"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/accounts"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
   - command: "object store account unset"
     group: "openstack.object_store.v1"
     service: "object-store"
@@ -3554,7 +3566,7 @@ commands:
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-      - "live: cloud6 core read smoke"
+      - "live: configured cloud read smoke"
     notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
   - command: "port set"
     group: "openstack.network.v2"
@@ -3578,7 +3590,7 @@ commands:
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-      - "live: cloud6 core read smoke"
+      - "live: configured cloud read smoke"
     notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
   - command: "port unset"
     group: "openstack.network.v2"
@@ -3867,13 +3879,15 @@ commands:
     group: "openstack.placement.v1"
     service: "placement"
     api: "v1"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/placement/v1/resourceclasses"
     shim: false
     plugin_scope: true
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
   - command: "resource class set"
     group: "openstack.placement.v1"
     service: "placement"
@@ -3889,24 +3903,28 @@ commands:
     group: "openstack.placement.v1"
     service: "placement"
     api: "v1"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/placement/v1/resourceclasses"
     shim: false
     plugin_scope: true
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
   - command: "resource provider aggregate list"
     group: "openstack.placement.v1"
     service: "placement"
     api: "v1"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/placement/v1/resourceproviders"
     shim: false
     plugin_scope: true
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
   - command: "resource provider aggregate set"
     group: "openstack.placement.v1"
     service: "placement"
@@ -3944,13 +3962,15 @@ commands:
     group: "openstack.placement.v1"
     service: "placement"
     api: "v1"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/placement/v1/resourceproviders"
     shim: false
     plugin_scope: true
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
   - command: "resource provider allocation unset"
     group: "openstack.placement.v1"
     service: "placement"
@@ -4010,13 +4030,15 @@ commands:
     group: "openstack.placement.v1"
     service: "placement"
     api: "v1"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/placement/v1/resourceproviders"
     shim: false
     plugin_scope: true
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
   - command: "resource provider inventory set"
     group: "openstack.placement.v1"
     service: "placement"
@@ -4032,24 +4054,28 @@ commands:
     group: "openstack.placement.v1"
     service: "placement"
     api: "v1"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/placement/v1/resourceproviders"
     shim: false
     plugin_scope: true
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
   - command: "resource provider list"
     group: "openstack.placement.v1"
     service: "placement"
     api: "v1"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/placement/v1/resourceproviders"
     shim: false
     plugin_scope: true
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
   - command: "resource provider set"
     group: "openstack.placement.v1"
     service: "placement"
@@ -4065,13 +4091,15 @@ commands:
     group: "openstack.placement.v1"
     service: "placement"
     api: "v1"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/placement/v1/resourceproviders"
     shim: false
     plugin_scope: true
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
   - command: "resource provider trait delete"
     group: "openstack.placement.v1"
     service: "placement"
@@ -4087,13 +4115,15 @@ commands:
     group: "openstack.placement.v1"
     service: "placement"
     api: "v1"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/placement/v1/resourceproviders"
     shim: false
     plugin_scope: true
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
   - command: "resource provider trait set"
     group: "openstack.placement.v1"
     service: "placement"
@@ -4109,13 +4139,15 @@ commands:
     group: "openstack.placement.v1"
     service: "placement"
     api: "v1"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/placement/v1/resourceproviders"
     shim: false
     plugin_scope: true
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
   - command: "resource usage show"
     group: "openstack.placement.v1"
     service: "placement"
@@ -4714,7 +4746,7 @@ commands:
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-      - "live: cloud6 core read smoke"
+      - "live: configured cloud read smoke"
     notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
   - command: "server group show"
     group: "openstack.compute.v2"
@@ -4750,7 +4782,7 @@ commands:
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-      - "live: cloud6 core read smoke"
+      - "live: configured cloud read smoke"
     notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
   - command: "server lock"
     group: "openstack.compute.v2"
@@ -5060,7 +5092,7 @@ commands:
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-      - "live: cloud6 core read smoke"
+      - "live: configured cloud read smoke"
     notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
   - command: "server ssh"
     group: "openstack.compute.v2"
@@ -5341,7 +5373,7 @@ commands:
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-      - "live: cloud6 core read smoke"
+      - "live: configured cloud read smoke"
     notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
   - command: "subnet pool create"
     group: "openstack.network.v2"
@@ -5431,7 +5463,7 @@ commands:
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-      - "live: cloud6 core read smoke"
+      - "live: configured cloud read smoke"
     notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
   - command: "subnet unset"
     group: "openstack.network.v2"
@@ -5659,24 +5691,28 @@ commands:
     group: "openstack.placement.v1"
     service: "placement"
     api: "v1"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/placement/v1/traits"
     shim: false
     plugin_scope: true
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
   - command: "trait show"
     group: "openstack.placement.v1"
     service: "placement"
     api: "v1"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/placement/v1/traits"
     shim: false
     plugin_scope: true
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
   - command: "trust create"
     group: "openstack.identity.v3"
     service: "identity"
@@ -6220,7 +6256,7 @@ commands:
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-      - "live: cloud6 core read smoke"
+      - "live: configured cloud read smoke"
     notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
   - command: "volume message delete"
     group: "openstack.volume.v3"
@@ -6409,7 +6445,7 @@ commands:
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-      - "live: cloud6 core read smoke"
+      - "live: configured cloud read smoke"
     notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
   - command: "volume snapshot create"
     group: "openstack.volume.v3"
@@ -6444,7 +6480,7 @@ commands:
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-      - "live: cloud6 core read smoke"
+      - "live: configured cloud read smoke"
     notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
   - command: "volume snapshot set"
     group: "openstack.volume.v3"
@@ -6579,7 +6615,7 @@ commands:
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-      - "live: cloud6 core read smoke"
+      - "live: configured cloud read smoke"
     notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
   - command: "volume type set"
     group: "openstack.volume.v3"
@@ -6603,7 +6639,7 @@ commands:
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-      - "live: cloud6 core read smoke"
+      - "live: configured cloud read smoke"
     notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
   - command: "volume type unset"
     group: "openstack.volume.v3"

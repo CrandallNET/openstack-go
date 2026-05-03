@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"os"
 	"time"
 
 	"github.com/gophercloud/gophercloud/v2"
@@ -51,4 +52,20 @@ func (clients *openStackClients) networkV2() (*gophercloud.ServiceClient, error)
 
 func (clients *openStackClients) blockStorageV3() (*gophercloud.ServiceClient, error) {
 	return openstack.NewBlockStorageV3(clients.Provider, clients.EndpointOpts)
+}
+
+func (clients *openStackClients) objectStorageV1() (*gophercloud.ServiceClient, error) {
+	return openstack.NewObjectStorageV1(clients.Provider, clients.EndpointOpts)
+}
+
+func (clients *openStackClients) placementV1() (*gophercloud.ServiceClient, error) {
+	client, err := openstack.NewPlacementV1(clients.Provider, clients.EndpointOpts)
+	if err != nil {
+		return nil, err
+	}
+	client.Microversion = os.Getenv("OS_PLACEMENT_API_VERSION")
+	if client.Microversion == "" {
+		client.Microversion = "1.39"
+	}
+	return client, nil
 }

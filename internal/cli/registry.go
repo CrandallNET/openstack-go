@@ -41,15 +41,27 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		registry.implemented[path] = runIdentityRead(path, stdout, opts)
 	}
 	for _, path := range []string{
+		"allocation candidate list",
+		"container list", "container show",
 		"flavor list", "flavor show",
 		"floating ip list", "floating ip show",
 		"image list", "image show",
 		"keypair list", "keypair show",
 		"network list", "network show",
+		"object list", "object show",
+		"object store account show",
 		"port list", "port show",
+		"resource class list", "resource class show",
+		"resource provider aggregate list",
+		"resource provider allocation show",
+		"resource provider inventory list", "resource provider inventory show",
+		"resource provider list", "resource provider show",
+		"resource provider trait list",
+		"resource provider usage show",
 		"server list", "server show",
 		"server group list", "server group show",
 		"subnet list", "subnet show",
+		"trait list", "trait show",
 		"volume list", "volume show",
 		"volume snapshot list", "volume snapshot show",
 		"volume type list", "volume type show",
@@ -163,6 +175,29 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().String("endpoint", "", "endpoint group")
 		cmd.Flags().String("project", "", "filter by project")
 		cmd.Flags().String("project-domain", "", "project domain")
+	case "allocation candidate list":
+		cmd.Flags().String("resource", "", "resource class amount")
+		cmd.Flags().Int("limit", 0, "maximum number of entries")
+		cmd.Flags().String("required", "", "required trait")
+		cmd.Flags().String("forbidden", "", "forbidden trait")
+		cmd.Flags().String("member-of", "", "aggregate membership")
+		cmd.Flags().String("group", "", "granular request group")
+		cmd.Flags().String("group-policy", "", "granular request group policy")
+	case "container list":
+		cmd.Flags().String("prefix", "", "filter by prefix")
+		cmd.Flags().Int("limit", 0, "maximum number of entries")
+		cmd.Flags().String("marker", "", "pagination marker")
+		cmd.Flags().String("end-marker", "", "pagination end marker")
+		cmd.Flags().Bool("long", false, "list additional fields")
+		cmd.Flags().Bool("all", false, "list all containers")
+	case "object list":
+		cmd.Flags().String("prefix", "", "filter by prefix")
+		cmd.Flags().String("delimiter", "", "roll up objects by delimiter")
+		cmd.Flags().Int("limit", 0, "maximum number of entries")
+		cmd.Flags().String("marker", "", "pagination marker")
+		cmd.Flags().String("end-marker", "", "pagination end marker")
+		cmd.Flags().Bool("long", false, "list additional fields")
+		cmd.Flags().Bool("all", false, "list all objects")
 	case "subnet list":
 		cmd.Flags().Bool("long", false, "list additional fields")
 		cmd.Flags().Int("ip-version", 0, "filter by IP version")
@@ -215,6 +250,19 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().Bool("public-key", false, "show only the public key")
 		cmd.Flags().String("user", "", "keypair owner")
 		cmd.Flags().String("user-domain", "", "user domain")
+	case "resource provider list":
+		cmd.Flags().String("uuid", "", "filter by UUID")
+		cmd.Flags().String("name", "", "filter by name")
+		cmd.Flags().String("resource", "", "resource class amount")
+		cmd.Flags().String("in-tree", "", "provider tree UUID")
+		cmd.Flags().String("required", "", "required trait")
+		cmd.Flags().String("forbidden", "", "forbidden trait")
+		cmd.Flags().String("member-of", "", "aggregate membership")
+	case "resource provider show":
+		cmd.Flags().Bool("allocations", false, "include resource allocations")
+	case "trait list":
+		cmd.Flags().String("name", "", "filter by name")
+		cmd.Flags().Bool("associated", false, "filter to associated traits")
 	case "server group list":
 		cmd.Flags().Bool("all-projects", false, "include all projects")
 		cmd.Flags().Bool("long", false, "list additional fields")
@@ -272,15 +320,27 @@ func isIdentityReadCommand(path string) bool {
 
 func isCoreReadCommand(path string) bool {
 	switch path {
-	case "flavor list", "flavor show",
+	case "allocation candidate list",
+		"container list", "container show",
+		"flavor list", "flavor show",
 		"floating ip list", "floating ip show",
 		"image list", "image show",
 		"keypair list", "keypair show",
 		"network list", "network show",
+		"object list", "object show",
+		"object store account show",
 		"port list", "port show",
+		"resource class list", "resource class show",
+		"resource provider aggregate list",
+		"resource provider allocation show",
+		"resource provider inventory list", "resource provider inventory show",
+		"resource provider list", "resource provider show",
+		"resource provider trait list",
+		"resource provider usage show",
 		"server list", "server show",
 		"server group list", "server group show",
 		"subnet list", "subnet show",
+		"trait list", "trait show",
 		"volume list", "volume show",
 		"volume snapshot list", "volume snapshot show",
 		"volume type list", "volume type show":
