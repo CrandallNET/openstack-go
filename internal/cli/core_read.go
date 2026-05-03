@@ -621,6 +621,10 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 			return objectStoreAccountShow(cmd.Context(), stdout, opts, client)
 		case "quota list":
 			return quotaList(cmd.Context(), stdout, opts, clients)
+		case "quota delete":
+			return quotaDelete(cmd.Context(), opts, clients, args)
+		case "quota set":
+			return quotaSet(cmd.Context(), opts, clients, args)
 		case "quota show":
 			return quotaShow(cmd.Context(), stdout, opts, clients, args)
 		case "keypair list":

@@ -3860,13 +3860,14 @@ commands:
     group: "openstack.common"
     service: "common"
     api: "multi-service"
-    status: "unknown"
-    sdk_package: ""
-    shim: false
+    status: "implemented"
+    sdk_package: "Compute, Volume, and Network quota reset via gophercloud.ServiceClient"
+    shim: true
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial shim-backed quota mutation implementation. Live mutation is intentionally deferred until a dedicated test project can capture defaults, mutate only test-owned quota values, reset, and retain diagnostics. Live fixture still needed before this row can be marked cloud-verified."
   - command: "quota list"
     group: "openstack.common"
     service: "common"
@@ -3884,13 +3885,14 @@ commands:
     group: "openstack.common"
     service: "common"
     api: "multi-service"
-    status: "unknown"
-    sdk_package: ""
-    shim: false
+    status: "implemented"
+    sdk_package: "Compute, Volume, and Network quota update via gophercloud.ServiceClient"
+    shim: true
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial shim-backed quota mutation implementation. Live mutation is intentionally deferred until a dedicated test project can capture defaults, mutate only test-owned quota values, reset, and retain diagnostics. Live fixture still needed before this row can be marked cloud-verified."
   - command: "quota show"
     group: "openstack.common"
     service: "common"

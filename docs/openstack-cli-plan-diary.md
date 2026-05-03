@@ -729,3 +729,20 @@ Sources consulted:
 * Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/common/configuration.py`, used only as the pinned local oracle implementation source.
 * Local osc-lib source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/osc_lib/clientmanager.py`, which exposes `get_configuration()`.
 * Gophercloud package docs for [clouds.yaml parsing](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/config/clouds).
+
+## 2026-05-03: Quota Set And Delete
+
+Work done: added initial `quota set` and `quota delete`.
+
+Implementation note: `quota set` now builds the same Compute, Volume, and Network quota key groups used by Python OSC. Project quota updates use authenticated Compute, Block Storage, and Network service clients with raw `PUT` requests to `os-quota-sets` and `quotas` endpoints. Compute receives `force=true` only when quota values are present and `--force` is selected. Network receives `force=true` with `--force`, otherwise it receives `check_limit=true`, matching the Python OSC source behavior. `--volume-type` rewrites the Volume quotas that Python marks as volume-type-aware. `--class` and `--default` use Compute and Volume `os-quota-class-sets` requests; Network quota class values are ignored because Python OSC documents and implements quota classes as unsupported by Network.
+
+Implementation note: `quota delete` resolves the target project through Identity and reverts selected service quotas with raw `DELETE` requests to Compute `os-quota-sets`, Volume `os-quota-sets`, and Network `quotas` endpoints. The parser accepts the Python-compatible `--all`, `--compute`, `--volume`, and `--network` selectors, and the suppressed Python compatibility flag `--check-limit` is accepted for `quota set`.
+
+Live observations: no live quota mutation was run in this pass. Quota updates and resets can alter admin state, so the live suite needs a dedicated `golang-osc-testing` project, pre-test default capture, test-owned quota values, post-test reset, and retained diagnostics before these commands can be marked cloud-verified.
+
+Sources consulted:
+
+* Local OSC oracle snapshots in `compat/osc/9.0.0/help/quota/set.txt` and `compat/osc/9.0.0/help/quota/delete.txt`.
+* Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/common/quota.py`, used only as the pinned local oracle implementation source.
+* Local OpenStackSDK source files `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/compute/v2/quota_class_set.py` and `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/block_storage/v3/quota_class_set.py`, which document the `os-quota-class-sets` base path.
+* Gophercloud package docs for [Compute quota sets](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/compute/v2/quotasets), [Block Storage quota sets](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/quotasets), and [Network quotas](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/quotas).

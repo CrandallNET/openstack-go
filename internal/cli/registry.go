@@ -110,7 +110,7 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"object list", "object show",
 		"object store account show",
 		"port list", "port show",
-		"quota list", "quota show",
+		"quota delete", "quota list", "quota set", "quota show",
 		"resource class list", "resource class show",
 		"resource provider aggregate list",
 		"resource provider allocation show",
@@ -561,6 +561,22 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().Bool("compute", false, "list compute quotas")
 		cmd.Flags().Bool("volume", false, "list volume quotas")
 		cmd.Flags().Bool("network", false, "list network quotas")
+	case "quota delete":
+		cmd.Flags().Bool("all", false, "delete all service quotas")
+		cmd.Flags().Bool("compute", false, "delete compute quotas")
+		cmd.Flags().Bool("volume", false, "delete volume quotas")
+		cmd.Flags().Bool("network", false, "delete network quotas")
+	case "quota set":
+		cmd.Flags().Bool("class", false, "set quota class")
+		cmd.Flags().Bool("default", false, "set default quotas")
+		for _, name := range []string{"cores", "injected-file-size", "injected-path-size", "injected-files", "instances", "key-pairs", "properties", "ram", "server-group-members", "server-groups", "backups", "backup-gigabytes", "gigabytes", "per-volume-gigabytes", "snapshots", "volumes", "floating-ips", "secgroup-rules", "secgroups", "networks", "subnets", "ports", "routers", "rbac-policies", "subnetpools"} {
+			cmd.Flags().Int(name, 0, "quota value")
+		}
+		cmd.Flags().String("volume-type", "", "volume type")
+		cmd.Flags().Bool("force", false, "force quota update")
+		cmd.Flags().Bool("no-force", false, "do not force quota update")
+		cmd.Flags().Bool("check-limit", false, "do not force quota update")
+		_ = cmd.Flags().MarkHidden("check-limit")
 	case "quota show":
 		cmd.Flags().Bool("default", false, "show default quotas")
 		cmd.Flags().Bool("usage", false, "show quota usage")
@@ -846,7 +862,7 @@ func isCoreReadCommand(path string) bool {
 		"object list", "object show",
 		"object store account show",
 		"port list", "port show",
-		"quota list", "quota show",
+		"quota delete", "quota list", "quota set", "quota show",
 		"resource class list", "resource class show",
 		"resource provider aggregate list",
 		"resource provider allocation show",

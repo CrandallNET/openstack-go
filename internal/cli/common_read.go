@@ -8,6 +8,7 @@ import (
 	"os"
 	"reflect"
 	"sort"
+	"strconv"
 	"strings"
 	"unicode"
 
@@ -237,6 +238,171 @@ func quotaShow(ctx context.Context, stdout io.Writer, opts *Options, clients *op
 	return renderListOutput(stdout, opts, columns, rows)
 }
 
+func quotaSet(ctx context.Context, opts *Options, clients *openStackClients, args []string) error {
+	quotaClass := boolFlag(opts, "class")
+	quotaDefault := boolFlag(opts, "default")
+	force := boolFlag(opts, "force")
+	if quotaClass && quotaDefault {
+		return fmt.Errorf("argument --default: not allowed with argument --class")
+	}
+	if force && boolFlag(opts, "no-force") {
+		return fmt.Errorf("argument --no-force: not allowed with argument --force")
+	}
+	if force && (quotaClass || quotaDefault) {
+		return fmt.Errorf("--force cannot be used with --class or --default")
+	}
+
+	computeValues := quotaSetValues(opts, map[string]string{
+		"cores":                "cores",
+		"injected-file-size":   "injected_file_content_bytes",
+		"injected-path-size":   "injected_file_path_bytes",
+		"injected-files":       "injected_files",
+		"instances":            "instances",
+		"key-pairs":            "key_pairs",
+		"properties":           "metadata_items",
+		"ram":                  "ram",
+		"server-group-members": "server_group_members",
+		"server-groups":        "server_groups",
+	})
+	volumeValues := quotaSetValues(opts, map[string]string{
+		"backups":              "backups",
+		"backup-gigabytes":     "backup_gigabytes",
+		"gigabytes":            "gigabytes",
+		"per-volume-gigabytes": "per_volume_gigabytes",
+		"snapshots":            "snapshots",
+		"volumes":              "volumes",
+	})
+	networkValues := quotaSetValues(opts, map[string]string{
+		"floating-ips":   "floatingip",
+		"secgroup-rules": "security_group_rule",
+		"secgroups":      "security_group",
+		"networks":       "network",
+		"subnets":        "subnet",
+		"ports":          "port",
+		"routers":        "router",
+		"rbac-policies":  "rbac_policy",
+		"subnetpools":    "subnetpool",
+	})
+	if volumeType := flagValue(opts, "volume-type"); volumeType != "" {
+		for key, value := range volumeValues {
+			if key == "volumes" || key == "gigabytes" || key == "snapshots" {
+				delete(volumeValues, key)
+				volumeValues[key+"_"+volumeType] = value
+			}
+		}
+	}
+
+	if quotaClass || quotaDefault {
+		className := "default"
+		if len(args) > 0 && args[0] != "" {
+			className = args[0]
+		}
+		if len(computeValues) > 0 {
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			if err := quotaPut(ctx, client, client.ServiceURL("os-quota-class-sets", className), "quota_class_set", computeValues); err != nil {
+				return err
+			}
+		}
+		if len(volumeValues) > 0 {
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			if err := quotaPut(ctx, client, client.ServiceURL("os-quota-class-sets", className), "quota_class_set", volumeValues); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	projectID, err := quotaProjectID(ctx, opts, clients, args)
+	if err != nil {
+		return err
+	}
+	if len(computeValues) > 0 {
+		if force {
+			computeValues["force"] = true
+		}
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		if err := quotaPut(ctx, client, client.ServiceURL("os-quota-sets", projectID), "quota_set", computeValues); err != nil {
+			return err
+		}
+	}
+	if len(volumeValues) > 0 {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		if err := quotaPut(ctx, client, client.ServiceURL("os-quota-sets", projectID), "quota_set", volumeValues); err != nil {
+			return err
+		}
+	}
+	if len(networkValues) > 0 {
+		if force {
+			networkValues["force"] = true
+		} else {
+			networkValues["check_limit"] = true
+		}
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		if err := quotaPut(ctx, client, client.ServiceURL("quotas", projectID), "quota", networkValues); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func quotaDelete(ctx context.Context, opts *Options, clients *openStackClients, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("quota delete requires <project>")
+	}
+	identityClient, err := clients.identityV3()
+	if err != nil {
+		return err
+	}
+	project, err := findProjectWithDomain(ctx, identityClient, args[0], flagValue(opts, "project-domain"))
+	if err != nil {
+		return err
+	}
+	compute, volume, network := selectedQuotaDeleteServices(opts)
+	if compute {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		if err := quotaDeleteService(ctx, client, client.ServiceURL("os-quota-sets", project.ID)); err != nil {
+			return err
+		}
+	}
+	if volume {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		if err := quotaDeleteService(ctx, client, client.ServiceURL("os-quota-sets", project.ID)); err != nil {
+			return err
+		}
+	}
+	if network {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		if err := quotaDeleteService(ctx, client, client.ServiceURL("quotas", project.ID)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func versionsShow(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients) error {
 	catalog, err := currentServiceCatalog(clients)
 	if err != nil {
@@ -313,6 +479,43 @@ func selectedQuotaShowServices(opts *Options) (bool, bool, bool) {
 		return true, true, true
 	}
 	return compute, volume, network
+}
+
+func selectedQuotaDeleteServices(opts *Options) (bool, bool, bool) {
+	compute := boolFlag(opts, "compute")
+	volume := boolFlag(opts, "volume")
+	network := boolFlag(opts, "network")
+	if boolFlag(opts, "all") || (!compute && !volume && !network) {
+		return true, true, true
+	}
+	return compute, volume, network
+}
+
+func quotaSetValues(opts *Options, mapping map[string]string) map[string]any {
+	values := map[string]any{}
+	for flag, key := range mapping {
+		if value := flagValue(opts, flag); value != "" {
+			values[key] = quotaInt(value)
+		}
+	}
+	return values
+}
+
+func quotaInt(value string) int {
+	parsed, _ := strconv.Atoi(value)
+	return parsed
+}
+
+func quotaPut(ctx context.Context, client *gophercloud.ServiceClient, url string, root string, values map[string]any) error {
+	resp, err := client.Put(ctx, url, map[string]any{root: values}, nil, &gophercloud.RequestOpts{OkCodes: []int{http.StatusOK}})
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	return err
+}
+
+func quotaDeleteService(ctx context.Context, client *gophercloud.ServiceClient, url string) error {
+	resp, err := client.Delete(ctx, url, &gophercloud.RequestOpts{OkCodes: []int{http.StatusOK, http.StatusAccepted, http.StatusNoContent}})
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	return err
 }
 
 func computeAvailabilityZoneRows(ctx context.Context, client *gophercloud.ServiceClient, long bool) ([]outputRow, error) {

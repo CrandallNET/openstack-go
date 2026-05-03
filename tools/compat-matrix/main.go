@@ -191,6 +191,9 @@ func newCommandEntry(group string, command string) commandEntry {
 		if coreWriteCommands()[command] {
 			entry.Notes = "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
 		}
+		if command == "quota delete" || command == "quota set" {
+			entry.Notes = "Initial shim-backed quota mutation implementation. Live mutation is intentionally deferred until a dedicated test project can capture defaults, mutate only test-owned quota values, reset, and retain diagnostics."
+		}
 		if coreCloudVerified()[command] {
 			entry.Status = "cloud-verified"
 			if coreWriteCommands()[command] {
@@ -385,7 +388,9 @@ func coreReadPackages() map[string]string {
 		"object store account show":          "github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/accounts",
 		"port list":                          "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/ports",
 		"port show":                          "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/ports",
+		"quota delete":                       "Compute, Volume, and Network quota reset via gophercloud.ServiceClient",
 		"quota list":                         "Compute/Volume/Network quota reads via gophercloud.ServiceClient; typed SDK packages are incomplete for OSC-shaped aggregate output",
+		"quota set":                          "Compute, Volume, and Network quota update via gophercloud.ServiceClient",
 		"quota show":                         "Compute/Volume/Network quota reads via gophercloud.ServiceClient; typed SDK packages are incomplete for OSC-shaped aggregate output",
 		"resource class list":                "github.com/gophercloud/gophercloud/v2/openstack/placement/v1/resourceclasses",
 		"resource class show":                "github.com/gophercloud/gophercloud/v2/openstack/placement/v1/resourceclasses",
@@ -493,7 +498,9 @@ func coreReadShims() map[string]bool {
 		"image metadef namespace show":       true,
 		"image metadef resource type list":   true,
 		"network service provider list":      true,
+		"quota delete":                       true,
 		"quota list":                         true,
+		"quota set":                          true,
 		"quota show":                         true,
 		"server migration list":              true,
 		"volume group list":                  true,
@@ -686,6 +693,8 @@ func coreWriteCommands() map[string]bool {
 		"image metadef property delete":                  true,
 		"image metadef property set":                     true,
 		"image remove project":                           true,
+		"quota delete":                                   true,
+		"quota set":                                      true,
 		"image set":                                      true,
 		"image stage":                                    true,
 		"image unset":                                    true,
