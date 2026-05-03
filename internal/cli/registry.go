@@ -63,7 +63,8 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"block storage cluster list", "block storage cluster show",
 		"block storage log level list",
 		"block storage resource filter list", "block storage resource filter show",
-		"cached image list",
+		"cached image clear", "cached image delete",
+		"cached image list", "cached image queue",
 		"compute agent list",
 		"compute service list",
 		"console connection show",
@@ -403,6 +404,9 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().Int("ip-version", 0, "filter by IP version")
 		cmd.Flags().String("project", "", "filter by project")
 		cmd.Flags().String("project-domain", "", "project domain")
+	case "cached image clear":
+		cmd.Flags().Bool("cache", false, "clear cached images")
+		cmd.Flags().Bool("queue", false, "clear queued images")
 	case "keypair list":
 		cmd.Flags().String("user", "", "filter by user")
 		cmd.Flags().String("user-domain", "", "user domain")
@@ -710,7 +714,8 @@ func isCoreReadCommand(path string) bool {
 		"block storage cluster list", "block storage cluster show",
 		"block storage log level list",
 		"block storage resource filter list", "block storage resource filter show",
-		"cached image list",
+		"cached image clear", "cached image delete",
+		"cached image list", "cached image queue",
 		"compute agent list",
 		"compute service list",
 		"console connection show",

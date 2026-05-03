@@ -138,12 +138,30 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 			return aggregateShow(cmd.Context(), stdout, opts, client, args)
 		case "availability zone list":
 			return availabilityZoneList(cmd.Context(), stdout, opts, clients)
+		case "cached image clear":
+			client, err := clients.imageV2()
+			if err != nil {
+				return err
+			}
+			return cachedImageClear(cmd.Context(), opts, client)
+		case "cached image delete":
+			client, err := clients.imageV2()
+			if err != nil {
+				return err
+			}
+			return cachedImageDelete(cmd.Context(), cmd.ErrOrStderr(), opts, client, args)
 		case "cached image list":
 			client, err := clients.imageV2()
 			if err != nil {
 				return err
 			}
 			return cachedImageList(cmd.Context(), stdout, opts, client)
+		case "cached image queue":
+			client, err := clients.imageV2()
+			if err != nil {
+				return err
+			}
+			return cachedImageQueue(cmd.Context(), cmd.ErrOrStderr(), opts, client, args)
 		case "compute agent list":
 			client, err := clients.computeV2()
 			if err != nil {
@@ -1736,6 +1754,84 @@ func imageShow(ctx context.Context, stdout io.Writer, opts *Options, client *gop
 		{"created_at", oscTime(item.CreatedAt)},
 		{"updated_at", oscTime(item.UpdatedAt)},
 	})
+}
+
+func cachedImageClear(ctx context.Context, opts *Options, client *gophercloud.ServiceClient) error {
+	client.Microversion = imageMicroversionAtMost(client.Microversion, "2.14")
+	headers := map[string]string{}
+	if boolFlag(opts, "cache") {
+		headers["x-image-cache-clear-target"] = "cache"
+	}
+	if boolFlag(opts, "queue") {
+		headers["x-image-cache-clear-target"] = "queue"
+	}
+	resp, err := client.Delete(ctx, client.ServiceURL("cache"), &gophercloud.RequestOpts{MoreHeaders: headers})
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return fmt.Errorf("Failed to clear image cache")
+	}
+	return nil
+}
+
+func cachedImageDelete(ctx context.Context, stderr io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("cached image delete requires <image> [<image> ...]")
+	}
+	client.Microversion = imageMicroversionAtMost(client.Microversion, "2.14")
+	failures := 0
+	for _, imageArg := range args {
+		image, err := findImage(ctx, client, imageArg)
+		if err == nil {
+			resp, deleteErr := client.Delete(ctx, client.ServiceURL("cache", url.PathEscape(image.ID)), nil)
+			_, _, err = gophercloud.ParseResponse(resp, deleteErr)
+			if cachedImageDeleteIgnoreMissing(err) {
+				err = nil
+			}
+		}
+		if err != nil {
+			failures++
+			fmt.Fprintf(stderr, "Failed to delete image with name or ID '%s': %s\n", imageArg, oscCacheCommandError(err))
+		}
+	}
+	if failures > 0 {
+		return fmt.Errorf("Failed to delete %d of %d images.", failures, len(args))
+	}
+	return nil
+}
+
+func cachedImageQueue(ctx context.Context, stderr io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("cached image queue requires <image> [<image> ...]")
+	}
+	client.Microversion = imageMicroversionAtMost(client.Microversion, "2.14")
+	failures := 0
+	for _, imageArg := range args {
+		image, err := findImage(ctx, client, imageArg)
+		if err == nil {
+			resp, queueErr := client.Put(ctx, client.ServiceURL("cache", url.PathEscape(image.ID)), nil, nil, &gophercloud.RequestOpts{OkCodes: []int{http.StatusAccepted, http.StatusNoContent}})
+			_, _, err = gophercloud.ParseResponse(resp, queueErr)
+		}
+		if err != nil {
+			failures++
+			fmt.Fprintf(stderr, "Failed to queue image with name or ID '%s': %s\n", imageArg, oscCacheCommandError(err))
+		}
+	}
+	if failures > 0 {
+		return fmt.Errorf("Failed to queue %d of %d images", failures, len(args))
+	}
+	return nil
+}
+
+func cachedImageDeleteIgnoreMissing(err error) bool {
+	codeErr, ok := unexpectedResponseCode(err)
+	return ok && codeErr.Actual == http.StatusNotFound
+}
+
+func oscCacheCommandError(err error) error {
+	if codeErr, ok := unexpectedResponseCode(err); ok && codeErr.Actual == http.StatusNotFound {
+		return fmt.Errorf("NotFoundException: 404: Client Error for url: %s, %s", codeErr.URL, openStackFaultMessage(codeErr.Body))
+	}
+	return err
 }
 
 func imageMetadefNamespaceCreate(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {

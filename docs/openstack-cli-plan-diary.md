@@ -620,3 +620,17 @@ Sources consulted:
 * Local OSC oracle snapshots in `compat/osc/9.0.0/help/image/metadef/object/create.txt`, `compat/osc/9.0.0/help/image/metadef/object/update.txt`, `compat/osc/9.0.0/help/image/metadef/object/delete.txt`, `compat/osc/9.0.0/help/image/metadef/property/create.txt`, `compat/osc/9.0.0/help/image/metadef/property/set.txt`, and `compat/osc/9.0.0/help/image/metadef/property/delete.txt`.
 * Local Python OSC source files `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/image/v2/metadef_objects.py` and `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/image/v2/metadef_properties.py`, used only as pinned local oracle implementation sources.
 * Local OpenStackSDK source files `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/image/v2/metadef_object.py` and `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/image/v2/metadef_property.py`, which document the object and property paths and fields.
+
+## 2026-05-03: Glance Cache Mutations
+
+Work done: added `cached image clear`, `cached image delete`, and `cached image queue`.
+
+Implementation note: Python OSC uses OpenStackSDK's cache resource at `/cache` with Image API microversion capped to 2.14. The local Gophercloud v2.12.0 module has no typed cache helper, so the Go CLI uses narrow authenticated Glance REST calls. `cached image delete` intentionally ignores a missing cache entry, matching OpenStackSDK's default `ignore_missing=True` behavior.
+
+Live observations on `cloud6`: Python OSC and the Go CLI matched the unsupported-cache queue error path for `cached image queue da8beb8e-7301-49a3-b952-ebde206f9a0b`, and both returned no output for `cached image delete da8beb8e-7301-49a3-b952-ebde206f9a0b`. `cached image clear` matched the Python command-level failure message on this cloud, where Glance API caching is not enabled.
+
+Sources consulted:
+
+* Local OSC oracle snapshots in `compat/osc/9.0.0/help/cached/image/clear.txt`, `compat/osc/9.0.0/help/cached/image/delete.txt`, and `compat/osc/9.0.0/help/cached/image/queue.txt`.
+* Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/image/v2/cache.py`, used only as the pinned local oracle implementation source.
+* Local OpenStackSDK source files `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/image/v2/cache.py` and `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/image/v2/_proxy.py`, which document the `/cache` path, 2.14 resource microversion cap, and delete `ignore_missing` default.

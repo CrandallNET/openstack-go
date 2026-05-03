@@ -483,24 +483,28 @@ commands:
     group: "openstack.image.v2"
     service: "image"
     api: "v2"
-    status: "unknown"
-    sdk_package: ""
-    shim: false
+    status: "cloud-verified"
+    sdk_package: "Glance image cache via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
+    shim: true
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "cached image delete"
     group: "openstack.image.v2"
     service: "image"
     api: "v2"
-    status: "unknown"
-    sdk_package: ""
-    shim: false
+    status: "cloud-verified"
+    sdk_package: "Glance image cache via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
+    shim: true
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "cached image list"
     group: "openstack.image.v2"
     service: "image"
@@ -518,13 +522,15 @@ commands:
     group: "openstack.image.v2"
     service: "image"
     api: "v2"
-    status: "unknown"
-    sdk_package: ""
-    shim: false
+    status: "cloud-verified"
+    sdk_package: "Glance image cache via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
+    shim: true
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "catalog list"
     group: "openstack.identity.v3"
     service: "identity"
