@@ -266,12 +266,30 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return imageMemberList(cmd.Context(), stdout, opts, client, args)
+		case "image metadef namespace create":
+			client, err := clients.imageV2()
+			if err != nil {
+				return err
+			}
+			return imageMetadefNamespaceCreate(cmd.Context(), stdout, opts, client, args)
+		case "image metadef namespace delete":
+			client, err := clients.imageV2()
+			if err != nil {
+				return err
+			}
+			return imageMetadefNamespaceDelete(cmd.Context(), opts, client, args)
 		case "image metadef namespace list":
 			client, err := clients.imageV2()
 			if err != nil {
 				return err
 			}
 			return imageMetadefNamespaceList(cmd.Context(), stdout, opts, client)
+		case "image metadef namespace set":
+			client, err := clients.imageV2()
+			if err != nil {
+				return err
+			}
+			return imageMetadefNamespaceSet(cmd.Context(), opts, client, args)
 		case "image metadef namespace show":
 			client, err := clients.imageV2()
 			if err != nil {
@@ -308,6 +326,18 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return imageMetadefPropertyShow(cmd.Context(), stdout, opts, client, args)
+		case "image metadef resource type association create":
+			client, err := clients.imageV2()
+			if err != nil {
+				return err
+			}
+			return imageMetadefResourceTypeAssociationCreate(cmd.Context(), stdout, opts, client, args)
+		case "image metadef resource type association delete":
+			client, err := clients.imageV2()
+			if err != nil {
+				return err
+			}
+			return imageMetadefResourceTypeAssociationDelete(cmd.Context(), opts, client, args)
 		case "image metadef resource type association list":
 			client, err := clients.imageV2()
 			if err != nil {
@@ -1672,6 +1702,38 @@ func imageShow(ctx context.Context, stdout io.Writer, opts *Options, client *gop
 	})
 }
 
+func imageMetadefNamespaceCreate(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("image metadef namespace create requires <namespace>")
+	}
+	request := imageMetadefNamespaceRequest(opts, args[0], true)
+	var body map[string]any
+	resp, err := client.Post(ctx, client.ServiceURL("metadefs", "namespaces"), request, &body, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return oscHTTPException(err)
+	}
+	return renderShowOutput(stdout, opts, imageMetadefNamespaceFields(body))
+}
+
+func imageMetadefNamespaceDelete(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("image metadef namespace delete requires <namespace> [<namespace> ...]")
+	}
+	failures := 0
+	for _, namespace := range args {
+		resp, err := client.Delete(ctx, client.ServiceURL("metadefs", "namespaces", url.PathEscape(namespace)), nil)
+		_, _, err = gophercloud.ParseResponse(resp, err)
+		if err != nil {
+			failures++
+		}
+	}
+	if failures > 0 {
+		return fmt.Errorf("%d of %d namespace failed to delete.", failures, len(args))
+	}
+	return nil
+}
+
 func imageMetadefNamespaceList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
 	requestURL := client.ServiceURL("metadefs", "namespaces")
 	query := url.Values{}
@@ -1713,18 +1775,59 @@ func imageMetadefNamespaceShow(ctx context.Context, stdout io.Writer, opts *Opti
 	if err != nil {
 		return oscResourceNotFoundError(err, "MetadefNamespace", args[0])
 	}
-	fields := make([]outputField, 0, 11)
-	for _, name := range []string{"created_at", "description", "display_name", "namespace", "owner"} {
-		fields = appendMapField(fields, body, name, name)
+	return renderShowOutput(stdout, opts, imageMetadefNamespaceFields(body))
+}
+
+func imageMetadefNamespaceSet(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("image metadef namespace set requires <namespace>")
 	}
-	fields = appendMapField(fields, body, "protected", "protected")
+	request := imageMetadefNamespaceRequest(opts, args[0], false)
+	resp, err := client.Put(ctx, client.ServiceURL("metadefs", "namespaces", url.PathEscape(args[0])), request, nil, &gophercloud.RequestOpts{OkCodes: []int{http.StatusOK}})
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return oscHTTPException(err)
+	}
+	return nil
+}
+
+func imageMetadefNamespaceRequest(opts *Options, namespace string, includeCreateDefaults bool) map[string]any {
+	request := map[string]any{"namespace": namespace}
+	if value := flagValue(opts, "display-name"); value != "" {
+		request["display_name"] = value
+	}
+	if value := flagValue(opts, "description"); value != "" {
+		request["description"] = value
+	}
+	if boolFlag(opts, "public") {
+		request["visibility"] = "public"
+	}
+	if boolFlag(opts, "private") {
+		request["visibility"] = "private"
+	}
+	if boolFlag(opts, "protected") {
+		request["protected"] = true
+	}
+	if boolFlag(opts, "unprotected") {
+		request["protected"] = false
+	}
+	if includeCreateDefaults {
+		return request
+	}
+	return request
+}
+
+func imageMetadefNamespaceFields(body map[string]any) []outputField {
+	values := map[string]any{}
+	for _, name := range []string{"created_at", "description", "display_name", "namespace", "owner", "protected", "updated_at", "visibility"} {
+		if value, ok := body[name]; ok && value != nil {
+			values[name] = value
+		}
+	}
 	if associations, ok := body["resource_type_associations"]; ok && associations != nil {
-		fields = append(fields, outputField{Name: "resource_type_associations", Value: metadefResourceTypeNames(associations)})
+		values["resource_type_associations"] = metadefResourceTypeNames(associations)
 	}
-	for _, name := range []string{"updated_at", "visibility"} {
-		fields = appendMapField(fields, body, name, name)
-	}
-	return renderShowOutput(stdout, opts, fields)
+	return sortedFieldsFromMap(values, true)
 }
 
 func imageMetadefObjectList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
@@ -1888,6 +1991,89 @@ func imageMetadefResourceTypeList(ctx context.Context, stdout io.Writer, opts *O
 		return err
 	}
 	return renderListOutput(stdout, opts, []string{"Name"}, rows)
+}
+
+func imageMetadefResourceTypeAssociationCreate(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("image metadef resource type association create requires <namespace> <name>")
+	}
+	request := map[string]any{
+		"name": args[1],
+	}
+	if value := flagValue(opts, "properties-target"); value != "" {
+		request["properties_target"] = value
+	}
+	var body map[string]any
+	resp, err := client.Post(ctx, client.ServiceURL("metadefs", "namespaces", url.PathEscape(args[0]), "resource_types"), request, &body, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return oscHTTPException(err)
+	}
+	fields := []outputField{
+		{Name: "created_at", Value: mapValueOrEmpty(body, "created_at")},
+		{Name: "id", Value: mapValueOrEmpty(body, "id", "name")},
+		{Name: "name", Value: mapValueOrEmpty(body, "name")},
+		{Name: "prefix", Value: nilIfMissing(body, "prefix")},
+		{Name: "properties_target", Value: nilIfMissing(body, "properties_target")},
+		{Name: "updated_at", Value: mapValueOrEmpty(body, "updated_at")},
+	}
+	return renderShowOutput(stdout, opts, fields)
+}
+
+func imageMetadefResourceTypeAssociationDelete(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("image metadef resource type association delete requires <metadef_namespace> <name> [<name> ...]")
+	}
+	failures := 0
+	for _, resourceType := range args[1:] {
+		if err := imageMetadefResourceTypeAssociationDeleteOne(ctx, opts, client, args[0], resourceType); err != nil {
+			failures++
+		}
+	}
+	if failures > 0 {
+		return fmt.Errorf("%d of %d resource type failed to delete.", failures, len(args[0]))
+	}
+	return nil
+}
+
+func imageMetadefResourceTypeAssociationDeleteOne(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, namespace string, resourceType string) error {
+	wasProtected := false
+	if boolFlag(opts, "force") {
+		var namespaceBody map[string]any
+		resp, err := client.Get(ctx, client.ServiceURL("metadefs", "namespaces", url.PathEscape(namespace)), &namespaceBody, nil)
+		_, _, err = gophercloud.ParseResponse(resp, err)
+		if err != nil {
+			return oscHTTPException(err)
+		}
+		wasProtected = boolValue(namespaceBody["protected"])
+		if wasProtected {
+			if err := imageMetadefNamespaceProtected(ctx, client, namespace, false); err != nil {
+				return err
+			}
+		}
+	}
+	if wasProtected {
+		defer imageMetadefNamespaceProtected(ctx, client, namespace, true)
+	}
+	resp, err := client.Delete(ctx, client.ServiceURL("metadefs", "namespaces", url.PathEscape(namespace), "resource_types", url.PathEscape(resourceType)), nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return oscHTTPException(err)
+	}
+	return nil
+}
+
+func imageMetadefNamespaceProtected(ctx context.Context, client *gophercloud.ServiceClient, namespace string, protected bool) error {
+	request := map[string]any{
+		"namespace": namespace,
+		"protected": protected,
+	}
+	resp, err := client.Put(ctx, client.ServiceURL("metadefs", "namespaces", url.PathEscape(namespace)), request, nil, &gophercloud.RequestOpts{OkCodes: []int{http.StatusOK}})
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return oscHTTPException(err)
+	}
+	return nil
 }
 
 func imageMetadefResourceTypeAssociationList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
@@ -5154,6 +5340,25 @@ func mapValueOrEmpty(item map[string]any, keys ...string) any {
 
 func mapValueString(item map[string]any, keys ...string) string {
 	return valueString(mapValueOrEmpty(item, keys...))
+}
+
+func nilIfMissing(item map[string]any, key string) any {
+	value, ok := item[key]
+	if !ok {
+		return nil
+	}
+	return value
+}
+
+func boolValue(value any) bool {
+	switch typed := value.(type) {
+	case bool:
+		return typed
+	case string:
+		return strings.EqualFold(typed, "true")
+	default:
+		return false
+	}
 }
 
 func appendMapField(fields []outputField, item map[string]any, key string, name string) []outputField {

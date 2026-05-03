@@ -75,10 +75,14 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"host list", "host show",
 		"hypervisor list", "hypervisor show", "hypervisor stats show",
 		"image list", "image member get", "image member list", "image show",
-		"image metadef namespace list", "image metadef namespace show",
+		"image metadef namespace create", "image metadef namespace delete",
+		"image metadef namespace list", "image metadef namespace set",
+		"image metadef namespace show",
 		"image metadef object list", "image metadef object property show",
 		"image metadef object show", "image metadef property list",
 		"image metadef property show",
+		"image metadef resource type association create",
+		"image metadef resource type association delete",
 		"image metadef resource type association list",
 		"image metadef resource type list",
 		"image stores list", "image task list", "image task show",
@@ -413,9 +417,20 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().Bool("with-servers", false, "include servers")
 	case "image member get", "image member list":
 		cmd.Flags().String("project-domain", "", "project domain")
+	case "image metadef namespace create", "image metadef namespace set":
+		cmd.Flags().String("display-name", "", "display name")
+		cmd.Flags().String("description", "", "description")
+		cmd.Flags().Bool("public", false, "public visibility")
+		cmd.Flags().Bool("private", false, "private visibility")
+		cmd.Flags().Bool("protected", false, "protected namespace")
+		cmd.Flags().Bool("unprotected", false, "unprotected namespace")
 	case "image metadef namespace list":
 		cmd.Flags().String("resource-types", "", "filter resource types")
 		cmd.Flags().String("visibility", "", "filter on visibility")
+	case "image metadef resource type association create":
+		cmd.Flags().String("properties-target", "", "properties target")
+	case "image metadef resource type association delete":
+		cmd.Flags().Bool("force", false, "force delete protected association")
 	case "image stores list":
 		cmd.Flags().Bool("detail", false, "show store details")
 	case "image task list":
@@ -690,10 +705,14 @@ func isCoreReadCommand(path string) bool {
 		"host list", "host show",
 		"hypervisor list", "hypervisor show", "hypervisor stats show",
 		"image list", "image member get", "image member list", "image show",
-		"image metadef namespace list", "image metadef namespace show",
+		"image metadef namespace create", "image metadef namespace delete",
+		"image metadef namespace list", "image metadef namespace set",
+		"image metadef namespace show",
 		"image metadef object list", "image metadef object property show",
 		"image metadef object show", "image metadef property list",
 		"image metadef property show",
+		"image metadef resource type association create",
+		"image metadef resource type association delete",
 		"image metadef resource type association list",
 		"image metadef resource type list",
 		"image stores list", "image task list", "image task show",

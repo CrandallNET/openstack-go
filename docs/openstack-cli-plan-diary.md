@@ -592,3 +592,17 @@ Sources consulted:
 * Local OSC oracle snapshots in `compat/osc/9.0.0/help/image/metadef/object/list.txt`, `compat/osc/9.0.0/help/image/metadef/object/show.txt`, `compat/osc/9.0.0/help/image/metadef/object/property/show.txt`, `compat/osc/9.0.0/help/image/metadef/property/list.txt`, and `compat/osc/9.0.0/help/image/metadef/property/show.txt`.
 * Local Python OSC source files `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/image/v2/metadef_objects.py` and `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/image/v2/metadef_properties.py`, used only as pinned local oracle implementation sources.
 * Local OpenStackSDK source files `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/image/v2/metadef_object.py` and `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/image/v2/metadef_property.py`, which document the object and property paths and SDK-shaped fields.
+
+## 2026-05-03: Glance Metadef Namespace Lifecycle and Resource Type Association Writes
+
+Work done: added `image metadef namespace create`, `image metadef namespace set`, `image metadef namespace delete`, `image metadef resource type association create`, and `image metadef resource type association delete`.
+
+Implementation note: Python OSC routes these operations through OpenStackSDK metadef namespace and resource type association resources. The local Gophercloud v2.12.0 module has no typed helpers for these resources, so the Go CLI uses authenticated Glance REST calls. Namespace update explicitly accepts Glance's `200 OK` response for PUT. Resource type association create omits the namespace from the JSON body because Python passes it to the SDK as a URI field, and Glance rejects it as an additional body property.
+
+Live observations on `cloud6`: Python OSC was used as the output oracle for namespace create/set/show, resource type association create/list/delete, and namespace cleanup with a disposable namespace. The Go CLI completed the same lifecycle with `gocli-test-ns-go-20260503a`, including association create/delete and final namespace delete. A parallel Python cleanup attempt showed that dependent delete operations should not be run concurrently; the test matrix should keep association cleanup before namespace cleanup.
+
+Sources consulted:
+
+* Local OSC oracle snapshots in `compat/osc/9.0.0/help/image/metadef/namespace/create.txt`, `compat/osc/9.0.0/help/image/metadef/namespace/set.txt`, `compat/osc/9.0.0/help/image/metadef/namespace/delete.txt`, `compat/osc/9.0.0/help/image/metadef/resource/type/association/create.txt`, and `compat/osc/9.0.0/help/image/metadef/resource/type/association/delete.txt`.
+* Local Python OSC source files `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/image/v2/metadef_namespaces.py` and `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/image/v2/metadef_resource_type_association.py`, used only as pinned local oracle implementation sources.
+* Local OpenStackSDK source files `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/image/v2/metadef_namespace.py` and `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/image/v2/metadef_resource_type.py`, which document the namespace and resource type association paths and fields.
