@@ -3,7 +3,10 @@ package cli
 import (
 	"bytes"
 	"context"
+	"crypto/ed25519"
+	"crypto/rand"
 	"encoding/json"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"io"
@@ -62,6 +65,7 @@ import (
 	osutils "github.com/gophercloud/gophercloud/v2/openstack/utils"
 	"github.com/gophercloud/gophercloud/v2/pagination"
 	"github.com/spf13/cobra"
+	"golang.org/x/crypto/ssh"
 	"golang.org/x/term"
 )
 
@@ -633,6 +637,18 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return keypairList(cmd.Context(), stdout, opts, client)
+		case "keypair create":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return keypairCreate(cmd.Context(), stdout, opts, clients, client, args)
+		case "keypair delete":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return keypairDelete(cmd.Context(), opts, clients, client, args)
 		case "keypair show":
 			client, err := clients.computeV2()
 			if err != nil {
@@ -5830,6 +5846,81 @@ func networkServiceProviderList(ctx context.Context, stdout io.Writer, opts *Opt
 	return renderListOutput(stdout, opts, []string{"Service Type", "Name", "Default"}, rows)
 }
 
+func keypairCreate(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("keypair create requires <name>")
+	}
+	if flagChanged(opts, "public-key") && flagChanged(opts, "private-key") {
+		return fmt.Errorf("argument --private-key: not allowed with argument --public-key")
+	}
+	keyType := flagValue(opts, "type")
+	if keyType != "" && keyType != "ssh" && keyType != "x509" {
+		return fmt.Errorf("argument --type: invalid choice: %q (choose from 'ssh', 'x509')", keyType)
+	}
+	createOpts := keypairs.CreateOpts{
+		Name: args[0],
+		Type: keyType,
+	}
+	if userID, err := keypairUserID(ctx, opts, clients); err != nil {
+		return err
+	} else {
+		createOpts.UserID = userID
+	}
+
+	generatedPrivateKey := ""
+	if publicKeyPath := flagValue(opts, "public-key"); publicKeyPath != "" {
+		data, err := os.ReadFile(expandUserPath(publicKeyPath))
+		if err != nil {
+			return fmt.Errorf("Key file %s not found: %v", publicKeyPath, err)
+		}
+		createOpts.PublicKey = string(data)
+	} else {
+		keypair, err := generateEd25519Keypair()
+		if err != nil {
+			return err
+		}
+		generatedPrivateKey = keypair.PrivateKey
+		createOpts.PublicKey = keypair.PublicKey
+		if privateKeyPath := flagValue(opts, "private-key"); privateKeyPath != "" {
+			if err := os.WriteFile(expandUserPath(privateKeyPath), []byte(generatedPrivateKey), 0600); err != nil {
+				return fmt.Errorf("Key file %s can not be saved: %v", privateKeyPath, err)
+			}
+		}
+	}
+
+	result := keypairs.Create(ctx, client, createOpts)
+	item, err := result.Extract()
+	if err != nil {
+		return err
+	}
+	if flagValue(opts, "public-key") == "" && flagValue(opts, "private-key") == "" {
+		_, err := fmt.Fprint(stdout, generatedPrivateKey)
+		return err
+	}
+	return renderKeypairShow(stdout, opts, item, keypairBodyMap(result.Body), true)
+}
+
+func keypairDelete(ctx context.Context, opts *Options, clients *openStackClients, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("keypair delete requires <key>")
+	}
+	userID, err := keypairUserID(ctx, opts, clients)
+	if err != nil {
+		return err
+	}
+	failures := 0
+	for _, name := range args {
+		err := keypairs.Delete(ctx, client, name, keypairs.DeleteOpts{UserID: userID}).ExtractErr()
+		if err != nil {
+			failures++
+		}
+	}
+	if failures > 0 {
+		return fmt.Errorf("%d of %d keys failed to delete.", failures, len(args))
+	}
+	return nil
+}
+
 func keypairList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
 	page, err := keypairs.List(client, keypairs.ListOpts{UserID: flagValue(opts, "user")}).AllPages(ctx)
 	if err != nil {
@@ -5854,7 +5945,8 @@ func keypairShow(ctx context.Context, stdout io.Writer, opts *Options, client *g
 	if len(args) < 1 {
 		return fmt.Errorf("keypair show requires <key>")
 	}
-	item, err := keypairs.Get(ctx, client, args[0], keypairs.GetOpts{UserID: flagValue(opts, "user")}).Extract()
+	result := keypairs.Get(ctx, client, args[0], keypairs.GetOpts{UserID: flagValue(opts, "user")})
+	item, err := result.Extract()
 	if err != nil {
 		return err
 	}
@@ -5862,13 +5954,120 @@ func keypairShow(ctx context.Context, stdout io.Writer, opts *Options, client *g
 		_, err := fmt.Fprintln(stdout, item.PublicKey)
 		return err
 	}
-	return renderShowOutput(stdout, opts, []outputField{
-		{"name", item.Name},
+	return renderKeypairShow(stdout, opts, item, keypairBodyMap(result.Body), false)
+}
+
+func renderKeypairShow(stdout io.Writer, opts *Options, item *keypairs.KeyPair, raw map[string]any, createOutput bool) error {
+	fields := []outputField{
+		{"created_at", keypairRawValue(raw, "created_at", nil)},
 		{"fingerprint", item.Fingerprint},
-		{"public_key", item.PublicKey},
-		{"user_id", item.UserID},
-		{"type", item.Type},
-	})
+		{"id", item.Name},
+		{"is_deleted", keypairDeletedValue(raw, createOutput)},
+		{"name", item.Name},
+	}
+	if !createOutput {
+		fields = append(fields, outputField{"private_key", keypairRawValue(raw, "private_key", nil)})
+	}
+	fields = append(fields,
+		outputField{"type", item.Type},
+		outputField{"user_id", item.UserID},
+	)
+	return renderShowOutput(stdout, opts, fields)
+}
+
+func keypairBodyMap(body any) map[string]any {
+	data, err := json.Marshal(body)
+	if err != nil {
+		return nil
+	}
+	var envelope map[string]map[string]any
+	if err := json.Unmarshal(data, &envelope); err != nil {
+		return nil
+	}
+	return envelope["keypair"]
+}
+
+func keypairRawValue(raw map[string]any, key string, fallback any) any {
+	if raw == nil {
+		return fallback
+	}
+	if value, ok := raw[key]; ok {
+		return value
+	}
+	return fallback
+}
+
+func keypairDeletedValue(raw map[string]any, createOutput bool) any {
+	if raw == nil {
+		return nil
+	}
+	if value, ok := raw["is_deleted"]; ok {
+		return value
+	}
+	if value, ok := raw["deleted"]; ok {
+		if createOutput && value == false {
+			return nil
+		}
+		return value
+	}
+	return nil
+}
+
+type generatedKeypair struct {
+	PrivateKey string
+	PublicKey  string
+}
+
+func generateEd25519Keypair() (generatedKeypair, error) {
+	publicKey, privateKey, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		return generatedKeypair{}, err
+	}
+	sshPublicKey, err := ssh.NewPublicKey(publicKey)
+	if err != nil {
+		return generatedKeypair{}, err
+	}
+	privateBlock, err := ssh.MarshalPrivateKey(privateKey, "")
+	if err != nil {
+		return generatedKeypair{}, err
+	}
+	return generatedKeypair{
+		PrivateKey: string(pem.EncodeToMemory(privateBlock)),
+		PublicKey:  string(ssh.MarshalAuthorizedKey(sshPublicKey)),
+	}, nil
+}
+
+func keypairUserID(ctx context.Context, opts *Options, clients *openStackClients) (string, error) {
+	value := flagValue(opts, "user")
+	if value == "" {
+		return "", nil
+	}
+	identityClient, err := clients.identityV3()
+	if err != nil {
+		return "", err
+	}
+	user, err := findUserWithDomain(ctx, identityClient, value, flagValue(opts, "user-domain"))
+	if err != nil {
+		return "", err
+	}
+	return user.ID, nil
+}
+
+func expandUserPath(path string) string {
+	if path == "" {
+		return path
+	}
+	home, err := os.UserHomeDir()
+	if err != nil || home == "" {
+		return path
+	}
+	if path == "~" {
+		return home
+	}
+	if strings.HasPrefix(path, "~/") {
+		return home + path[1:]
+	}
+	return path
 }
 
 func serverGroupList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {

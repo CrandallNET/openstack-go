@@ -97,7 +97,7 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"image metadef resource type list",
 		"image stores list", "image task list", "image task show",
 		"ip availability list", "ip availability show",
-		"keypair list", "keypair show",
+		"keypair create", "keypair delete", "keypair list", "keypair show",
 		"limits show",
 		"network agent list", "network agent show",
 		"network list", "network show",
@@ -423,6 +423,15 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().String("project-domain", "", "project domain")
 		cmd.Flags().Int("limit", 0, "maximum number of entries")
 		cmd.Flags().String("marker", "", "pagination marker")
+	case "keypair create":
+		cmd.Flags().String("public-key", "", "public key file")
+		cmd.Flags().String("private-key", "", "private key output file")
+		cmd.Flags().String("type", "", "keypair type")
+		cmd.Flags().String("user", "", "keypair owner")
+		cmd.Flags().String("user-domain", "", "user domain")
+	case "keypair delete":
+		cmd.Flags().String("user", "", "keypair owner")
+		cmd.Flags().String("user-domain", "", "user domain")
 	case "keypair show":
 		cmd.Flags().Bool("public-key", false, "show only the public key")
 		cmd.Flags().String("user", "", "keypair owner")
@@ -849,7 +858,7 @@ func isCoreReadCommand(path string) bool {
 		"image metadef resource type list",
 		"image stores list", "image task list", "image task show",
 		"ip availability list", "ip availability show",
-		"keypair list", "keypair show",
+		"keypair create", "keypair delete", "keypair list", "keypair show",
 		"limits show",
 		"network agent list", "network agent show",
 		"network list", "network show",

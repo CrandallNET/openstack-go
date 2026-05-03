@@ -746,3 +746,18 @@ Sources consulted:
 * Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/common/quota.py`, used only as the pinned local oracle implementation source.
 * Local OpenStackSDK source files `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/compute/v2/quota_class_set.py` and `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/block_storage/v3/quota_class_set.py`, which document the `os-quota-class-sets` base path.
 * Gophercloud package docs for [Compute quota sets](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/compute/v2/quotasets), [Block Storage quota sets](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/quotasets), and [Network quotas](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/quotas).
+
+## 2026-05-03: Keypair Create And Delete
+
+Work done: added `keypair create` and `keypair delete`.
+
+Implementation note: `keypair create` uses Gophercloud's Compute v2 keypair create helper. When `--public-key` is not supplied, the Go CLI generates an Ed25519 keypair locally, imports the generated public key into Nova, and either writes the private key to `--private-key` or prints it to stdout. This mirrors Python OSC's local key generation behavior and avoids depending on Nova-generated private keys. Normal show output hides `public_key` and includes the Python-observed SDK compatibility fields `created_at`, `id`, `is_deleted`, and `private_key`. `keypair delete` uses Gophercloud's typed delete helper and supports multiple key names in one invocation.
+
+Live observations on `cloud6`: Python OSC created and deleted disposable keypair `gocli-test-keypair-python-20260503`. The Go CLI created and deleted disposable keypairs `gocli-test-keypair-go-20260503` and `gocli-test-keypair-go2-20260503`. The public-key create output was compared against Python OSC's JSON field shape, `keypair show -f json` was checked after creation, and Python/Go `keypair list -f json` matched after cleanup.
+
+Sources consulted:
+
+* Local OSC oracle snapshots in `compat/osc/9.0.0/help/keypair/create.txt` and `compat/osc/9.0.0/help/keypair/delete.txt`.
+* Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/compute/v2/keypair.py`, used only as the pinned local oracle implementation source.
+* Gophercloud package docs for [Compute keypairs](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/compute/v2/keypairs).
+* Go package docs for [golang.org/x/crypto/ssh](https://pkg.go.dev/golang.org/x/crypto/ssh), used for OpenSSH public and private key encoding.
