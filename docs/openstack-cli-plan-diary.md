@@ -116,6 +116,16 @@ Sources consulted: Gophercloud package docs and local module sources for [Comput
 
 Verification: `go test ./...`, `go build -o bin/openstack ./cmd/openstack`, `go run ./tools/compat-matrix`, and live `cloud6` JSON smoke checks passed for `availability zone list`, `availability zone list --long`, `extension list --network`, `extension show router`, `limits show --absolute`, and `limits show --rate`.
 
+## 2026-05-02: Common Quota Read Expansion
+
+Work done: added read-only implementations for `quota show` and `quota list`. `quota show` resolves the current project from the project-scoped Keystone token when no project argument is provided, aggregates Compute, Volume, and Network quota rows by default, supports `--compute`, `--volume`, `--network`, `--all`, `--usage`, and the Volume default-quota path, and keeps `quota list` behind the same required `--compute`, `--volume`, or `--network` parser rule as Python OSC.
+
+Compatibility note: Gophercloud has typed quota packages for Compute, Network, and Block Storage, but OSC-shaped output includes service-specific extra quota keys, null compatibility rows, and aggregate service ordering. The implementation therefore uses authenticated Gophercloud service clients for narrow raw quota reads and records `quota list/show` as shim-backed in the matrix. This is functional coverage, not exact parity; output key order, all admin list behavior, domain-qualified project lookup, quota class behavior, and full golden tests remain open.
+
+Sources consulted: Gophercloud package docs and local module sources for [Compute quota sets](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/compute/v2/quotasets), [Network quotas](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/quotas), and [Block Storage quota sets](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/quotasets).
+
+Verification: `go test ./...`, `go build -o bin/openstack ./cmd/openstack`, live `cloud6` JSON smoke checks passed for `quota show`, `quota show --compute`, `quota show --usage`, and `quota list --compute`, and the no-service `quota list` parser error matched the required behavior shape.
+
 ## 2026-05-02: Pre-Implementation Question Register
 
 Work done: reviewed the living plan for implementation-defining choices and added a decision and question register to the plan. The register separates questions that require user answers from assumptions that can be reviewed and reopened later.

@@ -54,6 +54,7 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"object list", "object show",
 		"object store account show",
 		"port list", "port show",
+		"quota list", "quota show",
 		"resource class list", "resource class show",
 		"resource provider aggregate list",
 		"resource provider allocation show",
@@ -270,6 +271,17 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().Bool("reserved", false, "include reserved limits")
 		cmd.Flags().String("project", "", "show limits for project")
 		cmd.Flags().String("domain", "", "project domain")
+	case "quota list":
+		cmd.Flags().Bool("compute", false, "list compute quotas")
+		cmd.Flags().Bool("volume", false, "list volume quotas")
+		cmd.Flags().Bool("network", false, "list network quotas")
+	case "quota show":
+		cmd.Flags().Bool("default", false, "show default quotas")
+		cmd.Flags().Bool("usage", false, "show quota usage")
+		cmd.Flags().Bool("all", false, "show quotas for all services")
+		cmd.Flags().Bool("compute", false, "show compute quota")
+		cmd.Flags().Bool("volume", false, "show volume quota")
+		cmd.Flags().Bool("network", false, "show network quota")
 	case "resource provider list":
 		cmd.Flags().String("uuid", "", "filter by UUID")
 		cmd.Flags().String("name", "", "filter by name")
@@ -353,6 +365,7 @@ func isCoreReadCommand(path string) bool {
 		"object list", "object show",
 		"object store account show",
 		"port list", "port show",
+		"quota list", "quota show",
 		"resource class list", "resource class show",
 		"resource provider aggregate list",
 		"resource provider allocation show",

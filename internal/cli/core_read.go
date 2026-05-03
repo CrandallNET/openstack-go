@@ -123,6 +123,10 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return objectStoreAccountShow(cmd.Context(), stdout, opts, client)
+		case "quota list":
+			return quotaList(cmd.Context(), stdout, opts, clients)
+		case "quota show":
+			return quotaShow(cmd.Context(), stdout, opts, clients, args)
 		case "keypair list":
 			client, err := clients.computeV2()
 			if err != nil {

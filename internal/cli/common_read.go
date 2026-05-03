@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/http"
+	"os"
 	"reflect"
 	"sort"
 	"strings"
@@ -15,6 +17,7 @@ import (
 	"github.com/gophercloud/gophercloud/v2/openstack/common/extensions"
 	computeaz "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/availabilityzones"
 	computelimits "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/limits"
+	"github.com/gophercloud/gophercloud/v2/openstack/identity/v3/tokens"
 )
 
 type networkAvailabilityZone struct {
@@ -138,6 +141,102 @@ func limitsShow(ctx context.Context, stdout io.Writer, opts *Options, clients *o
 	return limitAbsoluteShow(ctx, stdout, opts, clients)
 }
 
+func quotaList(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients) error {
+	compute, volume, network := selectedQuotaListService(opts)
+	if !compute && !volume && !network {
+		return fmt.Errorf("one of the arguments --compute --volume --network is required")
+	}
+
+	var rows []outputRow
+	if compute {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		serviceRows, err := quotaListRows(ctx, client, "os-quota-sets", "compute")
+		if err != nil {
+			return err
+		}
+		rows = append(rows, serviceRows...)
+	}
+	if volume {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		serviceRows, err := quotaListRows(ctx, client, "os-quota-sets", "volume")
+		if err != nil {
+			return err
+		}
+		rows = append(rows, serviceRows...)
+	}
+	if network {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		serviceRows, err := quotaListRows(ctx, client, "quotas", "network")
+		if err != nil {
+			return err
+		}
+		rows = append(rows, serviceRows...)
+	}
+	return renderListOutput(stdout, opts, []string{"Project ID", "Service", "Resource", "Limit"}, rows)
+}
+
+func quotaShow(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string) error {
+	projectID, err := quotaProjectID(ctx, opts, clients, args)
+	if err != nil {
+		return err
+	}
+	compute, volume, network := selectedQuotaShowServices(opts)
+	usage := boolFlag(opts, "usage")
+	if boolFlag(opts, "default") && usage {
+		return fmt.Errorf("argument --default: not allowed with argument --usage")
+	}
+
+	var rows []outputRow
+	if compute {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		serviceRows, err := computeQuotaRows(ctx, client, projectID, usage)
+		if err != nil {
+			return err
+		}
+		rows = append(rows, serviceRows...)
+	}
+	if volume {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		serviceRows, err := volumeQuotaRows(ctx, client, projectID, usage, boolFlag(opts, "default"))
+		if err != nil {
+			return err
+		}
+		rows = append(rows, serviceRows...)
+	}
+	if network {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		serviceRows, err := networkQuotaRows(ctx, client, projectID, usage)
+		if err != nil {
+			return err
+		}
+		rows = append(rows, serviceRows...)
+	}
+
+	columns := []string{"Resource", "Limit"}
+	if usage {
+		columns = append(columns, "In Use", "Reserved")
+	}
+	return renderListOutput(stdout, opts, columns, rows)
+}
+
 func selectedAvailabilityZoneServices(opts *Options) (bool, bool, bool) {
 	compute := boolFlag(opts, "compute")
 	network := boolFlag(opts, "network")
@@ -157,6 +256,20 @@ func selectedExtensionServices(opts *Options) (bool, bool, bool, bool) {
 		return true, false, true, true
 	}
 	return compute, identity, network, volume
+}
+
+func selectedQuotaListService(opts *Options) (bool, bool, bool) {
+	return boolFlag(opts, "compute"), boolFlag(opts, "volume"), boolFlag(opts, "network")
+}
+
+func selectedQuotaShowServices(opts *Options) (bool, bool, bool) {
+	compute := boolFlag(opts, "compute")
+	volume := boolFlag(opts, "volume")
+	network := boolFlag(opts, "network")
+	if boolFlag(opts, "all") || (!compute && !volume && !network) {
+		return true, true, true
+	}
+	return compute, volume, network
 }
 
 func computeAvailabilityZoneRows(ctx context.Context, client *gophercloud.ServiceClient, long bool) ([]outputRow, error) {
@@ -320,6 +433,364 @@ func findNetworkExtension(ctx context.Context, client *gophercloud.ServiceClient
 		}
 	}
 	return singleMatch(value, matches)
+}
+
+func quotaProjectID(ctx context.Context, opts *Options, clients *openStackClients, args []string) (string, error) {
+	if len(args) > 0 {
+		identityClient, err := clients.identityV3()
+		if err != nil {
+			return "", err
+		}
+		project, err := findProject(ctx, identityClient, args[0])
+		if err != nil {
+			return "", err
+		}
+		return project.ID, nil
+	}
+	if projectID := currentProjectID(clients); projectID != "" {
+		return projectID, nil
+	}
+	if projectID := os.Getenv("OS_PROJECT_ID"); projectID != "" {
+		return projectID, nil
+	}
+	if projectID := os.Getenv("OS_TENANT_ID"); projectID != "" {
+		return projectID, nil
+	}
+	return "", fmt.Errorf("quota show requires a project when the current token is not project-scoped")
+}
+
+func currentProjectID(clients *openStackClients) string {
+	if clients == nil || clients.Provider == nil {
+		return ""
+	}
+	extractor, ok := clients.Provider.GetAuthResult().(interface {
+		ExtractProject() (*tokens.Project, error)
+	})
+	if !ok {
+		return ""
+	}
+	project, err := extractor.ExtractProject()
+	if err != nil || project == nil {
+		return ""
+	}
+	return project.ID
+}
+
+func quotaListRows(ctx context.Context, client *gophercloud.ServiceClient, resource string, service string) ([]outputRow, error) {
+	var response struct {
+		Quotas []map[string]any `json:"quotas"`
+	}
+	resp, err := client.Get(ctx, client.ServiceURL(resource), &response, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		if gophercloud.ResponseCodeIs(err, http.StatusNotFound) {
+			return []outputRow{}, nil
+		}
+		return nil, err
+	}
+	var rows []outputRow
+	for _, quota := range response.Quotas {
+		projectID := quotaString(quota["id"])
+		if projectID == "" {
+			projectID = quotaString(quota["tenant_id"])
+		}
+		for key, value := range quota {
+			if key == "id" || key == "tenant_id" || key == "project_id" {
+				continue
+			}
+			rows = append(rows, outputRow{
+				"Project ID": projectID,
+				"Service":    service,
+				"Resource":   quotaResourceName(service, key),
+				"Limit":      quotaLimit(value),
+			})
+		}
+	}
+	sort.Slice(rows, func(i, j int) bool {
+		left := valueString(rows[i]["Project ID"]) + valueString(rows[i]["Service"]) + valueString(rows[i]["Resource"])
+		right := valueString(rows[j]["Project ID"]) + valueString(rows[j]["Service"]) + valueString(rows[j]["Resource"])
+		return left < right
+	})
+	return rows, nil
+}
+
+func computeQuotaRows(ctx context.Context, client *gophercloud.ServiceClient, projectID string, usage bool) ([]outputRow, error) {
+	path := client.ServiceURL("os-quota-sets", projectID)
+	if usage {
+		path = client.ServiceURL("os-quota-sets", projectID, "detail")
+	}
+	quota, err := quotaResponse(ctx, client, path, "quota_set")
+	if err != nil {
+		return nil, err
+	}
+	if usage {
+		return quotaUsageRows(quota, []quotaField{
+			{Key: "cores", Name: "cores"},
+			{Key: "instances", Name: "instances"},
+			{Key: "ram", Name: "ram"},
+			{Key: "__osc_missing_fixed_ips", Name: "fixed_ips", DefaultLimit: 0},
+			{Key: "injected_file_content_bytes", Name: "injected-file-size"},
+			{Key: "injected_file_path_bytes", Name: "injected-path-size"},
+			{Key: "injected_files", Name: "injected-files"},
+			{Key: "key_pairs", Name: "key-pairs"},
+			{Key: "metadata_items", Name: "properties"},
+			{Key: "server_group_members", Name: "server-group-members"},
+			{Key: "server_groups", Name: "server-groups"},
+		}), nil
+	}
+	return quotaLimitRows(quota, []quotaField{
+		{Key: "cores", Name: "cores"},
+		{Key: "instances", Name: "instances"},
+		{Key: "ram", Name: "ram"},
+		{Key: "__osc_missing_fixed_ips", Name: "fixed_ips"},
+		{Key: "__osc_missing_floating_ips", Name: "floating_ips"},
+		{Key: "__osc_missing_networks", Name: "networks"},
+		{Key: "__osc_missing_security_group_rules", Name: "security_group_rules"},
+		{Key: "__osc_missing_security_groups", Name: "security_groups"},
+		{Key: "injected_file_content_bytes", Name: "injected-file-size"},
+		{Key: "injected_file_path_bytes", Name: "injected-path-size"},
+		{Key: "injected_files", Name: "injected-files"},
+		{Key: "key_pairs", Name: "key-pairs"},
+		{Key: "metadata_items", Name: "properties"},
+		{Key: "server_group_members", Name: "server-group-members"},
+		{Key: "server_groups", Name: "server-groups"},
+	}), nil
+}
+
+func volumeQuotaRows(ctx context.Context, client *gophercloud.ServiceClient, projectID string, usage bool, defaults bool) ([]outputRow, error) {
+	path := client.ServiceURL("os-quota-sets", projectID)
+	if usage {
+		path += "?usage=true"
+	} else if defaults {
+		path = client.ServiceURL("os-quota-sets", projectID, "defaults")
+	}
+	quota, err := quotaResponse(ctx, client, path, "quota_set")
+	if err != nil {
+		return nil, err
+	}
+
+	fields := []quotaField{
+		{Key: "volumes", Name: "volumes"},
+		{Key: "snapshots", Name: "snapshots"},
+		{Key: "gigabytes", Name: "gigabytes"},
+		{Key: "backups", Name: "backups"},
+	}
+	extras := quotaExtraFields(quota, []string{"volumes_", "gigabytes_", "snapshots_"})
+	fields = append(fields, extras...)
+	fields = append(fields,
+		quotaField{Key: "groups", Name: "groups"},
+		quotaField{Key: "backup_gigabytes", Name: "backup-gigabytes"},
+		quotaField{Key: "per_volume_gigabytes", Name: "per-volume-gigabytes"},
+	)
+	if usage {
+		return quotaUsageRows(quota, fields), nil
+	}
+	return quotaLimitRows(quota, fields), nil
+}
+
+func networkQuotaRows(ctx context.Context, client *gophercloud.ServiceClient, projectID string, usage bool) ([]outputRow, error) {
+	path := client.ServiceURL("quotas", projectID)
+	if usage {
+		path = client.ServiceURL("quotas", projectID, "details")
+	}
+	quota, err := quotaResponse(ctx, client, path, "quota")
+	if err != nil {
+		return nil, err
+	}
+	if usage {
+		return quotaUsageRows(quota, []quotaField{
+			{Key: "network", Name: "networks"},
+			{Key: "port", Name: "ports"},
+			{Key: "rbac_policy", Name: "rbac_policies"},
+			{Key: "router", Name: "routers"},
+			{Key: "subnet", Name: "subnets"},
+			{Key: "subnetpool", Name: "subnet_pools"},
+			{Key: "floatingip", Name: "floating-ips"},
+			{Key: "security_group_rule", Name: "secgroup-rules"},
+			{Key: "security_group", Name: "secgroups"},
+		}), nil
+	}
+	return quotaLimitRows(quota, []quotaField{
+		{Name: "check_limit"},
+		{Name: "health_monitors"},
+		{Name: "listeners"},
+		{Name: "load_balancers"},
+		{Name: "l7_policies"},
+		{Key: "network", Name: "networks"},
+		{Name: "pools"},
+		{Key: "port", Name: "ports"},
+		{Name: "project_id"},
+		{Key: "rbac_policy", Name: "rbac_policies"},
+		{Key: "router", Name: "routers"},
+		{Key: "subnet", Name: "subnets"},
+		{Key: "subnetpool", Name: "subnet_pools"},
+		{Key: "floatingip", Name: "floating-ips"},
+		{Key: "security_group_rule", Name: "secgroup-rules"},
+		{Key: "security_group", Name: "secgroups"},
+	}), nil
+}
+
+type quotaField struct {
+	Key          string
+	Name         string
+	DefaultLimit any
+}
+
+func quotaResponse(ctx context.Context, client *gophercloud.ServiceClient, url string, key string) (map[string]any, error) {
+	var response map[string]any
+	resp, err := client.Get(ctx, url, &response, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return nil, err
+	}
+	raw, ok := response[key].(map[string]any)
+	if !ok {
+		return map[string]any{}, nil
+	}
+	return raw, nil
+}
+
+func quotaLimitRows(quota map[string]any, fields []quotaField) []outputRow {
+	rows := make([]outputRow, 0, len(fields))
+	for _, field := range fields {
+		key := field.Key
+		if key == "" {
+			key = field.Name
+		}
+		value, ok := quota[key]
+		limit := field.DefaultLimit
+		if ok {
+			limit = quotaLimit(value)
+		}
+		rows = append(rows, outputRow{"Resource": field.Name, "Limit": limit})
+	}
+	return rows
+}
+
+func quotaUsageRows(quota map[string]any, fields []quotaField) []outputRow {
+	rows := make([]outputRow, 0, len(fields))
+	for _, field := range fields {
+		key := field.Key
+		if key == "" {
+			key = field.Name
+		}
+		value, ok := quota[key]
+		if !ok {
+			rows = append(rows, outputRow{"Resource": field.Name, "Limit": field.DefaultLimit, "In Use": 0, "Reserved": 0})
+			continue
+		}
+		detail, ok := value.(map[string]any)
+		if !ok {
+			rows = append(rows, outputRow{"Resource": field.Name, "Limit": quotaLimit(value), "In Use": 0, "Reserved": 0})
+			continue
+		}
+		inUse := quotaLimit(detail["in_use"])
+		if inUse == nil {
+			inUse = quotaLimit(detail["used"])
+		}
+		rows = append(rows, outputRow{
+			"Resource": field.Name,
+			"Limit":    quotaLimit(detail["limit"]),
+			"In Use":   inUse,
+			"Reserved": quotaLimit(detail["reserved"]),
+		})
+	}
+	return rows
+}
+
+func quotaExtraFields(quota map[string]any, prefixes []string) []quotaField {
+	var keys []string
+	for key := range quota {
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(key, prefix) {
+				keys = append(keys, key)
+				break
+			}
+		}
+	}
+	sort.Strings(keys)
+	fields := make([]quotaField, 0, len(keys))
+	for _, key := range keys {
+		fields = append(fields, quotaField{Key: key, Name: key})
+	}
+	return fields
+}
+
+func quotaResourceName(service string, key string) string {
+	switch service {
+	case "compute":
+		switch key {
+		case "injected_file_content_bytes":
+			return "injected-file-size"
+		case "injected_file_path_bytes":
+			return "injected-path-size"
+		case "injected_files":
+			return "injected-files"
+		case "key_pairs":
+			return "key-pairs"
+		case "metadata_items":
+			return "properties"
+		case "server_group_members":
+			return "server-group-members"
+		case "server_groups":
+			return "server-groups"
+		}
+	case "network":
+		switch key {
+		case "floatingip":
+			return "floating-ips"
+		case "security_group_rule":
+			return "secgroup-rules"
+		case "security_group":
+			return "secgroups"
+		case "subnetpool":
+			return "subnet_pools"
+		}
+	case "volume":
+		switch key {
+		case "backup_gigabytes":
+			return "backup-gigabytes"
+		case "per_volume_gigabytes":
+			return "per-volume-gigabytes"
+		}
+	}
+	return key
+}
+
+func quotaLimit(value any) any {
+	switch typed := value.(type) {
+	case nil:
+		return nil
+	case int:
+		return typed
+	case int64:
+		return typed
+	case float64:
+		if typed == float64(int64(typed)) {
+			return int64(typed)
+		}
+		return typed
+	case jsonNumber:
+		return typed
+	case string:
+		if typed == "" {
+			return nil
+		}
+		return typed
+	default:
+		return typed
+	}
+}
+
+type jsonNumber interface {
+	String() string
+}
+
+func quotaString(value any) string {
+	if value == nil {
+		return ""
+	}
+	return fmt.Sprint(value)
 }
 
 func limitAbsoluteShow(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients) error {

@@ -265,6 +265,8 @@ func coreReadPackages() map[string]string {
 		"object store account show":         "github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/accounts",
 		"port list":                         "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/ports",
 		"port show":                         "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/ports",
+		"quota list":                        "Compute/Volume/Network quota reads via gophercloud.ServiceClient; typed SDK packages are incomplete for OSC-shaped aggregate output",
+		"quota show":                        "Compute/Volume/Network quota reads via gophercloud.ServiceClient; typed SDK packages are incomplete for OSC-shaped aggregate output",
 		"resource class list":               "github.com/gophercloud/gophercloud/v2/openstack/placement/v1/resourceclasses",
 		"resource class show":               "github.com/gophercloud/gophercloud/v2/openstack/placement/v1/resourceclasses",
 		"resource provider aggregate list":  "github.com/gophercloud/gophercloud/v2/openstack/placement/v1/resourceproviders",
@@ -295,6 +297,8 @@ func coreReadPackages() map[string]string {
 func coreReadShims() map[string]bool {
 	return map[string]bool{
 		"availability zone list": true,
+		"quota list":             true,
+		"quota show":             true,
 	}
 }
 
@@ -322,6 +326,8 @@ func coreCloudVerified() map[string]bool {
 		"object store account show":         true,
 		"port list":                         true,
 		"port show":                         true,
+		"quota list":                        true,
+		"quota show":                        true,
 		"resource class list":               true,
 		"resource class show":               true,
 		"resource provider aggregate list":  true,

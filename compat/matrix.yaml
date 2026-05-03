@@ -3696,13 +3696,15 @@ commands:
     group: "openstack.common"
     service: "common"
     api: "multi-service"
-    status: "unknown"
-    sdk_package: ""
-    shim: false
+    status: "cloud-verified"
+    sdk_package: "Compute/Volume/Network quota reads via gophercloud.ServiceClient; typed SDK packages are incomplete for OSC-shaped aggregate output"
+    shim: true
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
   - command: "quota set"
     group: "openstack.common"
     service: "common"
@@ -3718,13 +3720,15 @@ commands:
     group: "openstack.common"
     service: "common"
     api: "multi-service"
-    status: "unknown"
-    sdk_package: ""
-    shim: false
+    status: "cloud-verified"
+    sdk_package: "Compute/Volume/Network quota reads via gophercloud.ServiceClient; typed SDK packages are incomplete for OSC-shaped aggregate output"
+    shim: true
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
   - command: "region create"
     group: "openstack.identity.v3"
     service: "identity"
