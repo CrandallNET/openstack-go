@@ -295,6 +295,12 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return imageDelete(cmd.Context(), cmd.ErrOrStderr(), opts, client, args)
+		case "image import":
+			client, err := clients.imageV2()
+			if err != nil {
+				return err
+			}
+			return imageImport(cmd.Context(), stdout, opts, client, args)
 		case "image member get":
 			client, err := clients.imageV2()
 			if err != nil {
@@ -453,12 +459,24 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return imageRemoveProject(cmd.Context(), opts, imageClient, identityClient, args)
+		case "image save":
+			client, err := clients.imageV2()
+			if err != nil {
+				return err
+			}
+			return imageSave(cmd.Context(), stdout, opts, client, args)
 		case "image show":
 			client, err := clients.imageV2()
 			if err != nil {
 				return err
 			}
 			return imageShow(cmd.Context(), stdout, opts, client, args)
+		case "image stage":
+			client, err := clients.imageV2()
+			if err != nil {
+				return err
+			}
+			return imageStage(cmd.Context(), opts, client, args)
 		case "image stores list":
 			client, err := clients.imageV2()
 			if err != nil {
@@ -1985,6 +2003,181 @@ func imageDelete(ctx context.Context, stderr io.Writer, opts *Options, client *g
 		return fmt.Errorf("Failed to delete %d of %d images.", failures, len(args))
 	}
 	return nil
+}
+
+func imageSave(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("image save requires <image>")
+	}
+	image, err := findImage(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	body, err := imagedata.Download(ctx, client, image.ID).Extract()
+	if err != nil {
+		return err
+	}
+	defer body.Close()
+
+	output := stdout
+	var file *os.File
+	if filename := flagValue(opts, "file"); filename != "" {
+		file, err = os.Create(filename)
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+		output = file
+	}
+	chunkSize := 1024
+	if value := flagValue(opts, "chunk-size"); value != "" {
+		if parsed, parseErr := strconv.Atoi(value); parseErr == nil && parsed > 0 {
+			chunkSize = parsed
+		}
+	}
+	_, err = io.CopyBuffer(output, body, make([]byte, chunkSize))
+	return err
+}
+
+func imageStage(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("image stage requires <image>")
+	}
+	image, err := findImage(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	if image.Status != images.ImageStatusQueued {
+		return fmt.Errorf("Image stage is only possible for images in the queued state. Current state is %s", image.Status)
+	}
+	data, closeData, err := imageCreateDataReader(opts)
+	if err != nil {
+		return err
+	}
+	if closeData != nil {
+		defer closeData.Close()
+	}
+	if data == nil {
+		data = bytes.NewReader(nil)
+	}
+	return imagedata.Stage(ctx, client, image.ID, data).ExtractErr()
+}
+
+func imageImport(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("image import requires <image>")
+	}
+	info, err := imageimport.Get(ctx, client).Extract()
+	if err != nil {
+		if gophercloud.ResponseCodeIs(err, http.StatusNotFound) {
+			return fmt.Errorf("The Image Import feature is not supported by this deployment")
+		}
+		return err
+	}
+	method := flagValue(opts, "method")
+	if method == "" {
+		method = "glance-direct"
+	}
+	if !stringInSlice(method, info.ImportMethods.Value) {
+		return fmt.Errorf("The '%s' import method is not supported by this deployment. Supported: %s", method, strings.Join(info.ImportMethods.Value, ", "))
+	}
+	if method == "web-download" {
+		uri := flagValue(opts, "uri")
+		if uri == "" {
+			return fmt.Errorf("The '--uri' option is required when using '--method=web-download'")
+		}
+		parsed, err := url.Parse(uri)
+		if err != nil || parsed.Scheme == "" || parsed.Host == "" {
+			return fmt.Errorf("'%s' is not a valid url", uri)
+		}
+	} else if flagValue(opts, "uri") != "" {
+		return fmt.Errorf("The '--uri' option is only supported when using '--method=web-download'")
+	}
+	if method == "glance-download" {
+		if flagValue(opts, "remote-region") == "" || flagValue(opts, "remote-image") == "" {
+			return fmt.Errorf("The '--remote-region' and '--remote-image' options are required when using '--method=web-download'")
+		}
+	} else {
+		if flagValue(opts, "remote-region") != "" {
+			return fmt.Errorf("The '--remote-region' option is only supported when using '--method=glance-download'")
+		}
+		if flagValue(opts, "remote-image") != "" {
+			return fmt.Errorf("The '--remote-image' option is only supported when using '--method=glance-download'")
+		}
+		if flagValue(opts, "remote-service-interface") != "" {
+			return fmt.Errorf("The '--remote-service-interface' option is only supported when using '--method=glance-download'")
+		}
+	}
+	stores := flagValues(opts, "store")
+	if method == "copy-image" && len(stores) == 0 && !boolFlag(opts, "all-stores") {
+		return fmt.Errorf("The '--stores' or '--all-stores' options are required when using '--method=copy-image'")
+	}
+	image, err := findImage(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	if image.ContainerFormat == "" && image.DiskFormat == "" {
+		return fmt.Errorf("The 'container_format' and 'disk_format' properties must be set on an image before it can be imported")
+	}
+	switch method {
+	case "glance-direct":
+		if image.Status != images.ImageStatusUploading {
+			return fmt.Errorf("The 'glance-direct' import method can only be used with an image in status 'uploading'")
+		}
+	case "web-download":
+		if image.Status != images.ImageStatusQueued {
+			return fmt.Errorf("The 'web-download' import method can only be used with an image in status 'queued'")
+		}
+	case "copy-image":
+		if image.Status != images.ImageStatusActive {
+			return fmt.Errorf("The 'copy-image' import method can only be used with an image in status 'active'")
+		}
+	}
+	request := map[string]any{
+		"method":                  map[string]any{"name": method},
+		"all_stores_must_succeed": !imageImportAllowFailure(opts),
+	}
+	methodBody := request["method"].(map[string]any)
+	if uri := flagValue(opts, "uri"); uri != "" {
+		methodBody["uri"] = uri
+	}
+	if remoteRegion := flagValue(opts, "remote-region"); remoteRegion != "" {
+		methodBody["glance_region"] = remoteRegion
+	}
+	if remoteImage := flagValue(opts, "remote-image"); remoteImage != "" {
+		methodBody["glance_image_id"] = remoteImage
+	}
+	if remoteInterface := flagValue(opts, "remote-service-interface"); remoteInterface != "" {
+		methodBody["glance_service_interface"] = remoteInterface
+	}
+	if boolFlag(opts, "all-stores") {
+		request["all_stores"] = true
+	}
+	if len(stores) > 0 {
+		request["stores"] = stores
+	}
+	resp, err := client.Post(ctx, client.ServiceURL("images", url.PathEscape(image.ID), "import"), request, nil, &gophercloud.RequestOpts{OkCodes: []int{http.StatusAccepted}})
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, imageCreateFields(image))
+}
+
+func imageImportAllowFailure(opts *Options) bool {
+	if boolFlag(opts, "disallow-failure") {
+		return false
+	}
+	return true
+}
+
+func stringInSlice(value string, values []string) bool {
+	for _, item := range values {
+		if item == value {
+			return true
+		}
+	}
+	return false
 }
 
 func imageCreateDataReader(opts *Options) (io.Reader, io.Closer, error) {

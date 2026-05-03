@@ -680,3 +680,18 @@ Sources consulted:
 * Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/image/v2/image.py`, used only as the pinned local oracle implementation source.
 * Local OpenStackSDK source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/image/v2/_proxy.py`, which documents the `create_image` owner-specified metadata defaults and `delete_image(..., store=...)` behavior.
 * Gophercloud package docs for [Image v2 images](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/image/v2/images), [Image v2 image data](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/image/v2/imagedata), [Image v2 import](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/image/v2/imageimport), and [Block Storage v3 volumes](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/volumes).
+
+## 2026-05-03: Image Save, Stage, And Import
+
+Work done: added `image save`, `image stage`, and command-level `image import`.
+
+Implementation note: `image save` uses Gophercloud's typed Image v2 download helper and honors `--file` plus the OSC `--chunk-size` buffer option. `image stage` uses Gophercloud's typed staging helper and mirrors Python OSC's file-or-stdin behavior and queued-state precondition. `image import` validates import capability and method-specific options against the Python OSC command logic, then uses an authenticated Glance REST request at `/v2/images/{image_id}/import`. The local Gophercloud v2.12.0 `imageimport.Create` helper covers the simple method/URI body, but not the full OSC command surface for stores, all-stores, remote import, and copy-image.
+
+Live observations on `cloud6`: the Go CLI created and deleted disposable images `gocli-test-go-20260503-image-save-001` and `gocli-test-go-20260503-image-import-001`. The first image verified `image save --file` against an active zero-byte image. The second image verified TTY queued creation, `image stage --file`, status transition to `uploading`, `image import -f json`, and cleanup.
+
+Sources consulted:
+
+* Local OSC oracle snapshots in `compat/osc/9.0.0/help/image/save.txt`, `compat/osc/9.0.0/help/image/stage.txt`, and `compat/osc/9.0.0/help/image/import.txt`.
+* Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/image/v2/image.py`, used only as the pinned local oracle implementation source.
+* Local OpenStackSDK source files `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/image/v2/image.py` and `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/image/v2/_proxy.py`, which document image stage and import request bodies.
+* Gophercloud package docs for [Image v2 image data](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/image/v2/imagedata) and [Image v2 import](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/image/v2/imageimport).

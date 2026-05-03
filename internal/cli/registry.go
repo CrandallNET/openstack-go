@@ -77,9 +77,10 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"hypervisor list", "hypervisor show", "hypervisor stats show",
 		"image add project",
 		"image create", "image delete",
-		"image import info", "image list",
+		"image import", "image import info", "image list",
 		"image member get", "image member list", "image show",
 		"image remove project",
+		"image save", "image stage",
 		"image metadef namespace create", "image metadef namespace delete",
 		"image metadef namespace list", "image metadef namespace set",
 		"image metadef namespace show",
@@ -455,6 +456,23 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().String("project-domain", "", "project domain")
 	case "image delete":
 		cmd.Flags().String("store", "", "store to delete image from")
+	case "image import":
+		cmd.Flags().String("method", "glance-direct", "image import method")
+		cmd.Flags().String("uri", "", "web-download URI")
+		cmd.Flags().String("remote-image", "", "remote Glance image ID")
+		cmd.Flags().String("remote-region", "", "remote Glance region")
+		cmd.Flags().String("remote-service-interface", "", "remote Glance service interface")
+		cmd.Flags().StringArray("store", nil, "backend store")
+		cmd.Flags().Bool("all-stores", false, "import to all stores")
+		cmd.Flags().Bool("allow-failure", false, "allow partial multi-store failure")
+		cmd.Flags().Bool("disallow-failure", false, "disallow partial multi-store failure")
+		cmd.Flags().Bool("wait", false, "wait for operation to complete")
+	case "image save":
+		cmd.Flags().Int("chunk-size", 1024, "download buffer size")
+		cmd.Flags().String("file", "", "downloaded image filename")
+	case "image stage":
+		cmd.Flags().String("file", "", "local file to stage")
+		cmd.Flags().Bool("progress", false, "show upload progress")
 	case "image metadef namespace create", "image metadef namespace set":
 		cmd.Flags().String("display-name", "", "display name")
 		cmd.Flags().String("description", "", "description")
@@ -759,9 +777,10 @@ func isCoreReadCommand(path string) bool {
 		"hypervisor list", "hypervisor show", "hypervisor stats show",
 		"image add project",
 		"image create", "image delete",
-		"image import info", "image list",
+		"image import", "image import info", "image list",
 		"image member get", "image member list", "image show",
 		"image remove project",
+		"image save", "image stage",
 		"image metadef namespace create", "image metadef namespace delete",
 		"image metadef namespace list", "image metadef namespace set",
 		"image metadef namespace show",
