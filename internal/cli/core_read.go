@@ -299,6 +299,8 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return volumeTypeShow(cmd.Context(), stdout, opts, client, args)
+		case "versions show":
+			return versionsShow(cmd.Context(), stdout, opts, clients)
 		default:
 			return fmt.Errorf("core read command %q is not wired", path)
 		}

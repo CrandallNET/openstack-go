@@ -5865,13 +5865,15 @@ commands:
     group: "openstack.common"
     service: "common"
     api: "multi-service"
-    status: "unknown"
-    sdk_package: ""
-    shim: false
+    status: "cloud-verified"
+    sdk_package: "Service catalog version discovery via gophercloud.ProviderClient"
+    shim: true
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
   - command: "volume attachment complete"
     group: "openstack.volume.v3"
     service: "volume"

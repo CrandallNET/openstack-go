@@ -237,6 +237,49 @@ func quotaShow(ctx context.Context, stdout io.Writer, opts *Options, clients *op
 	return renderListOutput(stdout, opts, columns, rows)
 }
 
+func versionsShow(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients) error {
+	catalog, err := currentServiceCatalog(clients)
+	if err != nil {
+		return err
+	}
+	var rows []outputRow
+	seen := map[string]bool{}
+	for _, entry := range catalog.Entries {
+		if flagValue(opts, "service") == "" && entry.Type == "volumev3" && catalogHasServiceType(catalog, "block-storage") {
+			continue
+		}
+		if !versionServiceSelected(opts, entry) {
+			continue
+		}
+		for _, endpoint := range entry.Endpoints {
+			if !versionEndpointSelected(opts, endpoint) {
+				continue
+			}
+			key := entry.Type + "|" + endpoint.Region + "|" + endpoint.Interface + "|" + versionRootURL(endpoint.URL)
+			if seen[key] && !boolFlag(opts, "all-interfaces") {
+				continue
+			}
+			seen[key] = true
+			serviceRows, err := versionRowsForEndpoint(ctx, clients.Provider, entry.Type, endpoint)
+			if err != nil || len(serviceRows) == 0 {
+				serviceRows = []outputRow{versionFallbackRow(entry.Type, endpoint)}
+			}
+			rows = append(rows, serviceRows...)
+		}
+	}
+	status := strings.ToUpper(flagValue(opts, "status"))
+	if status != "" {
+		filtered := rows[:0]
+		for _, row := range rows {
+			if strings.ToUpper(valueString(row["Status"])) == status {
+				filtered = append(filtered, row)
+			}
+		}
+		rows = filtered
+	}
+	return renderListOutput(stdout, opts, []string{"Region Name", "Service Type", "Version", "Status", "Endpoint", "Min Microversion", "Max Microversion"}, rows)
+}
+
 func selectedAvailabilityZoneServices(opts *Options) (bool, bool, bool) {
 	compute := boolFlag(opts, "compute")
 	network := boolFlag(opts, "network")
@@ -474,6 +517,242 @@ func currentProjectID(clients *openStackClients) string {
 		return ""
 	}
 	return project.ID
+}
+
+func currentServiceCatalog(clients *openStackClients) (*tokens.ServiceCatalog, error) {
+	if clients == nil || clients.Provider == nil {
+		return nil, fmt.Errorf("service catalog is not available")
+	}
+	extractor, ok := clients.Provider.GetAuthResult().(interface {
+		ExtractServiceCatalog() (*tokens.ServiceCatalog, error)
+	})
+	if !ok {
+		return nil, fmt.Errorf("service catalog is not available")
+	}
+	return extractor.ExtractServiceCatalog()
+}
+
+func versionServiceSelected(opts *Options, entry tokens.CatalogEntry) bool {
+	service := flagValue(opts, "service")
+	if service == "" {
+		return true
+	}
+	return entry.Type == service || entry.Name == service
+}
+
+func versionEndpointSelected(opts *Options, endpoint tokens.Endpoint) bool {
+	region := flagValue(opts, "region-name")
+	if region != "" && endpoint.Region != region && endpoint.RegionID != region {
+		return false
+	}
+	if boolFlag(opts, "all-interfaces") {
+		return true
+	}
+	if requested := flagValue(opts, "interface"); requested != "" {
+		return endpoint.Interface == requested
+	}
+	availability := string(availabilityFromInterface(firstNonEmpty(opts.Interface, os.Getenv("OS_INTERFACE"))))
+	if availability == "" {
+		availability = "public"
+	}
+	return endpoint.Interface == availability
+}
+
+func versionRowsForEndpoint(ctx context.Context, provider *gophercloud.ProviderClient, serviceType string, endpoint tokens.Endpoint) ([]outputRow, error) {
+	var response map[string]any
+	opts := &gophercloud.RequestOpts{
+		JSONResponse: &response,
+		OkCodes:      []int{http.StatusOK, http.StatusMultipleChoices},
+	}
+	root := versionRootURL(endpoint.URL)
+	_, err := provider.Request(ctx, http.MethodGet, root, opts)
+	if err != nil {
+		return nil, err
+	}
+	versions := extractVersionMaps(response)
+	sort.SliceStable(versions, func(i, j int) bool {
+		return versionLess(versionIDString(versions[i]), versionIDString(versions[j]))
+	})
+	rows := make([]outputRow, 0, len(versions))
+	for _, version := range versions {
+		rows = append(rows, outputRow{
+			"Region Name":      firstNonEmpty(endpoint.Region, endpoint.RegionID),
+			"Service Type":     serviceType,
+			"Version":          versionID(version),
+			"Status":           versionStatus(version),
+			"Endpoint":         versionEndpoint(version, endpoint.URL),
+			"Min Microversion": versionValue(version, "min_version", "min_version_id", "min_microversion"),
+			"Max Microversion": versionValue(version, "version", "max_version", "max_version_id", "max_microversion"),
+		})
+	}
+	return rows, nil
+}
+
+func versionFallbackRow(serviceType string, endpoint tokens.Endpoint) outputRow {
+	return outputRow{
+		"Region Name":      firstNonEmpty(endpoint.Region, endpoint.RegionID),
+		"Service Type":     serviceType,
+		"Version":          versionFromEndpoint(endpoint.URL),
+		"Status":           "CURRENT",
+		"Endpoint":         versionedEndpointURL(endpoint.URL),
+		"Min Microversion": nil,
+		"Max Microversion": nil,
+	}
+}
+
+func catalogHasServiceType(catalog *tokens.ServiceCatalog, serviceType string) bool {
+	if catalog == nil {
+		return false
+	}
+	for _, entry := range catalog.Entries {
+		if entry.Type == serviceType {
+			return true
+		}
+	}
+	return false
+}
+
+func extractVersionMaps(response map[string]any) []map[string]any {
+	var values []any
+	if raw, ok := response["versions"].([]any); ok {
+		values = raw
+	} else if versions, ok := response["versions"].(map[string]any); ok {
+		if raw, ok := versions["values"].([]any); ok {
+			values = raw
+		}
+	} else if version, ok := response["version"].(map[string]any); ok {
+		return []map[string]any{version}
+	}
+	result := make([]map[string]any, 0, len(values))
+	for _, value := range values {
+		if item, ok := value.(map[string]any); ok {
+			result = append(result, item)
+		}
+	}
+	return result
+}
+
+func versionRootURL(endpoint string) string {
+	trimmed := strings.TrimRight(endpoint, "/")
+	parts := strings.Split(trimmed, "/")
+	for len(parts) > 0 {
+		last := parts[len(parts)-1]
+		lower := strings.ToLower(last)
+		if strings.HasPrefix(lower, "v") || strings.Count(last, "-") >= 4 {
+			parts = parts[:len(parts)-1]
+			continue
+		}
+		break
+	}
+	return strings.Join(parts, "/") + "/"
+}
+
+func versionID(version map[string]any) any {
+	id := versionIDString(version)
+	if id != "" {
+		return id
+	}
+	return nil
+}
+
+func versionIDString(version map[string]any) string {
+	id := quotaString(version["id"])
+	id = strings.TrimPrefix(id, "v")
+	if id != "" {
+		return id
+	}
+	return quotaString(versionValue(version, "version"))
+}
+
+func versionStatus(version map[string]any) string {
+	status := strings.ToUpper(quotaString(version["status"]))
+	if status == "STABLE" {
+		return "CURRENT"
+	}
+	return status
+}
+
+func versionFromEndpoint(endpoint string) any {
+	trimmed := strings.TrimRight(endpoint, "/")
+	parts := strings.Split(trimmed, "/")
+	for i := len(parts) - 1; i >= 0; i-- {
+		part := parts[i]
+		if strings.HasPrefix(strings.ToLower(part), "v") {
+			version := strings.TrimPrefix(part, "v")
+			if !strings.Contains(version, ".") {
+				version += ".0"
+			}
+			return version
+		}
+	}
+	return nil
+}
+
+func versionedEndpointURL(endpoint string) string {
+	trimmed := strings.TrimRight(endpoint, "/")
+	parts := strings.Split(trimmed, "/")
+	for i, part := range parts {
+		if strings.HasPrefix(strings.ToLower(part), "v") {
+			return strings.Join(parts[:i+1], "/") + "/"
+		}
+	}
+	return endpoint
+}
+
+func versionLess(left string, right string) bool {
+	leftParts := strings.Split(left, ".")
+	rightParts := strings.Split(right, ".")
+	maxParts := len(leftParts)
+	if len(rightParts) > maxParts {
+		maxParts = len(rightParts)
+	}
+	for i := 0; i < maxParts; i++ {
+		leftPart := 0
+		rightPart := 0
+		if i < len(leftParts) {
+			fmt.Sscanf(leftParts[i], "%d", &leftPart)
+		}
+		if i < len(rightParts) {
+			fmt.Sscanf(rightParts[i], "%d", &rightPart)
+		}
+		if leftPart != rightPart {
+			return leftPart < rightPart
+		}
+	}
+	return left < right
+}
+
+func versionEndpoint(version map[string]any, fallback string) string {
+	links, ok := version["links"].([]any)
+	if !ok {
+		return fallback
+	}
+	for _, raw := range links {
+		link, ok := raw.(map[string]any)
+		if !ok {
+			continue
+		}
+		rel := quotaString(link["rel"])
+		if rel != "" && rel != "self" {
+			continue
+		}
+		href := quotaString(link["href"])
+		if href != "" {
+			return href
+		}
+	}
+	return fallback
+}
+
+func versionValue(version map[string]any, keys ...string) any {
+	for _, key := range keys {
+		value, ok := version[key]
+		if !ok || value == nil || value == "" {
+			continue
+		}
+		return value
+	}
+	return nil
 }
 
 func quotaListRows(ctx context.Context, client *gophercloud.ServiceClient, resource string, service string) ([]outputRow, error) {

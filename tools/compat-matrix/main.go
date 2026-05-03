@@ -285,6 +285,7 @@ func coreReadPackages() map[string]string {
 		"subnet show":                       "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/subnets",
 		"trait list":                        "github.com/gophercloud/gophercloud/v2/openstack/placement/v1/traits",
 		"trait show":                        "github.com/gophercloud/gophercloud/v2/openstack/placement/v1/traits",
+		"versions show":                     "Service catalog version discovery via gophercloud.ProviderClient",
 		"volume list":                       "github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/volumes",
 		"volume show":                       "github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/volumes",
 		"volume snapshot list":              "github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/snapshots",
@@ -299,6 +300,7 @@ func coreReadShims() map[string]bool {
 		"availability zone list": true,
 		"quota list":             true,
 		"quota show":             true,
+		"versions show":          true,
 	}
 }
 
@@ -345,6 +347,7 @@ func coreCloudVerified() map[string]bool {
 		"subnet show":                       true,
 		"trait list":                        true,
 		"trait show":                        true,
+		"versions show":                     true,
 		"volume list":                       true,
 		"volume show":                       true,
 		"volume snapshot list":              true,

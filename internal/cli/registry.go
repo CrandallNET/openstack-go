@@ -66,6 +66,7 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"server group list", "server group show",
 		"subnet list", "subnet show",
 		"trait list", "trait show",
+		"versions show",
 		"volume list", "volume show",
 		"volume snapshot list", "volume snapshot show",
 		"volume type list", "volume type show",
@@ -323,6 +324,12 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().String("volume", "", "filter by volume")
 		cmd.Flags().Int("limit", 0, "maximum number of entries")
 		cmd.Flags().String("marker", "", "pagination marker")
+	case "versions show":
+		cmd.Flags().Bool("all-interfaces", false, "show all interfaces")
+		cmd.Flags().String("interface", "", "show a specific interface")
+		cmd.Flags().String("region-name", "", "show a specific region")
+		cmd.Flags().String("service", "", "show a specific service")
+		cmd.Flags().String("status", "", "show a specific version status")
 	}
 }
 
@@ -377,6 +384,7 @@ func isCoreReadCommand(path string) bool {
 		"server group list", "server group show",
 		"subnet list", "subnet show",
 		"trait list", "trait show",
+		"versions show",
 		"volume list", "volume show",
 		"volume snapshot list", "volume snapshot show",
 		"volume type list", "volume type show":

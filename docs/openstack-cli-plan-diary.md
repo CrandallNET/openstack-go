@@ -126,6 +126,16 @@ Sources consulted: Gophercloud package docs and local module sources for [Comput
 
 Verification: `go test ./...`, `go build -o bin/openstack ./cmd/openstack`, live `cloud6` JSON smoke checks passed for `quota show`, `quota show --compute`, `quota show --usage`, and `quota list --compute`, and the no-service `quota list` parser error matched the required behavior shape.
 
+## 2026-05-02: Common Versions Read Expansion
+
+Work done: added `versions show` using the Keystone service catalog from the current token, endpoint/interface/region/service/status filtering, service root version discovery through the authenticated Gophercloud provider client, and conservative catalog-derived fallback rows when a service does not expose a parseable version document.
+
+Compatibility note: this is shim-backed because Gophercloud exposes service-specific API version helpers for some services, but not a single OSC-shaped aggregate `versions show` API. The implementation matches the observed `cloud6` Compute and Image filter outputs closely, normalizes Keystone `stable` status to OSC's `CURRENT`, and keeps unavailable services visible with fallback rows. Exact service-types-authority alias handling, full endpoint ordering, interface precedence, and exhaustive version document shapes still need oracle-backed tests.
+
+Sources consulted: local Gophercloud module sources for service-specific API version packages, including [Compute API versions](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/compute/apiversions), [Block Storage API versions](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/blockstorage/apiversions), and [Network API versions](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/apiversions), plus the Identity v3 token service catalog type in [Gophercloud tokens](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/identity/v3/tokens).
+
+Verification: `go test ./...`, `go build -o bin/openstack ./cmd/openstack`, and live `cloud6` JSON smoke checks passed for `versions show`, `versions show --service compute`, `versions show --service image --status CURRENT`, and `versions show --service identity`.
+
 ## 2026-05-02: Pre-Implementation Question Register
 
 Work done: reviewed the living plan for implementation-defining choices and added a decision and question register to the plan. The register separates questions that require user answers from assumptions that can be reviewed and reopened later.
