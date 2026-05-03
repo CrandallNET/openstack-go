@@ -594,6 +594,42 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return volumeList(cmd.Context(), stdout, opts, client)
+		case "volume group list":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeGroupList(cmd.Context(), stdout, opts, client)
+		case "volume group show":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeGroupShow(cmd.Context(), stdout, opts, client, args)
+		case "volume group snapshot list":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeGroupSnapshotList(cmd.Context(), stdout, opts, client)
+		case "volume group snapshot show":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeGroupSnapshotShow(cmd.Context(), stdout, opts, client, args)
+		case "volume group type list":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeGroupTypeList(cmd.Context(), stdout, opts, client)
+		case "volume group type show":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeGroupTypeShow(cmd.Context(), stdout, opts, client, args)
 		case "volume message list":
 			client, err := clients.blockStorageV3()
 			if err != nil {
@@ -2874,6 +2910,330 @@ func volumeMessageShow(ctx context.Context, stdout io.Writer, opts *Options, cli
 		{"resource_uuid", item.ResourceUUID},
 		{"user_message", item.UserMessage},
 	})
+}
+
+type volumeGroupRecord struct {
+	ID               string   `json:"id"`
+	Status           string   `json:"status"`
+	Name             string   `json:"name"`
+	Description      string   `json:"description"`
+	GroupType        string   `json:"group_type"`
+	VolumeTypes      []string `json:"volume_types"`
+	AvailabilityZone string   `json:"availability_zone"`
+	CreatedAt        string   `json:"created_at"`
+	Volumes          []any    `json:"volumes"`
+	GroupSnapshotID  string   `json:"group_snapshot_id"`
+	SourceGroupID    string   `json:"source_group_id"`
+}
+
+func volumeGroupList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	client, err := blockStorageClientWithExplicitMinimumMicroversion(client, "3.13", "volume group list")
+	if err != nil {
+		return err
+	}
+	items, err := listVolumeGroups(ctx, client, boolFlag(opts, "all-projects"), false)
+	if err != nil {
+		return err
+	}
+	rows := make([]outputRow, 0, len(items))
+	for _, item := range items {
+		rows = append(rows, outputRow{
+			"ID":     item.ID,
+			"Status": item.Status,
+			"Name":   item.Name,
+		})
+	}
+	return renderListOutput(stdout, opts, []string{"ID", "Status", "Name"}, rows)
+}
+
+func volumeGroupShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("volume group show requires <group>")
+	}
+	client, err := blockStorageClientWithExplicitMinimumMicroversion(client, "3.13", "volume group show")
+	if err != nil {
+		return err
+	}
+	if flagValue(opts, "volumes") != "" || flagValue(opts, "no-volumes") != "" {
+		if !microversionAtLeast(client.Microversion, "3.25") {
+			return fmt.Errorf("--os-volume-api-version 3.25 or greater is required to support the '--(no-)volumes' option")
+		}
+	}
+	if flagValue(opts, "replication-targets") != "" || flagValue(opts, "no-replication-targets") != "" {
+		if !microversionAtLeast(client.Microversion, "3.38") {
+			return fmt.Errorf("--os-volume-api-version 3.38 or greater is required to support the '--(no-)replication-targets' option")
+		}
+	}
+	item, err := findVolumeGroup(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	requestURL := client.ServiceURL("groups", item.ID)
+	if boolFlag(opts, "volumes") {
+		query := url.Values{}
+		query.Set("list_volume", "True")
+		requestURL += "?" + query.Encode()
+	}
+	var response struct {
+		Group volumeGroupRecord `json:"group"`
+	}
+	resp, err := client.Get(ctx, requestURL, &response, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return err
+	}
+	item = response.Group
+	return renderShowOutput(stdout, opts, []outputField{
+		{"ID", item.ID},
+		{"Status", item.Status},
+		{"Name", item.Name},
+		{"Description", nilIfEmpty(item.Description)},
+		{"Group Type", nilIfEmpty(item.GroupType)},
+		{"Volume Types", item.VolumeTypes},
+		{"Availability Zone", nilIfEmpty(item.AvailabilityZone)},
+		{"Created At", nilIfEmpty(item.CreatedAt)},
+		{"Volumes", item.Volumes},
+		{"Group Snapshot ID", nilIfEmpty(item.GroupSnapshotID)},
+		{"Source Group ID", nilIfEmpty(item.SourceGroupID)},
+	})
+}
+
+func listVolumeGroups(ctx context.Context, client *gophercloud.ServiceClient, allProjects bool, listVolumes bool) ([]volumeGroupRecord, error) {
+	requestURL := client.ServiceURL("groups", "detail")
+	query := url.Values{}
+	if allProjects {
+		query.Set("all_tenants", "True")
+	}
+	if listVolumes {
+		query.Set("list_volume", "True")
+	}
+	if encoded := query.Encode(); encoded != "" {
+		requestURL += "?" + encoded
+	}
+	var response struct {
+		Groups []volumeGroupRecord `json:"groups"`
+	}
+	resp, err := client.Get(ctx, requestURL, &response, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return nil, err
+	}
+	return response.Groups, nil
+}
+
+func findVolumeGroup(ctx context.Context, client *gophercloud.ServiceClient, nameOrID string) (volumeGroupRecord, error) {
+	items, err := listVolumeGroups(ctx, client, false, false)
+	if err != nil {
+		return volumeGroupRecord{}, err
+	}
+	for _, item := range items {
+		if item.ID == nameOrID || item.Name == nameOrID {
+			return item, nil
+		}
+	}
+	var response struct {
+		Group volumeGroupRecord `json:"group"`
+	}
+	resp, err := client.Get(ctx, client.ServiceURL("groups", nameOrID), &response, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return volumeGroupRecord{}, err
+	}
+	return response.Group, nil
+}
+
+type volumeGroupSnapshotRecord struct {
+	ID          string `json:"id"`
+	Status      string `json:"status"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	GroupID     string `json:"group_id"`
+	GroupTypeID string `json:"group_type_id"`
+}
+
+func volumeGroupSnapshotList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	client, err := blockStorageClientWithMinimumMicroversion(ctx, client, "3.14")
+	if err != nil {
+		return err
+	}
+	items, err := listVolumeGroupSnapshots(ctx, client, boolFlag(opts, "all-projects"))
+	if err != nil {
+		return err
+	}
+	rows := make([]outputRow, 0, len(items))
+	for _, item := range items {
+		rows = append(rows, outputRow{
+			"ID":     item.ID,
+			"Status": item.Status,
+			"Name":   item.Name,
+		})
+	}
+	return renderListOutput(stdout, opts, []string{"ID", "Status", "Name"}, rows)
+}
+
+func volumeGroupSnapshotShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("volume group snapshot show requires <snapshot>")
+	}
+	client, err := blockStorageClientWithMinimumMicroversion(ctx, client, "3.14")
+	if err != nil {
+		return err
+	}
+	item, err := findVolumeGroupSnapshot(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, []outputField{
+		{"ID", item.ID},
+		{"Status", item.Status},
+		{"Name", item.Name},
+		{"Description", nilIfEmpty(item.Description)},
+		{"Group", nilIfEmpty(item.GroupID)},
+		{"Group Type", nilIfEmpty(item.GroupTypeID)},
+	})
+}
+
+func listVolumeGroupSnapshots(ctx context.Context, client *gophercloud.ServiceClient, allProjects bool) ([]volumeGroupSnapshotRecord, error) {
+	requestURL := client.ServiceURL("group_snapshots", "detail")
+	if allProjects {
+		query := url.Values{}
+		query.Set("all_tenants", "True")
+		requestURL += "?" + query.Encode()
+	}
+	var response struct {
+		GroupSnapshots []volumeGroupSnapshotRecord `json:"group_snapshots"`
+	}
+	resp, err := client.Get(ctx, requestURL, &response, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return nil, err
+	}
+	return response.GroupSnapshots, nil
+}
+
+func findVolumeGroupSnapshot(ctx context.Context, client *gophercloud.ServiceClient, nameOrID string) (volumeGroupSnapshotRecord, error) {
+	items, err := listVolumeGroupSnapshots(ctx, client, false)
+	if err != nil {
+		return volumeGroupSnapshotRecord{}, err
+	}
+	for _, item := range items {
+		if item.ID == nameOrID || item.Name == nameOrID {
+			nameOrID = item.ID
+			break
+		}
+	}
+	var response struct {
+		GroupSnapshot volumeGroupSnapshotRecord `json:"group_snapshot"`
+	}
+	resp, err := client.Get(ctx, client.ServiceURL("group_snapshots", nameOrID), &response, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return volumeGroupSnapshotRecord{}, err
+	}
+	return response.GroupSnapshot, nil
+}
+
+type volumeGroupTypeRecord struct {
+	ID          string         `json:"id"`
+	Name        string         `json:"name"`
+	Description string         `json:"description"`
+	IsPublic    bool           `json:"is_public"`
+	GroupSpecs  map[string]any `json:"group_specs"`
+}
+
+func volumeGroupTypeList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	client, err := blockStorageClientWithExplicitMinimumMicroversion(client, "3.11", "volume group type list")
+	if err != nil {
+		return err
+	}
+	var items []volumeGroupTypeRecord
+	if boolFlag(opts, "default") {
+		item, err := getVolumeGroupType(ctx, client, "default")
+		if err != nil {
+			return err
+		}
+		items = []volumeGroupTypeRecord{item}
+	} else {
+		items, err = listVolumeGroupTypes(ctx, client)
+		if err != nil {
+			return err
+		}
+	}
+	rows := make([]outputRow, 0, len(items))
+	for _, item := range items {
+		rows = append(rows, outputRow{
+			"ID":         item.ID,
+			"Name":       item.Name,
+			"Is Public":  item.IsPublic,
+			"Properties": mapAnyIfNil(item.GroupSpecs),
+		})
+	}
+	return renderListOutput(stdout, opts, []string{"ID", "Name", "Is Public", "Properties"}, rows)
+}
+
+func volumeGroupTypeShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("volume group type show requires <group_type>")
+	}
+	client, err := blockStorageClientWithExplicitMinimumMicroversion(client, "3.11", "volume group type show")
+	if err != nil {
+		return err
+	}
+	item, err := findVolumeGroupType(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, []outputField{
+		{"ID", item.ID},
+		{"Name", item.Name},
+		{"Description", nilIfEmpty(item.Description)},
+		{"Is Public", item.IsPublic},
+		{"Properties", mapAnyIfNil(item.GroupSpecs)},
+	})
+}
+
+func listVolumeGroupTypes(ctx context.Context, client *gophercloud.ServiceClient) ([]volumeGroupTypeRecord, error) {
+	var response struct {
+		GroupTypes []volumeGroupTypeRecord `json:"group_types"`
+	}
+	resp, err := client.Get(ctx, client.ServiceURL("group_types"), &response, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return nil, err
+	}
+	return response.GroupTypes, nil
+}
+
+func findVolumeGroupType(ctx context.Context, client *gophercloud.ServiceClient, nameOrID string) (volumeGroupTypeRecord, error) {
+	items, err := listVolumeGroupTypes(ctx, client)
+	if err != nil {
+		return volumeGroupTypeRecord{}, err
+	}
+	for _, item := range items {
+		if item.ID == nameOrID || item.Name == nameOrID {
+			return getVolumeGroupType(ctx, client, item.ID)
+		}
+	}
+	return getVolumeGroupType(ctx, client, nameOrID)
+}
+
+func getVolumeGroupType(ctx context.Context, client *gophercloud.ServiceClient, id string) (volumeGroupTypeRecord, error) {
+	var response struct {
+		GroupType volumeGroupTypeRecord `json:"group_type"`
+	}
+	resp, err := client.Get(ctx, client.ServiceURL("group_types", id), &response, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return volumeGroupTypeRecord{}, err
+	}
+	return response.GroupType, nil
+}
+
+func mapAnyIfNil(value map[string]any) map[string]any {
+	if value == nil {
+		return map[string]any{}
+	}
+	return value
 }
 
 func volumeQoSAssociations(ctx context.Context, client *gophercloud.ServiceClient, qosID string) ([]string, error) {

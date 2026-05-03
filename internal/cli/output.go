@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"bytes"
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
@@ -279,7 +280,7 @@ func writeJSONObject(stdout io.Writer, names []string, value func(string) any, o
 			if err != nil {
 				return err
 			}
-			encoded, err := json.Marshal(value(name))
+			encoded, err := encodeJSONValue(value(name), "", "")
 			if err != nil {
 				return err
 			}
@@ -299,7 +300,7 @@ func writeJSONObject(stdout io.Writer, names []string, value func(string) any, o
 		if err != nil {
 			return err
 		}
-		encoded, err := json.MarshalIndent(value(name), objectPrefix+indent, indent)
+		encoded, err := encodeJSONValue(value(name), objectPrefix+indent, indent)
 		if err != nil {
 			return err
 		}
@@ -317,6 +318,19 @@ func writeJSONObject(stdout io.Writer, names []string, value func(string) any, o
 	}
 	_, err := fmt.Fprintf(stdout, "%s}", objectPrefix)
 	return err
+}
+
+func encodeJSONValue(value any, prefix string, indent string) ([]byte, error) {
+	var buffer bytes.Buffer
+	encoder := json.NewEncoder(&buffer)
+	encoder.SetEscapeHTML(false)
+	if indent != "" {
+		encoder.SetIndent(prefix, indent)
+	}
+	if err := encoder.Encode(value); err != nil {
+		return nil, err
+	}
+	return bytes.TrimRight(buffer.Bytes(), "\n"), nil
 }
 
 func fieldsToMap(fields []outputField) map[string]any {

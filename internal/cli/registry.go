@@ -109,6 +109,9 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"volume attachment list", "volume attachment show",
 		"volume backend pool list",
 		"volume backup list", "volume backup show",
+		"volume group list", "volume group show",
+		"volume group snapshot list", "volume group snapshot show",
+		"volume group type list", "volume group type show",
 		"volume list", "volume show",
 		"volume message list", "volume message show",
 		"volume qos list", "volume qos show",
@@ -544,6 +547,17 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().String("host", "", "filter by host")
 		cmd.Flags().String("service", "", "filter by service binary")
 		cmd.Flags().Bool("long", false, "list additional fields")
+	case "volume group list":
+		cmd.Flags().Bool("all-projects", false, "include all projects")
+	case "volume group show":
+		cmd.Flags().Bool("volumes", false, "show volumes in the group")
+		cmd.Flags().Bool("no-volumes", false, "do not show volumes in the group")
+		cmd.Flags().Bool("replication-targets", false, "show replication targets")
+		cmd.Flags().Bool("no-replication-targets", false, "do not show replication targets")
+	case "volume group snapshot list":
+		cmd.Flags().Bool("all-projects", false, "include all projects")
+	case "volume group type list":
+		cmd.Flags().Bool("default", false, "list the default volume group type")
 	case "volume message list":
 		cmd.Flags().String("project", "", "filter by project")
 		cmd.Flags().String("project-domain", "", "project domain")
@@ -679,6 +693,9 @@ func isCoreReadCommand(path string) bool {
 		"volume attachment list", "volume attachment show",
 		"volume backend pool list",
 		"volume backup list", "volume backup show",
+		"volume group list", "volume group show",
+		"volume group snapshot list", "volume group snapshot show",
+		"volume group type list", "volume group type show",
 		"volume list", "volume show",
 		"volume message list", "volume message show",
 		"volume qos list", "volume qos show",

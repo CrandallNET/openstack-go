@@ -224,6 +224,22 @@ func TestPrettyFlagParses(t *testing.T) {
 	}
 }
 
+func TestJSONOutputDoesNotEscapeHTML(t *testing.T) {
+	var stdout bytes.Buffer
+	err := renderListOutput(&stdout, &Options{Format: "json"}, []string{"Properties"}, []outputRow{
+		{"Properties": map[string]any{"consistent_group_snapshot_enabled": "<is> True"}},
+	})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if strings.Contains(stdout.String(), `\u003c`) || strings.Contains(stdout.String(), `\u003e`) {
+		t.Fatalf("expected JSON output to preserve angle brackets, got:\n%s", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), `"<is> True"`) {
+		t.Fatalf("expected JSON output to contain unescaped value, got:\n%s", stdout.String())
+	}
+}
+
 func TestTokenIssueUsesInjectedIssuer(t *testing.T) {
 	previous := issueToken
 	issueToken = func(ctx context.Context, opts *Options) (tokenIssueRow, error) {

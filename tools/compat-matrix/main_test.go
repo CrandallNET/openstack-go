@@ -52,6 +52,16 @@ func TestNewCommandEntryMarksCinderMessageShim(t *testing.T) {
 	}
 }
 
+func TestNewCommandEntryMarksCinderGroupTypeShowImplemented(t *testing.T) {
+	entry := newCommandEntry("openstack.volume.v3", "volume group type show")
+	if entry.Status != "implemented" {
+		t.Fatalf("expected volume group type show to be implemented, got %q", entry.Status)
+	}
+	if !entry.Shim {
+		t.Fatal("expected volume group type show to be marked as a shim")
+	}
+}
+
 func TestNewCommandEntryMarksPluginScope(t *testing.T) {
 	entry := newCommandEntry("openstack.placement.v1", "resource provider list")
 	if !entry.PluginScope {
