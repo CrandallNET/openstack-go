@@ -202,6 +202,20 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return floatingIPShow(cmd.Context(), stdout, opts, client, args)
+		case "host list":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			fmt.Fprintln(cmd.ErrOrStderr(), "API has been deprecated; consider using 'hypervisor list' instead.")
+			return hostList(cmd.Context(), stdout, opts, client)
+		case "host show":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			fmt.Fprintln(cmd.ErrOrStderr(), "API has been deprecated; consider using 'hypervisor show' instead.")
+			return hostShow(cmd.Context(), stdout, opts, client, args)
 		case "ip availability list":
 			client, err := clients.networkV2()
 			if err != nil {
@@ -891,6 +905,60 @@ func computeServiceList(ctx context.Context, stdout io.Writer, opts *Options, cl
 		columns = append(columns, "Disabled Reason", "Forced Down")
 	}
 	return renderListOutput(stdout, opts, columns, rows)
+}
+
+func hostList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	client.Microversion = "2.1"
+	var body struct {
+		Hosts []map[string]any `json:"hosts"`
+	}
+	resp, err := client.Get(ctx, client.ServiceURL("os-hosts"), &body, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return err
+	}
+	zone := flagValue(opts, "zone")
+	rows := make([]outputRow, 0, len(body.Hosts))
+	for _, item := range body.Hosts {
+		if zone != "" && mapValueString(item, "zone") != zone {
+			continue
+		}
+		rows = append(rows, outputRow{
+			"Host Name": mapValueOrEmpty(item, "host_name"),
+			"Service":   mapValueOrEmpty(item, "service"),
+			"Zone":      mapValueOrEmpty(item, "zone"),
+		})
+	}
+	return renderListOutput(stdout, opts, []string{"Host Name", "Service", "Zone"}, rows)
+}
+
+func hostShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("host show requires <host>")
+	}
+	client.Microversion = "2.1"
+	var body struct {
+		Host []struct {
+			Resource map[string]any `json:"resource"`
+		} `json:"host"`
+	}
+	resp, err := client.Get(ctx, client.ServiceURL("os-hosts", args[0]), &body, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return err
+	}
+	rows := make([]outputRow, 0, len(body.Host))
+	for _, item := range body.Host {
+		resource := item.Resource
+		rows = append(rows, outputRow{
+			"Host":      mapValueOrEmpty(resource, "host"),
+			"Project":   mapValueOrEmpty(resource, "project"),
+			"CPU":       mapValueOrEmpty(resource, "cpu"),
+			"Memory MB": mapValueOrEmpty(resource, "memory_mb"),
+			"Disk GB":   mapValueOrEmpty(resource, "disk_gb"),
+		})
+	}
+	return renderListOutput(stdout, opts, []string{"Host", "Project", "CPU", "Memory MB", "Disk GB"}, rows)
 }
 
 func consoleLogShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
@@ -4553,6 +4621,19 @@ func firstFlag(opts *Options, names ...string) string {
 		}
 	}
 	return ""
+}
+
+func mapValueOrEmpty(item map[string]any, keys ...string) any {
+	for _, key := range keys {
+		if value, ok := item[key]; ok {
+			return value
+		}
+	}
+	return ""
+}
+
+func mapValueString(item map[string]any, keys ...string) string {
+	return valueString(mapValueOrEmpty(item, keys...))
 }
 
 func intFlag(opts *Options, name string) int {

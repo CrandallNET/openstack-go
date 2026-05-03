@@ -69,6 +69,7 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"extension list", "extension show",
 		"flavor list", "flavor show",
 		"floating ip list", "floating ip pool list", "floating ip show",
+		"host list", "host show",
 		"hypervisor list", "hypervisor show", "hypervisor stats show",
 		"image list", "image member get", "image member list", "image show",
 		"image stores list", "image task list", "image task show",
@@ -526,6 +527,8 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().String("host", "", "filter by host")
 		cmd.Flags().String("service", "", "filter by service binary")
 		cmd.Flags().String("log-prefix", "", "filter by log prefix")
+	case "host list":
+		cmd.Flags().String("zone", "", "only return hosts in the availability zone")
 	case "volume attachment list":
 		cmd.Flags().String("project", "", "filter by project")
 		cmd.Flags().String("project-domain", "", "project domain")
@@ -653,6 +656,7 @@ func isCoreReadCommand(path string) bool {
 		"extension list", "extension show",
 		"flavor list", "flavor show",
 		"floating ip list", "floating ip pool list", "floating ip show",
+		"host list", "host show",
 		"hypervisor list", "hypervisor show", "hypervisor stats show",
 		"image list", "image member get", "image member list", "image show",
 		"image stores list", "image task list", "image task show",

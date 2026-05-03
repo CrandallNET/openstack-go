@@ -482,3 +482,16 @@ Sources consulted:
 * Local Python OSC source files `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/volume/v3/volume_group.py`, `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/volume/v3/volume_group_snapshot.py`, and `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/volume/v3/volume_group_type.py`, used only as pinned local oracle implementation sources.
 * Local OpenStackSDK source files `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/block_storage/v3/group.py`, `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/block_storage/v3/group_snapshot.py`, and `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/block_storage/v3/group_type.py`, which document the REST paths used by the SDK path.
 * Local cinderclient source files `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/cinderclient/v3/groups.py` and `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/cinderclient/v3/group_types.py`, which document the cinderclient version gates and query construction used by the Python command implementation.
+
+## 2026-05-03: Deprecated Nova Host Reads
+
+Work done: added `host list` and `host show`.
+
+Implementation note: Python OSC implements these deprecated commands as raw Compute API calls because OpenStackSDK intentionally does not support the deprecated host API. The Go CLI follows that shape through Gophercloud's authenticated `ServiceClient`, calls `GET /os-hosts` and `GET /os-hosts/<host>` at Compute microversion 2.1, filters `host list --zone` client-side, and emits the same deprecation warning text observed from the local Python OSC oracle.
+
+Live observations on `cloud6`: Python OSC and the Go CLI matched for `host list -f json`, `host list --zone nova -f json`, and `host show dell6.crandall.haus -f json`.
+
+Sources consulted:
+
+* Local OSC oracle snapshots in `compat/osc/9.0.0/help/host/list.txt` and `compat/osc/9.0.0/help/host/show.txt`.
+* Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/compute/v2/host.py`, used only as the pinned local oracle implementation source.
