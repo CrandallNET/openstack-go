@@ -166,6 +166,16 @@ Sources consulted: Gophercloud package docs and local module sources for [Neutro
 
 Verification: `go test ./...`, `go build -o bin/openstack ./cmd/openstack`, and live `cloud6` JSON smoke checks passed for `router list/show`, `security group list/show`, and `security group rule list/show`.
 
+## 2026-05-02: Volume Admin And Backup Read Expansion
+
+Work done: added Block Storage v3 read implementations for `volume backup list/show`, `volume service list`, `volume backend pool list`, and `volume transfer request list/show`. These commands use Gophercloud's Cinder backups, services, scheduler stats, and transfers packages.
+
+Compatibility note: `volume service list` includes the Python-observed `Cluster` and `Backend State` columns by default on `cloud6`, and `--long` adds `Disabled Reason`. `volume backend pool list --long` exposes the scheduler pool capabilities map. Exact parity still needs oracle golden tests for Cinder microversion-dependent fields, project-name resolution, volume-name filtering for backup lists, and show output when backup and transfer fixtures exist.
+
+Sources consulted: Gophercloud package docs and local module sources for [Block Storage backups](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/backups), [services](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/services), [scheduler stats](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/schedulerstats), and [transfers](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/transfers).
+
+Verification: `go test ./...`, `go build -o bin/openstack ./cmd/openstack`, and live `cloud6` JSON smoke checks passed for `volume backup list`, `volume service list`, `volume service list --long`, `volume backend pool list`, `volume backend pool list --long`, and `volume transfer request list`. `volume backup show` and `volume transfer request show` are implemented but still need live fixtures because the list commands returned no rows during this run.
+
 ## 2026-05-02: Pre-Implementation Question Register
 
 Work done: reviewed the living plan for implementation-defining choices and added a decision and question register to the plan. The register separates questions that require user answers from assumptions that can be reviewed and reopened later.

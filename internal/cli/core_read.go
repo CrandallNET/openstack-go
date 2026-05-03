@@ -10,7 +10,11 @@ import (
 	"strings"
 
 	"github.com/gophercloud/gophercloud/v2"
+	"github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/backups"
+	"github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/schedulerstats"
+	bsservices "github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/services"
 	"github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/snapshots"
+	"github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/transfers"
 	"github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/volumes"
 	"github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/volumetypes"
 	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/aggregates"
@@ -386,6 +390,30 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return volumeShow(cmd.Context(), stdout, opts, client, args)
+		case "volume backend pool list":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeBackendPoolList(cmd.Context(), stdout, opts, client)
+		case "volume backup list":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeBackupList(cmd.Context(), stdout, opts, client)
+		case "volume backup show":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeBackupShow(cmd.Context(), stdout, opts, client, args)
+		case "volume service list":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeServiceList(cmd.Context(), stdout, opts, client)
 		case "volume snapshot list":
 			client, err := clients.blockStorageV3()
 			if err != nil {
@@ -410,6 +438,18 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return volumeTypeShow(cmd.Context(), stdout, opts, client, args)
+		case "volume transfer request list":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeTransferList(cmd.Context(), stdout, opts, client)
+		case "volume transfer request show":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeTransferShow(cmd.Context(), stdout, opts, client, args)
 		case "versions show":
 			return versionsShow(cmd.Context(), stdout, opts, clients)
 		default:
@@ -1289,6 +1329,215 @@ func volumeShow(ctx context.Context, stdout io.Writer, opts *Options, client *go
 	})
 }
 
+func volumeBackupList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	page, err := backups.List(client, backups.ListOpts{
+		AllTenants: boolFlag(opts, "all-projects") || flagValue(opts, "project") != "",
+		Name:       flagValue(opts, "name"),
+		Status:     flagValue(opts, "status"),
+		TenantID:   flagValue(opts, "project"),
+		VolumeID:   flagValue(opts, "volume"),
+		Limit:      intFlag(opts, "limit"),
+		Marker:     flagValue(opts, "marker"),
+	}).AllPages(ctx)
+	if err != nil {
+		return err
+	}
+	items, err := backups.ExtractBackups(page)
+	if err != nil {
+		return err
+	}
+	rows := make([]outputRow, 0, len(items))
+	for _, item := range items {
+		row := outputRow{
+			"ID":          item.ID,
+			"Name":        item.Name,
+			"Description": item.Description,
+			"Status":      item.Status,
+			"Size":        item.Size,
+			"Incremental": item.IsIncremental,
+			"Created At":  oscTime(item.CreatedAt),
+		}
+		if boolFlag(opts, "long") {
+			row["Availability Zone"] = stringPtrValue(item.AvailabilityZone)
+			row["Volume"] = item.VolumeID
+			row["Container"] = item.Container
+		}
+		rows = append(rows, row)
+	}
+	columns := []string{"ID", "Name", "Description", "Status", "Size", "Incremental", "Created At"}
+	if boolFlag(opts, "long") {
+		columns = append(columns, "Availability Zone", "Volume", "Container")
+	}
+	return renderListOutput(stdout, opts, columns, rows)
+}
+
+func volumeBackupShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("volume backup show requires <backup>")
+	}
+	item, err := findVolumeBackup(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, []outputField{
+		{"availability_zone", stringPtrValue(item.AvailabilityZone)},
+		{"container", item.Container},
+		{"created_at", oscTime(item.CreatedAt)},
+		{"data_timestamp", oscTime(item.DataTimestamp)},
+		{"description", item.Description},
+		{"encryption_key_id", nil},
+		{"fail_reason", nilIfEmpty(item.FailReason)},
+		{"has_dependent_backups", item.HasDependentBackups},
+		{"id", item.ID},
+		{"is_incremental", item.IsIncremental},
+		{"metadata", mapPtrValue(item.Metadata)},
+		{"name", item.Name},
+		{"object_count", item.ObjectCount},
+		{"project_id", nilIfEmpty(item.ProjectID)},
+		{"size", item.Size},
+		{"snapshot_id", nilIfEmpty(item.SnapshotID)},
+		{"status", item.Status},
+		{"updated_at", oscTime(item.UpdatedAt)},
+		{"user_id", nil},
+		{"volume_id", item.VolumeID},
+	})
+}
+
+func volumeServiceList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	page, err := bsservices.List(client, bsservices.ListOpts{
+		Binary: flagValue(opts, "service"),
+		Host:   flagValue(opts, "host"),
+	}).AllPages(ctx)
+	if err != nil {
+		return err
+	}
+	items, err := bsservices.ExtractServices(page)
+	if err != nil {
+		return err
+	}
+	rows := make([]outputRow, 0, len(items))
+	for _, item := range items {
+		row := outputRow{
+			"Binary":        item.Binary,
+			"Host":          item.Host,
+			"Zone":          item.Zone,
+			"Status":        item.Status,
+			"State":         item.State,
+			"Updated At":    oscTime(item.UpdatedAt),
+			"Cluster":       nilIfEmpty(item.Cluster),
+			"Backend State": nil,
+		}
+		if boolFlag(opts, "long") {
+			row["Disabled Reason"] = nilIfEmpty(item.DisabledReason)
+		}
+		rows = append(rows, row)
+	}
+	columns := []string{"Binary", "Host", "Zone", "Status", "State", "Updated At", "Cluster", "Backend State"}
+	if boolFlag(opts, "long") {
+		columns = append(columns, "Disabled Reason")
+	}
+	return renderListOutput(stdout, opts, columns, rows)
+}
+
+func volumeBackendPoolList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	page, err := schedulerstats.List(client, schedulerstats.ListOpts{Detail: boolFlag(opts, "long")}).AllPages(ctx)
+	if err != nil {
+		return err
+	}
+	items, err := schedulerstats.ExtractStoragePools(page)
+	if err != nil {
+		return err
+	}
+	rows := make([]outputRow, 0, len(items))
+	for _, item := range items {
+		row := outputRow{"Name": item.Name}
+		if boolFlag(opts, "long") {
+			row["Capabilities"] = storagePoolCapabilities(item.Capabilities)
+		}
+		rows = append(rows, row)
+	}
+	columns := []string{"Name"}
+	if boolFlag(opts, "long") {
+		columns = append(columns, "Capabilities")
+	}
+	return renderListOutput(stdout, opts, columns, rows)
+}
+
+func volumeTransferList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	page, err := transfers.List(client, transfers.ListOpts{AllTenants: boolFlag(opts, "all-projects")}).AllPages(ctx)
+	if err != nil {
+		return err
+	}
+	items, err := transfers.ExtractTransfers(page)
+	if err != nil {
+		return err
+	}
+	rows := make([]outputRow, 0, len(items))
+	for _, item := range items {
+		rows = append(rows, outputRow{
+			"ID":     item.ID,
+			"Name":   item.Name,
+			"Volume": item.VolumeID,
+		})
+	}
+	return renderListOutput(stdout, opts, []string{"ID", "Name", "Volume"}, rows)
+}
+
+func volumeTransferShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("volume transfer request show requires <transfer-request>")
+	}
+	item, err := findVolumeTransfer(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, []outputField{
+		{"auth_key", nilIfEmpty(item.AuthKey)},
+		{"created_at", oscTime(item.CreatedAt)},
+		{"id", item.ID},
+		{"name", item.Name},
+		{"volume_id", item.VolumeID},
+	})
+}
+
+func stringPtrValue(value *string) any {
+	if value == nil {
+		return nil
+	}
+	return *value
+}
+
+func mapPtrValue(value *map[string]string) any {
+	if value == nil {
+		return map[string]string{}
+	}
+	return *value
+}
+
+func storagePoolCapabilities(value schedulerstats.Capabilities) map[string]any {
+	return map[string]any{
+		"allocated_capacity_gb":       value.AllocatedCapacityGB,
+		"driver_version":              value.DriverVersion,
+		"filter_function":             value.FilterFunction,
+		"free_capacity_gb":            value.FreeCapacityGB,
+		"goodness_function":           value.GoodnessFunction,
+		"location_info":               value.LocationInfo,
+		"max_over_subscription_ratio": value.MaxOverSubscriptionRatio,
+		"multiattach":                 value.Multiattach,
+		"provisioned_capacity_gb":     value.ProvisionedCapacityGB,
+		"qos_support":                 value.QoSSupport,
+		"reserved_percentage":         value.ReservedPercentage,
+		"sparse_copy_volume":          value.SparseCopyVolume,
+		"storage_protocol":            value.StorageProtocol,
+		"thick_provisioning_support":  value.ThickProvisioningSupport,
+		"thin_provisioning_support":   value.ThinProvisioningSupport,
+		"total_capacity_gb":           value.TotalCapacityGB,
+		"total_volumes":               value.TotalVolumes,
+		"vendor_name":                 value.VendorName,
+		"volume_backend_name":         value.VolumeBackendName,
+	}
+}
+
 func subnetList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
 	enableDHCP, hasDHCPFilter := subnetDHCPFilter(opts)
 	listOpts := subnets.ListOpts{
@@ -1902,6 +2151,38 @@ func findVolume(ctx context.Context, client *gophercloud.ServiceClient, value st
 		return nil, err
 	}
 	return singleByName(value, items, func(item volumes.Volume) string { return item.Name })
+}
+
+func findVolumeBackup(ctx context.Context, client *gophercloud.ServiceClient, value string) (*backups.Backup, error) {
+	result := backups.Get(ctx, client, value)
+	if result.Err == nil {
+		return result.Extract()
+	}
+	page, err := backups.List(client, backups.ListOpts{Name: value}).AllPages(ctx)
+	if err != nil {
+		return nil, result.Err
+	}
+	items, err := backups.ExtractBackups(page)
+	if err != nil {
+		return nil, err
+	}
+	return singleByName(value, items, func(item backups.Backup) string { return item.Name })
+}
+
+func findVolumeTransfer(ctx context.Context, client *gophercloud.ServiceClient, value string) (*transfers.Transfer, error) {
+	result := transfers.Get(ctx, client, value)
+	if result.Err == nil {
+		return result.Extract()
+	}
+	page, err := transfers.List(client, transfers.ListOpts{}).AllPages(ctx)
+	if err != nil {
+		return nil, result.Err
+	}
+	items, err := transfers.ExtractTransfers(page)
+	if err != nil {
+		return nil, err
+	}
+	return singleByName(value, items, func(item transfers.Transfer) string { return item.Name })
 }
 
 func findSubnet(ctx context.Context, client *gophercloud.ServiceClient, value string) (*subnets.Subnet, error) {

@@ -74,8 +74,12 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"subnet list", "subnet show",
 		"trait list", "trait show",
 		"versions show",
+		"volume backend pool list",
+		"volume backup list", "volume backup show",
 		"volume list", "volume show",
+		"volume service list",
 		"volume snapshot list", "volume snapshot show",
+		"volume transfer request list", "volume transfer request show",
 		"volume type list", "volume type show",
 	} {
 		registry.implemented[path] = runCoreRead(path, stdout, opts)
@@ -352,6 +356,21 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().Bool("long", false, "list additional fields")
 		cmd.Flags().Int("limit", 0, "maximum number of entries")
 		cmd.Flags().Int("offset", 0, "collection offset")
+	case "volume backend pool list":
+		cmd.Flags().Bool("long", false, "show detailed information about pools")
+	case "volume backup list":
+		cmd.Flags().String("project", "", "filter by project")
+		cmd.Flags().Bool("long", false, "list additional fields")
+		cmd.Flags().String("name", "", "filter by name")
+		cmd.Flags().String("status", "", "filter by status")
+		cmd.Flags().String("volume", "", "filter by volume")
+		cmd.Flags().Int("limit", 0, "maximum number of entries")
+		cmd.Flags().String("marker", "", "pagination marker")
+		cmd.Flags().Bool("all-projects", false, "include all projects")
+	case "volume service list":
+		cmd.Flags().String("host", "", "filter by host")
+		cmd.Flags().String("service", "", "filter by service binary")
+		cmd.Flags().Bool("long", false, "list additional fields")
 	case "volume type list":
 		cmd.Flags().Bool("long", false, "list additional fields")
 		cmd.Flags().Bool("default", false, "list the default volume type")
@@ -381,6 +400,8 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().String("region-name", "", "show a specific region")
 		cmd.Flags().String("service", "", "show a specific service")
 		cmd.Flags().String("status", "", "show a specific version status")
+	case "volume transfer request list":
+		cmd.Flags().Bool("all-projects", false, "include all projects")
 	}
 }
 
@@ -443,8 +464,12 @@ func isCoreReadCommand(path string) bool {
 		"subnet list", "subnet show",
 		"trait list", "trait show",
 		"versions show",
+		"volume backend pool list",
+		"volume backup list", "volume backup show",
 		"volume list", "volume show",
+		"volume service list",
 		"volume snapshot list", "volume snapshot show",
+		"volume transfer request list", "volume transfer request show",
 		"volume type list", "volume type show":
 		return true
 	default:
