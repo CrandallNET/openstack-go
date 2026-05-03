@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"sort"
 	"strconv"
@@ -67,6 +68,24 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 		}
 
 		switch path {
+		case "block storage log level list":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return blockStorageLogLevelList(cmd.Context(), stdout, opts, client)
+		case "block storage resource filter list":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return blockStorageResourceFilterList(cmd.Context(), stdout, opts, client)
+		case "block storage resource filter show":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return blockStorageResourceFilterShow(cmd.Context(), stdout, opts, client, args)
 		case "address group list":
 			client, err := clients.networkV2()
 			if err != nil {
@@ -2505,6 +2524,111 @@ func volumeSummary(ctx context.Context, stdout io.Writer, opts *Options, client 
 		fields = append(fields, outputField{"Metadata", metadata})
 	}
 	return renderShowOutput(stdout, opts, fields)
+}
+
+type blockStorageResourceFilterRecord struct {
+	Resource string   `json:"resource"`
+	Filters  []string `json:"filters"`
+}
+
+func blockStorageResourceFilterList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	items, err := listBlockStorageResourceFilters(ctx, client, "")
+	if err != nil {
+		return err
+	}
+	rows := make([]outputRow, 0, len(items))
+	for _, item := range items {
+		rows = append(rows, outputRow{
+			"Resource": item.Resource,
+			"Filters":  item.Filters,
+		})
+	}
+	return renderListOutput(stdout, opts, []string{"Resource", "Filters"}, rows)
+}
+
+func blockStorageResourceFilterShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("block storage resource filter show requires <resource>")
+	}
+	items, err := listBlockStorageResourceFilters(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	if len(items) == 0 {
+		return fmt.Errorf("No resource filter with a name of {parsed_args.resource}' exists.")
+	}
+	item := items[0]
+	return renderShowOutput(stdout, opts, []outputField{
+		{"Resource", item.Resource},
+		{"Filters", item.Filters},
+	})
+}
+
+func listBlockStorageResourceFilters(ctx context.Context, client *gophercloud.ServiceClient, resource string) ([]blockStorageResourceFilterRecord, error) {
+	client, err := blockStorageClientWithMinimumMicroversion(ctx, client, "3.33")
+	if err != nil {
+		return nil, err
+	}
+	requestURL := client.ServiceURL("resource_filters")
+	if resource != "" {
+		query := url.Values{}
+		query.Set("resource", resource)
+		requestURL += "?" + query.Encode()
+	}
+	var response struct {
+		ResourceFilters []blockStorageResourceFilterRecord `json:"resource_filters"`
+	}
+	resp, err := client.Get(ctx, requestURL, &response, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return nil, err
+	}
+	return response.ResourceFilters, nil
+}
+
+type blockStorageLogLevelRecord struct {
+	Binary string            `json:"binary"`
+	Host   string            `json:"host"`
+	Levels map[string]string `json:"levels"`
+}
+
+func blockStorageLogLevelList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	client, err := blockStorageClientWithMinimumMicroversion(ctx, client, "3.32")
+	if err != nil {
+		return err
+	}
+	request := map[string]any{
+		"binary": flagValue(opts, "service"),
+		"server": nilIfEmpty(flagValue(opts, "host")),
+		"prefix": nilIfEmpty(flagValue(opts, "log-prefix")),
+	}
+	var response struct {
+		LogLevels []blockStorageLogLevelRecord `json:"log_levels"`
+	}
+	resp, err := client.Put(ctx, client.ServiceURL("os-services", "get-log"), request, &response, &gophercloud.RequestOpts{
+		OkCodes: []int{http.StatusOK},
+	})
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return err
+	}
+	rows := []outputRow{}
+	for _, item := range response.LogLevels {
+		prefixes := make([]string, 0, len(item.Levels))
+		for prefix := range item.Levels {
+			prefixes = append(prefixes, prefix)
+		}
+		sort.Strings(prefixes)
+		for _, prefix := range prefixes {
+			rows = append(rows, outputRow{
+				"Binary": item.Binary,
+				"Host":   item.Host,
+				"Prefix": prefix,
+				"Level":  item.Levels[prefix],
+			})
+		}
+	}
+	return renderListOutput(stdout, opts, []string{"Binary", "Host", "Prefix", "Level"}, rows)
 }
 
 func volumeQoSAssociations(ctx context.Context, client *gophercloud.ServiceClient, qosID string) ([]string, error) {

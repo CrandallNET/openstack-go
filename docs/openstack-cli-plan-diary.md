@@ -437,3 +437,17 @@ Sources consulted:
 * [Gophercloud network IP availabilities](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/networkipavailabilities)
 * Local OSC oracle snapshots in `compat/osc/9.0.0/help/ip/availability/list.txt`, `compat/osc/9.0.0/help/ip/availability/show.txt`, `compat/osc/9.0.0/help/network/service/provider/list.txt`, and `compat/osc/9.0.0/help/floating/ip/pool/list.txt`.
 * Local Python OSC source files `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/network/v2/ip_availability.py`, `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/network/v2/network_service_provider.py`, and `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/network/v2/floating_ip_pool.py`, used only as pinned local oracle implementation sources.
+
+## 2026-05-03: Cinder Resource Filter And Log-Level Reads
+
+Work done: added `block storage resource filter list`, `block storage resource filter show`, and `block storage log level list`.
+
+Implementation note: the local Gophercloud v2.12.0 module has no typed package for these Cinder command surfaces. The commands therefore use narrow authenticated Block Storage REST calls through Gophercloud's service client. Resource filters call `GET /resource_filters` with Cinder microversion 3.33, and log-level reads call `PUT /os-services/get-log` with Cinder microversion 3.32 and accept the Cinder-observed HTTP 200 response.
+
+Live observations on `cloud6`: Python OSC and the Go CLI matched for `block storage resource filter list -f json`, `block storage resource filter show volume -f json`, and `block storage log level list --service cinder-api --log-prefix cinder.api -f json`.
+
+Sources consulted:
+
+* Local OSC oracle snapshots in `compat/osc/9.0.0/help/block/storage/resource/filter/list.txt`, `compat/osc/9.0.0/help/block/storage/resource/filter/show.txt`, and `compat/osc/9.0.0/help/block/storage/log/level/list.txt`.
+* Local Python OSC source files `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/volume/v3/block_storage_resource_filter.py` and `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/volume/v3/block_storage_log_level.py`, used only as pinned local oracle implementation sources.
+* Local OpenStackSDK source files `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/block_storage/v3/resource_filter.py` and `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/block_storage/v3/service.py`, which document the resource paths and microversion requirements used by the Python command implementation.

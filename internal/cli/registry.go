@@ -60,6 +60,8 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"aggregate list", "aggregate show",
 		"allocation candidate list",
 		"availability zone list",
+		"block storage log level list",
+		"block storage resource filter list", "block storage resource filter show",
 		"compute service list",
 		"console log show", "console url show",
 		"container list", "container show",
@@ -503,6 +505,10 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		}
 	case "volume backend pool list":
 		cmd.Flags().Bool("long", false, "show detailed information about pools")
+	case "block storage log level list":
+		cmd.Flags().String("host", "", "filter by host")
+		cmd.Flags().String("service", "", "filter by service binary")
+		cmd.Flags().String("log-prefix", "", "filter by log prefix")
 	case "volume attachment list":
 		cmd.Flags().String("project", "", "filter by project")
 		cmd.Flags().String("project-domain", "", "project domain")
@@ -605,6 +611,8 @@ func isCoreReadCommand(path string) bool {
 		"aggregate list", "aggregate show",
 		"allocation candidate list",
 		"availability zone list",
+		"block storage log level list",
+		"block storage resource filter list", "block storage resource filter show",
 		"compute service list",
 		"console log show", "console url show",
 		"container list", "container show",
