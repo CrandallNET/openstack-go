@@ -55,6 +55,7 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"allocation candidate list",
 		"availability zone list",
 		"compute service list",
+		"console log show", "console url show",
 		"container list", "container show",
 		"extension list", "extension show",
 		"flavor list", "flavor show",
@@ -275,6 +276,16 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().String("host", "", "filter by host")
 		cmd.Flags().String("service", "", "filter by service binary")
 		cmd.Flags().Bool("long", false, "list additional fields")
+	case "console log show":
+		cmd.Flags().Int("lines", 0, "number of log lines")
+	case "console url show":
+		cmd.Flags().Bool("novnc", false, "show noVNC console URL")
+		cmd.Flags().Bool("xvpvnc", false, "show xvpvnc console URL")
+		cmd.Flags().Bool("spice", false, "show SPICE console URL")
+		cmd.Flags().Bool("spice-direct", false, "show SPICE direct console URL")
+		cmd.Flags().Bool("rdp", false, "show RDP console URL")
+		cmd.Flags().Bool("serial", false, "show serial console URL")
+		cmd.Flags().Bool("mks", false, "show WebMKS console URL")
 	case "network agent list":
 		cmd.Flags().String("agent-type", "", "filter by agent type")
 		cmd.Flags().String("host", "", "filter by host")
@@ -558,6 +569,7 @@ func isCoreReadCommand(path string) bool {
 		"allocation candidate list",
 		"availability zone list",
 		"compute service list",
+		"console log show", "console url show",
 		"container list", "container show",
 		"extension list", "extension show",
 		"flavor list", "flavor show",

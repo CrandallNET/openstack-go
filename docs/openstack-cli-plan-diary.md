@@ -210,6 +210,20 @@ Sources consulted:
 
 Verification: `go test ./...`, `go build -o bin/openstack ./cmd/openstack`, and `go run ./tools/compat-matrix` passed with workspace-local Go caches. Live `cloud6` JSON checks matched Python OSC for `server event list`, `server event list --long`, `server event show`, `server volume list`, `usage list --start 2026-05-01 --end 2026-05-03`, and `usage show --start 2026-05-01 --end 2026-05-02`; `usage show` has dynamic `uptime` values, so only stable structure and non-time-varying fields should be used for golden tests.
 
+## 2026-05-03: Compute Console Read Expansion
+
+Work done: added `console log show` and `console url show`. Console log reads use Gophercloud's server console-output action and write raw log text, matching Python OSC's command behavior instead of routing through the structured formatter. Console URL reads use Gophercloud's remote console package and preserve the Python-observed `protocol`, `type`, and `url` field order for show output.
+
+Compatibility note: `console url show` uses Compute microversion discovery with a minimum of 2.6 when no explicit `OS_COMPUTE_API_VERSION` is set. The `console connection show` command remains a stub because it needs a separate Nova console-token lookup path that is not exposed by the local Gophercloud `remoteconsoles` package.
+
+Sources consulted:
+
+* [Gophercloud Compute servers](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servers), for console-output actions.
+* [Gophercloud Compute remote consoles](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/compute/v2/remoteconsoles), for remote console URL creation.
+* Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/compute/v2/console.py`, used only as the pinned local oracle implementation source.
+
+Verification: `go test ./...`, `go build -o bin/openstack ./cmd/openstack`, and `go run ./tools/compat-matrix` passed with workspace-local Go caches. Live `cloud6` checks matched Python OSC for `console log show --lines 5 rocky` and the stable JSON fields of `console url show rocky -f json`; the URL token itself is expected to differ between calls.
+
 ## 2026-05-02: Pre-Implementation Question Register
 
 Work done: reviewed the living plan for implementation-defining choices and added a decision and question register to the plan. The register separates questions that require user answers from assumptions that can be reviewed and reopened later.

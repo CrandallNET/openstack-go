@@ -27,6 +27,7 @@ import (
 	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/hypervisors"
 	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/instanceactions"
 	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/keypairs"
+	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/remoteconsoles"
 	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servergroups"
 	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servers"
 	computeservices "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/services"
@@ -109,6 +110,18 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return computeServiceList(cmd.Context(), stdout, opts, client)
+		case "console log show":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return consoleLogShow(cmd.Context(), stdout, opts, client, args)
+		case "console url show":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return consoleURLShow(cmd.Context(), stdout, opts, client, args)
 		case "extension list":
 			return extensionList(cmd.Context(), stdout, opts, clients)
 		case "extension show":
@@ -778,6 +791,56 @@ func computeServiceList(ctx context.Context, stdout io.Writer, opts *Options, cl
 		columns = append(columns, "Disabled Reason", "Forced Down")
 	}
 	return renderListOutput(stdout, opts, columns, rows)
+}
+
+func consoleLogShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("console log show requires <server>")
+	}
+	server, err := findServer(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	output, err := servers.ShowConsoleOutput(ctx, client, server.ID, servers.ShowConsoleOutputOpts{
+		Length: intFlag(opts, "lines"),
+	}).Extract()
+	if err != nil {
+		return err
+	}
+	if output == "" {
+		return nil
+	}
+	if _, err := fmt.Fprint(stdout, output); err != nil {
+		return err
+	}
+	if !strings.HasSuffix(output, "\n") {
+		_, err = fmt.Fprintln(stdout)
+		return err
+	}
+	return nil
+}
+
+func consoleURLShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("console url show requires <server>")
+	}
+	client, err := computeClientWithMinimumMicroversion(ctx, client, "2.6")
+	if err != nil {
+		return err
+	}
+	server, err := findServer(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	console, err := remoteconsoles.Create(ctx, client, server.ID, consoleURLOpts(opts)).Extract()
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, []outputField{
+		{"protocol", console.Protocol},
+		{"type", console.Type},
+		{"url", console.URL},
+	})
 }
 
 func serverEventList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
@@ -3969,6 +4032,25 @@ func parseRFC3339Flag(name string, value string) (time.Time, error) {
 		}
 	}
 	return time.Time{}, fmt.Errorf("invalid %s value: %s", name, value)
+}
+
+func consoleURLOpts(opts *Options) remoteconsoles.CreateOpts {
+	switch {
+	case boolFlag(opts, "xvpvnc"):
+		return remoteconsoles.CreateOpts{Protocol: remoteconsoles.ConsoleProtocolVNC, Type: remoteconsoles.ConsoleTypeXVPVNC}
+	case boolFlag(opts, "spice"):
+		return remoteconsoles.CreateOpts{Protocol: remoteconsoles.ConsoleProtocolSPICE, Type: remoteconsoles.ConsoleTypeSPICEHTML5}
+	case boolFlag(opts, "spice-direct"):
+		return remoteconsoles.CreateOpts{Protocol: remoteconsoles.ConsoleProtocolSPICE, Type: remoteconsoles.ConsoleType("spice-direct")}
+	case boolFlag(opts, "rdp"):
+		return remoteconsoles.CreateOpts{Protocol: remoteconsoles.ConsoleProtocolRDP, Type: remoteconsoles.ConsoleTypeRDPHTML5}
+	case boolFlag(opts, "serial"):
+		return remoteconsoles.CreateOpts{Protocol: remoteconsoles.ConsoleProtocolSerial, Type: remoteconsoles.ConsoleTypeSerial}
+	case boolFlag(opts, "mks"):
+		return remoteconsoles.CreateOpts{Protocol: remoteconsoles.ConsoleProtocolMKS, Type: remoteconsoles.ConsoleTypeWebMKS}
+	default:
+		return remoteconsoles.CreateOpts{Protocol: remoteconsoles.ConsoleProtocolVNC, Type: remoteconsoles.ConsoleTypeNoVNC}
+	}
 }
 
 func usageProjectID(ctx context.Context, opts *Options, clients *openStackClients) (string, error) {
