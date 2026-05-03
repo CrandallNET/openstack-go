@@ -177,11 +177,17 @@ func newCommandEntry(group string, command string) commandEntry {
 		}
 	}
 	if packagePath, ok := coreReadPackages()[command]; ok {
-		entry.Status = "cloud-verified"
+		entry.Status = "implemented"
 		entry.SDKPackage = packagePath
 		entry.ImplementedIn = "internal/cli"
-		entry.Tests = []string{"unit: command registry", "live: cloud6 core read smoke"}
+		entry.Tests = []string{"unit: command registry"}
 		entry.Notes = "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
+		if coreCloudVerified()[command] {
+			entry.Status = "cloud-verified"
+			entry.Tests = append(entry.Tests, "live: cloud6 core read smoke")
+		} else {
+			entry.Notes += " Live fixture still needed before this row can be marked cloud-verified."
+		}
 	}
 	return entry
 }
@@ -234,16 +240,57 @@ func identityCloudVerified() map[string]bool {
 
 func coreReadPackages() map[string]string {
 	return map[string]string{
-		"flavor list":  "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/flavors",
-		"flavor show":  "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/flavors",
-		"image list":   "github.com/gophercloud/gophercloud/v2/openstack/image/v2/images",
-		"image show":   "github.com/gophercloud/gophercloud/v2/openstack/image/v2/images",
-		"network list": "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/networks",
-		"network show": "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/networks",
-		"server list":  "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servers",
-		"server show":  "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servers",
-		"volume list":  "github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/volumes",
-		"volume show":  "github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/volumes",
+		"flavor list":          "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/flavors",
+		"flavor show":          "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/flavors",
+		"floating ip list":     "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/floatingips",
+		"floating ip show":     "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/floatingips",
+		"image list":           "github.com/gophercloud/gophercloud/v2/openstack/image/v2/images",
+		"image show":           "github.com/gophercloud/gophercloud/v2/openstack/image/v2/images",
+		"keypair list":         "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/keypairs",
+		"keypair show":         "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/keypairs",
+		"network list":         "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/networks",
+		"network show":         "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/networks",
+		"port list":            "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/ports",
+		"port show":            "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/ports",
+		"server list":          "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servers",
+		"server show":          "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servers",
+		"server group list":    "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servergroups",
+		"server group show":    "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servergroups",
+		"subnet list":          "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/subnets",
+		"subnet show":          "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/subnets",
+		"volume list":          "github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/volumes",
+		"volume show":          "github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/volumes",
+		"volume snapshot list": "github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/snapshots",
+		"volume snapshot show": "github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/snapshots",
+		"volume type list":     "github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/volumetypes",
+		"volume type show":     "github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/volumetypes",
+	}
+}
+
+func coreCloudVerified() map[string]bool {
+	return map[string]bool{
+		"flavor list":          true,
+		"flavor show":          true,
+		"floating ip list":     true,
+		"floating ip show":     true,
+		"image list":           true,
+		"image show":           true,
+		"keypair list":         true,
+		"keypair show":         true,
+		"network list":         true,
+		"network show":         true,
+		"port list":            true,
+		"port show":            true,
+		"server list":          true,
+		"server show":          true,
+		"server group list":    true,
+		"subnet list":          true,
+		"subnet show":          true,
+		"volume list":          true,
+		"volume show":          true,
+		"volume snapshot list": true,
+		"volume type list":     true,
+		"volume type show":     true,
 	}
 }
 

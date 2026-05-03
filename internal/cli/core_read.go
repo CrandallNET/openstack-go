@@ -5,13 +5,22 @@ import (
 	"fmt"
 	"io"
 	"sort"
+	"strconv"
+	"strings"
 
 	"github.com/gophercloud/gophercloud/v2"
+	"github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/snapshots"
 	"github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/volumes"
+	"github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/volumetypes"
 	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/flavors"
+	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/keypairs"
+	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servergroups"
 	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servers"
 	"github.com/gophercloud/gophercloud/v2/openstack/image/v2/images"
+	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/floatingips"
 	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/networks"
+	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/ports"
+	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/subnets"
 	"github.com/gophercloud/gophercloud/v2/pagination"
 	"github.com/spf13/cobra"
 )
@@ -36,6 +45,18 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return computeFlavorShow(cmd.Context(), stdout, opts, client, args)
+		case "floating ip list":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return floatingIPList(cmd.Context(), stdout, opts, client)
+		case "floating ip show":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return floatingIPShow(cmd.Context(), stdout, opts, client, args)
 		case "image list":
 			client, err := clients.imageV2()
 			if err != nil {
@@ -60,6 +81,31 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return networkShow(cmd.Context(), stdout, opts, client, args)
+		case "keypair list":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return keypairList(cmd.Context(), stdout, opts, client)
+		case "keypair show":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return keypairShow(cmd.Context(), stdout, opts, client, args)
+		case "port list":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			computeClient, _ := clients.computeV2()
+			return portList(cmd.Context(), stdout, opts, client, computeClient)
+		case "port show":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return portShow(cmd.Context(), stdout, opts, client, args)
 		case "server list":
 			client, err := clients.computeV2()
 			if err != nil {
@@ -73,6 +119,30 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return computeServerShow(cmd.Context(), stdout, opts, client, args)
+		case "server group list":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return serverGroupList(cmd.Context(), stdout, opts, client)
+		case "server group show":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return serverGroupShow(cmd.Context(), stdout, opts, client, args)
+		case "subnet list":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return subnetList(cmd.Context(), stdout, opts, client)
+		case "subnet show":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return subnetShow(cmd.Context(), stdout, opts, client, args)
 		case "volume list":
 			client, err := clients.blockStorageV3()
 			if err != nil {
@@ -85,6 +155,30 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return volumeShow(cmd.Context(), stdout, opts, client, args)
+		case "volume snapshot list":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeSnapshotList(cmd.Context(), stdout, opts, client)
+		case "volume snapshot show":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeSnapshotShow(cmd.Context(), stdout, opts, client, args)
+		case "volume type list":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeTypeList(cmd.Context(), stdout, opts, client)
+		case "volume type show":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeTypeShow(cmd.Context(), stdout, opts, client, args)
 		default:
 			return fmt.Errorf("core read command %q is not wired", path)
 		}
@@ -312,6 +406,469 @@ func volumeShow(ctx context.Context, stdout io.Writer, opts *Options, client *go
 	})
 }
 
+func subnetList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	enableDHCP, hasDHCPFilter := subnetDHCPFilter(opts)
+	listOpts := subnets.ListOpts{
+		Name:         flagValue(opts, "name"),
+		GatewayIP:    flagValue(opts, "gateway"),
+		CIDR:         flagValue(opts, "subnet-range"),
+		SubnetPoolID: flagValue(opts, "subnet-pool"),
+		ProjectID:    flagValue(opts, "project"),
+		Tags:         firstFlag(opts, "tags"),
+		TagsAny:      firstFlag(opts, "any-tags", "tags-any"),
+		NotTags:      firstFlag(opts, "not-tags"),
+		NotTagsAny:   firstFlag(opts, "not-any-tags", "not-tags-any"),
+	}
+	if value := intFlag(opts, "ip-version"); value != 0 {
+		listOpts.IPVersion = value
+	}
+	if hasDHCPFilter {
+		listOpts.EnableDHCP = &enableDHCP
+	}
+	if network := flagValue(opts, "network"); network != "" {
+		listOpts.NetworkID = resolveNetworkID(ctx, client, network)
+	}
+
+	page, err := subnets.List(client, listOpts).AllPages(ctx)
+	if err != nil {
+		return err
+	}
+	items, err := subnets.ExtractSubnets(page)
+	if err != nil {
+		return err
+	}
+	serviceType := flagValue(opts, "service-type")
+	rows := make([]outputRow, 0, len(items))
+	for _, item := range items {
+		if serviceType != "" && !stringSliceContains(item.ServiceTypes, serviceType) {
+			continue
+		}
+		row := outputRow{
+			"ID":      item.ID,
+			"Name":    item.Name,
+			"Network": item.NetworkID,
+			"Subnet":  item.CIDR,
+		}
+		if boolFlag(opts, "long") {
+			row["Project"] = item.ProjectID
+			row["DHCP"] = item.EnableDHCP
+			row["Gateway"] = item.GatewayIP
+			row["IP Version"] = item.IPVersion
+			row["Tags"] = item.Tags
+		}
+		rows = append(rows, row)
+	}
+	columns := []string{"ID", "Name", "Network", "Subnet"}
+	if boolFlag(opts, "long") {
+		columns = append(columns, "Project", "DHCP", "Gateway", "IP Version", "Tags")
+	}
+	return renderListOutput(stdout, opts, columns, rows)
+}
+
+func subnetShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("subnet show requires <subnet>")
+	}
+	item, err := findSubnet(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, []outputField{
+		{"id", item.ID},
+		{"name", item.Name},
+		{"network_id", item.NetworkID},
+		{"project_id", item.ProjectID},
+		{"cidr", item.CIDR},
+		{"ip_version", item.IPVersion},
+		{"gateway_ip", item.GatewayIP},
+		{"enable_dhcp", item.EnableDHCP},
+		{"dns_nameservers", item.DNSNameservers},
+		{"allocation_pools", item.AllocationPools},
+		{"host_routes", item.HostRoutes},
+		{"service_types", item.ServiceTypes},
+		{"subnetpool_id", item.SubnetPoolID},
+		{"description", item.Description},
+		{"tags", item.Tags},
+		{"created_at", item.CreatedAt},
+		{"updated_at", item.UpdatedAt},
+	})
+}
+
+func portList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, computeClient *gophercloud.ServiceClient) error {
+	listOpts := ports.ListOpts{
+		Name:           flagValue(opts, "name"),
+		Status:         flagValue(opts, "status"),
+		DeviceOwner:    flagValue(opts, "device-owner"),
+		MACAddress:     flagValue(opts, "mac-address"),
+		ProjectID:      flagValue(opts, "project"),
+		SecurityGroups: compactStrings([]string{flagValue(opts, "security-group")}),
+		Tags:           firstFlag(opts, "tags"),
+		TagsAny:        firstFlag(opts, "any-tags", "tags-any"),
+		NotTags:        firstFlag(opts, "not-tags"),
+		NotTagsAny:     firstFlag(opts, "not-any-tags", "not-tags-any"),
+	}
+	if network := flagValue(opts, "network"); network != "" {
+		listOpts.NetworkID = resolveNetworkID(ctx, client, network)
+	}
+	if deviceID := firstFlag(opts, "device-id", "router"); deviceID != "" {
+		listOpts.DeviceID = deviceID
+	}
+	if server := flagValue(opts, "server"); server != "" {
+		listOpts.DeviceID = resolveServerID(ctx, computeClient, server)
+	}
+	if fixedIP := flagValue(opts, "fixed-ip"); fixedIP != "" {
+		listOpts.FixedIPs = append(listOpts.FixedIPs, fixedIPFilter(ctx, client, fixedIP))
+	}
+
+	page, err := ports.List(client, listOpts).AllPages(ctx)
+	if err != nil {
+		return err
+	}
+	items, err := ports.ExtractPorts(page)
+	if err != nil {
+		return err
+	}
+	rows := make([]outputRow, 0, len(items))
+	for _, item := range items {
+		row := outputRow{
+			"ID":                 item.ID,
+			"Name":               item.Name,
+			"MAC Address":        item.MACAddress,
+			"Fixed IP Addresses": portFixedIPs(item.FixedIPs),
+			"Status":             item.Status,
+		}
+		if boolFlag(opts, "long") {
+			row["Project"] = item.ProjectID
+			row["Network"] = item.NetworkID
+			row["Device Owner"] = item.DeviceOwner
+			row["Device ID"] = item.DeviceID
+			row["Tags"] = item.Tags
+		}
+		rows = append(rows, row)
+	}
+	columns := []string{"ID", "Name", "MAC Address", "Fixed IP Addresses", "Status"}
+	if boolFlag(opts, "long") {
+		columns = append(columns, "Project", "Network", "Device Owner", "Device ID", "Tags")
+	}
+	return renderListOutput(stdout, opts, columns, rows)
+}
+
+func portShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("port show requires <port>")
+	}
+	item, err := findPort(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, []outputField{
+		{"id", item.ID},
+		{"name", item.Name},
+		{"network_id", item.NetworkID},
+		{"project_id", item.ProjectID},
+		{"status", item.Status},
+		{"admin_state_up", item.AdminStateUp},
+		{"mac_address", item.MACAddress},
+		{"fixed_ips", item.FixedIPs},
+		{"device_id", item.DeviceID},
+		{"device_owner", item.DeviceOwner},
+		{"security_group_ids", item.SecurityGroups},
+		{"allowed_address_pairs", item.AllowedAddressPairs},
+		{"description", item.Description},
+		{"tags", item.Tags},
+		{"created_at", item.CreatedAt},
+		{"updated_at", item.UpdatedAt},
+	})
+}
+
+func floatingIPList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	listOpts := floatingips.ListOpts{
+		FixedIP:    flagValue(opts, "fixed-ip-address"),
+		FloatingIP: flagValue(opts, "floating-ip-address"),
+		Status:     flagValue(opts, "status"),
+		ProjectID:  flagValue(opts, "project"),
+		RouterID:   flagValue(opts, "router"),
+		Tags:       firstFlag(opts, "tags"),
+		TagsAny:    firstFlag(opts, "any-tags", "tags-any"),
+		NotTags:    firstFlag(opts, "not-tags"),
+		NotTagsAny: firstFlag(opts, "not-any-tags", "not-tags-any"),
+	}
+	if network := flagValue(opts, "network"); network != "" {
+		listOpts.FloatingNetworkID = resolveNetworkID(ctx, client, network)
+	}
+	if port := flagValue(opts, "port"); port != "" {
+		listOpts.PortID = resolvePortID(ctx, client, port)
+	}
+	page, err := floatingips.List(client, listOpts).AllPages(ctx)
+	if err != nil {
+		return err
+	}
+	items, err := floatingips.ExtractFloatingIPs(page)
+	if err != nil {
+		return err
+	}
+	rows := make([]outputRow, 0, len(items))
+	for _, item := range items {
+		row := outputRow{
+			"ID":                  item.ID,
+			"Floating IP Address": item.FloatingIP,
+			"Fixed IP Address":    item.FixedIP,
+			"Port":                item.PortID,
+			"Floating Network":    item.FloatingNetworkID,
+		}
+		if boolFlag(opts, "long") {
+			row["Project"] = item.ProjectID
+			row["Router"] = item.RouterID
+			row["Status"] = item.Status
+			row["Tags"] = item.Tags
+		}
+		rows = append(rows, row)
+	}
+	columns := []string{"ID", "Floating IP Address", "Fixed IP Address", "Port", "Floating Network"}
+	if boolFlag(opts, "long") {
+		columns = append(columns, "Project", "Router", "Status", "Tags")
+	}
+	return renderListOutput(stdout, opts, columns, rows)
+}
+
+func floatingIPShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("floating ip show requires <floating-ip>")
+	}
+	item, err := findFloatingIP(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, []outputField{
+		{"id", item.ID},
+		{"floating_ip_address", item.FloatingIP},
+		{"fixed_ip_address", item.FixedIP},
+		{"floating_network_id", item.FloatingNetworkID},
+		{"port_id", item.PortID},
+		{"router_id", item.RouterID},
+		{"project_id", item.ProjectID},
+		{"status", item.Status},
+		{"description", item.Description},
+		{"tags", item.Tags},
+		{"created_at", item.CreatedAt},
+		{"updated_at", item.UpdatedAt},
+	})
+}
+
+func keypairList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	page, err := keypairs.List(client, keypairs.ListOpts{UserID: flagValue(opts, "user")}).AllPages(ctx)
+	if err != nil {
+		return err
+	}
+	items, err := keypairs.ExtractKeyPairs(page)
+	if err != nil {
+		return err
+	}
+	rows := make([]outputRow, 0, len(items))
+	for _, item := range items {
+		rows = append(rows, outputRow{
+			"Name":        item.Name,
+			"Fingerprint": item.Fingerprint,
+			"Type":        item.Type,
+		})
+	}
+	return renderListOutput(stdout, opts, []string{"Name", "Fingerprint", "Type"}, rows)
+}
+
+func keypairShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("keypair show requires <key>")
+	}
+	item, err := keypairs.Get(ctx, client, args[0], keypairs.GetOpts{UserID: flagValue(opts, "user")}).Extract()
+	if err != nil {
+		return err
+	}
+	if boolFlag(opts, "public-key") {
+		_, err := fmt.Fprintln(stdout, item.PublicKey)
+		return err
+	}
+	return renderShowOutput(stdout, opts, []outputField{
+		{"name", item.Name},
+		{"fingerprint", item.Fingerprint},
+		{"public_key", item.PublicKey},
+		{"user_id", item.UserID},
+		{"type", item.Type},
+	})
+}
+
+func serverGroupList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	listOpts := servergroups.ListOpts{
+		AllProjects: boolFlag(opts, "all-projects"),
+		Limit:       intFlag(opts, "limit"),
+		Offset:      intFlag(opts, "offset"),
+	}
+	page, err := servergroups.List(client, listOpts).AllPages(ctx)
+	if err != nil {
+		return err
+	}
+	items, err := servergroups.ExtractServerGroups(page)
+	if err != nil {
+		return err
+	}
+	rows := make([]outputRow, 0, len(items))
+	for _, item := range items {
+		row := outputRow{"ID": item.ID, "Name": item.Name, "Policies": item.Policies}
+		if boolFlag(opts, "long") {
+			row["Project"] = item.ProjectID
+			row["User"] = item.UserID
+			row["Members"] = item.Members
+		}
+		rows = append(rows, row)
+	}
+	columns := []string{"ID", "Name", "Policies"}
+	if boolFlag(opts, "long") {
+		columns = append(columns, "Project", "User", "Members")
+	}
+	return renderListOutput(stdout, opts, columns, rows)
+}
+
+func serverGroupShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("server group show requires <server-group>")
+	}
+	item, err := findServerGroup(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, []outputField{
+		{"id", item.ID},
+		{"name", item.Name},
+		{"policies", item.Policies},
+		{"members", item.Members},
+		{"project_id", item.ProjectID},
+		{"user_id", item.UserID},
+		{"metadata", item.Metadata},
+		{"policy", item.Policy},
+		{"rules", item.Rules},
+	})
+}
+
+func volumeTypeList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	listOpts := volumetypes.ListOpts{Name: flagValue(opts, "name")}
+	if boolFlag(opts, "public") {
+		listOpts.IsPublic = volumetypes.VisibilityPublic
+	}
+	if boolFlag(opts, "private") {
+		listOpts.IsPublic = volumetypes.VisibilityPrivate
+	}
+	page, err := volumetypes.List(client, listOpts).AllPages(ctx)
+	if err != nil {
+		return err
+	}
+	items, err := volumetypes.ExtractVolumeTypes(page)
+	if err != nil {
+		return err
+	}
+	rows := make([]outputRow, 0, len(items))
+	for _, item := range items {
+		if !volumeTypeMatches(item, opts) {
+			continue
+		}
+		row := outputRow{
+			"ID":        item.ID,
+			"Name":      item.Name,
+			"Is Public": volumeTypeIsPublic(item),
+		}
+		if boolFlag(opts, "long") {
+			row["Description"] = item.Description
+			row["Properties"] = item.ExtraSpecs
+			row["Qos Spec ID"] = item.QosSpecID
+		}
+		rows = append(rows, row)
+	}
+	columns := []string{"ID", "Name", "Is Public"}
+	if boolFlag(opts, "long") {
+		columns = append(columns, "Description", "Properties", "Qos Spec ID")
+	}
+	return renderListOutput(stdout, opts, columns, rows)
+}
+
+func volumeTypeShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("volume type show requires <volume-type>")
+	}
+	item, err := findVolumeType(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, []outputField{
+		{"id", item.ID},
+		{"name", item.Name},
+		{"description", item.Description},
+		{"is_public", volumeTypeIsPublic(*item)},
+		{"properties", item.ExtraSpecs},
+		{"qos_specs_id", item.QosSpecID},
+	})
+}
+
+func volumeSnapshotList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	listOpts := snapshots.ListOpts{
+		AllTenants: boolFlag(opts, "all-projects"),
+		Name:       flagValue(opts, "name"),
+		Status:     flagValue(opts, "status"),
+		TenantID:   flagValue(opts, "project"),
+		Limit:      intFlag(opts, "limit"),
+		Marker:     flagValue(opts, "marker"),
+	}
+	if volume := flagValue(opts, "volume"); volume != "" {
+		listOpts.VolumeID = resolveVolumeID(ctx, client, volume)
+	}
+	page, err := snapshots.ListDetail(client, listOpts).AllPages(ctx)
+	if err != nil {
+		return err
+	}
+	items, err := snapshots.ExtractSnapshots(page)
+	if err != nil {
+		return err
+	}
+	rows := make([]outputRow, 0, len(items))
+	for _, item := range items {
+		row := outputRow{
+			"ID":          item.ID,
+			"Name":        item.Name,
+			"Description": item.Description,
+			"Status":      item.Status,
+			"Size":        item.Size,
+		}
+		if boolFlag(opts, "long") {
+			row["Volume"] = item.VolumeID
+			row["Created At"] = item.CreatedAt
+		}
+		rows = append(rows, row)
+	}
+	columns := []string{"ID", "Name", "Description", "Status", "Size"}
+	if boolFlag(opts, "long") {
+		columns = append(columns, "Volume", "Created At")
+	}
+	return renderListOutput(stdout, opts, columns, rows)
+}
+
+func volumeSnapshotShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("volume snapshot show requires <snapshot>")
+	}
+	item, err := findVolumeSnapshot(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, []outputField{
+		{"id", item.ID},
+		{"name", item.Name},
+		{"description", item.Description},
+		{"status", item.Status},
+		{"size", item.Size},
+		{"volume_id", item.VolumeID},
+		{"metadata", item.Metadata},
+		{"created_at", item.CreatedAt},
+		{"updated_at", item.UpdatedAt},
+	})
+}
+
 func findServer(ctx context.Context, client *gophercloud.ServiceClient, value string) (*servers.Server, error) {
 	result := servers.Get(ctx, client, value)
 	if result.Err == nil {
@@ -390,6 +947,102 @@ func findVolume(ctx context.Context, client *gophercloud.ServiceClient, value st
 		return nil, err
 	}
 	return singleByName(value, items, func(item volumes.Volume) string { return item.Name })
+}
+
+func findSubnet(ctx context.Context, client *gophercloud.ServiceClient, value string) (*subnets.Subnet, error) {
+	result := subnets.Get(ctx, client, value)
+	if result.Err == nil {
+		return result.Extract()
+	}
+	page, err := subnets.List(client, subnets.ListOpts{Name: value}).AllPages(ctx)
+	if err != nil {
+		return nil, result.Err
+	}
+	items, err := subnets.ExtractSubnets(page)
+	if err != nil {
+		return nil, err
+	}
+	return singleByName(value, items, func(item subnets.Subnet) string { return item.Name })
+}
+
+func findPort(ctx context.Context, client *gophercloud.ServiceClient, value string) (*ports.Port, error) {
+	result := ports.Get(ctx, client, value)
+	if result.Err == nil {
+		return result.Extract()
+	}
+	page, err := ports.List(client, ports.ListOpts{Name: value}).AllPages(ctx)
+	if err != nil {
+		return nil, result.Err
+	}
+	items, err := ports.ExtractPorts(page)
+	if err != nil {
+		return nil, err
+	}
+	return singleByName(value, items, func(item ports.Port) string { return item.Name })
+}
+
+func findFloatingIP(ctx context.Context, client *gophercloud.ServiceClient, value string) (*floatingips.FloatingIP, error) {
+	result := floatingips.Get(ctx, client, value)
+	if result.Err == nil {
+		return result.Extract()
+	}
+	page, err := floatingips.List(client, floatingips.ListOpts{FloatingIP: value}).AllPages(ctx)
+	if err != nil {
+		return nil, result.Err
+	}
+	items, err := floatingips.ExtractFloatingIPs(page)
+	if err != nil {
+		return nil, err
+	}
+	return singleMatch(value, items)
+}
+
+func findServerGroup(ctx context.Context, client *gophercloud.ServiceClient, value string) (*servergroups.ServerGroup, error) {
+	result := servergroups.Get(ctx, client, value)
+	if result.Err == nil {
+		return result.Extract()
+	}
+	page, err := servergroups.List(client, servergroups.ListOpts{}).AllPages(ctx)
+	if err != nil {
+		return nil, result.Err
+	}
+	items, err := servergroups.ExtractServerGroups(page)
+	if err != nil {
+		return nil, err
+	}
+	return singleByName(value, items, func(item servergroups.ServerGroup) string { return item.Name })
+}
+
+func findVolumeType(ctx context.Context, client *gophercloud.ServiceClient, value string) (*volumetypes.VolumeType, error) {
+	result := volumetypes.Get(ctx, client, value)
+	if result.Err == nil {
+		return result.Extract()
+	}
+	page, err := volumetypes.List(client, volumetypes.ListOpts{Name: value}).AllPages(ctx)
+	if err != nil {
+		return nil, result.Err
+	}
+	items, err := volumetypes.ExtractVolumeTypes(page)
+	if err != nil {
+		return nil, err
+	}
+	return singleByName(value, items, func(item volumetypes.VolumeType) string { return item.Name })
+}
+
+func findVolumeSnapshot(ctx context.Context, client *gophercloud.ServiceClient, value string) (*snapshots.Snapshot, error) {
+	result := snapshots.Get(ctx, client, value)
+	if result.Err == nil {
+		return result.Extract()
+	}
+	page, err := snapshots.ListDetail(client, snapshots.ListOpts{Name: value}).AllPages(ctx)
+	if err != nil {
+		return nil, result.Err
+	}
+	items, err := snapshots.ExtractSnapshots(page)
+	if err != nil {
+		return nil, err
+	}
+	return singleByName(value, items, func(item snapshots.Snapshot) string { return item.Name })
 }
 
 func extractServers(page pagination.Page) ([]servers.Server, error) {
@@ -525,4 +1178,192 @@ func volumeAttachments(attachments []volumes.Attachment) []map[string]any {
 		})
 	}
 	return values
+}
+
+func subnetDHCPFilter(opts *Options) (bool, bool) {
+	if boolFlag(opts, "dhcp") {
+		return true, true
+	}
+	if boolFlag(opts, "no-dhcp") {
+		return false, true
+	}
+	return false, false
+}
+
+func firstFlag(opts *Options, names ...string) string {
+	for _, name := range names {
+		if value := flagValue(opts, name); value != "" {
+			return value
+		}
+	}
+	return ""
+}
+
+func intFlag(opts *Options, name string) int {
+	value := flagValue(opts, name)
+	if value == "" {
+		return 0
+	}
+	parsed, err := strconv.Atoi(value)
+	if err != nil {
+		return 0
+	}
+	return parsed
+}
+
+func resolveNetworkID(ctx context.Context, client *gophercloud.ServiceClient, value string) string {
+	if client == nil || value == "" {
+		return value
+	}
+	item, err := findNetwork(ctx, client, value)
+	if err != nil {
+		return value
+	}
+	return item.ID
+}
+
+func resolvePortID(ctx context.Context, client *gophercloud.ServiceClient, value string) string {
+	if client == nil || value == "" {
+		return value
+	}
+	item, err := findPort(ctx, client, value)
+	if err != nil {
+		return value
+	}
+	return item.ID
+}
+
+func resolveSubnetID(ctx context.Context, client *gophercloud.ServiceClient, value string) string {
+	if client == nil || value == "" {
+		return value
+	}
+	item, err := findSubnet(ctx, client, value)
+	if err != nil {
+		return value
+	}
+	return item.ID
+}
+
+func resolveServerID(ctx context.Context, client *gophercloud.ServiceClient, value string) string {
+	if client == nil || value == "" {
+		return value
+	}
+	item, err := findServer(ctx, client, value)
+	if err != nil {
+		return value
+	}
+	return item.ID
+}
+
+func resolveVolumeID(ctx context.Context, client *gophercloud.ServiceClient, value string) string {
+	if client == nil || value == "" {
+		return value
+	}
+	item, err := findVolume(ctx, client, value)
+	if err != nil {
+		return value
+	}
+	return item.ID
+}
+
+func fixedIPFilter(ctx context.Context, client *gophercloud.ServiceClient, value string) ports.FixedIPOpts {
+	filter := ports.FixedIPOpts{}
+	for _, part := range strings.Split(value, ",") {
+		key, raw, ok := strings.Cut(strings.TrimSpace(part), "=")
+		if !ok {
+			continue
+		}
+		key = strings.TrimSpace(strings.ToLower(key))
+		raw = strings.TrimSpace(raw)
+		switch key {
+		case "subnet":
+			filter.SubnetID = resolveSubnetID(ctx, client, raw)
+		case "ip-address", "ip_address":
+			filter.IPAddress = raw
+		case "ip-substring", "ip_address_substr", "ip-substr":
+			filter.IPAddressSubstr = raw
+		}
+	}
+	return filter
+}
+
+func portFixedIPs(fixedIPs []ports.IP) []string {
+	values := make([]string, 0, len(fixedIPs))
+	for _, item := range fixedIPs {
+		switch {
+		case item.IPAddress != "" && item.SubnetID != "":
+			values = append(values, fmt.Sprintf("%s, subnet_id=%s", item.IPAddress, item.SubnetID))
+		case item.IPAddress != "":
+			values = append(values, item.IPAddress)
+		case item.SubnetID != "":
+			values = append(values, fmt.Sprintf("subnet_id=%s", item.SubnetID))
+		}
+	}
+	sort.Strings(values)
+	return values
+}
+
+func volumeTypeMatches(item volumetypes.VolumeType, opts *Options) bool {
+	property := flagValue(opts, "property")
+	if property != "" {
+		key, value, ok := strings.Cut(property, "=")
+		if !ok || item.ExtraSpecs[strings.TrimSpace(key)] != strings.TrimSpace(value) {
+			return false
+		}
+	}
+	if boolFlag(opts, "multiattach") && !extraSpecTruthy(item.ExtraSpecs, "multiattach") {
+		return false
+	}
+	if boolFlag(opts, "cacheable") && !extraSpecTruthy(item.ExtraSpecs, "cacheable") {
+		return false
+	}
+	if boolFlag(opts, "replicated") && !extraSpecTruthy(item.ExtraSpecs, "replication_enabled") {
+		return false
+	}
+	availabilityZone := flagValue(opts, "availability-zone")
+	if availabilityZone != "" && !volumeTypeAvailabilityZoneMatches(item.ExtraSpecs, availabilityZone) {
+		return false
+	}
+	return true
+}
+
+func volumeTypeIsPublic(item volumetypes.VolumeType) bool {
+	return item.IsPublic || item.PublicAccess
+}
+
+func extraSpecTruthy(specs map[string]string, key string) bool {
+	value := strings.TrimSpace(strings.ToLower(specs[key]))
+	return value == "true" || value == "<is> true" || value == "yes" || value == "1"
+}
+
+func volumeTypeAvailabilityZoneMatches(specs map[string]string, availabilityZone string) bool {
+	availabilityZone = strings.TrimSpace(availabilityZone)
+	if availabilityZone == "" {
+		return true
+	}
+	for key, value := range specs {
+		if key == "RESKEY:availability_zones:"+availabilityZone || value == availabilityZone {
+			return true
+		}
+	}
+	return false
+}
+
+func stringSliceContains(values []string, want string) bool {
+	for _, value := range values {
+		if value == want {
+			return true
+		}
+	}
+	return false
+}
+
+func compactStrings(values []string) []string {
+	var compacted []string
+	for _, value := range values {
+		if value != "" {
+			compacted = append(compacted, value)
+		}
+	}
+	return compacted
 }

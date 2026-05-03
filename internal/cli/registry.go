@@ -42,10 +42,17 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 	}
 	for _, path := range []string{
 		"flavor list", "flavor show",
+		"floating ip list", "floating ip show",
 		"image list", "image show",
+		"keypair list", "keypair show",
 		"network list", "network show",
+		"port list", "port show",
 		"server list", "server show",
+		"server group list", "server group show",
+		"subnet list", "subnet show",
 		"volume list", "volume show",
+		"volume snapshot list", "volume snapshot show",
+		"volume type list", "volume type show",
 	} {
 		registry.implemented[path] = runCoreRead(path, stdout, opts)
 	}
@@ -134,7 +141,7 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().String("not-tags", "", "exclude tags")
 		cmd.Flags().String("not-tags-any", "", "exclude any tags")
 	}
-	if isCoreReadCommand(path) && strings.HasSuffix(path, " list") {
+	if usesSharedCoreListFlags(path) {
 		cmd.Flags().Bool("long", false, "list additional fields")
 		cmd.Flags().Bool("all-projects", false, "include all projects")
 		cmd.Flags().String("project", "", "filter by project")
@@ -156,7 +163,94 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().String("endpoint", "", "endpoint group")
 		cmd.Flags().String("project", "", "filter by project")
 		cmd.Flags().String("project-domain", "", "project domain")
+	case "subnet list":
+		cmd.Flags().Bool("long", false, "list additional fields")
+		cmd.Flags().Int("ip-version", 0, "filter by IP version")
+		cmd.Flags().Bool("dhcp", false, "filter to DHCP-enabled subnets")
+		cmd.Flags().Bool("no-dhcp", false, "filter to DHCP-disabled subnets")
+		cmd.Flags().String("service-type", "", "filter by service type")
+		cmd.Flags().String("project", "", "filter by project")
+		cmd.Flags().String("project-domain", "", "project domain")
+		cmd.Flags().String("network", "", "filter by network")
+		cmd.Flags().String("gateway", "", "filter by gateway IP")
+		cmd.Flags().String("name", "", "filter by name")
+		cmd.Flags().String("subnet-range", "", "filter by subnet range")
+		cmd.Flags().String("subnet-pool", "", "filter by subnet pool")
+		addTagFilterFlags(cmd)
+	case "port list":
+		cmd.Flags().String("device-owner", "", "filter by device owner")
+		cmd.Flags().String("host", "", "filter by host")
+		cmd.Flags().String("network", "", "filter by network")
+		cmd.Flags().String("router", "", "filter by router")
+		cmd.Flags().String("server", "", "filter by server")
+		cmd.Flags().String("device-id", "", "filter by device ID")
+		cmd.Flags().String("mac-address", "", "filter by MAC address")
+		cmd.Flags().Bool("long", false, "list additional fields")
+		cmd.Flags().String("project", "", "filter by project")
+		cmd.Flags().String("name", "", "filter by name")
+		cmd.Flags().String("security-group", "", "filter by security group")
+		cmd.Flags().String("status", "", "filter by status")
+		cmd.Flags().String("project-domain", "", "project domain")
+		cmd.Flags().String("fixed-ip", "", "filter by fixed IP attributes")
+		addTagFilterFlags(cmd)
+	case "floating ip list":
+		cmd.Flags().String("network", "", "filter by network")
+		cmd.Flags().String("port", "", "filter by port")
+		cmd.Flags().String("fixed-ip-address", "", "filter by fixed IP address")
+		cmd.Flags().String("floating-ip-address", "", "filter by floating IP address")
+		cmd.Flags().String("status", "", "filter by status")
+		cmd.Flags().String("project", "", "filter by project")
+		cmd.Flags().String("project-domain", "", "project domain")
+		cmd.Flags().String("router", "", "filter by router")
+		addTagFilterFlags(cmd)
+		cmd.Flags().Bool("long", false, "list additional fields")
+	case "keypair list":
+		cmd.Flags().String("user", "", "filter by user")
+		cmd.Flags().String("user-domain", "", "user domain")
+		cmd.Flags().String("project", "", "filter by project")
+		cmd.Flags().String("project-domain", "", "project domain")
+		cmd.Flags().Int("limit", 0, "maximum number of entries")
+		cmd.Flags().String("marker", "", "pagination marker")
+	case "keypair show":
+		cmd.Flags().Bool("public-key", false, "show only the public key")
+		cmd.Flags().String("user", "", "keypair owner")
+		cmd.Flags().String("user-domain", "", "user domain")
+	case "server group list":
+		cmd.Flags().Bool("all-projects", false, "include all projects")
+		cmd.Flags().Bool("long", false, "list additional fields")
+		cmd.Flags().Int("limit", 0, "maximum number of entries")
+		cmd.Flags().Int("offset", 0, "collection offset")
+	case "volume type list":
+		cmd.Flags().Bool("long", false, "list additional fields")
+		cmd.Flags().Bool("default", false, "list the default volume type")
+		cmd.Flags().Bool("public", false, "list public volume types")
+		cmd.Flags().Bool("private", false, "list private volume types")
+		cmd.Flags().Bool("encryption-type", false, "show encryption information")
+		cmd.Flags().String("property", "", "filter by property")
+		cmd.Flags().Bool("multiattach", false, "filter multi-attach capable types")
+		cmd.Flags().Bool("cacheable", false, "filter cacheable types")
+		cmd.Flags().Bool("replicated", false, "filter replicated types")
+		cmd.Flags().String("availability-zone", "", "filter by availability zone")
+	case "volume type show":
+		cmd.Flags().Bool("encryption-type", false, "show encryption information")
+	case "volume snapshot list":
+		cmd.Flags().Bool("all-projects", false, "include all projects")
+		cmd.Flags().String("project", "", "filter by project")
+		cmd.Flags().String("project-domain", "", "project domain")
+		cmd.Flags().Bool("long", false, "list additional fields")
+		cmd.Flags().String("name", "", "filter by name")
+		cmd.Flags().String("status", "", "filter by status")
+		cmd.Flags().String("volume", "", "filter by volume")
+		cmd.Flags().Int("limit", 0, "maximum number of entries")
+		cmd.Flags().String("marker", "", "pagination marker")
 	}
+}
+
+func addTagFilterFlags(cmd *cobra.Command) {
+	cmd.Flags().String("tags", "", "filter by all tags")
+	cmd.Flags().String("any-tags", "", "filter by any tags")
+	cmd.Flags().String("not-tags", "", "exclude all tags")
+	cmd.Flags().String("not-any-tags", "", "exclude any tags")
 }
 
 func isIdentityReadCommand(path string) bool {
@@ -179,10 +273,26 @@ func isIdentityReadCommand(path string) bool {
 func isCoreReadCommand(path string) bool {
 	switch path {
 	case "flavor list", "flavor show",
+		"floating ip list", "floating ip show",
 		"image list", "image show",
+		"keypair list", "keypair show",
 		"network list", "network show",
+		"port list", "port show",
 		"server list", "server show",
-		"volume list", "volume show":
+		"server group list", "server group show",
+		"subnet list", "subnet show",
+		"volume list", "volume show",
+		"volume snapshot list", "volume snapshot show",
+		"volume type list", "volume type show":
+		return true
+	default:
+		return false
+	}
+}
+
+func usesSharedCoreListFlags(path string) bool {
+	switch path {
+	case "flavor list", "image list", "network list", "server list", "volume list":
 		return true
 	default:
 		return false
