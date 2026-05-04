@@ -356,10 +356,201 @@ func prettyColorEnabled(stdout io.Writer) bool {
 }
 
 func prettyCellValue(value any) string {
-	text := valueString(value)
+	text := prettyValueString(value)
 	text = strings.ReplaceAll(strings.ReplaceAll(text, "\r\n", "\n"), "\r", "\n")
 	text = strings.ReplaceAll(text, "\t", "  ")
 	return strings.TrimSpace(text)
+}
+
+func prettyValueString(value any) string {
+	if text, ok := prettyStructuredString(value); ok {
+		return text
+	}
+	if text, ok := prettyJSONText(value); ok {
+		return text
+	}
+	return valueString(value)
+}
+
+func prettyJSONText(value any) (string, bool) {
+	text, ok := value.(string)
+	if !ok {
+		return "", false
+	}
+	trimmed := strings.TrimSpace(text)
+	if trimmed == "" || !(strings.HasPrefix(trimmed, "{") || strings.HasPrefix(trimmed, "[")) {
+		return "", false
+	}
+	decoder := json.NewDecoder(strings.NewReader(trimmed))
+	decoder.UseNumber()
+	decoded, err := decodeOrderedJSONValue(decoder)
+	if err != nil {
+		return "", false
+	}
+	if _, err := decoder.Token(); err != io.EOF {
+		return "", false
+	}
+	return prettyStructuredString(decoded)
+}
+
+func prettyStructuredString(value any) (string, bool) {
+	lines, ok := prettyStructuredLines(value, 0)
+	if !ok {
+		return "", false
+	}
+	return strings.Join(lines, "\n"), true
+}
+
+func prettyStructuredLines(value any, indent int) ([]string, bool) {
+	switch typed := value.(type) {
+	case orderedJSONObject:
+		if len(typed.keys) == 0 {
+			return []string{indentString(indent) + "{}"}, true
+		}
+		lines := make([]string, 0, len(typed.keys))
+		for _, key := range typed.keys {
+			lines = appendPrettyMapEntry(lines, indent, key, typed.values[key])
+		}
+		return lines, true
+	case map[string]any:
+		if len(typed) == 0 {
+			return []string{indentString(indent) + "{}"}, true
+		}
+		keys := make([]string, 0, len(typed))
+		for key := range typed {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+		lines := make([]string, 0, len(keys))
+		for _, key := range keys {
+			lines = appendPrettyMapEntry(lines, indent, key, typed[key])
+		}
+		return lines, true
+	case map[string]string:
+		if len(typed) == 0 {
+			return []string{indentString(indent) + "{}"}, true
+		}
+		lines := make([]string, 0, len(typed))
+		for _, key := range sortedKeys(typed) {
+			lines = appendPrettyMapEntry(lines, indent, key, typed[key])
+		}
+		return lines, true
+	case []any:
+		return prettyListLines(typed, indent), true
+	case []string:
+		values := make([]any, len(typed))
+		for i, item := range typed {
+			values[i] = item
+		}
+		return prettyListLines(values, indent), true
+	default:
+		reflected := reflect.ValueOf(value)
+		if !reflected.IsValid() {
+			return nil, false
+		}
+		switch reflected.Kind() {
+		case reflect.Interface, reflect.Pointer:
+			if reflected.IsNil() {
+				return nil, false
+			}
+			return prettyStructuredLines(reflected.Elem().Interface(), indent)
+		case reflect.Struct:
+			if _, ok := value.(time.Time); ok {
+				return nil, false
+			}
+			encoded, err := json.Marshal(value)
+			if err != nil {
+				return nil, false
+			}
+			decoder := json.NewDecoder(bytes.NewReader(encoded))
+			decoder.UseNumber()
+			decoded, err := decodeOrderedJSONValue(decoder)
+			if err != nil {
+				return nil, false
+			}
+			return prettyStructuredLines(decoded, indent)
+		case reflect.Map, reflect.Array, reflect.Slice:
+			if reflected.Kind() != reflect.Array && reflected.IsNil() {
+				return nil, false
+			}
+			if reflected.Type().Elem().Kind() == reflect.Uint8 {
+				return nil, false
+			}
+			encoded, err := json.Marshal(value)
+			if err != nil {
+				return nil, false
+			}
+			decoder := json.NewDecoder(bytes.NewReader(encoded))
+			decoder.UseNumber()
+			decoded, err := decodeOrderedJSONValue(decoder)
+			if err != nil {
+				return nil, false
+			}
+			return prettyStructuredLines(decoded, indent)
+		default:
+			return nil, false
+		}
+	}
+}
+
+func appendPrettyMapEntry(lines []string, indent int, key string, value any) []string {
+	prefix := indentString(indent)
+	if childLines, ok := prettyStructuredLines(value, indent+2); ok {
+		if len(childLines) == 1 && strings.TrimSpace(childLines[0]) == "{}" {
+			return append(lines, fmt.Sprintf("%s%s: {}", prefix, key))
+		}
+		if len(childLines) == 1 && strings.TrimSpace(childLines[0]) == "[]" {
+			return append(lines, fmt.Sprintf("%s%s: []", prefix, key))
+		}
+		lines = append(lines, fmt.Sprintf("%s%s:", prefix, key))
+		return append(lines, childLines...)
+	}
+	scalar := prettyScalarString(value)
+	scalarLines := strings.Split(strings.ReplaceAll(scalar, "\r\n", "\n"), "\n")
+	if len(scalarLines) == 1 {
+		return append(lines, fmt.Sprintf("%s%s: %s", prefix, key, scalarLines[0]))
+	}
+	lines = append(lines, fmt.Sprintf("%s%s:", prefix, key))
+	for _, line := range scalarLines {
+		lines = append(lines, indentString(indent+2)+line)
+	}
+	return lines
+}
+
+func prettyListLines(values []any, indent int) []string {
+	if len(values) == 0 {
+		return []string{indentString(indent) + "[]"}
+	}
+	lines := make([]string, 0, len(values))
+	prefix := indentString(indent)
+	for _, value := range values {
+		if childLines, ok := prettyStructuredLines(value, indent+2); ok {
+			lines = append(lines, prefix+"-")
+			lines = append(lines, childLines...)
+			continue
+		}
+		scalar := prettyScalarString(value)
+		scalarLines := strings.Split(strings.ReplaceAll(scalar, "\r\n", "\n"), "\n")
+		lines = append(lines, prefix+"- "+scalarLines[0])
+		for _, line := range scalarLines[1:] {
+			lines = append(lines, indentString(indent+2)+line)
+		}
+	}
+	return lines
+}
+
+func prettyScalarString(value any) string {
+	if text, ok := prettyJSONText(value); ok {
+		return text
+	}
+	return valueString(value)
+}
+
+func indentString(width int) string {
+	if width <= 0 {
+		return ""
+	}
+	return strings.Repeat(" ", width)
 }
 
 func selectColumns(columns []string, requested []string) []string {

@@ -1133,3 +1133,15 @@ Sources consulted:
 
 * Local implementation file `internal/cli/output.go`.
 * Local pretty-output tests in `internal/cli/root_test.go`.
+
+## 2026-05-04: Pretty Structured Values
+
+Work done: changed the `pretty` renderer to format structured values as readable multiline blocks instead of dense JSON. The formatter now detects maps, slices, arrays, structs, and JSON object or array strings, and renders them using indented `key: value` and list-item lines before table wrapping.
+
+Live observations on `cloud6`: `OS_CLOUD=cloud6 ./bin/openstack --pretty hypervisor show 3e999761-e6fa-4ad7-9d89-ddd2592e7554` now renders `cpu_info` as `vendor`, `arch`, `model`, `features`, and `topology` sections instead of dense JSON.
+
+Sources consulted:
+
+* Local implementation file `internal/cli/output.go`.
+* Local Gophercloud hypervisor type definition in `/Users/ken/Dev/openstack-go/.cache/gomod/github.com/gophercloud/gophercloud/v2@v2.12.0/openstack/compute/v2/hypervisors/results.go`.
+* Local pretty-output tests in `internal/cli/root_test.go`.

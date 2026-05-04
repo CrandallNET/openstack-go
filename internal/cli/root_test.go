@@ -342,6 +342,53 @@ func TestPrettyShowPreservesMultilineValues(t *testing.T) {
 	}
 }
 
+func TestPrettyShowFormatsJSONStringsAsStructuredBlocks(t *testing.T) {
+	var stdout bytes.Buffer
+	err := renderShowOutput(&stdout, &Options{Format: "pretty"}, []outputField{
+		{Name: "cpu_info", Value: `{"vendor":"Intel","features":["sse","avx"],"topology":{"cores":4}}`},
+	})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	output := stdout.String()
+	for _, want := range []string{"vendor: Intel", "features:", "- sse", "- avx", "topology:", "cores: 4"} {
+		if !strings.Contains(output, want) {
+			t.Fatalf("pretty structured output missing %q:\n%s", want, output)
+		}
+	}
+	if strings.Contains(output, `"vendor"`) || strings.Contains(output, `{"vendor"`) {
+		t.Fatalf("expected pretty output to avoid dense JSON, got:\n%s", output)
+	}
+}
+
+func TestPrettyShowFormatsStructsAsStructuredBlocks(t *testing.T) {
+	type topology struct {
+		Cores int `json:"cores"`
+	}
+	type cpuInfo struct {
+		Vendor   string   `json:"vendor"`
+		Features []string `json:"features"`
+		Topology topology `json:"topology"`
+	}
+
+	var stdout bytes.Buffer
+	err := renderShowOutput(&stdout, &Options{Format: "pretty"}, []outputField{
+		{Name: "cpu_info", Value: cpuInfo{Vendor: "Intel", Features: []string{"sse", "avx"}, Topology: topology{Cores: 4}}},
+	})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	output := stdout.String()
+	for _, want := range []string{"vendor: Intel", "features:", "- sse", "- avx", "topology:", "cores: 4"} {
+		if !strings.Contains(output, want) {
+			t.Fatalf("pretty structured struct output missing %q:\n%s", want, output)
+		}
+	}
+	if strings.Contains(output, `"vendor"`) || strings.Contains(output, `{"vendor"`) {
+		t.Fatalf("expected pretty output to avoid dense JSON, got:\n%s", output)
+	}
+}
+
 func TestPrettyShowWrapsLongValuesInsteadOfTruncating(t *testing.T) {
 	var stdout bytes.Buffer
 	longValue := strings.Repeat("abcdef ", 12)
