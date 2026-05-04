@@ -974,6 +974,18 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return routerAddPort(cmd.Context(), client, args)
+		case "router add gateway":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return routerAddGateway(cmd.Context(), stdout, opts, client, args)
+		case "router add route":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return routerAddRoute(cmd.Context(), stdout, opts, client, args)
 		case "router add subnet":
 			client, err := clients.networkV2()
 			if err != nil {
@@ -1008,6 +1020,18 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return routerRemovePort(cmd.Context(), client, args)
+		case "router remove gateway":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return routerRemoveGateway(cmd.Context(), stdout, opts, client, args)
+		case "router remove route":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return routerRemoveRoute(cmd.Context(), stdout, opts, client, args)
 		case "router remove subnet":
 			client, err := clients.networkV2()
 			if err != nil {
@@ -5436,6 +5460,57 @@ func routerAddPort(ctx context.Context, client *gophercloud.ServiceClient, args 
 	return err
 }
 
+func routerAddGateway(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("router add gateway requires <router> <network>")
+	}
+	if err := requireExternalGatewayMultihoming(ctx, client); err != nil {
+		return err
+	}
+	router, err := findRouter(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	network, err := findNetwork(ctx, client, args[1])
+	if err != nil {
+		return err
+	}
+	gateway := map[string]any{"network_id": network.ID}
+	fixedIPs, err := routerFixedIPs(ctx, client, flagValues(opts, "fixed-ip"))
+	if err != nil {
+		return err
+	}
+	if len(fixedIPs) > 0 {
+		gateway["external_fixed_ips"] = fixedIPs
+	}
+	raw, err := neutronRouterAction(ctx, client, router.ID, "add_external_gateways", map[string]any{
+		"external_gateways": []map[string]any{gateway},
+	})
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, routerRawFields(raw, nil))
+}
+
+func routerAddRoute(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("router add route requires <router>")
+	}
+	router, err := findRouter(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	routes, err := parseRouterRoutes(flagValues(opts, "route"))
+	if err != nil {
+		return err
+	}
+	raw, err := neutronRouterAction(ctx, client, router.ID, "add_extraroutes", map[string]any{"routes": routes})
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, routerRawFields(raw, nil))
+}
+
 func routerAddSubnet(ctx context.Context, client *gophercloud.ServiceClient, args []string) error {
 	if len(args) < 2 {
 		return fmt.Errorf("router add subnet requires <router> <subnet>")
@@ -5468,6 +5543,57 @@ func routerRemovePort(ctx context.Context, client *gophercloud.ServiceClient, ar
 	return err
 }
 
+func routerRemoveGateway(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("router remove gateway requires <router> <network>")
+	}
+	if err := requireExternalGatewayMultihoming(ctx, client); err != nil {
+		return err
+	}
+	router, err := findRouter(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	network, err := findNetwork(ctx, client, args[1])
+	if err != nil {
+		return err
+	}
+	gateway := map[string]any{"network_id": network.ID}
+	fixedIPs, err := routerFixedIPs(ctx, client, flagValues(opts, "fixed-ip"))
+	if err != nil {
+		return err
+	}
+	if len(fixedIPs) > 0 {
+		gateway["external_fixed_ips"] = fixedIPs
+	}
+	raw, err := neutronRouterAction(ctx, client, router.ID, "remove_external_gateways", map[string]any{
+		"external_gateways": []map[string]any{gateway},
+	})
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, routerRawFields(raw, nil))
+}
+
+func routerRemoveRoute(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("router remove route requires <router>")
+	}
+	router, err := findRouter(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	routes, err := parseRouterRoutes(flagValues(opts, "route"))
+	if err != nil {
+		return err
+	}
+	raw, err := neutronRouterAction(ctx, client, router.ID, "remove_extraroutes", map[string]any{"routes": routes})
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, routerRawFields(raw, nil))
+}
+
 func routerRemoveSubnet(ctx context.Context, client *gophercloud.ServiceClient, args []string) error {
 	if len(args) < 2 {
 		return fmt.Errorf("router remove subnet requires <router> <subnet>")
@@ -5482,6 +5608,27 @@ func routerRemoveSubnet(ctx context.Context, client *gophercloud.ServiceClient, 
 	}
 	_, err = routers.RemoveInterface(ctx, client, router.ID, routers.RemoveInterfaceOpts{SubnetID: subnet.ID}).Extract()
 	return err
+}
+
+func requireExternalGatewayMultihoming(ctx context.Context, client *gophercloud.ServiceClient) error {
+	if _, err := findNetworkExtension(ctx, client, "external-gateway-multihoming"); err == nil {
+		return nil
+	}
+	return fmt.Errorf("The external-gateway-multihoming extension is not enabled at the Neutron side.")
+}
+
+func neutronRouterAction(ctx context.Context, client *gophercloud.ServiceClient, routerID string, action string, values map[string]any) (map[string]any, error) {
+	var body struct {
+		Router map[string]any `json:"router"`
+	}
+	resp, err := client.Put(ctx, client.ServiceURL("routers", url.PathEscape(routerID), action), map[string]any{"router": values}, &body, &gophercloud.RequestOpts{
+		OkCodes: []int{200},
+	})
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return nil, err
+	}
+	return body.Router, nil
 }
 
 func routerSet(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {

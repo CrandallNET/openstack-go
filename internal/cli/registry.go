@@ -120,7 +120,10 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"resource provider list", "resource provider show",
 		"resource provider trait list",
 		"resource provider usage show",
-		"router add port", "router add subnet", "router create", "router delete", "router list", "router remove port", "router remove subnet", "router set", "router show", "router unset",
+		"router add gateway", "router add port", "router add route", "router add subnet",
+		"router create", "router delete", "router list",
+		"router remove gateway", "router remove port", "router remove route", "router remove subnet",
+		"router set", "router show", "router unset",
 		"security group create", "security group delete", "security group list", "security group set", "security group show", "security group unset",
 		"security group rule create", "security group rule delete", "security group rule list", "security group rule show",
 		"server event list", "server event show",
@@ -947,6 +950,10 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().Bool("inherited", false, "filter inherited assignments")
 		cmd.Flags().Bool("auth-user", false, "filter to authenticated user")
 		cmd.Flags().Bool("auth-project", false, "filter to authenticated project")
+	case "router add gateway":
+		cmd.Flags().StringArray("fixed-ip", nil, "gateway fixed IP")
+	case "router add route":
+		cmd.Flags().StringArray("route", nil, "route destination=<cidr>,gateway=<ip>")
 	case "router list":
 		cmd.Flags().String("name", "", "filter by name")
 		cmd.Flags().Bool("enable", false, "list enabled routers")
@@ -1015,6 +1022,10 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().Bool("qos-policy", false, "remove QoS policy")
 		cmd.Flags().StringArray("tag", nil, "router tag")
 		cmd.Flags().Bool("all-tag", false, "clear all tags")
+	case "router remove gateway":
+		cmd.Flags().StringArray("fixed-ip", nil, "gateway fixed IP")
+	case "router remove route":
+		cmd.Flags().StringArray("route", nil, "route destination=<cidr>,gateway=<ip>")
 	case "security group create":
 		cmd.Flags().StringArray("extra-property", nil, "additional property type=<type>,name=<name>,value=<value>")
 		cmd.Flags().String("description", "", "security group description")
@@ -1307,7 +1318,10 @@ func isCoreReadCommand(path string) bool {
 		"resource provider list", "resource provider show",
 		"resource provider trait list",
 		"resource provider usage show",
-		"router add port", "router add subnet", "router create", "router delete", "router list", "router remove port", "router remove subnet", "router set", "router show", "router unset",
+		"router add gateway", "router add port", "router add route", "router add subnet",
+		"router create", "router delete", "router list",
+		"router remove gateway", "router remove port", "router remove route", "router remove subnet",
+		"router set", "router show", "router unset",
 		"security group create", "security group delete", "security group list", "security group set", "security group show", "security group unset",
 		"security group rule create", "security group rule delete", "security group rule list", "security group rule show",
 		"server event list", "server event show",

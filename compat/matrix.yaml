@@ -4521,13 +4521,15 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
-    sdk_package: ""
-    shim: false
+    status: "implemented"
+    sdk_package: "Neutron router add_external_gateways action via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
+    shim: true
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: cloud6 extension-gated error parity"
+    notes: "Implemented through Neutron external gateway multihoming action endpoints. cloud6 does not expose external-gateway-multihoming, and the Go CLI matches Python OSC's extension-gated error there; a cloud exposing the extension is still needed for successful gateway action verification."
   - command: "router add port"
     group: "openstack.network.v2"
     service: "network"
@@ -4545,13 +4547,15 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
-    sdk_package: ""
-    shim: false
+    status: "cloud-verified"
+    sdk_package: "Neutron router add_extraroutes action via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
+    shim: true
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: cloud6 router extra-route lifecycle smoke"
+    notes: "Implemented through Neutron add_extraroutes and remove_extraroutes action endpoints. Disposable route add, remove, repeated missing-route remove, and cleanup passed on cloud6."
   - command: "router add subnet"
     group: "openstack.network.v2"
     service: "network"
@@ -4663,13 +4667,15 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
-    sdk_package: ""
-    shim: false
+    status: "implemented"
+    sdk_package: "Neutron router remove_external_gateways action via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
+    shim: true
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: cloud6 extension-gated error parity"
+    notes: "Implemented through Neutron external gateway multihoming action endpoints. cloud6 does not expose external-gateway-multihoming, and the Go CLI matches Python OSC's extension-gated error there; a cloud exposing the extension is still needed for successful gateway action verification."
   - command: "router remove port"
     group: "openstack.network.v2"
     service: "network"
@@ -4687,13 +4693,15 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
-    sdk_package: ""
-    shim: false
+    status: "cloud-verified"
+    sdk_package: "Neutron router remove_extraroutes action via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
+    shim: true
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: cloud6 router extra-route lifecycle smoke"
+    notes: "Implemented through Neutron add_extraroutes and remove_extraroutes action endpoints. Disposable route add, remove, repeated missing-route remove, and cleanup passed on cloud6."
   - command: "router remove subnet"
     group: "openstack.network.v2"
     service: "network"

@@ -996,3 +996,18 @@ Sources consulted:
 * Local OSC oracle snapshots in `compat/osc/9.0.0/help/floating/ip/port/forwarding/create.txt`, `compat/osc/9.0.0/help/floating/ip/port/forwarding/delete.txt`, `compat/osc/9.0.0/help/floating/ip/port/forwarding/list.txt`, `compat/osc/9.0.0/help/floating/ip/port/forwarding/set.txt`, and `compat/osc/9.0.0/help/floating/ip/port/forwarding/show.txt`.
 * Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/network/v2/floating_ip_port_forwarding.py`, used only as the pinned local oracle implementation source.
 * Gophercloud package docs for [Neutron floating IP port forwarding](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/portforwarding).
+
+## 2026-05-04: Router Gateway And Route Helper Commands
+
+Work done: added `router add gateway`, `router remove gateway`, `router add route`, and `router remove route`.
+
+Implementation note: route helpers call Neutron's `add_extraroutes` and `remove_extraroutes` router action endpoints through the authenticated Gophercloud service client, because no typed local Gophercloud helper exists in v2.12.0. Gateway helpers call Neutron's `add_external_gateways` and `remove_external_gateways` action endpoints and intentionally check for `external-gateway-multihoming` before resolving router or network arguments, matching Python OSC's command order.
+
+Live observations on `cloud6`: the Go CLI created disposable network, subnet, and router resources, attached the subnet, added route `192.0.2.0/24` via the disposable subnet, removed it, repeated the remove for the documented missing-route success path, and cleaned up all disposable resources. `cloud6` advertises `extraroute` and `extraroute-atomic` but not `external-gateway-multihoming`; Python OSC and the Go CLI both return `The external-gateway-multihoming extension is not enabled at the Neutron side.` for gateway add/remove on that cloud.
+
+Sources consulted:
+
+* Local OSC oracle snapshots in `compat/osc/9.0.0/help/router/add/gateway.txt`, `compat/osc/9.0.0/help/router/remove/gateway.txt`, `compat/osc/9.0.0/help/router/add/route.txt`, and `compat/osc/9.0.0/help/router/remove/route.txt`.
+* Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/network/v2/router.py`, used only as the pinned local oracle implementation source.
+* Local OpenStackSDK source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/network/v2/router.py`, used to confirm the Neutron action endpoint names.
+* Gophercloud package docs for [Neutron routers](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/routers).

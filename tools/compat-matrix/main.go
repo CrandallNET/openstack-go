@@ -208,6 +208,14 @@ func newCommandEntry(group string, command string) commandEntry {
 			entry.Tests = []string{"unit: command registry", "unit: floating ip port forwarding port range validation"}
 			entry.Notes = "Implemented with Gophercloud port forwarding calls and raw Neutron list extraction for range fields. cloud6 returns Neutron 404 for floating IP port-forwarding endpoints in both Python OSC and the Go CLI, so a cloud exposing this extension is still needed for live lifecycle verification."
 		}
+		if command == "router add gateway" || command == "router remove gateway" {
+			entry.Tests = []string{"unit: command registry", "live: cloud6 extension-gated error parity"}
+			entry.Notes = "Implemented through Neutron external gateway multihoming action endpoints. cloud6 does not expose external-gateway-multihoming, and the Go CLI matches Python OSC's extension-gated error there; a cloud exposing the extension is still needed for successful gateway action verification."
+		}
+		if command == "router add route" || command == "router remove route" {
+			entry.Tests = []string{"unit: command registry", "live: cloud6 router extra-route lifecycle smoke"}
+			entry.Notes = "Implemented through Neutron add_extraroutes and remove_extraroutes action endpoints. Disposable route add, remove, repeated missing-route remove, and cleanup passed on cloud6."
+		}
 	}
 	return entry
 }
@@ -441,12 +449,16 @@ func coreReadPackages() map[string]string {
 		"resource provider show":             "github.com/gophercloud/gophercloud/v2/openstack/placement/v1/resourceproviders",
 		"resource provider trait list":       "github.com/gophercloud/gophercloud/v2/openstack/placement/v1/resourceproviders",
 		"resource provider usage show":       "github.com/gophercloud/gophercloud/v2/openstack/placement/v1/resourceproviders",
+		"router add gateway":                 "Neutron router add_external_gateways action via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0",
 		"router add port":                    "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/routers",
+		"router add route":                   "Neutron router add_extraroutes action via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0",
 		"router add subnet":                  "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/routers",
 		"router create":                      "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/routers; standard tags via gophercloud.ServiceClient",
 		"router delete":                      "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/routers",
 		"router list":                        "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/routers",
+		"router remove gateway":              "Neutron router remove_external_gateways action via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0",
 		"router remove port":                 "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/routers",
+		"router remove route":                "Neutron router remove_extraroutes action via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0",
 		"router remove subnet":               "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/routers",
 		"router set":                         "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/routers; standard tags via gophercloud.ServiceClient",
 		"router show":                        "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/routers",
@@ -565,6 +577,10 @@ func coreReadShims() map[string]bool {
 		"quota list":                         true,
 		"quota set":                          true,
 		"quota show":                         true,
+		"router add gateway":                 true,
+		"router add route":                   true,
+		"router remove gateway":              true,
+		"router remove route":                true,
 		"server migration list":              true,
 		"volume group list":                  true,
 		"volume group show":                  true,
@@ -708,11 +724,13 @@ func coreCloudVerified() map[string]bool {
 		"resource provider trait list":       true,
 		"resource provider usage show":       true,
 		"router add port":                    true,
+		"router add route":                   true,
 		"router add subnet":                  true,
 		"router create":                      true,
 		"router delete":                      true,
 		"router list":                        true,
 		"router remove port":                 true,
+		"router remove route":                true,
 		"router remove subnet":               true,
 		"router set":                         true,
 		"router show":                        true,
@@ -848,11 +866,15 @@ func coreWriteCommands() map[string]bool {
 		"port unset":                         true,
 		"quota delete":                       true,
 		"quota set":                          true,
+		"router add gateway":                 true,
 		"router add port":                    true,
+		"router add route":                   true,
 		"router add subnet":                  true,
 		"router create":                      true,
 		"router delete":                      true,
+		"router remove gateway":              true,
 		"router remove port":                 true,
+		"router remove route":                true,
 		"router remove subnet":               true,
 		"router set":                         true,
 		"router unset":                       true,
