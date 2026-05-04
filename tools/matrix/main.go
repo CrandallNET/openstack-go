@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"sort"
 	"strings"
@@ -41,17 +42,35 @@ type testSuite struct {
 	Notes         string
 }
 
+type generationSummary struct {
+	CommandCount   int
+	StatusCounts   map[string]int
+	MatrixPath     string
+	TestMatrixPath string
+	TestCloudsPath string
+}
+
+var matrixStatusValues = []string{"unknown", "sdk-covered", "shim-needed", "implemented", "golden-matched", "cloud-verified", "blocked"}
+var summaryFormats = map[string]bool{"terminal": true, "readme": true}
+
 func main() {
 	var commandsPath string
 	var matrixPath string
 	var testMatrixPath string
 	var testCloudsPath string
+	var summaryFormat string
 
 	flag.StringVar(&commandsPath, "commands", "compat/osc/9.0.0/commands.json", "OSC command catalog JSON path")
 	flag.StringVar(&matrixPath, "matrix", "compat/matrix.yaml", "command compatibility matrix output path")
 	flag.StringVar(&testMatrixPath, "test-matrix", "compat/test-matrix.yaml", "test matrix output path")
 	flag.StringVar(&testCloudsPath, "test-clouds", "compat/test-clouds.yaml", "test cloud capability config output path")
+	flag.StringVar(&summaryFormat, "summary-format", "terminal", "summary output format: terminal or readme")
 	flag.Parse()
+	summaryFormat = strings.ToLower(strings.TrimSpace(summaryFormat))
+	if !summaryFormats[summaryFormat] {
+		fmt.Fprintf(os.Stderr, "matrix: unsupported summary format %q; use terminal or readme\n", summaryFormat)
+		os.Exit(1)
+	}
 
 	groups, err := readGroups(commandsPath)
 	if err != nil {
@@ -59,7 +78,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := writeFile(matrixPath, renderCommandMatrix(groups)); err != nil {
+	entries := commandEntries(groups)
+	if err := writeFile(matrixPath, renderCommandMatrixEntries(entries)); err != nil {
 		fmt.Fprintf(os.Stderr, "matrix: %v\n", err)
 		os.Exit(1)
 	}
@@ -71,6 +91,13 @@ func main() {
 		fmt.Fprintf(os.Stderr, "matrix: %v\n", err)
 		os.Exit(1)
 	}
+	printGenerationSummary(os.Stdout, generationSummary{
+		CommandCount:   len(entries),
+		StatusCounts:   commandStatusCounts(entries),
+		MatrixPath:     matrixPath,
+		TestMatrixPath: testMatrixPath,
+		TestCloudsPath: testCloudsPath,
+	}, summaryFormat)
 }
 
 func readGroups(path string) ([]commandGroup, error) {
@@ -93,6 +120,10 @@ func readGroups(path string) ([]commandGroup, error) {
 }
 
 func renderCommandMatrix(groups []commandGroup) string {
+	return renderCommandMatrixEntries(commandEntries(groups))
+}
+
+func commandEntries(groups []commandGroup) []commandEntry {
 	var entries []commandEntry
 	for _, group := range groups {
 		for _, command := range group.Commands {
@@ -102,12 +133,15 @@ func renderCommandMatrix(groups []commandGroup) string {
 	sort.Slice(entries, func(i int, j int) bool {
 		return entries[i].Command < entries[j].Command
 	})
+	return entries
+}
 
+func renderCommandMatrixEntries(entries []commandEntry) string {
 	var b strings.Builder
 	b.WriteString("# Generated from compat/osc/9.0.0/commands.json by tools/matrix.\n")
 	b.WriteString("compatibility_target: \"9.0.0\"\n")
 	b.WriteString("status_values:\n")
-	for _, status := range []string{"unknown", "sdk-covered", "shim-needed", "implemented", "golden-matched", "cloud-verified", "blocked"} {
+	for _, status := range matrixStatusValues {
 		fmt.Fprintf(&b, "  - %s\n", yamlString(status))
 	}
 	b.WriteString("commands:\n")
@@ -132,6 +166,57 @@ func renderCommandMatrix(groups []commandGroup) string {
 		fmt.Fprintf(&b, "    notes: %s\n", yamlString(entry.Notes))
 	}
 	return b.String()
+}
+
+func commandStatusCounts(entries []commandEntry) map[string]int {
+	counts := make(map[string]int, len(matrixStatusValues))
+	for _, status := range matrixStatusValues {
+		counts[status] = 0
+	}
+	for _, entry := range entries {
+		counts[entry.Status]++
+	}
+	return counts
+}
+
+func printGenerationSummary(w io.Writer, summary generationSummary, format string) {
+	switch format {
+	case "readme":
+		printReadmeGenerationSummary(w, summary)
+	default:
+		printTerminalGenerationSummary(w, summary)
+	}
+}
+
+func printTerminalGenerationSummary(w io.Writer, summary generationSummary) {
+	fmt.Fprintln(w, "matrix results:")
+	fmt.Fprintf(w, "  commands: %d\n", summary.CommandCount)
+	fmt.Fprintln(w, "  status counts:")
+	for _, status := range matrixStatusValues {
+		fmt.Fprintf(w, "    %s: %d\n", status, summary.StatusCounts[status])
+	}
+	fmt.Fprintln(w, "  wrote:")
+	fmt.Fprintf(w, "    %s\n", summary.MatrixPath)
+	fmt.Fprintf(w, "    %s\n", summary.TestMatrixPath)
+	fmt.Fprintf(w, "    %s\n", summary.TestCloudsPath)
+}
+
+func printReadmeGenerationSummary(w io.Writer, summary generationSummary) {
+	fmt.Fprintln(w, "### Matrix Results")
+	fmt.Fprintln(w)
+	fmt.Fprintf(w, "Generated command rows: `%d`\n", summary.CommandCount)
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, "| Status | Count |")
+	fmt.Fprintln(w, "| --- | ---: |")
+	for _, status := range matrixStatusValues {
+		fmt.Fprintf(w, "| `%s` | %d |\n", status, summary.StatusCounts[status])
+	}
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, "Generated files:")
+	fmt.Fprintln(w)
+	fmt.Fprintf(w, "* `%s`\n", summary.MatrixPath)
+	fmt.Fprintf(w, "* `%s`\n", summary.TestMatrixPath)
+	fmt.Fprintf(w, "* `%s`\n", summary.TestCloudsPath)
 }
 
 func newCommandEntry(group string, command string) commandEntry {

@@ -1,6 +1,9 @@
 package main
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestServiceForGroup(t *testing.T) {
 	service, api := serviceForGroup("openstack.compute.v2")
@@ -71,6 +74,88 @@ func TestNewCommandEntryMarksPluginScope(t *testing.T) {
 	entry = newCommandEntry("openstack.network.v2", "tap flow list")
 	if !entry.PluginScope {
 		t.Fatal("expected tap command to be plugin scoped")
+	}
+}
+
+func TestCommandStatusCounts(t *testing.T) {
+	entries := []commandEntry{
+		{Command: "command list", Status: "implemented"},
+		{Command: "server list", Status: "cloud-verified"},
+		{Command: "server create", Status: "unknown"},
+	}
+	counts := commandStatusCounts(entries)
+	if counts["implemented"] != 1 {
+		t.Fatalf("expected one implemented command, got %d", counts["implemented"])
+	}
+	if counts["cloud-verified"] != 1 {
+		t.Fatalf("expected one cloud-verified command, got %d", counts["cloud-verified"])
+	}
+	if counts["unknown"] != 1 {
+		t.Fatalf("expected one unknown command, got %d", counts["unknown"])
+	}
+	if counts["blocked"] != 0 {
+		t.Fatalf("expected zero blocked commands, got %d", counts["blocked"])
+	}
+}
+
+func TestPrintGenerationSummary(t *testing.T) {
+	var output strings.Builder
+	printGenerationSummary(&output, generationSummary{
+		CommandCount: 3,
+		StatusCounts: map[string]int{
+			"unknown":        1,
+			"implemented":    1,
+			"cloud-verified": 1,
+		},
+		MatrixPath:     "compat/matrix.yaml",
+		TestMatrixPath: "compat/test-matrix.yaml",
+		TestCloudsPath: "compat/test-clouds.yaml",
+	}, "terminal")
+	text := output.String()
+	for _, want := range []string{
+		"matrix results:",
+		"  commands: 3",
+		"    unknown: 1",
+		"    implemented: 1",
+		"    cloud-verified: 1",
+		"    compat/matrix.yaml",
+		"    compat/test-matrix.yaml",
+		"    compat/test-clouds.yaml",
+	} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("summary missing %q:\n%s", want, text)
+		}
+	}
+}
+
+func TestPrintGenerationSummaryReadmeFormat(t *testing.T) {
+	var output strings.Builder
+	printGenerationSummary(&output, generationSummary{
+		CommandCount: 3,
+		StatusCounts: map[string]int{
+			"unknown":        1,
+			"implemented":    1,
+			"cloud-verified": 1,
+		},
+		MatrixPath:     "compat/matrix.yaml",
+		TestMatrixPath: "compat/test-matrix.yaml",
+		TestCloudsPath: "compat/test-clouds.yaml",
+	}, "readme")
+	text := output.String()
+	for _, want := range []string{
+		"### Matrix Results",
+		"Generated command rows: `3`",
+		"| Status | Count |",
+		"| `unknown` | 1 |",
+		"| `implemented` | 1 |",
+		"| `cloud-verified` | 1 |",
+		"* `compat/matrix.yaml`",
+		"* `compat/test-matrix.yaml`",
+		"* `compat/test-clouds.yaml`",
+	} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("README summary missing %q:\n%s", want, text)
+		}
 	}
 }
 

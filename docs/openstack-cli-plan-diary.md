@@ -1302,3 +1302,14 @@ Sources consulted:
 * Local generator implementation in `tools/matrix/main.go`.
 * Local Make targets in `Makefile`.
 * Local compatibility artifacts under `compat/`.
+
+## 2026-05-04: Matrix Terminal Summary
+
+Decision: `tools/matrix` should print a compact summary to stdout after writing artifacts. The terminal output lists the total command count, status counts, and the generated file paths. It intentionally does not dump the full YAML matrix because the command catalog has hundreds of rows and the files remain the durable review artifacts.
+
+Work done: added generation summary output to `tools/matrix`, covered the status counts and summary renderer with unit tests, and documented the behavior in the README. The generator accepts `--summary-format terminal` and `--summary-format readme`; `terminal` is the default, and `readme` emits a Markdown table and generated-file list suitable for README updates.
+
+Sources consulted:
+
+* Local generator implementation in `tools/matrix/main.go`.
+* Local matrix tests in `tools/matrix/main_test.go`.

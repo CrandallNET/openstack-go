@@ -75,7 +75,7 @@ go run ./tools/osc-catalog
 go run ./tools/matrix
 ```
 
-The matrix generator writes `compat/matrix.yaml`, `compat/test-matrix.yaml`, and `compat/test-clouds.yaml` by default. Those paths can be overridden with the generator flags shown by `go run ./tools/matrix --help`.
+The matrix generator writes `compat/matrix.yaml`, `compat/test-matrix.yaml`, and `compat/test-clouds.yaml` by default, and prints a summary with command status counts and the files it wrote. The default summary is terminal-oriented; use `go run ./tools/matrix --summary-format readme` for Markdown suitable for README updates. Artifact paths can be overridden with the generator flags shown by `go run ./tools/matrix --help`.
 
 ## Compatibility Artifacts
 
