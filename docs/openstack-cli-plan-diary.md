@@ -1350,6 +1350,10 @@ Work done: added `github.com/evertras/bubble-table v0.17.2` and routed only colo
 
 Observation: `bubble-table` provides native rounded table borders, header separators, and internal column dividers. It uses the pre-v2 `github.com/charmbracelet/lipgloss` module, while the rest of the CLI uses `charm.land/lipgloss/v2`; the implementation keeps those style types isolated to avoid crossing incompatible style APIs.
 
+Work done: refined the bubble-table experiment so color-enabled Fancy tables use symmetric one-space padding around headers and cells, keep the blank spacer between the heading and content, and use rounded-border horizontal rules between logical items. UUID-like values now prefer hyphen split points during Fancy wrapping, and wrapped inline `label: value` output carries the label context forward so UUID fragments and timestamps keep their semantic color on continuation lines.
+
+Implementation note: the local `bubble-table` v0.17.2 source exposes row styling but not a per-row separator API. The CLI therefore marks separator rows before rendering, lets `bubble-table` render the table, and replaces only those marked body rows with generated rounded-border separators. The non-color pretty path and the OSC-compatible default table renderer are left unchanged.
+
 Sources consulted:
 
 * Upstream `bubble-table` README at https://github.com/Evertras/bubble-table/tree/main.

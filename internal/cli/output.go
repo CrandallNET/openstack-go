@@ -43,6 +43,14 @@ type prettySemanticValue interface {
 type prettyCellColorizer func(rowIndex int, columnIndex int, text string) string
 type prettyCellContext func(rowIndex int, columnIndex int) string
 
+type prettyTableRowKind int
+
+const (
+	prettyTableRowContent prettyTableRowKind = iota
+	prettyTableRowSpacer
+	prettyTableRowSeparator
+)
+
 type prettyVolumeValue string
 
 func (value prettyVolumeValue) PrettyString() string {
@@ -256,8 +264,8 @@ func renderPrettyTable(stdout io.Writer, opts *Options, headers []string, rows [
 	if !color {
 		return renderPrettyBubblesTable(stdout, columns, rows, nil, nil, color)
 	}
-	wrappedRows := prettyWrapRows(rows, columns, colorizer, context)
-	wrappedRows = prettyPrependSpacerRow(wrappedRows, len(columns))
+	wrappedRows, rowKinds := prettyWrapRowsWithKinds(rows, columns, colorizer, context, true)
+	wrappedRows, rowKinds = prettyPrependSpacerRow(wrappedRows, rowKinds, len(columns))
 	model := bubbletable.New(prettyBubbleTableColumns(columns)).
 		WithRows(prettyBubbleTableRows(wrappedRows, len(columns))).
 		WithBaseStyle(bubblelipgloss.NewStyle().
@@ -273,6 +281,7 @@ func renderPrettyTable(stdout io.Writer, opts *Options, headers []string, rows [
 		WithMultiline(false)
 
 	view := strings.TrimRight(model.View(), "\n")
+	view = prettyApplyBubbleTableSeparators(view, columns, rowKinds)
 	_, err := fmt.Fprintln(stdout, view)
 	return err
 }
@@ -302,7 +311,7 @@ func renderPrettyBubblesTable(stdout io.Writer, columns []table.Column, rows []t
 func prettyBubbleTableColumns(columns []table.Column) []bubbletable.Column {
 	bubbleColumns := make([]bubbletable.Column, 0, len(columns))
 	for index, column := range columns {
-		bubbleColumns = append(bubbleColumns, bubbletable.NewColumn(prettyBubbleTableColumnKey(index), " "+column.Title, column.Width+1))
+		bubbleColumns = append(bubbleColumns, bubbletable.NewColumn(prettyBubbleTableColumnKey(index), prettyBubbleTableCellValue(column.Title), column.Width+2))
 	}
 	return bubbleColumns
 }
@@ -327,16 +336,58 @@ func prettyBubbleTableCellValue(value string) string {
 	if value == "" {
 		return value
 	}
-	return " " + value
+	return " " + value + " "
+}
+
+func prettyApplyBubbleTableSeparators(view string, columns []table.Column, rowKinds []prettyTableRowKind) string {
+	if len(rowKinds) == 0 {
+		return view
+	}
+	lines := strings.Split(view, "\n")
+	const firstBodyLine = 3
+	for rowIndex, rowKind := range rowKinds {
+		if rowKind != prettyTableRowSeparator {
+			continue
+		}
+		lineIndex := firstBodyLine + rowIndex
+		if lineIndex < 0 || lineIndex >= len(lines)-1 {
+			continue
+		}
+		lines[lineIndex] = prettyBubbleTableSeparatorLine(columns)
+	}
+	return strings.Join(lines, "\n")
+}
+
+func prettyBubbleTableSeparatorLine(columns []table.Column) string {
+	if len(columns) == 0 {
+		return ""
+	}
+	var builder strings.Builder
+	builder.WriteString("├")
+	for index, column := range columns {
+		builder.WriteString(strings.Repeat("─", column.Width+2))
+		if index < len(columns)-1 {
+			builder.WriteString("┼")
+		} else {
+			builder.WriteString("┤")
+		}
+	}
+	return prettyBubbleTableBorderStyle().Render(builder.String())
+}
+
+func prettyBubbleTableBorderStyle() bubblelipgloss.Style {
+	return bubblelipgloss.NewStyle().Foreground(bubblelipgloss.Color("63"))
 }
 
 func prettyBubbleTableColumnKey(index int) string {
 	return fmt.Sprintf("column_%d", index)
 }
 
-func prettyPrependSpacerRow(rows []table.Row, columnCount int) []table.Row {
+func prettyPrependSpacerRow(rows []table.Row, rowKinds []prettyTableRowKind, columnCount int) ([]table.Row, []prettyTableRowKind) {
 	spacer := make(table.Row, columnCount)
-	return append([]table.Row{spacer}, rows...)
+	rows = append([]table.Row{spacer}, rows...)
+	rowKinds = append([]prettyTableRowKind{prettyTableRowSpacer}, rowKinds...)
+	return rows, rowKinds
 }
 
 func prettyAddHeaderSpacer(view string) string {
@@ -425,7 +476,13 @@ func prettyNaturalWidths(headers []string, rows []table.Row) []int {
 }
 
 func prettyWrapRows(rows []table.Row, columns []table.Column, colorizer prettyCellColorizer, context prettyCellContext) []table.Row {
+	wrappedRows, _ := prettyWrapRowsWithKinds(rows, columns, colorizer, context, false)
+	return wrappedRows
+}
+
+func prettyWrapRowsWithKinds(rows []table.Row, columns []table.Column, colorizer prettyCellColorizer, context prettyCellContext, useSeparators bool) ([]table.Row, []prettyTableRowKind) {
 	wrappedRows := make([]table.Row, 0, len(rows)*2)
+	rowKinds := make([]prettyTableRowKind, 0, len(rows)*2)
 	for rowIndex, row := range rows {
 		cellLines := make([][]string, len(columns))
 		height := 1
@@ -434,12 +491,12 @@ func prettyWrapRows(rows []table.Row, columns []table.Column, colorizer prettyCe
 			if i < len(row) {
 				value = row[i]
 			}
-			cellLines[i] = wrapTableCell(value, column.Width)
+			contextName := ""
+			if context != nil {
+				contextName = context(rowIndex, i)
+			}
+			cellLines[i] = prettyWrapTableCell(value, column.Width, contextName)
 			if colorizer != nil {
-				contextName := ""
-				if context != nil {
-					contextName = context(rowIndex, i)
-				}
 				cellLines[i] = prettyColorizeWrappedCellLines(rowIndex, i, cellLines[i], colorizer, contextName)
 			}
 			height = max(height, len(cellLines[i]))
@@ -452,12 +509,82 @@ func prettyWrapRows(rows []table.Row, columns []table.Column, colorizer prettyCe
 				}
 			}
 			wrappedRows = append(wrappedRows, wrappedRow)
+			rowKinds = append(rowKinds, prettyTableRowContent)
 		}
 		if rowIndex < len(rows)-1 {
 			wrappedRows = append(wrappedRows, make(table.Row, len(columns)))
+			if useSeparators {
+				rowKinds = append(rowKinds, prettyTableRowSeparator)
+			} else {
+				rowKinds = append(rowKinds, prettyTableRowSpacer)
+			}
 		}
 	}
-	return wrappedRows
+	return wrappedRows, rowKinds
+}
+
+func prettyWrapTableCell(value string, width int, contextName string) []string {
+	if !prettyShouldWrapAtHyphen(value, contextName) {
+		return wrapTableCell(value, width)
+	}
+
+	value = strings.ReplaceAll(value, "\r\n", "\n")
+	value = strings.ReplaceAll(value, "\r", "\n")
+	lines := strings.Split(value, "\n")
+	wrapped := make([]string, 0, len(lines))
+	for _, line := range lines {
+		wrapped = append(wrapped, prettyWrapTableLineAtHyphen(line, width)...)
+	}
+	return wrapped
+}
+
+func prettyShouldWrapAtHyphen(value string, contextName string) bool {
+	if prettyIsIDLikeName(contextName) {
+		return true
+	}
+	if prettyUUIDPattern.MatchString(value) {
+		return true
+	}
+	for _, field := range strings.Fields(value) {
+		field = strings.Trim(field, " ,;()[]{}")
+		if prettyLooksLikeUUIDFragment(field) {
+			return true
+		}
+	}
+	return false
+}
+
+func prettyWrapTableLineAtHyphen(line string, width int) []string {
+	line = strings.TrimRightFunc(line, unicode.IsSpace)
+	if line == "" {
+		return []string{""}
+	}
+
+	var wrapped []string
+	for displayWidth(line) > width {
+		head, tail := prettySplitTableLineAtHyphen(line, width)
+		wrapped = append(wrapped, head)
+		line = strings.TrimLeftFunc(tail, unicode.IsSpace)
+		if line == "" {
+			return wrapped
+		}
+	}
+	return append(wrapped, line)
+}
+
+func prettySplitTableLineAtHyphen(line string, width int) (string, string) {
+	runes := []rune(line)
+	if len(runes) <= width {
+		return line, ""
+	}
+	limit := min(width, len(runes))
+	for i := limit - 1; i > 0; i-- {
+		if runes[i] == '-' {
+			splitAt := i + 1
+			return string(runes[:splitAt]), string(runes[splitAt:])
+		}
+	}
+	return splitTableLine(line, width)
 }
 
 func prettyMinimumWidths(headers []string) []int {
@@ -813,12 +940,9 @@ func prettyColorizeWrappedCellLines(rowIndex int, columnIndex int, lines []strin
 			colored[index] = colorizer(rowIndex, columnIndex, line)
 			continue
 		}
-		_, label, value, ok := prettySplitLabelPrefix(line)
+		_, label, _, ok := prettySplitLabelPrefix(line)
 		if ok {
-			pendingLabel = ""
-			if strings.TrimSpace(value) == "" {
-				pendingLabel = strings.TrimSuffix(strings.TrimSpace(label), ":")
-			}
+			pendingLabel = strings.TrimSuffix(strings.TrimSpace(label), ":")
 			colored[index] = colorizer(rowIndex, columnIndex, line)
 			continue
 		}

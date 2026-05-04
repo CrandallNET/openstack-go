@@ -449,6 +449,80 @@ func TestPrettyWrapRowsAddsSpacerBetweenEntries(t *testing.T) {
 	}
 }
 
+func TestPrettyWrapRowsCanMarkSeparatorsBetweenEntries(t *testing.T) {
+	rows, rowKinds := prettyWrapRowsWithKinds(
+		[]table.Row{{"server-1", "alpha"}, {"server-2", "beta"}},
+		[]table.Column{{Title: "ID", Width: 8}, {Title: "Name", Width: 8}},
+		nil,
+		nil,
+		true,
+	)
+	if len(rows) != 3 {
+		t.Fatalf("expected separator row between pretty entries, got %#v", rows)
+	}
+	wantKinds := []prettyTableRowKind{prettyTableRowContent, prettyTableRowSeparator, prettyTableRowContent}
+	for index, want := range wantKinds {
+		if rowKinds[index] != want {
+			t.Fatalf("expected row kind %d to be %v, got %v in %#v", index, want, rowKinds[index], rowKinds)
+		}
+	}
+}
+
+func TestPrettyBubbleTableAddsSymmetricCellPadding(t *testing.T) {
+	if got, want := prettyBubbleTableCellValue("ID"), " ID "; got != want {
+		t.Fatalf("expected bubble-table cell padding %q, got %q", want, got)
+	}
+	if got := prettyBubbleTableCellValue(""); got != "" {
+		t.Fatalf("expected empty bubble-table spacer cells to stay empty, got %q", got)
+	}
+}
+
+func TestPrettyBubbleTableSeparatorLineMatchesColumnWidths(t *testing.T) {
+	line := prettyBubbleTableSeparatorLine([]table.Column{{Title: "ID", Width: 2}, {Title: "Name", Width: 4}})
+	if want := "├────┼──────┤"; !strings.Contains(line, want) {
+		t.Fatalf("expected bubble-table separator to contain %q, got %q", want, line)
+	}
+}
+
+func TestPrettyApplyBubbleTableSeparatorsReplacesMarkedRows(t *testing.T) {
+	view := strings.Join([]string{
+		"╭────╮",
+		"│ ID │",
+		"├────┤",
+		"│    │",
+		"│ a  │",
+		"│    │",
+		"│ b  │",
+		"╰────╯",
+	}, "\n")
+	got := prettyApplyBubbleTableSeparators(view, []table.Column{{Title: "ID", Width: 2}}, []prettyTableRowKind{
+		prettyTableRowSpacer,
+		prettyTableRowContent,
+		prettyTableRowSeparator,
+		prettyTableRowContent,
+	})
+	lines := strings.Split(got, "\n")
+	if lines[3] != "│    │" {
+		t.Fatalf("expected heading spacer to stay blank, got %q in:\n%s", lines[3], got)
+	}
+	if want := "├────┤"; !strings.Contains(lines[5], want) {
+		t.Fatalf("expected marked spacer to become separator %q, got %q in:\n%s", want, lines[5], got)
+	}
+}
+
+func TestPrettyWrapsIDsAtHyphenBoundaries(t *testing.T) {
+	uuid := "1c77f920-e72d-45d0-8198-5a4a11722214"
+	wrapped := prettyWrapTableCell(uuid, 14, "id")
+	if got := strings.Join(wrapped, ""); got != uuid {
+		t.Fatalf("expected wrapped UUID fragments to preserve value, got %q want %q from %#v", got, uuid, wrapped)
+	}
+	for index, line := range wrapped[:len(wrapped)-1] {
+		if !strings.HasSuffix(line, "-") {
+			t.Fatalf("expected wrapped UUID line %d to end at a hyphen, got %#v", index, wrapped)
+		}
+	}
+}
+
 func TestPrettyListFormatsServerNetworksVertically(t *testing.T) {
 	var stdout bytes.Buffer
 	err := renderListOutput(&stdout, &Options{Format: "pretty"}, []string{"Name", "Networks"}, []outputRow{
@@ -933,6 +1007,24 @@ func TestPrettyWrappedLabelContinuationValueKeepsSemanticColor(t *testing.T) {
 	wantValue := prettyUUIDStyle.Render("1f7222ef")
 	if rows[1][0] != wantValue {
 		t.Fatalf("expected wrapped label value row to keep semantic color, got %q want %q", rows[1][0], wantValue)
+	}
+}
+
+func TestPrettyWrappedInlineLabelContinuationValueKeepsSemanticColor(t *testing.T) {
+	rows := prettyWrapRows(
+		[]table.Row{{"  attachment_id: 1f7222ef-c386-4523-9788"}},
+		[]table.Column{{Title: "Attached to", Width: 28}},
+		prettyListCellColorizer([]string{"Attached to"}),
+		prettyListCellContext([]string{"Attached to"}),
+	)
+	if len(rows) != 2 {
+		t.Fatalf("expected wrapped inline label value rows, got %#v", rows)
+	}
+	if !strings.Contains(rows[0][0], prettyUUIDStyle.Render("1f7222ef")) {
+		t.Fatalf("expected first wrapped inline value row to color UUID fragment, got %#v", rows)
+	}
+	if !strings.Contains(rows[1][0], prettyUUIDStyle.Render("c386")) {
+		t.Fatalf("expected continued inline value row to keep UUID color, got %#v", rows)
 	}
 }
 
