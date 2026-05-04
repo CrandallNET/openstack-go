@@ -42,8 +42,10 @@ type orderedJSONObject struct {
 }
 
 var (
-	prettyUUIDPattern        = regexp.MustCompile(`(?i)\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b`)
-	prettyIPCandidatePattern = regexp.MustCompile(`(?i)(?:\b(?:\d{1,3}\.){3}\d{1,3}(?:/\d{1,3})?\b|\b[0-9a-f]*:[0-9a-f:.]*(?:/\d{1,3})?\b|::(?:/\d{1,3})?)`)
+	prettyUUIDPattern         = regexp.MustCompile(`(?i)\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b`)
+	prettyUUIDFragmentPattern = regexp.MustCompile(`(?i)[0-9a-f]+`)
+	prettyHostnamePattern     = regexp.MustCompile(`(?i)\b[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+\b`)
+	prettyIPCandidatePattern  = regexp.MustCompile(`(?i)(?:\b(?:\d{1,3}\.){3}\d{1,3}(?:/\d{1,3})?\b|\b[0-9a-f]*:[0-9a-f:.]*(?:/\d{1,3})?\b|::(?:/\d{1,3})?)`)
 
 	prettyBooleanFalseStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Bold(true)
 	prettyBooleanTrueStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("82")).Bold(true)
@@ -52,7 +54,6 @@ var (
 	prettyFlavorStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color("215")).Bold(true)
 	prettyIPStyle           = lipgloss.NewStyle().Foreground(lipgloss.Color("114")).Bold(true)
 	prettyLabelStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("15")).Bold(true)
-	prettyLabelValueStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("245"))
 	prettyNAStyle           = lipgloss.NewStyle().Foreground(lipgloss.Color("220")).Bold(true)
 	prettyNameStyle         = lipgloss.NewStyle().Foreground(lipgloss.Color("213")).Bold(true)
 	prettyNumberStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color("141")).Bold(true)
@@ -534,6 +535,12 @@ func prettyColorizeTokens(text string) string {
 }
 
 func prettyColorizeBareTokens(text string) string {
+	text = prettyHostnamePattern.ReplaceAllStringFunc(text, func(candidate string) string {
+		if !prettyValidHostnameToken(candidate) {
+			return candidate
+		}
+		return prettyIPStyle.Render(candidate)
+	})
 	text = prettyIPCandidatePattern.ReplaceAllStringFunc(text, func(candidate string) string {
 		if !prettyValidIPToken(candidate) {
 			return candidate
@@ -551,31 +558,34 @@ func prettyColorizeLabeledText(text string, colorizeValue func(string) string) s
 	if !ok {
 		return colorizeValue(text)
 	}
-	return prefix + prettyLabelStyle.Render(label) + prettyColorizeLabelValue(value)
+	return prefix + prettyLabelStyle.Render(label) + colorizeValue(value)
 }
 
 func prettyColorizeWrappedCellLines(rowIndex int, columnIndex int, lines []string, colorizer prettyCellColorizer) []string {
 	colored := make([]string, len(lines))
-	pendingLabelValue := false
+	pendingLabel := ""
 	for index, line := range lines {
 		if line == "" {
-			pendingLabelValue = false
+			pendingLabel = ""
 			colored[index] = line
 			continue
 		}
 		if prettyLineIsListMarker(line) {
-			pendingLabelValue = false
+			pendingLabel = ""
 			colored[index] = colorizer(rowIndex, columnIndex, line)
 			continue
 		}
-		_, _, value, ok := prettySplitLabelPrefix(line)
+		_, label, value, ok := prettySplitLabelPrefix(line)
 		if ok {
-			pendingLabelValue = strings.TrimSpace(value) == ""
+			pendingLabel = ""
+			if strings.TrimSpace(value) == "" {
+				pendingLabel = strings.TrimSuffix(strings.TrimSpace(label), ":")
+			}
 			colored[index] = colorizer(rowIndex, columnIndex, line)
 			continue
 		}
-		if pendingLabelValue {
-			colored[index] = prettyColorizeLabelValue(line)
+		if pendingLabel != "" {
+			colored[index] = prettyColorizeContinuationValue(pendingLabel, colorizer(rowIndex, columnIndex, line))
 			continue
 		}
 		colored[index] = colorizer(rowIndex, columnIndex, line)
@@ -583,11 +593,22 @@ func prettyColorizeWrappedCellLines(rowIndex int, columnIndex int, lines []strin
 	return colored
 }
 
-func prettyColorizeLabelValue(text string) string {
-	if text == "" {
-		return text
+func prettyColorizeContinuationValue(label string, text string) string {
+	if prettyIsIDLikeLabel(label) {
+		return prettyColorizeUUIDFragment(text)
 	}
-	return prettyLabelValueStyle.Render(text)
+	return text
+}
+
+func prettyIsIDLikeLabel(label string) bool {
+	normalized := normalizeColumnName(label)
+	return normalized == "id" || strings.HasSuffix(normalized, "id")
+}
+
+func prettyColorizeUUIDFragment(text string) string {
+	return prettyUUIDFragmentPattern.ReplaceAllStringFunc(text, func(part string) string {
+		return prettyUUIDStyle.Render(part)
+	})
 }
 
 func prettyLineIsListMarker(text string) bool {
@@ -634,6 +655,11 @@ func prettyContainsAddressToken(text string) bool {
 	if prettyUUIDPattern.MatchString(text) {
 		return true
 	}
+	for _, candidate := range prettyHostnamePattern.FindAllString(text, -1) {
+		if prettyValidHostnameToken(candidate) {
+			return true
+		}
+	}
 	for _, candidate := range prettyIPCandidatePattern.FindAllString(text, -1) {
 		if prettyValidIPToken(candidate) {
 			return true
@@ -649,6 +675,12 @@ func prettyValidIPToken(candidate string) bool {
 	}
 	_, err := netip.ParseAddr(candidate)
 	return err == nil
+}
+
+func prettyValidHostnameToken(candidate string) bool {
+	return strings.ContainsFunc(candidate, func(r rune) bool {
+		return (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z')
+	})
 }
 
 func prettyCellValue(value any) string {
@@ -822,9 +854,11 @@ func prettyListLines(values []any, indent int) []string {
 	}
 	lines := make([]string, 0, len(values))
 	prefix := indentString(indent)
-	for _, value := range values {
+	for index, value := range values {
 		if childLines, ok := prettyStructuredLines(value, indent+2); ok {
-			lines = append(lines, prefix+"-")
+			if index > 0 {
+				lines = append(lines, "")
+			}
 			lines = append(lines, childLines...)
 			continue
 		}

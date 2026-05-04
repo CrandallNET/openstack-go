@@ -395,6 +395,24 @@ func TestPrettyShowFormatsStructsAsStructuredBlocks(t *testing.T) {
 	}
 }
 
+func TestPrettyStructuredObjectListsAvoidStandaloneMarkers(t *testing.T) {
+	text, ok := prettyStructuredString([]map[string]any{{
+		"attachment_id": "1f7222ef-c386-4523-9788-eb62f293e883",
+		"device":        "/dev/vda",
+	}})
+	if !ok {
+		t.Fatalf("expected structured list to format")
+	}
+	for _, want := range []string{"attachment_id: 1f7222ef-c386-4523-9788-eb62f293e883", "device: /dev/vda"} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("pretty structured object list missing %q:\n%s", want, text)
+		}
+	}
+	if strings.HasPrefix(text, "-") || strings.Contains(text, "\n-") {
+		t.Fatalf("expected structured object list to avoid standalone item markers, got:\n%s", text)
+	}
+}
+
 func TestPrettyShowWrapsLongValuesInsteadOfTruncating(t *testing.T) {
 	var stdout bytes.Buffer
 	longValue := strings.Repeat("abcdef ", 12)
@@ -707,21 +725,29 @@ func TestPrettyImageNAIsColored(t *testing.T) {
 	}
 }
 
+func TestPrettyHostnamesUseIPColor(t *testing.T) {
+	colored := prettyColorizeByName("host_name", "dell6.crandall.haus")
+	want := prettyIPStyle.Render("dell6.crandall.haus")
+	if colored != want {
+		t.Fatalf("expected hostname to use IP color, got %q want %q", colored, want)
+	}
+}
+
 func TestPrettyLabelPrefixIsBrightWhite(t *testing.T) {
 	colored := prettyColorizeByName("Networks", "  testNet: 172.16.86.56")
 	wantPrefix := "  " + prettyLabelStyle.Render("testNet:")
 	if !strings.HasPrefix(colored, wantPrefix) {
 		t.Fatalf("expected pretty label prefix to be bright white, got %q want prefix %q", colored, wantPrefix)
 	}
-	wantValue := prettyLabelValueStyle.Render(" 172.16.86.56")
+	wantValue := " " + prettyIPStyle.Render("172.16.86.56")
 	if !strings.Contains(colored, wantValue) {
-		t.Fatalf("expected pretty label value to be non-bright, got %q want value %q", colored, wantValue)
+		t.Fatalf("expected pretty label value to keep semantic color, got %q want value %q", colored, wantValue)
 	}
 }
 
-func TestPrettyWrappedLabelContinuationValueIsNonBright(t *testing.T) {
+func TestPrettyWrappedLabelContinuationValueKeepsSemanticColor(t *testing.T) {
 	rows := prettyWrapRows(
-		[]table.Row{{"  attachment_id: value"}},
+		[]table.Row{{"  attachment_id: 1f7222ef"}},
 		[]table.Column{{Title: "Attached to", Width: 16}},
 		prettyListCellColorizer([]string{"Attached to"}),
 	)
@@ -732,9 +758,9 @@ func TestPrettyWrappedLabelContinuationValueIsNonBright(t *testing.T) {
 	if rows[0][0] != wantLabel {
 		t.Fatalf("expected wrapped label row to be bright, got %q want %q", rows[0][0], wantLabel)
 	}
-	wantValue := prettyLabelValueStyle.Render("value")
+	wantValue := prettyUUIDStyle.Render("1f7222ef")
 	if rows[1][0] != wantValue {
-		t.Fatalf("expected wrapped label value row to be non-bright, got %q want %q", rows[1][0], wantValue)
+		t.Fatalf("expected wrapped label value row to keep semantic color, got %q want %q", rows[1][0], wantValue)
 	}
 }
 

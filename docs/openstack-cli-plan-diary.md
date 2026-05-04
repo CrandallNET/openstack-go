@@ -1239,3 +1239,16 @@ Sources consulted:
 
 * Local implementation file `internal/cli/output.go`.
 * Local pretty-output tests in `internal/cli/root_test.go`.
+
+## 2026-05-04: Pretty Structured Attachment Display
+
+Work done: restored semantic coloring for values in `label: value` pretty output. Labels stay bright white, but values now pass back through the normal value colorizer so IP addresses, UUIDs, and other recognized values keep their colors. Wrapped continuation values under ID-like labels, such as `attachment_id:`, `server_id:`, and `volume_id:`, color UUID fragments after wrapping.
+
+Work done: removed standalone `-` list markers for structured object lists. This removes the dangling dashes in `volume list` `Attached to` output while keeping scalar list markers, such as `- sse`, for simple lists.
+
+Work done: hostnames now use the same green style as IP addresses in pretty output.
+
+Sources consulted:
+
+* Local implementation file `internal/cli/output.go`.
+* Local pretty-output tests in `internal/cli/root_test.go`.
