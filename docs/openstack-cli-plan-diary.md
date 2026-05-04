@@ -1341,3 +1341,17 @@ Sources consulted:
 
 * Local Make targets in `Makefile`.
 * Local README build instructions in `README.md`.
+
+## 2026-05-04: Bubble Table Fancy Output Experiment
+
+Decision: start an experiment branch, `experiment/bubble-table-fancy`, to try `github.com/evertras/bubble-table` for color-enabled Fancy table rendering. The upstream project describes itself as a customizable, interactive Bubble Tea table component, with support for headers, rows, borders, column widths, flexible widths, horizontal scrolling, and styles at table, column, row, and cell scope.
+
+Work done: added `github.com/evertras/bubble-table v0.17.2` and routed only color-enabled `--pretty` table output through `bubble-table`. Non-color pretty output keeps the existing Bubbles table path so tests and piped output do not change while this visual experiment is evaluated. The adapter preserves existing width calculation, wrapping, row spacers, semantic colorization, and label coloring before handing rows to `bubble-table`.
+
+Observation: `bubble-table` provides native rounded table borders, header separators, and internal column dividers. It uses the pre-v2 `github.com/charmbracelet/lipgloss` module, while the rest of the CLI uses `charm.land/lipgloss/v2`; the implementation keeps those style types isolated to avoid crossing incompatible style APIs.
+
+Sources consulted:
+
+* Upstream `bubble-table` README at https://github.com/Evertras/bubble-table/tree/main.
+* Upstream `bubble-table` module source in the local Go module cache.
+* Local implementation file `internal/cli/output.go`.

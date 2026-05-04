@@ -20,6 +20,8 @@ import (
 	"charm.land/bubbles/v2/progress"
 	"charm.land/bubbles/v2/table"
 	"charm.land/lipgloss/v2"
+	bubblelipgloss "github.com/charmbracelet/lipgloss"
+	bubbletable "github.com/evertras/bubble-table/table"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -252,9 +254,30 @@ func renderPrettyTable(stdout io.Writer, opts *Options, headers []string, rows [
 	termWidth := prettyOutputWidth(stdout, opts, color)
 	columns := prettyTableColumns(headers, rows, termWidth, color)
 	if !color {
-		colorizer = nil
-		context = nil
+		return renderPrettyBubblesTable(stdout, columns, rows, nil, nil, color)
 	}
+	wrappedRows := prettyWrapRows(rows, columns, colorizer, context)
+	wrappedRows = prettyPrependSpacerRow(wrappedRows, len(columns))
+	model := bubbletable.New(prettyBubbleTableColumns(columns)).
+		WithRows(prettyBubbleTableRows(wrappedRows, len(columns))).
+		WithBaseStyle(bubblelipgloss.NewStyle().
+			Foreground(bubblelipgloss.Color("252")).
+			BorderForeground(bubblelipgloss.Color("63")).
+			Align(bubblelipgloss.Left)).
+		HeaderStyle(bubblelipgloss.NewStyle().
+			Foreground(bubblelipgloss.Color("39")).
+			Bold(true).
+			Align(bubblelipgloss.Left)).
+		BorderRounded().
+		WithFooterVisibility(false).
+		WithMultiline(false)
+
+	view := strings.TrimRight(model.View(), "\n")
+	_, err := fmt.Fprintln(stdout, view)
+	return err
+}
+
+func renderPrettyBubblesTable(stdout io.Writer, columns []table.Column, rows []table.Row, colorizer prettyCellColorizer, context prettyCellContext, color bool) error {
 	wrappedRows := prettyWrapRows(rows, columns, colorizer, context)
 	model := table.New(
 		table.WithColumns(columns),
@@ -274,6 +297,46 @@ func renderPrettyTable(stdout io.Writer, opts *Options, headers []string, rows [
 	}
 	_, err := fmt.Fprintln(stdout, view)
 	return err
+}
+
+func prettyBubbleTableColumns(columns []table.Column) []bubbletable.Column {
+	bubbleColumns := make([]bubbletable.Column, 0, len(columns))
+	for index, column := range columns {
+		bubbleColumns = append(bubbleColumns, bubbletable.NewColumn(prettyBubbleTableColumnKey(index), " "+column.Title, column.Width+1))
+	}
+	return bubbleColumns
+}
+
+func prettyBubbleTableRows(rows []table.Row, columnCount int) []bubbletable.Row {
+	bubbleRows := make([]bubbletable.Row, 0, len(rows))
+	for _, row := range rows {
+		data := bubbletable.RowData{}
+		for index := 0; index < columnCount; index++ {
+			value := ""
+			if index < len(row) {
+				value = row[index]
+			}
+			data[prettyBubbleTableColumnKey(index)] = prettyBubbleTableCellValue(value)
+		}
+		bubbleRows = append(bubbleRows, bubbletable.NewRow(data))
+	}
+	return bubbleRows
+}
+
+func prettyBubbleTableCellValue(value string) string {
+	if value == "" {
+		return value
+	}
+	return " " + value
+}
+
+func prettyBubbleTableColumnKey(index int) string {
+	return fmt.Sprintf("column_%d", index)
+}
+
+func prettyPrependSpacerRow(rows []table.Row, columnCount int) []table.Row {
+	spacer := make(table.Row, columnCount)
+	return append([]table.Row{spacer}, rows...)
 }
 
 func prettyAddHeaderSpacer(view string) string {
