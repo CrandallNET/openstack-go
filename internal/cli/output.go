@@ -771,6 +771,9 @@ func prettyColorizeByNormalizedName(normalized string, text string) string {
 	if prettyIsIDLikeName(normalized) {
 		return prettyColorizeID(text)
 	}
+	if prettyIsGenericNameField(normalized) {
+		return prettyNameStyle.Render(text)
+	}
 	if prettyContainsTimestampToken(text) {
 		return prettyColorizeTokens(text)
 	}
@@ -807,6 +810,10 @@ func prettyIsNameField(name string) bool {
 		strings.HasSuffix(name, "_hostname") ||
 		name == "hostname" ||
 		name == "hypervisor_hostname"
+}
+
+func prettyIsGenericNameField(name string) bool {
+	return name == "name" || name == "display_name"
 }
 
 func prettyIsFlavorField(name string) bool {

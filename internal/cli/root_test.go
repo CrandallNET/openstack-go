@@ -1210,6 +1210,14 @@ func TestPrettyHostnamesUseIPColor(t *testing.T) {
 	}
 }
 
+func TestPrettyGenericNameWithHostnameUsesNameColor(t *testing.T) {
+	colored := prettyColorizeByName("Name", "crandall.wedding")
+	want := prettyNameStyle.Render("crandall.wedding")
+	if colored != want {
+		t.Fatalf("expected generic Name hostname-looking value to use name color, got %q want %q", colored, want)
+	}
+}
+
 func TestPrettyLabelPrefixIsBrightWhite(t *testing.T) {
 	colored := prettyColorizeByName("Networks", "  testNet: 172.16.86.56")
 	wantPrefix := "  " + prettyLabelStyle.Render("testNet:")
