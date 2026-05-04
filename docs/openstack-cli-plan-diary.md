@@ -1204,14 +1204,3 @@ Sources consulted:
 
 * Local implementation file `internal/cli/output.go`.
 * Local pretty-output tests in `internal/cli/root_test.go`.
-
-## 2026-05-04: Pretty Entry Rules
-
-Work done: replaced the blank spacer line between pretty output entries with a horizontal rule row. The rule is inserted between logical entries after any wrapping for the previous entry.
-
-Live observations on `cloud6`: `server list --pretty` now shows a dashed rule between server entries inside the pretty table area.
-
-Sources consulted:
-
-* Local implementation file `internal/cli/output.go`.
-* Local pretty-output tests in `internal/cli/root_test.go`.

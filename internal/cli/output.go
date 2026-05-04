@@ -321,18 +321,10 @@ func prettyWrapRows(rows []table.Row, columns []table.Column, colorizer prettyCe
 			wrappedRows = append(wrappedRows, wrappedRow)
 		}
 		if rowIndex < len(rows)-1 {
-			wrappedRows = append(wrappedRows, prettySeparatorRow(columns))
+			wrappedRows = append(wrappedRows, make(table.Row, len(columns)))
 		}
 	}
 	return wrappedRows
-}
-
-func prettySeparatorRow(columns []table.Column) table.Row {
-	row := make(table.Row, len(columns))
-	for index, column := range columns {
-		row[index] = strings.Repeat("-", max(column.Width, 1))
-	}
-	return row
 }
 
 func prettyMinimumWidths(headers []string) []int {
