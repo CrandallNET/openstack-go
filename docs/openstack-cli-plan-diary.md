@@ -789,3 +789,17 @@ Sources consulted:
 * Local OSC oracle snapshots in `compat/osc/9.0.0/help/container/create.txt`, `compat/osc/9.0.0/help/container/delete.txt`, `compat/osc/9.0.0/help/container/set.txt`, and `compat/osc/9.0.0/help/container/unset.txt`.
 * Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/object/v1/container.py`, used only as the pinned local oracle implementation source.
 * Gophercloud package docs for [Object Storage containers](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/containers) and [Object Storage objects](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/objects).
+
+## 2026-05-03: Object Lifecycle Commands
+
+Work done: added `object create`, `object delete`, `object save`, `object set`, and `object unset`, and aligned `object show` with the Python-observed output shape.
+
+Implementation note: `object create` uses Gophercloud's Object Storage v1 object upload helper and preserves Python OSC's default object naming behavior: the source filename string becomes the object name unless `--name` is supplied. `object save --file -` writes object bytes to stdout, and other saves write to the requested path or the object name. Object metadata set/unset uses Gophercloud's object update helper. `object show` now reports Python-compatible `account`, `container`, `content-length`, `content-type`, `etag`, `last-modified`, `object`, and optional `properties` fields.
+
+Live observations: the lifecycle smoke ran on `flex-sjc`, using disposable container `gocli-test-object-go-20260503` and local fixture `/private/tmp/golang-osc-object-live.txt`. The Go CLI uploaded the object with the default full-path object name, uploaded a renamed copy with `--name renamed-object.txt`, set and unset object metadata, saved the renamed object to stdout, deleted both objects, deleted the container, and verified no `gocli-test-object` containers remained.
+
+Sources consulted:
+
+* Local OSC oracle snapshots in `compat/osc/9.0.0/help/object/create.txt`, `compat/osc/9.0.0/help/object/delete.txt`, `compat/osc/9.0.0/help/object/save.txt`, `compat/osc/9.0.0/help/object/set.txt`, and `compat/osc/9.0.0/help/object/unset.txt`.
+* Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/object/v1/object.py`, used only as the pinned local oracle implementation source.
+* Gophercloud package docs for [Object Storage objects](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/objects).

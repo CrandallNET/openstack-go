@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"os"
 	"strings"
+	"time"
 
 	"github.com/gophercloud/gophercloud/v2"
 	"github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/accounts"
@@ -242,6 +244,89 @@ func objectList(ctx context.Context, stdout io.Writer, opts *Options, client *go
 	return renderListOutput(stdout, opts, columns, rows)
 }
 
+func objectCreate(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("object create requires <container> <filename>")
+	}
+	container := args[0]
+	files := args[1:]
+	if flagValue(opts, "name") != "" && len(files) > 1 {
+		return fmt.Errorf("Attempting to upload multiple objects and using --name is not permitted")
+	}
+	rows := make([]outputRow, 0, len(files))
+	for _, filename := range files {
+		file, err := os.Open(expandUserPath(filename))
+		if err != nil {
+			return err
+		}
+		objectName := filename
+		if override := flagValue(opts, "name"); override != "" {
+			objectName = override
+		}
+		result := objects.Create(ctx, client, container, objectName, objects.CreateOpts{Content: file})
+		_ = file.Close()
+		if result.Err != nil {
+			return result.Err
+		}
+		rows = append(rows, outputRow{
+			"object":    objectName,
+			"container": container,
+			"etag":      result.Header.Get("Etag"),
+		})
+	}
+	return renderListOutput(stdout, opts, []string{"object", "container", "etag"}, rows)
+}
+
+func objectDelete(ctx context.Context, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("object delete requires <container> <object>")
+	}
+	container := args[0]
+	for _, objectName := range args[1:] {
+		if result := objects.Delete(ctx, client, container, objectName, nil); result.Err != nil {
+			return result.Err
+		}
+	}
+	return nil
+}
+
+func objectSave(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("object save requires <container> <object>")
+	}
+	result := objects.Download(ctx, client, args[0], args[1], nil)
+	content, err := result.ExtractContent()
+	if err != nil {
+		return err
+	}
+	destination := flagValue(opts, "file")
+	if destination == "" {
+		destination = args[1]
+	}
+	if destination == "-" {
+		_, err := stdout.Write(content)
+		return err
+	}
+	return os.WriteFile(expandUserPath(destination), content, 0600)
+}
+
+func objectSet(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("object set requires <container> <object>")
+	}
+	properties, err := objectProperties(opts)
+	if err != nil {
+		return err
+	}
+	if len(properties) == 0 {
+		return fmt.Errorf("object set requires --property")
+	}
+	if result := objects.Update(ctx, client, args[0], args[1], objects.UpdateOpts{Metadata: properties}); result.Err != nil {
+		return result.Err
+	}
+	return nil
+}
+
 func objectShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
 	if len(args) < 2 {
 		return fmt.Errorf("object show requires <container> <object>")
@@ -255,19 +340,47 @@ func objectShow(ctx context.Context, stdout io.Writer, opts *Options, client *go
 	if err != nil {
 		return err
 	}
-	return renderShowOutput(stdout, opts, []outputField{
+	fields := []outputField{
+		{"account", objectStorageAccountName(client)},
 		{"container", args[0]},
-		{"object", args[1]},
-		{"content_length", item.ContentLength},
-		{"content_type", item.ContentType},
+		{"content-length", fmt.Sprintf("%d", item.ContentLength)},
+		{"content-type", item.ContentType},
 		{"etag", item.ETag},
-		{"last_modified", item.LastModified},
-		{"content_disposition", item.ContentDisposition},
-		{"content_encoding", item.ContentEncoding},
-		{"object_manifest", item.ObjectManifest},
-		{"static_large_object", item.StaticLargeObject},
-		{"metadata", metadata},
-	})
+	}
+	if !item.LastModified.IsZero() {
+		fields = append(fields, outputField{"last-modified", item.LastModified.Format(time.RFC1123)})
+	}
+	fields = append(fields, outputField{"object", args[1]})
+	if len(metadata) > 0 {
+		fields = append(fields, outputField{"properties", metadata})
+	}
+	return renderShowOutput(stdout, opts, fields)
+}
+
+func objectUnset(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("object unset requires <container> <object>")
+	}
+	properties := flagValues(opts, "property")
+	if len(properties) == 0 {
+		return fmt.Errorf("object unset requires --property")
+	}
+	if result := objects.Update(ctx, client, args[0], args[1], objects.UpdateOpts{RemoveMetadata: properties}); result.Err != nil {
+		return result.Err
+	}
+	return nil
+}
+
+func objectProperties(opts *Options) (map[string]string, error) {
+	properties := map[string]string{}
+	for _, property := range flagValues(opts, "property") {
+		key, value, ok := strings.Cut(property, "=")
+		if !ok || key == "" {
+			return nil, fmt.Errorf("invalid property %q, expected <key=value>", property)
+		}
+		properties[key] = value
+	}
+	return properties, nil
 }
 
 func objectStoreAccountShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {

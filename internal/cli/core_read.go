@@ -635,12 +635,42 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return objectList(cmd.Context(), stdout, opts, client, args)
+		case "object create":
+			client, err := clients.objectStorageV1()
+			if err != nil {
+				return err
+			}
+			return objectCreate(cmd.Context(), stdout, opts, client, args)
+		case "object delete":
+			client, err := clients.objectStorageV1()
+			if err != nil {
+				return err
+			}
+			return objectDelete(cmd.Context(), client, args)
+		case "object save":
+			client, err := clients.objectStorageV1()
+			if err != nil {
+				return err
+			}
+			return objectSave(cmd.Context(), stdout, opts, client, args)
+		case "object set":
+			client, err := clients.objectStorageV1()
+			if err != nil {
+				return err
+			}
+			return objectSet(cmd.Context(), opts, client, args)
 		case "object show":
 			client, err := clients.objectStorageV1()
 			if err != nil {
 				return err
 			}
 			return objectShow(cmd.Context(), stdout, opts, client, args)
+		case "object unset":
+			client, err := clients.objectStorageV1()
+			if err != nil {
+				return err
+			}
+			return objectUnset(cmd.Context(), opts, client, args)
 		case "object store account show":
 			client, err := clients.objectStorageV1()
 			if err != nil {

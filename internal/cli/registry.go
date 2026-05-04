@@ -107,7 +107,7 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"network rbac list", "network rbac show",
 		"network segment list", "network segment show",
 		"network trunk list", "network trunk show",
-		"object list", "object show",
+		"object create", "object delete", "object list", "object save", "object set", "object show", "object unset",
 		"object store account show",
 		"port list", "port show",
 		"quota delete", "quota list", "quota set", "quota show",
@@ -322,6 +322,14 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().String("end-marker", "", "pagination end marker")
 		cmd.Flags().Bool("long", false, "list additional fields")
 		cmd.Flags().Bool("all", false, "list all objects")
+	case "object create":
+		cmd.Flags().String("name", "", "object name")
+	case "object save":
+		cmd.Flags().String("file", "", "destination filename")
+	case "object set":
+		cmd.Flags().StringArray("property", nil, "object property key=value")
+	case "object unset":
+		cmd.Flags().StringArray("property", nil, "object property key")
 	case "extension list":
 		cmd.Flags().Bool("compute", false, "list compute extensions")
 		cmd.Flags().Bool("identity", false, "list identity extensions")
@@ -880,7 +888,7 @@ func isCoreReadCommand(path string) bool {
 		"network rbac list", "network rbac show",
 		"network segment list", "network segment show",
 		"network trunk list", "network trunk show",
-		"object list", "object show",
+		"object create", "object delete", "object list", "object save", "object set", "object show", "object unset",
 		"object store account show",
 		"port list", "port show",
 		"quota delete", "quota list", "quota set", "quota show",
