@@ -11,7 +11,7 @@ export GOMODCACHE
 
 .PHONY: help
 help: ## Show available Make targets.
-	@awk 'BEGIN {FS = ":.*##"; printf "Available targets:\n"} /^[a-zA-Z0-9_.-]+:.*##/ { printf "  %-18s %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
+	@awk 'BEGIN {FS = ":.*##"; printf "Available targets:\n"} /^[a-zA-Z0-9_.-]+:.*##/ { printf "  %-24s %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
 
 .PHONY: build
 build: ## Build the drop-in openstack binary at bin/openstack.
@@ -36,16 +36,20 @@ smoke: build ## Run basic local CLI smoke checks that do not require cloud acces
 	$(BINARY) server list --help
 	$(BINARY) module list --max-width 52
 
-.PHONY: compat-catalog
-compat-catalog: ## Regenerate Python OSC compatibility catalog artifacts.
+.PHONY: catalog
+catalog: ## Regenerate Python OSC compatibility catalog artifacts.
 	$(GO) run ./tools/osc-catalog
 
 .PHONY: matrix
 matrix: ## Regenerate compatibility and test matrix artifacts.
 	$(GO) run ./tools/matrix
 
+.PHONY: report
+report: ## Print README-ready command compatibility Markdown table.
+	$(GO) run ./tools/matrix --report command-status --report-format readme
+
 .PHONY: compat
-compat: compat-catalog matrix ## Regenerate all compatibility artifacts.
+compat: catalog matrix ## Regenerate all compatibility artifacts.
 
 .PHONY: clean
 clean: ## Remove local build outputs and workspace-local Go caches.

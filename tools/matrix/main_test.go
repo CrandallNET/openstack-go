@@ -159,6 +159,59 @@ func TestPrintGenerationSummaryReadmeFormat(t *testing.T) {
 	}
 }
 
+func TestCommandReportStatusMapping(t *testing.T) {
+	tests := []struct {
+		status string
+		want   string
+	}{
+		{status: "golden-matched", want: "compatible"},
+		{status: "cloud-verified", want: "partially compatible"},
+		{status: "implemented", want: "implemented"},
+		{status: "unknown", want: "partially implemented"},
+		{status: "sdk-covered", want: "partially implemented"},
+		{status: "shim-needed", want: "partially implemented"},
+		{status: "blocked", want: "partially implemented"},
+	}
+	for _, tt := range tests {
+		got := commandReportStatus(commandEntry{Status: tt.status})
+		if got != tt.want {
+			t.Fatalf("status %q mapped to %q, want %q", tt.status, got, tt.want)
+		}
+	}
+}
+
+func TestPrintCommandStatusReportReadmeFormat(t *testing.T) {
+	entries := []commandEntry{
+		{Command: "server list", Status: "golden-matched", ImplementedIn: "internal/cli"},
+		{Command: "volume message show", Status: "cloud-verified", Shim: true, ImplementedIn: "internal/cli"},
+		{Command: "resource provider list", Status: "implemented", PluginScope: true, ImplementedIn: "internal/cli"},
+		{Command: "tap flow list", Status: "unknown", PluginScope: true},
+	}
+	var output strings.Builder
+	printCommandStatusReport(&output, entries, "readme")
+	text := output.String()
+	for _, want := range []string{
+		"### Command Compatibility Status",
+		"| Command | Python OSC 9.0.0 | golang-osc status | Source | Notes |",
+		"| `server list` | present | compatible | built-in | Golden Python oracle parity recorded. |",
+		"| `volume message show` | present | partially compatible | built-in | Live cloud verification recorded; full oracle parity may still be open. Uses a raw REST shim. |",
+		"| `resource provider list` | present | implemented | plugin | Implemented in Go; compatibility verification still open. Plugin-scoped command. |",
+		"| `tap flow list` | present | partially implemented | plugin | Command path exists in the Go CLI, but behavior is not complete. Plugin-scoped command. |",
+	} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("command report missing %q:\n%s", want, text)
+		}
+	}
+}
+
+func TestMarkdownTableCellEscapesPipesAndNewlines(t *testing.T) {
+	got := markdownTableCell("left|right\nnext")
+	want := `left\|right<br>next`
+	if got != want {
+		t.Fatalf("escaped cell mismatch: got %q want %q", got, want)
+	}
+}
+
 func TestYAMLStringEscapesQuotes(t *testing.T) {
 	if got, want := yamlString(`a "quoted" value`), `"a \"quoted\" value"`; got != want {
 		t.Fatalf("quoted string mismatch: got %q want %q", got, want)

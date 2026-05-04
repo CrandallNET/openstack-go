@@ -51,24 +51,40 @@ type generationSummary struct {
 }
 
 var matrixStatusValues = []string{"unknown", "sdk-covered", "shim-needed", "implemented", "golden-matched", "cloud-verified", "blocked"}
-var summaryFormats = map[string]bool{"terminal": true, "readme": true}
+var reportModes = map[string]bool{"summary": true, "command-status": true}
+var reportFormats = map[string]bool{"terminal": true, "readme": true}
 
 func main() {
 	var commandsPath string
 	var matrixPath string
 	var testMatrixPath string
 	var testCloudsPath string
+	var reportMode string
+	var reportFormat string
+	var reportOutput string
 	var summaryFormat string
 
 	flag.StringVar(&commandsPath, "commands", "compat/osc/9.0.0/commands.json", "OSC command catalog JSON path")
 	flag.StringVar(&matrixPath, "matrix", "compat/matrix.yaml", "command compatibility matrix output path")
 	flag.StringVar(&testMatrixPath, "test-matrix", "compat/test-matrix.yaml", "test matrix output path")
 	flag.StringVar(&testCloudsPath, "test-clouds", "compat/test-clouds.yaml", "test cloud capability config output path")
-	flag.StringVar(&summaryFormat, "summary-format", "terminal", "summary output format: terminal or readme")
+	flag.StringVar(&reportMode, "report", "summary", "stdout report to emit after generation: summary or command-status")
+	flag.StringVar(&reportFormat, "report-format", "terminal", "stdout report format: terminal or readme")
+	flag.StringVar(&reportOutput, "report-output", "", "write the selected stdout report to this path instead of stdout")
+	flag.StringVar(&summaryFormat, "summary-format", "", "deprecated alias for --report-format")
 	flag.Parse()
+	reportMode = strings.ToLower(strings.TrimSpace(reportMode))
+	reportFormat = strings.ToLower(strings.TrimSpace(reportFormat))
 	summaryFormat = strings.ToLower(strings.TrimSpace(summaryFormat))
-	if !summaryFormats[summaryFormat] {
-		fmt.Fprintf(os.Stderr, "matrix: unsupported summary format %q; use terminal or readme\n", summaryFormat)
+	if summaryFormat != "" {
+		reportFormat = summaryFormat
+	}
+	if !reportModes[reportMode] {
+		fmt.Fprintf(os.Stderr, "matrix: unsupported report %q; use summary or command-status\n", reportMode)
+		os.Exit(1)
+	}
+	if !reportFormats[reportFormat] {
+		fmt.Fprintf(os.Stderr, "matrix: unsupported report format %q; use terminal or readme\n", reportFormat)
 		os.Exit(1)
 	}
 
@@ -91,13 +107,22 @@ func main() {
 		fmt.Fprintf(os.Stderr, "matrix: %v\n", err)
 		os.Exit(1)
 	}
-	printGenerationSummary(os.Stdout, generationSummary{
+	summary := generationSummary{
 		CommandCount:   len(entries),
 		StatusCounts:   commandStatusCounts(entries),
 		MatrixPath:     matrixPath,
 		TestMatrixPath: testMatrixPath,
 		TestCloudsPath: testCloudsPath,
-	}, summaryFormat)
+	}
+	report := renderReport(entries, summary, reportMode, reportFormat)
+	if reportOutput != "" {
+		if err := writeFile(reportOutput, report); err != nil {
+			fmt.Fprintf(os.Stderr, "matrix: %v\n", err)
+			os.Exit(1)
+		}
+		return
+	}
+	fmt.Print(report)
 }
 
 func readGroups(path string) ([]commandGroup, error) {
@@ -217,6 +242,85 @@ func printReadmeGenerationSummary(w io.Writer, summary generationSummary) {
 	fmt.Fprintf(w, "* `%s`\n", summary.MatrixPath)
 	fmt.Fprintf(w, "* `%s`\n", summary.TestMatrixPath)
 	fmt.Fprintf(w, "* `%s`\n", summary.TestCloudsPath)
+}
+
+func renderReport(entries []commandEntry, summary generationSummary, report string, format string) string {
+	var b strings.Builder
+	switch report {
+	case "command-status":
+		printCommandStatusReport(&b, entries, format)
+	default:
+		printGenerationSummary(&b, summary, format)
+	}
+	return b.String()
+}
+
+func printCommandStatusReport(w io.Writer, entries []commandEntry, format string) {
+	if format == "readme" {
+		fmt.Fprintln(w, "### Command Compatibility Status")
+		fmt.Fprintln(w)
+		fmt.Fprintln(w, "The Python column is sourced from the pinned Python OpenStackClient 9.0.0 command catalog. The Go status is conservative: `compatible` requires golden oracle parity, `partially compatible` means live cloud verification exists without full oracle parity, `implemented` means Go behavior exists but parity is still open, and `partially implemented` includes command paths that currently rely on generated stubs or incomplete SDK/shim work.")
+		fmt.Fprintln(w)
+	}
+	fmt.Fprintln(w, "| Command | Python OSC 9.0.0 | golang-osc status | Source | Notes |")
+	fmt.Fprintln(w, "| --- | --- | --- | --- | --- |")
+	for _, entry := range entries {
+		fmt.Fprintf(w, "| `%s` | present | %s | %s | %s |\n",
+			markdownTableCell(entry.Command),
+			markdownTableCell(commandReportStatus(entry)),
+			markdownTableCell(commandReportSource(entry)),
+			markdownTableCell(commandReportNote(entry)),
+		)
+	}
+}
+
+func commandReportStatus(entry commandEntry) string {
+	switch entry.Status {
+	case "golden-matched":
+		return "compatible"
+	case "cloud-verified":
+		return "partially compatible"
+	case "implemented":
+		return "implemented"
+	default:
+		return "partially implemented"
+	}
+}
+
+func commandReportSource(entry commandEntry) string {
+	if entry.PluginScope {
+		return "plugin"
+	}
+	return "built-in"
+}
+
+func commandReportNote(entry commandEntry) string {
+	var notes []string
+	switch entry.Status {
+	case "golden-matched":
+		notes = append(notes, "Golden Python oracle parity recorded.")
+	case "cloud-verified":
+		notes = append(notes, "Live cloud verification recorded; full oracle parity may still be open.")
+	case "implemented":
+		notes = append(notes, "Implemented in Go; compatibility verification still open.")
+	default:
+		notes = append(notes, "Command path exists in the Go CLI, but behavior is not complete.")
+	}
+	if entry.PluginScope {
+		notes = append(notes, "Plugin-scoped command.")
+	}
+	if entry.Shim {
+		notes = append(notes, "Uses a raw REST shim.")
+	}
+	return strings.Join(notes, " ")
+}
+
+func markdownTableCell(value string) string {
+	value = strings.ReplaceAll(value, `\`, `\\`)
+	value = strings.ReplaceAll(value, "|", `\|`)
+	value = strings.ReplaceAll(value, "\r\n", "<br>")
+	value = strings.ReplaceAll(value, "\n", "<br>")
+	return value
 }
 
 func newCommandEntry(group string, command string) commandEntry {

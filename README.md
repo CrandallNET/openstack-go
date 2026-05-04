@@ -75,7 +75,18 @@ go run ./tools/osc-catalog
 go run ./tools/matrix
 ```
 
-The matrix generator writes `compat/matrix.yaml`, `compat/test-matrix.yaml`, and `compat/test-clouds.yaml` by default, and prints a summary with command status counts and the files it wrote. The default summary is terminal-oriented; use `go run ./tools/matrix --summary-format readme` for Markdown suitable for README updates. Artifact paths can be overridden with the generator flags shown by `go run ./tools/matrix --help`.
+The matrix generator writes `compat/matrix.yaml`, `compat/test-matrix.yaml`, and `compat/test-clouds.yaml` by default, and prints a summary with command status counts and the files it wrote. The default summary is terminal-oriented; use `go run ./tools/matrix --report-format readme` for Markdown suitable for README updates. Artifact paths can be overridden with the generator flags shown by `go run ./tools/matrix --help`.
+
+To generate a Markdown command compatibility table that compares the pinned Python OSC command catalog with the current Go CLI status:
+
+```sh
+make report
+go run ./tools/matrix --report command-status --report-format readme
+```
+
+The command-status report uses these conservative statuses: `compatible`, `partially compatible`, `implemented`, and `partially implemented`. It also marks each command source as `built-in` or `plugin`.
+
+Use `--report-output <path>` to write the selected report to a file instead of stdout.
 
 ## Compatibility Artifacts
 

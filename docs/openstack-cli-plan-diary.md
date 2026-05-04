@@ -1284,7 +1284,7 @@ Sources consulted:
 
 Decision: the repository now has a top-level `Makefile` as the standard entry point for local build, test, smoke, and compatibility-generation commands. The targets keep the underlying Go commands visible and use workspace-local `GOCACHE` and `GOMODCACHE` defaults so constrained environments do not write to user-level Go cache directories unless the caller explicitly overrides them.
 
-Work done: added `help`, `build`, `test`, `fmt`, `check`, `smoke`, `compat-catalog`, `matrix`, `compat`, and `clean` targets. The `help` target is self-documenting and lists every public target with its description.
+Work done: added `help`, `build`, `test`, `fmt`, `check`, `smoke`, `catalog`, `matrix`, `compat`, and `clean` targets. The `help` target is self-documenting and lists every public target with its description.
 
 Sources consulted:
 
@@ -1307,9 +1307,34 @@ Sources consulted:
 
 Decision: `tools/matrix` should print a compact summary to stdout after writing artifacts. The terminal output lists the total command count, status counts, and the generated file paths. It intentionally does not dump the full YAML matrix because the command catalog has hundreds of rows and the files remain the durable review artifacts.
 
-Work done: added generation summary output to `tools/matrix`, covered the status counts and summary renderer with unit tests, and documented the behavior in the README. The generator accepts `--summary-format terminal` and `--summary-format readme`; `terminal` is the default, and `readme` emits a Markdown table and generated-file list suitable for README updates.
+Work done: added generation summary output to `tools/matrix`, covered the status counts and summary renderer with unit tests, and documented the behavior in the README. The generator accepts `--report-format terminal` and `--report-format readme`; `terminal` is the default, and `readme` emits a Markdown table and generated-file list suitable for README updates. The earlier `--summary-format` flag remains as an alias.
 
 Sources consulted:
 
 * Local generator implementation in `tools/matrix/main.go`.
 * Local matrix tests in `tools/matrix/main_test.go`.
+
+## 2026-05-04: Command Status Markdown Report
+
+Decision: `tools/matrix` should be able to emit a Markdown command compatibility table for README or planning updates. The report compares every command from the pinned Python OSC 9.0.0 catalog to the current Go CLI matrix row and labels each command source as `built-in` or `plugin`.
+
+Status mapping is intentionally conservative. Matrix rows marked `golden-matched` render as `compatible`; rows marked `cloud-verified` render as `partially compatible`; rows marked `implemented` render as `implemented`; and unfinished, stubbed, blocked, SDK-covered, or shim-needed rows render as `partially implemented` with a note that behavior is not complete. This avoids overstating Python compatibility before oracle parity is recorded.
+
+Work done: added `--report command-status`, `--report-format terminal|readme`, and `--report-output <path>` to `tools/matrix`; added `make report`; and covered status mapping, Markdown table output, and table-cell escaping with unit tests.
+
+Sources consulted:
+
+* Local matrix generator in `tools/matrix/main.go`.
+* Local matrix tests in `tools/matrix/main_test.go`.
+* Local Make targets in `Makefile`.
+
+## 2026-05-04: Make Target Short Names
+
+Decision: use shorter Make target names for generated project artifacts and reports. `catalog` replaces `compat-catalog`, and `report` replaces `matrix-command-status`.
+
+Work done: updated the Makefile targets, the `compat` aggregate target dependency, README examples, and the earlier diary entries that listed target names.
+
+Sources consulted:
+
+* Local Make targets in `Makefile`.
+* Local README build instructions in `README.md`.
