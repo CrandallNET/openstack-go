@@ -1217,3 +1217,14 @@ Sources consulted:
 * Local pretty-output tests in `internal/cli/root_test.go`.
 * Local Charm Bubbles table implementation in `/Users/ken/Dev/openstack-go/.cache/gomod/charm.land/bubbles/v2@v2.1.0/table/table.go`.
 * Local Lip Gloss v2 implementation in `/Users/ken/Dev/openstack-go/.cache/gomod/charm.land/lipgloss/v2@v2.0.3`.
+
+## 2026-05-04: Pretty Label Prefix Color
+
+Work done: changed TTY pretty output so lines that begin with a `label: value` shape render the `label:` prefix in bright white. The remaining value keeps the existing semantic coloring for UUIDs, IP addresses, status values, `N/A`, and other recognized tokens.
+
+Implementation note: the colorizer handles this after wrapping and only when pretty color is enabled. Non-TTY pretty output and default OSC-compatible output remain plain and unchanged.
+
+Sources consulted:
+
+* Local implementation file `internal/cli/output.go`.
+* Local pretty-output tests in `internal/cli/root_test.go`.

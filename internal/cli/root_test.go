@@ -707,6 +707,17 @@ func TestPrettyImageNAIsColored(t *testing.T) {
 	}
 }
 
+func TestPrettyLabelPrefixIsBrightWhite(t *testing.T) {
+	colored := prettyColorizeByName("Networks", "  testNet: 172.16.86.56")
+	wantPrefix := "  " + prettyLabelStyle.Render("testNet:")
+	if !strings.HasPrefix(colored, wantPrefix) {
+		t.Fatalf("expected pretty label prefix to be bright white, got %q want prefix %q", colored, wantPrefix)
+	}
+	if !strings.Contains(colored, "172.16.86.56") {
+		t.Fatalf("expected pretty label coloring to preserve value, got %q", colored)
+	}
+}
+
 func TestDefaultOutputStillUsesOSCCompatibleTableRenderer(t *testing.T) {
 	var stdout bytes.Buffer
 	err := renderListOutput(&stdout, &Options{Format: defaultOutputFormat}, []string{"ID", "Name"}, []outputRow{

@@ -51,6 +51,7 @@ var (
 	prettyFieldStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("111")).Bold(true)
 	prettyFlavorStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color("215")).Bold(true)
 	prettyIPStyle           = lipgloss.NewStyle().Foreground(lipgloss.Color("114")).Bold(true)
+	prettyLabelStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("255")).Bold(true)
 	prettyNAStyle           = lipgloss.NewStyle().Foreground(lipgloss.Color("220")).Bold(true)
 	prettyNameStyle         = lipgloss.NewStyle().Foreground(lipgloss.Color("213")).Bold(true)
 	prettyNumberStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color("141")).Bold(true)
@@ -423,6 +424,15 @@ func prettyColorizeByName(name string, text string) string {
 		return text
 	}
 	normalized := normalizeColumnName(name)
+	return prettyColorizeLabeledText(text, func(value string) string {
+		return prettyColorizeByNormalizedName(normalized, value)
+	})
+}
+
+func prettyColorizeByNormalizedName(normalized string, text string) string {
+	if strings.TrimSpace(text) == "" {
+		return text
+	}
 	if prettyContainsAddressToken(text) {
 		return prettyColorizeTokens(text)
 	}
@@ -516,6 +526,13 @@ func prettyColorizeStatus(text string) string {
 }
 
 func prettyColorizeTokens(text string) string {
+	if strings.TrimSpace(text) == "" {
+		return text
+	}
+	return prettyColorizeLabeledText(text, prettyColorizeBareTokens)
+}
+
+func prettyColorizeBareTokens(text string) string {
 	text = prettyIPCandidatePattern.ReplaceAllStringFunc(text, func(candidate string) string {
 		if !prettyValidIPToken(candidate) {
 			return candidate
@@ -526,6 +543,38 @@ func prettyColorizeTokens(text string) string {
 		return prettyColorizeUUID(candidate)
 	})
 	return text
+}
+
+func prettyColorizeLabeledText(text string, colorizeValue func(string) string) string {
+	prefix, label, value, ok := prettySplitLabelPrefix(text)
+	if !ok {
+		return colorizeValue(text)
+	}
+	return prefix + prettyLabelStyle.Render(label) + colorizeValue(value)
+}
+
+func prettySplitLabelPrefix(text string) (string, string, string, bool) {
+	prefixLength := len(text) - len(strings.TrimLeft(text, " "))
+	prefix := text[:prefixLength]
+	remainder := text[prefixLength:]
+	if strings.HasPrefix(remainder, "- ") {
+		prefix += "- "
+		remainder = remainder[2:]
+	}
+
+	colon := strings.IndexByte(remainder, ':')
+	if colon <= 0 {
+		return "", "", "", false
+	}
+	if colon+1 < len(remainder) && remainder[colon+1] != ' ' {
+		return "", "", "", false
+	}
+
+	labelText := strings.TrimSpace(remainder[:colon])
+	if labelText == "" {
+		return "", "", "", false
+	}
+	return prefix, remainder[:colon+1], remainder[colon+1:], true
 }
 
 func prettyColorizeImage(text string) string {
