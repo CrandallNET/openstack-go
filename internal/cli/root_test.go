@@ -725,6 +725,47 @@ func TestPrettyImageNAIsColored(t *testing.T) {
 	}
 }
 
+func TestPrettyPaletteColorsDomainValues(t *testing.T) {
+	cases := []struct {
+		name  string
+		value string
+		want  string
+	}{
+		{name: "Volume ID", value: "52c4cf8d-4ef3-4479-b7b9-ffb814f9dd5b", want: prettyColorizeTextWithUUIDStyle("52c4cf8d-4ef3-4479-b7b9-ffb814f9dd5b", prettyVolumeStyle)},
+		{name: "Image", value: "rocky9", want: prettyImageStyle.Render("rocky9")},
+		{name: "Flavor", value: "m1.small", want: prettyFlavorStyle.Render("m1.small")},
+		{name: "created_at", value: "2026-05-04T19:10:59.000000", want: prettyTimestampStyle.Render("2026-05-04T19:10:59.000000")},
+		{name: "Status", value: "in-use", want: prettyBooleanTrueStyle.Render("in-use")},
+	}
+	for _, tc := range cases {
+		if got := prettyColorizeByName(tc.name, tc.value); got != tc.want {
+			t.Fatalf("expected %s value %q to use palette color, got %q want %q", tc.name, tc.value, got, tc.want)
+		}
+	}
+}
+
+func TestPrettyVolumeSemanticRoleColorsGenericID(t *testing.T) {
+	colorizer := prettyListCellColorizer([]string{"ID"}, [][]string{{"volume"}})
+	uuid := "52c4cf8d-4ef3-4479-b7b9-ffb814f9dd5b"
+	want := prettyColorizeTextWithUUIDStyle(uuid, prettyVolumeStyle)
+	if got := colorizer(0, 0, uuid); got != want {
+		t.Fatalf("expected volume role to color generic ID as volume, got %q want %q", got, want)
+	}
+}
+
+func TestPrettyVolumeUUIDFragmentsKeepHyphensPlain(t *testing.T) {
+	colored := prettyColorizeVolume("52c4cf8d-4ef3-4479-")
+	parts := strings.Split(colored, "-")
+	if len(parts) != 4 {
+		t.Fatalf("expected volume UUID fragment to keep plain hyphen separators, got %q", colored)
+	}
+	for index, part := range parts[:len(parts)-1] {
+		if !containsANSI(part) {
+			t.Fatalf("expected volume UUID fragment segment %d to be colored, got %q from %q", index, part, colored)
+		}
+	}
+}
+
 func TestPrettyHostnamesUseIPColor(t *testing.T) {
 	colored := prettyColorizeByName("host_name", "dell6.crandall.haus")
 	want := prettyIPStyle.Render("dell6.crandall.haus")

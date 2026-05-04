@@ -1252,3 +1252,30 @@ Sources consulted:
 
 * Local implementation file `internal/cli/output.go`.
 * Local pretty-output tests in `internal/cli/root_test.go`.
+
+## 2026-05-04: Pretty Color Palette Decision
+
+Decision: pretty output uses a role-based color palette so that resource types and operational states remain visually consistent across commands. The palette is implemented with named constants in `internal/cli/output.go`; tests assert representative domain values so future changes do not silently drift.
+
+Current palette:
+
+| Role | xterm color | Use |
+| --- | --- | --- |
+| Success status | `82` | Healthy, active, available, in-use, running, up. |
+| Warning status | `220` | Build, create, delete, attach, detach, migrate, resize, restore, upload, and similar transitional states. |
+| Error status | `203` | Error, failed, down, disabled, deleted, shutoff, suspended, and related error states. |
+| Volume | `93` | Volume IDs, volume names, and volume references. |
+| Image | `130` | Image names and image IDs. `N/A` remains the explicit no-image color. |
+| Flavor | `223` | Flavor names and flavor references. |
+| Timestamp | `117` | ISO-like created, updated, attached, heartbeat, and guaranteed-until timestamps. |
+| Address | `114` | IP addresses and hostnames. |
+| UUID | `75` | Generic UUIDs when no more specific resource role applies; UUID hyphens remain uncolored. |
+| Label | `15` | `label:` prefixes inside structured pretty values. |
+
+Implementation notes: volume, image, and flavor colors take precedence over generic UUID coloring. Status matching normalizes hyphens and spaces to underscores, so Cinder statuses such as `in-use` are colored through the same status buckets as compute statuses.
+
+Sources consulted:
+
+* Local implementation file `internal/cli/output.go`.
+* Local volume command implementation in `internal/cli/core_read.go`.
+* Local pretty-output tests in `internal/cli/root_test.go`.

@@ -8623,8 +8623,8 @@ func volumeList(ctx context.Context, stdout io.Writer, opts *Options, client *go
 	rows := make([]outputRow, 0, len(items))
 	for _, item := range items {
 		rows = append(rows, outputRow{
-			"ID":          item.ID,
-			"Name":        item.Name,
+			"ID":          prettyVolumeValue(item.ID),
+			"Name":        prettyVolumeValue(item.Name),
 			"Status":      item.Status,
 			"Size":        item.Size,
 			"Attached to": volumeAttachments(item.Attachments),
@@ -8642,8 +8642,8 @@ func volumeShow(ctx context.Context, stdout io.Writer, opts *Options, client *go
 		return err
 	}
 	return renderShowOutput(stdout, opts, []outputField{
-		{"id", item.ID},
-		{"name", item.Name},
+		{"id", prettyVolumeValue(item.ID)},
+		{"name", prettyVolumeValue(item.Name)},
 		{"status", item.Status},
 		{"size", item.Size},
 		{"availability_zone", item.AvailabilityZone},
@@ -14050,9 +14050,9 @@ func volumeAttachments(attachments []volumes.Attachment) []map[string]any {
 	values := make([]map[string]any, 0, len(attachments))
 	for _, item := range attachments {
 		values = append(values, map[string]any{
-			"id":            item.ID,
+			"id":            prettyVolumeValue(item.ID),
 			"attachment_id": item.AttachmentID,
-			"volume_id":     item.VolumeID,
+			"volume_id":     prettyVolumeValue(item.VolumeID),
 			"server_id":     item.ServerID,
 			"host_name":     item.HostName,
 			"device":        item.Device,

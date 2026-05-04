@@ -34,31 +34,67 @@ type prettyValueFormatter interface {
 	PrettyString() string
 }
 
+type prettySemanticValue interface {
+	PrettySemanticRole() string
+}
+
 type prettyCellColorizer func(rowIndex int, columnIndex int, text string) string
+
+type prettyVolumeValue string
+
+func (value prettyVolumeValue) PrettyString() string {
+	return string(value)
+}
+
+func (value prettyVolumeValue) PrettySemanticRole() string {
+	return "volume"
+}
 
 type orderedJSONObject struct {
 	keys   []string
 	values map[string]any
 }
 
+const (
+	prettyColorBooleanFalse = "214"
+	prettyColorBooleanTrue  = "82"
+	prettyColorError        = "203"
+	prettyColorField        = "111"
+	prettyColorFlavor       = "223"
+	prettyColorImage        = "130"
+	prettyColorIP           = "114"
+	prettyColorLabel        = "15"
+	prettyColorNA           = "220"
+	prettyColorName         = "213"
+	prettyColorNumber       = "141"
+	prettyColorTimestamp    = "117"
+	prettyColorUUID         = "75"
+	prettyColorVolume       = "93"
+	prettyColorWarning      = "220"
+)
+
 var (
 	prettyUUIDPattern         = regexp.MustCompile(`(?i)\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b`)
 	prettyUUIDFragmentPattern = regexp.MustCompile(`(?i)[0-9a-f]+`)
 	prettyHostnamePattern     = regexp.MustCompile(`(?i)\b[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+\b`)
 	prettyIPCandidatePattern  = regexp.MustCompile(`(?i)(?:\b(?:\d{1,3}\.){3}\d{1,3}(?:/\d{1,3})?\b|\b[0-9a-f]*:[0-9a-f:.]*(?:/\d{1,3})?\b|::(?:/\d{1,3})?)`)
+	prettyTimestampPattern    = regexp.MustCompile(`\b\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?\b`)
 
-	prettyBooleanFalseStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Bold(true)
-	prettyBooleanTrueStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("82")).Bold(true)
-	prettyErrorStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("203")).Bold(true)
-	prettyFieldStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("111")).Bold(true)
-	prettyFlavorStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color("215")).Bold(true)
-	prettyIPStyle           = lipgloss.NewStyle().Foreground(lipgloss.Color("114")).Bold(true)
-	prettyLabelStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("15")).Bold(true)
-	prettyNAStyle           = lipgloss.NewStyle().Foreground(lipgloss.Color("220")).Bold(true)
-	prettyNameStyle         = lipgloss.NewStyle().Foreground(lipgloss.Color("213")).Bold(true)
-	prettyNumberStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color("141")).Bold(true)
-	prettyUUIDStyle         = lipgloss.NewStyle().Foreground(lipgloss.Color("75")).Bold(true)
-	prettyWarningStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("220")).Bold(true)
+	prettyBooleanFalseStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorBooleanFalse)).Bold(true)
+	prettyBooleanTrueStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorBooleanTrue)).Bold(true)
+	prettyErrorStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorError)).Bold(true)
+	prettyFieldStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorField)).Bold(true)
+	prettyFlavorStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorFlavor)).Bold(true)
+	prettyImageStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorImage)).Bold(true)
+	prettyIPStyle           = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorIP)).Bold(true)
+	prettyLabelStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorLabel)).Bold(true)
+	prettyNAStyle           = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorNA)).Bold(true)
+	prettyNameStyle         = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorName)).Bold(true)
+	prettyNumberStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorNumber)).Bold(true)
+	prettyTimestampStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorTimestamp))
+	prettyUUIDStyle         = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorUUID)).Bold(true)
+	prettyVolumeStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorVolume)).Bold(true)
+	prettyWarningStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorWarning)).Bold(true)
 )
 
 func (object orderedJSONObject) MarshalJSON() ([]byte, error) {
@@ -171,22 +207,37 @@ func renderShowOutput(stdout io.Writer, opts *Options, fields []outputField) err
 
 func renderPrettyList(stdout io.Writer, opts *Options, columns []string, rows []outputRow) error {
 	tableRows := make([]table.Row, 0, len(rows))
+	roles := make([][]string, 0, len(rows))
 	for _, row := range rows {
 		tableRow := make(table.Row, 0, len(columns))
+		roleRow := make([]string, 0, len(columns))
 		for _, column := range columns {
-			tableRow = append(tableRow, prettyCellValue(row[column]))
+			value := row[column]
+			tableRow = append(tableRow, prettyCellValue(value))
+			roleRow = append(roleRow, prettySemanticRole(value))
 		}
 		tableRows = append(tableRows, tableRow)
+		roles = append(roles, roleRow)
 	}
-	return renderPrettyTable(stdout, opts, columns, tableRows, prettyListCellColorizer(columns))
+	return renderPrettyTable(stdout, opts, columns, tableRows, prettyListCellColorizer(columns, roles))
 }
 
 func renderPrettyShow(stdout io.Writer, opts *Options, fields []outputField) error {
 	rows := make([]table.Row, 0, len(fields))
+	roles := make([]string, 0, len(fields))
 	for _, field := range fields {
 		rows = append(rows, table.Row{field.Name, prettyCellValue(field.Value)})
+		roles = append(roles, prettySemanticRole(field.Value))
 	}
-	return renderPrettyTable(stdout, opts, []string{"Field", "Value"}, rows, prettyShowCellColorizer(fields))
+	return renderPrettyTable(stdout, opts, []string{"Field", "Value"}, rows, prettyShowCellColorizer(fields, roles))
+}
+
+func prettySemanticRole(value any) string {
+	semantic, ok := value.(prettySemanticValue)
+	if !ok {
+		return ""
+	}
+	return semantic.PrettySemanticRole()
 }
 
 func renderPrettyTable(stdout io.Writer, opts *Options, headers []string, rows []table.Row, colorizer prettyCellColorizer) error {
@@ -400,8 +451,15 @@ func prettyColorEnabled(stdout io.Writer) bool {
 	return os.Getenv("NO_COLOR") == "" && os.Getenv("CLICOLOR") != "0" && tableWriterIsTerminal(stdout)
 }
 
-func prettyListCellColorizer(columns []string) prettyCellColorizer {
+func prettyListCellColorizer(columns []string, roles ...[][]string) prettyCellColorizer {
+	var roleRows [][]string
+	if len(roles) > 0 {
+		roleRows = roles[0]
+	}
 	return func(rowIndex int, columnIndex int, text string) string {
+		if role := prettyCellRole(roleRows, rowIndex, columnIndex); role != "" {
+			return prettyColorizeByName(role, text)
+		}
 		if columnIndex >= len(columns) {
 			return prettyColorizeTokens(text)
 		}
@@ -409,16 +467,30 @@ func prettyListCellColorizer(columns []string) prettyCellColorizer {
 	}
 }
 
-func prettyShowCellColorizer(fields []outputField) prettyCellColorizer {
+func prettyShowCellColorizer(fields []outputField, roles ...[]string) prettyCellColorizer {
+	var fieldRoles []string
+	if len(roles) > 0 {
+		fieldRoles = roles[0]
+	}
 	return func(rowIndex int, columnIndex int, text string) string {
 		if columnIndex == 0 {
 			return prettyFieldStyle.Render(text)
+		}
+		if columnIndex == 1 && rowIndex < len(fieldRoles) && fieldRoles[rowIndex] != "" {
+			return prettyColorizeByName(fieldRoles[rowIndex], text)
 		}
 		if columnIndex == 1 && rowIndex < len(fields) {
 			return prettyColorizeByName(fields[rowIndex].Name, text)
 		}
 		return prettyColorizeTokens(text)
 	}
+}
+
+func prettyCellRole(roles [][]string, rowIndex int, columnIndex int) string {
+	if rowIndex >= len(roles) || columnIndex >= len(roles[rowIndex]) {
+		return ""
+	}
+	return roles[rowIndex][columnIndex]
 }
 
 func prettyColorizeByName(name string, text string) string {
@@ -435,22 +507,28 @@ func prettyColorizeByNormalizedName(normalized string, text string) string {
 	if strings.TrimSpace(text) == "" {
 		return text
 	}
-	if prettyContainsAddressToken(text) {
+	if prettyContainsTimestampToken(text) {
 		return prettyColorizeTokens(text)
 	}
 	switch {
-	case prettyIsNameField(normalized):
-		return prettyNameStyle.Render(text)
+	case prettyIsVolumeField(normalized):
+		return prettyColorizeVolume(text)
 	case prettyIsFlavorField(normalized):
 		return prettyFlavorStyle.Render(text)
 	case prettyIsImageField(normalized):
 		return prettyColorizeImage(text)
 	case prettyIsFlavorComponentField(normalized):
 		return prettyNumberStyle.Render(prettyColorizeTokens(text))
+	case prettyIsTimestampField(normalized):
+		return prettyColorizeTimestamp(text)
 	case prettyIsStatusField(normalized):
 		return prettyColorizeStatus(text)
 	case prettyIsBooleanText(text):
 		return prettyColorizeBoolean(text)
+	case prettyContainsAddressToken(text):
+		return prettyColorizeTokens(text)
+	case prettyIsNameField(normalized):
+		return prettyNameStyle.Render(text)
 	default:
 		return prettyColorizeTokens(text)
 	}
@@ -479,6 +557,15 @@ func prettyIsImageField(name string) bool {
 		strings.Contains(name, "image")
 }
 
+func prettyIsVolumeField(name string) bool {
+	switch name {
+	case "volume", "volume_id", "volume_name", "volumes":
+		return true
+	default:
+		return false
+	}
+}
+
 func prettyIsFlavorComponentField(name string) bool {
 	switch name {
 	case "ram", "disk", "ephemeral", "vcpus", "swap", "rxtx_factor":
@@ -495,6 +582,14 @@ func prettyIsStatusField(name string) bool {
 	default:
 		return false
 	}
+}
+
+func prettyIsTimestampField(name string) bool {
+	return name == "timestamp" ||
+		name == "time" ||
+		name == "last_heartbeat" ||
+		strings.HasSuffix(name, "_at") ||
+		strings.HasSuffix(name, "_until")
 }
 
 func prettyIsBooleanText(text string) bool {
@@ -514,17 +609,26 @@ func prettyColorizeBoolean(text string) string {
 }
 
 func prettyColorizeStatus(text string) string {
-	trimmed := strings.ToUpper(strings.TrimSpace(text))
+	trimmed := strings.NewReplacer("-", "_", " ", "_").Replace(strings.ToUpper(strings.TrimSpace(text)))
 	switch trimmed {
 	case "ACTIVE", "AVAILABLE", "ENABLED", "HEALTHY", "IN_USE", "ONLINE", "READY", "RUNNING", "UP":
 		return prettyBooleanTrueStyle.Render(text)
-	case "BUILD", "CREATING", "DELETING", "MIGRATING", "PENDING", "REBOOT", "REBUILD", "RESIZE", "SAVING", "VERIFY_RESIZE":
+	case "ATTACHING", "BACKING_UP", "BUILD", "CREATING", "DELETING", "DETACHING", "DOWNLOADING", "EXTENDING", "MAINTENANCE", "MIGRATING", "PENDING", "REBOOT", "REBUILD", "RESERVED", "RESIZE", "RESTORING_BACKUP", "RETYPE", "SAVING", "UPLOADING", "VERIFY_RESIZE":
 		return prettyWarningStyle.Render(text)
-	case "DELETED", "DISABLED", "DOWN", "ERROR", "FAILED", "FAULT", "KILLED", "SHUTOFF", "SUSPENDED":
+	case "DELETED", "DISABLED", "DOWN", "ERROR", "ERROR_DELETING", "ERROR_EXTENDING", "ERROR_RESTORING", "ERROR_REVERTING", "FAILED", "FAULT", "KILLED", "SHUTOFF", "SUSPENDED":
 		return prettyErrorStyle.Render(text)
 	default:
 		return prettyColorizeTokens(text)
 	}
+}
+
+func prettyColorizeTimestamp(text string) string {
+	if !prettyTimestampPattern.MatchString(text) {
+		return prettyTimestampStyle.Render(text)
+	}
+	return prettyTimestampPattern.ReplaceAllStringFunc(text, func(candidate string) string {
+		return prettyTimestampStyle.Render(candidate)
+	})
 }
 
 func prettyColorizeTokens(text string) string {
@@ -535,6 +639,9 @@ func prettyColorizeTokens(text string) string {
 }
 
 func prettyColorizeBareTokens(text string) string {
+	text = prettyTimestampPattern.ReplaceAllStringFunc(text, func(candidate string) string {
+		return prettyTimestampStyle.Render(candidate)
+	})
 	text = prettyHostnamePattern.ReplaceAllStringFunc(text, func(candidate string) string {
 		if !prettyValidHostnameToken(candidate) {
 			return candidate
@@ -558,7 +665,8 @@ func prettyColorizeLabeledText(text string, colorizeValue func(string) string) s
 	if !ok {
 		return colorizeValue(text)
 	}
-	return prefix + prettyLabelStyle.Render(label) + colorizeValue(value)
+	labelName := strings.TrimSuffix(strings.TrimSpace(label), ":")
+	return prefix + prettyLabelStyle.Render(label) + prettyColorizeByNormalizedName(normalizeColumnName(labelName), value)
 }
 
 func prettyColorizeWrappedCellLines(rowIndex int, columnIndex int, lines []string, colorizer prettyCellColorizer) []string {
@@ -594,6 +702,9 @@ func prettyColorizeWrappedCellLines(rowIndex int, columnIndex int, lines []strin
 }
 
 func prettyColorizeContinuationValue(label string, text string) string {
+	if prettyIsVolumeField(normalizeColumnName(label)) {
+		return prettyColorizeUUIDFragmentWithStyle(text, prettyVolumeStyle)
+	}
 	if prettyIsIDLikeLabel(label) {
 		return prettyColorizeUUIDFragment(text)
 	}
@@ -606,8 +717,12 @@ func prettyIsIDLikeLabel(label string) bool {
 }
 
 func prettyColorizeUUIDFragment(text string) string {
+	return prettyColorizeUUIDFragmentWithStyle(text, prettyUUIDStyle)
+}
+
+func prettyColorizeUUIDFragmentWithStyle(text string, style lipgloss.Style) string {
 	return prettyUUIDFragmentPattern.ReplaceAllStringFunc(text, func(part string) string {
-		return prettyUUIDStyle.Render(part)
+		return style.Render(part)
 	})
 }
 
@@ -640,15 +755,65 @@ func prettySplitLabelPrefix(text string) (string, string, string, bool) {
 }
 
 func prettyColorizeImage(text string) string {
-	return strings.ReplaceAll(prettyColorizeTokens(text), "N/A", prettyNAStyle.Render("N/A"))
+	if strings.Contains(text, "N/A") {
+		return strings.ReplaceAll(prettyColorizeTokens(text), "N/A", prettyNAStyle.Render("N/A"))
+	}
+	return prettyColorizeTextWithUUIDStyle(text, prettyImageStyle)
 }
 
 func prettyColorizeUUID(uuid string) string {
+	return prettyColorizeUUIDWithStyle(uuid, prettyUUIDStyle)
+}
+
+func prettyColorizeUUIDWithStyle(uuid string, style lipgloss.Style) string {
 	parts := strings.Split(uuid, "-")
 	for index, part := range parts {
-		parts[index] = prettyUUIDStyle.Render(part)
+		parts[index] = style.Render(part)
 	}
 	return strings.Join(parts, "-")
+}
+
+func prettyColorizeVolume(text string) string {
+	return prettyColorizeTextWithUUIDStyle(text, prettyVolumeStyle)
+}
+
+func prettyColorizeTextWithUUIDStyle(text string, style lipgloss.Style) string {
+	indexes := prettyUUIDPattern.FindAllStringIndex(text, -1)
+	if len(indexes) == 0 {
+		if prettyLooksLikeUUIDFragment(text) {
+			return prettyColorizeUUIDFragmentWithStyle(text, style)
+		}
+		return style.Render(text)
+	}
+	var builder strings.Builder
+	last := 0
+	for _, index := range indexes {
+		if index[0] > last {
+			builder.WriteString(style.Render(text[last:index[0]]))
+		}
+		builder.WriteString(prettyColorizeUUIDWithStyle(text[index[0]:index[1]], style))
+		last = index[1]
+	}
+	if last < len(text) {
+		builder.WriteString(style.Render(text[last:]))
+	}
+	return builder.String()
+}
+
+func prettyLooksLikeUUIDFragment(text string) bool {
+	trimmed := strings.TrimSpace(text)
+	if !strings.Contains(trimmed, "-") {
+		return false
+	}
+	for _, r := range trimmed {
+		if r == '-' {
+			continue
+		}
+		if !((r >= '0' && r <= '9') || (r >= 'a' && r <= 'f') || (r >= 'A' && r <= 'F')) {
+			return false
+		}
+	}
+	return true
 }
 
 func prettyContainsAddressToken(text string) bool {
@@ -666,6 +831,10 @@ func prettyContainsAddressToken(text string) bool {
 		}
 	}
 	return false
+}
+
+func prettyContainsTimestampToken(text string) bool {
+	return prettyTimestampPattern.MatchString(text)
 }
 
 func prettyValidIPToken(candidate string) bool {
