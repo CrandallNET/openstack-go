@@ -100,7 +100,7 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"keypair create", "keypair delete", "keypair list", "keypair show",
 		"limits show",
 		"network agent list", "network agent show",
-		"network list", "network show",
+		"network create", "network delete", "network list", "network set", "network show", "network unset",
 		"network service provider list",
 		"network qos policy list", "network qos policy show",
 		"network qos rule type list", "network qos rule type show",
@@ -399,6 +399,61 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().String("network", "", "filter by network")
 	case "network trunk list":
 		cmd.Flags().Bool("long", false, "list additional fields")
+	case "network create":
+		cmd.Flags().StringArray("extra-property", nil, "additional property type=<type>,name=<name>,value=<value>")
+		cmd.Flags().Bool("share", false, "share resource")
+		cmd.Flags().Bool("no-share", false, "do not share resource")
+		cmd.Flags().Bool("enable", true, "enable network")
+		cmd.Flags().Bool("disable", false, "disable network")
+		cmd.Flags().String("project", "", "owner project")
+		cmd.Flags().String("description", "", "network description")
+		cmd.Flags().String("mtu", "", "network MTU")
+		cmd.Flags().String("project-domain", "", "project domain")
+		cmd.Flags().StringArray("availability-zone-hint", nil, "availability zone hint")
+		cmd.Flags().Bool("enable-port-security", false, "enable port security")
+		cmd.Flags().Bool("disable-port-security", false, "disable port security")
+		cmd.Flags().Bool("external", false, "external network")
+		cmd.Flags().Bool("internal", false, "internal network")
+		cmd.Flags().Bool("default", false, "default external network")
+		cmd.Flags().Bool("no-default", false, "not default external network")
+		cmd.Flags().String("qos-policy", "", "QoS policy")
+		cmd.Flags().Bool("transparent-vlan", false, "enable VLAN transparency")
+		cmd.Flags().Bool("no-transparent-vlan", false, "disable VLAN transparency")
+		cmd.Flags().Bool("qinq-vlan", false, "enable QinQ VLAN")
+		cmd.Flags().Bool("no-qinq-vlan", false, "disable QinQ VLAN")
+		cmd.Flags().String("provider-network-type", "", "provider network type")
+		cmd.Flags().String("provider-physical-network", "", "provider physical network")
+		cmd.Flags().String("provider-segment", "", "provider segment")
+		cmd.Flags().String("dns-domain", "", "DNS domain")
+		cmd.Flags().StringArray("tag", nil, "network tag")
+		cmd.Flags().Bool("no-tag", false, "create without tags")
+	case "network set":
+		cmd.Flags().StringArray("extra-property", nil, "additional property type=<type>,name=<name>,value=<value>")
+		cmd.Flags().String("name", "", "new network name")
+		cmd.Flags().Bool("enable", false, "enable network")
+		cmd.Flags().Bool("disable", false, "disable network")
+		cmd.Flags().Bool("share", false, "share resource")
+		cmd.Flags().Bool("no-share", false, "do not share resource")
+		cmd.Flags().String("description", "", "network description")
+		cmd.Flags().String("mtu", "", "network MTU")
+		cmd.Flags().Bool("enable-port-security", false, "enable port security")
+		cmd.Flags().Bool("disable-port-security", false, "disable port security")
+		cmd.Flags().Bool("external", false, "external network")
+		cmd.Flags().Bool("internal", false, "internal network")
+		cmd.Flags().Bool("default", false, "default external network")
+		cmd.Flags().Bool("no-default", false, "not default external network")
+		cmd.Flags().String("qos-policy", "", "QoS policy")
+		cmd.Flags().Bool("no-qos-policy", false, "remove QoS policy")
+		cmd.Flags().StringArray("tag", nil, "network tag")
+		cmd.Flags().Bool("no-tag", false, "clear tags before applying tags")
+		cmd.Flags().String("provider-network-type", "", "provider network type")
+		cmd.Flags().String("provider-physical-network", "", "provider physical network")
+		cmd.Flags().String("provider-segment", "", "provider segment")
+		cmd.Flags().String("dns-domain", "", "DNS domain")
+	case "network unset":
+		cmd.Flags().StringArray("extra-property", nil, "additional property type=<type>,name=<name>,value=<value>")
+		cmd.Flags().StringArray("tag", nil, "network tag")
+		cmd.Flags().Bool("all-tag", false, "clear all tags")
 	case "subnet list":
 		cmd.Flags().Bool("long", false, "list additional fields")
 		cmd.Flags().Int("ip-version", 0, "filter by IP version")
@@ -978,7 +1033,7 @@ func isCoreReadCommand(path string) bool {
 		"keypair create", "keypair delete", "keypair list", "keypair show",
 		"limits show",
 		"network agent list", "network agent show",
-		"network list", "network show",
+		"network create", "network delete", "network list", "network set", "network show", "network unset",
 		"network service provider list",
 		"network qos policy list", "network qos policy show",
 		"network qos rule type list", "network qos rule type show",

@@ -590,6 +590,22 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return imageTaskShow(cmd.Context(), stdout, opts, client, args)
+		case "network create":
+			networkClient, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			identityClient, err := clients.identityV3()
+			if err != nil {
+				return err
+			}
+			return networkCreate(cmd.Context(), stdout, opts, networkClient, identityClient, args)
+		case "network delete":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return networkDelete(cmd.Context(), client, args)
 		case "network list":
 			client, err := clients.networkV2()
 			if err != nil {
@@ -662,12 +678,24 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return networkSegmentShow(cmd.Context(), stdout, opts, client, args)
+		case "network set":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return networkSet(cmd.Context(), opts, client, args)
 		case "network show":
 			client, err := clients.networkV2()
 			if err != nil {
 				return err
 			}
 			return networkShow(cmd.Context(), stdout, opts, client, args)
+		case "network unset":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return networkUnset(cmd.Context(), opts, client, args)
 		case "network trunk list":
 			client, err := clients.networkV2()
 			if err != nil {
@@ -3961,8 +3989,289 @@ func normalizeAddressGroupAddress(value string) (string, error) {
 	return addr.String() + "/128", nil
 }
 
+type networkCreateOpts struct {
+	Values map[string]any
+}
+
+func (opts networkCreateOpts) ToNetworkCreateMap() (map[string]any, error) {
+	return map[string]any{"network": opts.Values}, nil
+}
+
+type networkUpdateOpts struct {
+	Values map[string]any
+}
+
+func (opts networkUpdateOpts) ToNetworkUpdateMap() (map[string]any, error) {
+	return map[string]any{"network": opts.Values}, nil
+}
+
+func networkCreate(ctx context.Context, stdout io.Writer, opts *Options, networkClient *gophercloud.ServiceClient, identityClient *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("network create requires <name>")
+	}
+	if boolFlag(opts, "no-tag") && len(flagValues(opts, "tag")) > 0 {
+		return fmt.Errorf("argument --no-tag: not allowed with argument --tag")
+	}
+	values, err := networkCreateValues(ctx, opts, networkClient, identityClient, args[0])
+	if err != nil {
+		return err
+	}
+	result := networks.Create(ctx, networkClient, networkCreateOpts{Values: values})
+	item, err := result.Extract()
+	if err != nil {
+		return err
+	}
+	tags := flagValues(opts, "tag")
+	if len(tags) > 0 {
+		target, err := setNeutronResourceTags(ctx, networkClient, "networks", item.ID, item.Tags, tags, boolFlag(opts, "no-tag"))
+		if err != nil {
+			return err
+		}
+		item.Tags = target
+	}
+	if raw, ok := networkRawFromBody(result.Body); ok {
+		if len(tags) > 0 {
+			raw["tags"] = item.Tags
+		}
+		return renderShowOutput(stdout, opts, networkRawFields(raw))
+	}
+	return renderShowOutput(stdout, opts, networkFields(item))
+}
+
+func networkCreateValues(ctx context.Context, opts *Options, networkClient *gophercloud.ServiceClient, identityClient *gophercloud.ServiceClient, name string) (map[string]any, error) {
+	values := map[string]any{
+		"name":           name,
+		"admin_state_up": true,
+	}
+	if flagChanged(opts, "enable") && flagChanged(opts, "disable") {
+		return nil, fmt.Errorf("argument --disable: not allowed with argument --enable")
+	}
+	if boolFlag(opts, "disable") {
+		values["admin_state_up"] = false
+	}
+	if shared, err := networkBoolFlag(opts, "share", "no-share"); err != nil {
+		return nil, err
+	} else if shared != nil {
+		values["shared"] = *shared
+	}
+	if projectNameOrID := flagValue(opts, "project"); projectNameOrID != "" {
+		project, err := findProjectWithDomain(ctx, identityClient, projectNameOrID, flagValue(opts, "project-domain"))
+		if err != nil {
+			return nil, err
+		}
+		values["project_id"] = project.ID
+	}
+	if err := networkApplyCommonValues(ctx, opts, networkClient, values, true); err != nil {
+		return nil, err
+	}
+	extra, err := parseExtraProperties(flagValues(opts, "extra-property"))
+	if err != nil {
+		return nil, err
+	}
+	for key, value := range extra {
+		values[key] = value
+	}
+	return values, nil
+}
+
+func networkDelete(ctx context.Context, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("network delete requires <network> [<network> ...]")
+	}
+	failures := 0
+	for _, networkArg := range args {
+		item, err := findNetwork(ctx, client, networkArg)
+		if err != nil {
+			failures++
+			continue
+		}
+		if err := networks.Delete(ctx, client, item.ID).ExtractErr(); err != nil {
+			failures++
+		}
+	}
+	if failures > 0 {
+		return fmt.Errorf("%d of %d networks failed to delete.", failures, len(args))
+	}
+	return nil
+}
+
+func networkSet(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("network set requires <network>")
+	}
+	item, err := findNetwork(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	values, err := networkSetValues(ctx, opts, client)
+	if err != nil {
+		return err
+	}
+	if len(values) > 0 {
+		if _, err := networks.Update(ctx, client, item.ID, networkUpdateOpts{Values: values}).Extract(); err != nil {
+			return err
+		}
+	}
+	if boolFlag(opts, "no-tag") || len(flagValues(opts, "tag")) > 0 {
+		_, err := setNeutronResourceTags(ctx, client, "networks", item.ID, item.Tags, flagValues(opts, "tag"), boolFlag(opts, "no-tag"))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func networkSetValues(ctx context.Context, opts *Options, client *gophercloud.ServiceClient) (map[string]any, error) {
+	values := map[string]any{}
+	if flagChanged(opts, "name") {
+		values["name"] = flagValue(opts, "name")
+	}
+	if adminState, err := networkBoolFlag(opts, "enable", "disable"); err != nil {
+		return nil, err
+	} else if adminState != nil {
+		values["admin_state_up"] = *adminState
+	}
+	if shared, err := networkBoolFlag(opts, "share", "no-share"); err != nil {
+		return nil, err
+	} else if shared != nil {
+		values["shared"] = *shared
+	}
+	if err := networkApplyCommonValues(ctx, opts, client, values, false); err != nil {
+		return nil, err
+	}
+	extra, err := parseExtraProperties(flagValues(opts, "extra-property"))
+	if err != nil {
+		return nil, err
+	}
+	for key, value := range extra {
+		values[key] = value
+	}
+	return values, nil
+}
+
+func networkUnset(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("network unset requires <network>")
+	}
+	if len(flagValues(opts, "tag")) > 0 && boolFlag(opts, "all-tag") {
+		return fmt.Errorf("argument --all-tag: not allowed with argument --tag")
+	}
+	item, err := findNetwork(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	extra, err := parseUnsetExtraProperties(flagValues(opts, "extra-property"))
+	if err != nil {
+		return err
+	}
+	if len(extra) > 0 {
+		if _, err := networks.Update(ctx, client, item.ID, networkUpdateOpts{Values: extra}).Extract(); err != nil {
+			return err
+		}
+	}
+	_, err = unsetNeutronResourceTags(ctx, client, "networks", item.ID, item.Tags, flagValues(opts, "tag"), boolFlag(opts, "all-tag"))
+	return err
+}
+
+func networkApplyCommonValues(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, values map[string]any, create bool) error {
+	if flagChanged(opts, "description") {
+		values["description"] = flagValue(opts, "description")
+	}
+	if flagChanged(opts, "mtu") {
+		mtu, err := strconv.Atoi(flagValue(opts, "mtu"))
+		if err != nil {
+			return fmt.Errorf("argument --mtu: invalid int value: %q", flagValue(opts, "mtu"))
+		}
+		values["mtu"] = mtu
+	}
+	if hints := flagValues(opts, "availability-zone-hint"); len(hints) > 0 {
+		values["availability_zone_hints"] = hints
+	}
+	if portSecurity, err := networkBoolFlag(opts, "enable-port-security", "disable-port-security"); err != nil {
+		return err
+	} else if portSecurity != nil {
+		values["port_security_enabled"] = *portSecurity
+	}
+	if external, err := networkBoolFlag(opts, "external", "internal"); err != nil {
+		return err
+	} else if external != nil {
+		values["router:external"] = *external
+	}
+	if isDefault, err := networkBoolFlag(opts, "default", "no-default"); err != nil {
+		return err
+	} else if isDefault != nil {
+		values["is_default"] = *isDefault
+	}
+	if qosPolicy := flagValue(opts, "qos-policy"); qosPolicy != "" {
+		policy, err := findNetworkQoSPolicy(ctx, client, qosPolicy)
+		if err != nil {
+			return err
+		}
+		values["qos_policy_id"] = policy.ID
+	}
+	if boolFlag(opts, "no-qos-policy") {
+		if flagChanged(opts, "qos-policy") {
+			return fmt.Errorf("argument --no-qos-policy: not allowed with argument --qos-policy")
+		}
+		values["qos_policy_id"] = nil
+	}
+	if vlanTransparent, err := networkBoolFlag(opts, "transparent-vlan", "no-transparent-vlan"); err != nil {
+		return err
+	} else if vlanTransparent != nil {
+		values["vlan_transparent"] = *vlanTransparent
+	}
+	if vlanQinQ, err := networkBoolFlag(opts, "qinq-vlan", "no-qinq-vlan"); err != nil {
+		return err
+	} else if vlanQinQ != nil {
+		values["vlan_qinq"] = *vlanQinQ
+	}
+	if enabledBool(values, "vlan_transparent") && enabledBool(values, "vlan_qinq") {
+		return fmt.Errorf("--transparent-vlan and --qinq-vlan can not be both enabled for the network.")
+	}
+	if providerType := flagValue(opts, "provider-network-type"); providerType != "" {
+		values["provider:network_type"] = providerType
+	}
+	if physicalNetwork := flagValue(opts, "provider-physical-network"); physicalNetwork != "" {
+		values["provider:physical_network"] = physicalNetwork
+	}
+	if segment := flagValue(opts, "provider-segment"); segment != "" {
+		if create && flagValue(opts, "provider-network-type") == "" {
+			return fmt.Errorf("--provider-segment requires --provider-network-type to be specified.")
+		}
+		values["provider:segmentation_id"] = segment
+	}
+	if flagChanged(opts, "dns-domain") {
+		values["dns_domain"] = flagValue(opts, "dns-domain")
+	}
+	return nil
+}
+
+func networkBoolFlag(opts *Options, trueFlag string, falseFlag string) (*bool, error) {
+	if flagChanged(opts, trueFlag) && flagChanged(opts, falseFlag) {
+		return nil, fmt.Errorf("argument --%s: not allowed with argument --%s", falseFlag, trueFlag)
+	}
+	if boolFlag(opts, trueFlag) {
+		value := true
+		return &value, nil
+	}
+	if boolFlag(opts, falseFlag) {
+		value := false
+		return &value, nil
+	}
+	return nil, nil
+}
+
+func enabledBool(values map[string]any, key string) bool {
+	value, ok := values[key].(bool)
+	return ok && value
+}
+
 func networkList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
-	page, err := networks.List(client, networks.ListOpts{}).AllPages(ctx)
+	page, err := networks.List(client, networks.ListOpts{
+		Name:      flagValue(opts, "name"),
+		ProjectID: flagValue(opts, "project"),
+		Status:    flagValue(opts, "status"),
+	}).AllPages(ctx)
 	if err != nil {
 		return err
 	}
@@ -3985,17 +4294,148 @@ func networkShow(ctx context.Context, stdout io.Writer, opts *Options, client *g
 	if err != nil {
 		return err
 	}
-	return renderShowOutput(stdout, opts, []outputField{
-		{"id", item.ID},
-		{"name", item.Name},
-		{"status", item.Status},
-		{"project_id", item.ProjectID},
+	if raw, err := neutronNetworkRaw(ctx, client, item.ID); err == nil {
+		return renderShowOutput(stdout, opts, networkRawFields(raw))
+	}
+	return renderShowOutput(stdout, opts, networkFields(item))
+}
+
+func neutronNetworkRaw(ctx context.Context, client *gophercloud.ServiceClient, id string) (map[string]any, error) {
+	var body struct {
+		Network map[string]any `json:"network"`
+	}
+	resp, err := client.Get(ctx, client.ServiceURL("networks", url.PathEscape(id)), &body, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return nil, err
+	}
+	return body.Network, nil
+}
+
+func networkRawFromBody(body any) (map[string]any, bool) {
+	var wrapper struct {
+		Network map[string]any `json:"network"`
+	}
+	encoded, err := json.Marshal(body)
+	if err != nil {
+		return nil, false
+	}
+	if err := json.Unmarshal(encoded, &wrapper); err != nil {
+		return nil, false
+	}
+	if wrapper.Network == nil {
+		return nil, false
+	}
+	return wrapper.Network, true
+}
+
+func networkRawFields(raw map[string]any) []outputField {
+	known := map[string]bool{
+		"admin_state_up":            true,
+		"availability_zone_hints":   true,
+		"availability_zones":        true,
+		"created_at":                true,
+		"description":               true,
+		"dns_domain":                true,
+		"id":                        true,
+		"ipv4_address_scope":        true,
+		"ipv6_address_scope":        true,
+		"is_default":                true,
+		"location":                  true,
+		"mtu":                       true,
+		"name":                      true,
+		"port_security_enabled":     true,
+		"project_id":                true,
+		"provider:network_type":     true,
+		"provider:physical_network": true,
+		"provider:segmentation_id":  true,
+		"qos_policy_id":             true,
+		"revision_number":           true,
+		"router:external":           true,
+		"segments":                  true,
+		"shared":                    true,
+		"status":                    true,
+		"subnets":                   true,
+		"tags":                      true,
+		"tenant_id":                 true,
+		"updated_at":                true,
+		"vlan_qinq":                 true,
+		"vlan_transparent":          true,
+	}
+	fields := []outputField{
+		{"admin_state_up", raw["admin_state_up"]},
+		{"availability_zone_hints", raw["availability_zone_hints"]},
+		{"availability_zones", raw["availability_zones"]},
+		{"created_at", raw["created_at"]},
+		{"description", raw["description"]},
+		{"dns_domain", raw["dns_domain"]},
+		{"id", raw["id"]},
+		{"ipv4_address_scope", raw["ipv4_address_scope"]},
+		{"ipv6_address_scope", raw["ipv6_address_scope"]},
+		{"is_default", raw["is_default"]},
+		{"is_vlan_qinq", raw["vlan_qinq"]},
+		{"is_vlan_transparent", raw["vlan_transparent"]},
+		{"mtu", rawNumber(raw["mtu"])},
+		{"name", raw["name"]},
+		{"port_security_enabled", raw["port_security_enabled"]},
+		{"project_id", firstPresent(raw, "project_id", "tenant_id")},
+		{"provider:network_type", raw["provider:network_type"]},
+		{"provider:physical_network", raw["provider:physical_network"]},
+		{"provider:segmentation_id", rawNumber(raw["provider:segmentation_id"])},
+		{"qos_policy_id", raw["qos_policy_id"]},
+		{"revision_number", rawNumber(raw["revision_number"])},
+		{"router:external", raw["router:external"]},
+		{"segments", raw["segments"]},
+		{"shared", raw["shared"]},
+		{"status", raw["status"]},
+		{"subnets", raw["subnets"]},
+		{"tags", raw["tags"]},
+		{"updated_at", raw["updated_at"]},
+	}
+	var extras []string
+	for key := range raw {
+		if !known[key] {
+			extras = append(extras, key)
+		}
+	}
+	sort.Strings(extras)
+	for _, key := range extras {
+		fields = append(fields, outputField{key, raw[key]})
+	}
+	return fields
+}
+
+func networkFields(item *networks.Network) []outputField {
+	return []outputField{
 		{"admin_state_up", item.AdminStateUp},
-		{"shared", item.Shared},
-		{"subnets", item.Subnets},
+		{"availability_zone_hints", item.AvailabilityZoneHints},
+		{"availability_zones", nil},
+		{"created_at", oscTime(item.CreatedAt)},
 		{"description", item.Description},
+		{"dns_domain", nil},
+		{"id", item.ID},
+		{"ipv4_address_scope", nil},
+		{"ipv6_address_scope", nil},
+		{"is_default", nil},
+		{"is_vlan_qinq", nil},
+		{"is_vlan_transparent", nil},
+		{"mtu", nil},
+		{"name", item.Name},
+		{"port_security_enabled", nil},
+		{"project_id", firstNonEmpty(item.ProjectID, item.TenantID)},
+		{"provider:network_type", nil},
+		{"provider:physical_network", nil},
+		{"provider:segmentation_id", nil},
+		{"qos_policy_id", nil},
+		{"revision_number", item.RevisionNumber},
+		{"router:external", nil},
+		{"segments", nil},
+		{"shared", item.Shared},
+		{"status", item.Status},
+		{"subnets", item.Subnets},
 		{"tags", item.Tags},
-	})
+		{"updated_at", oscTime(item.UpdatedAt)},
+	}
 }
 
 func addressGroupList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
@@ -5153,6 +5593,29 @@ func parseExtraProperties(values []string) (map[string]any, error) {
 			return nil, fmt.Errorf("invalid extra property %q: %w", value, err)
 		}
 		properties[name] = parsed
+	}
+	return properties, nil
+}
+
+func parseUnsetExtraProperties(values []string) (map[string]any, error) {
+	if len(values) == 0 {
+		return nil, nil
+	}
+	properties := make(map[string]any, len(values))
+	for _, value := range values {
+		parts := map[string]string{}
+		for _, part := range strings.Split(value, ",") {
+			key, raw, ok := strings.Cut(part, "=")
+			if !ok || strings.TrimSpace(key) == "" {
+				return nil, fmt.Errorf("invalid extra property %q, expected type=<type>,name=<name>,value=<value>", value)
+			}
+			parts[strings.TrimSpace(key)] = raw
+		}
+		name := parts["name"]
+		if name == "" {
+			return nil, fmt.Errorf("invalid extra property %q, missing name", value)
+		}
+		properties[name] = nil
 	}
 	return properties, nil
 }
@@ -7251,18 +7714,18 @@ func subnetPoolRawFields(raw map[string]any) []outputField {
 	fields := []outputField{
 		{"address_scope_id", raw["address_scope_id"]},
 		{"created_at", raw["created_at"]},
-		{"default_prefixlen", subnetPoolRawNumber(raw["default_prefixlen"])},
-		{"default_quota", subnetPoolRawNumber(raw["default_quota"])},
+		{"default_prefixlen", rawNumber(raw["default_prefixlen"])},
+		{"default_quota", rawNumber(raw["default_quota"])},
 		{"description", raw["description"]},
 		{"id", raw["id"]},
-		{"ip_version", subnetPoolRawNumber(raw["ip_version"])},
+		{"ip_version", rawNumber(raw["ip_version"])},
 		{"is_default", raw["is_default"]},
-		{"max_prefixlen", subnetPoolRawNumber(raw["max_prefixlen"])},
-		{"min_prefixlen", subnetPoolRawNumber(raw["min_prefixlen"])},
+		{"max_prefixlen", rawNumber(raw["max_prefixlen"])},
+		{"min_prefixlen", rawNumber(raw["min_prefixlen"])},
 		{"name", raw["name"]},
 		{"prefixes", raw["prefixes"]},
 		{"project_id", firstPresent(raw, "project_id", "tenant_id")},
-		{"revision_number", subnetPoolRawNumber(raw["revision_number"])},
+		{"revision_number", rawNumber(raw["revision_number"])},
 		{"shared", raw["shared"]},
 		{"tags", raw["tags"]},
 		{"updated_at", raw["updated_at"]},
@@ -7280,7 +7743,7 @@ func subnetPoolRawFields(raw map[string]any) []outputField {
 	return fields
 }
 
-func subnetPoolRawNumber(value any) any {
+func rawNumber(value any) any {
 	text, ok := value.(string)
 	if !ok {
 		return value

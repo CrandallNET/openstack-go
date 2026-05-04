@@ -893,3 +893,18 @@ Sources consulted:
 * Local OSC oracle snapshots in `compat/osc/9.0.0/help/subnet/pool/create.txt`, `compat/osc/9.0.0/help/subnet/pool/delete.txt`, `compat/osc/9.0.0/help/subnet/pool/set.txt`, and `compat/osc/9.0.0/help/subnet/pool/unset.txt`.
 * Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/network/v2/subnet_pool.py`, used only as the pinned local oracle implementation source.
 * Gophercloud package docs for [Neutron subnet pools](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/subnetpools).
+
+## 2026-05-04: Network Lifecycle Commands
+
+Work done: added `network create`, `network delete`, `network set`, and `network unset`, tightened `network show` output, and made `network list --name`, `--project`, and `--status` use Neutron filters.
+
+Implementation note: network create/update/delete uses Gophercloud's Neutron network helpers with custom request builders so extension-backed OSC flags can be passed in the `network` body. The implementation covers the common and extension fields exposed by Python OSC help for shared state, admin state, project ownership, description, MTU, availability-zone hints, port security, external/default network flags, QoS policy references, provider fields, DNS domain, VLAN transparency, QinQ, standard tags, and extra properties. `network unset --extra-property` follows Python OSC's unset command behavior by sending `null` for each named extra property. Create and show output render the raw Neutron network body with Python OSC field names, including mapped `is_vlan_qinq`, `is_vlan_transparent`, `provider:*`, `router:external`, address-scope, and port-security fields.
+
+Live observations on `cloud6`: Python OSC created, showed, listed, and deleted `gocli-test-network-python-probe-20260504` to confirm output field order and extension-field defaults. The Go CLI created disposable network `gocli-test-network-go-20260504` with `--disable`, description, and tag, showed it, verified `network list --name` filtering, renamed it to `gocli-test-network-go-renamed-20260504`, enabled it, updated the description, overwrote the tag with `--no-tag --tag second`, removed that tag with `network unset`, deleted the network, and verified both disposable names returned empty lists after cleanup.
+
+Sources consulted:
+
+* Local OSC oracle snapshots in `compat/osc/9.0.0/help/network/create.txt`, `compat/osc/9.0.0/help/network/delete.txt`, `compat/osc/9.0.0/help/network/set.txt`, and `compat/osc/9.0.0/help/network/unset.txt`.
+* Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/network/v2/network.py`, used only as the pinned local oracle implementation source.
+* Local OpenStackSDK source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/network/v2/network.py`, used to map SDK attribute names to Neutron network JSON fields.
+* Gophercloud package docs for [Neutron networks](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/networks).
