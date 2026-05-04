@@ -1038,12 +1038,34 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return serverVolumeList(cmd.Context(), stdout, opts, client, args)
+		case "subnet create":
+			networkClient, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			identityClient, err := clients.identityV3()
+			if err != nil {
+				return err
+			}
+			return subnetCreate(cmd.Context(), stdout, opts, networkClient, identityClient, args)
+		case "subnet delete":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return subnetDelete(cmd.Context(), client, args)
 		case "subnet list":
 			client, err := clients.networkV2()
 			if err != nil {
 				return err
 			}
 			return subnetList(cmd.Context(), stdout, opts, client)
+		case "subnet set":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return subnetSet(cmd.Context(), opts, client, args)
 		case "subnet pool create":
 			networkClient, err := clients.networkV2()
 			if err != nil {
@@ -1090,6 +1112,12 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return subnetShow(cmd.Context(), stdout, opts, client, args)
+		case "subnet unset":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return subnetUnset(cmd.Context(), opts, client, args)
 		case "trait list":
 			client, err := clients.placementV1()
 			if err != nil {
@@ -7259,6 +7287,512 @@ func storagePoolCapabilities(value schedulerstats.Capabilities) map[string]any {
 	}
 }
 
+type subnetCreateOpts struct {
+	Values map[string]any
+}
+
+func (opts subnetCreateOpts) ToSubnetCreateMap() (map[string]any, error) {
+	return map[string]any{"subnet": opts.Values}, nil
+}
+
+type subnetUpdateOpts struct {
+	Values map[string]any
+}
+
+func (opts subnetUpdateOpts) ToSubnetUpdateMap() (map[string]any, error) {
+	return map[string]any{"subnet": opts.Values}, nil
+}
+
+func subnetCreate(ctx context.Context, stdout io.Writer, opts *Options, networkClient *gophercloud.ServiceClient, identityClient *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("subnet create requires <name>")
+	}
+	if boolFlag(opts, "no-tag") && len(flagValues(opts, "tag")) > 0 {
+		return fmt.Errorf("argument --no-tag: not allowed with argument --tag")
+	}
+	values, err := subnetCreateValues(ctx, opts, networkClient, identityClient, args[0])
+	if err != nil {
+		return err
+	}
+	result := subnets.Create(ctx, networkClient, subnetCreateOpts{Values: values})
+	item, err := result.Extract()
+	if err != nil {
+		return err
+	}
+	tags := flagValues(opts, "tag")
+	if len(tags) > 0 {
+		target, err := setNeutronResourceTags(ctx, networkClient, "subnets", item.ID, item.Tags, tags, boolFlag(opts, "no-tag"))
+		if err != nil {
+			return err
+		}
+		item.Tags = target
+	}
+	if raw, ok := subnetRawFromBody(result.Body); ok {
+		if len(tags) > 0 {
+			raw["tags"] = item.Tags
+		}
+		return renderShowOutput(stdout, opts, subnetRawFields(raw))
+	}
+	return renderShowOutput(stdout, opts, subnetFields(item))
+}
+
+func subnetCreateValues(ctx context.Context, opts *Options, networkClient *gophercloud.ServiceClient, identityClient *gophercloud.ServiceClient, name string) (map[string]any, error) {
+	if flagValue(opts, "network") == "" {
+		return nil, fmt.Errorf("argument --network is required")
+	}
+	values := map[string]any{
+		"name":       name,
+		"network_id": resolveNetworkID(ctx, networkClient, flagValue(opts, "network")),
+		"ip_version": 4,
+	}
+	if flagChanged(opts, "ip-version") {
+		ipVersion := intFlag(opts, "ip-version")
+		if ipVersion != 4 && ipVersion != 6 {
+			return nil, fmt.Errorf("argument --ip-version: invalid choice: %d (choose from 4, 6)", ipVersion)
+		}
+		values["ip_version"] = ipVersion
+	}
+	if projectNameOrID := flagValue(opts, "project"); projectNameOrID != "" {
+		project, err := findProjectWithDomain(ctx, identityClient, projectNameOrID, flagValue(opts, "project-domain"))
+		if err != nil {
+			return nil, err
+		}
+		values["project_id"] = project.ID
+	}
+	poolChoices := 0
+	if flagValue(opts, "subnet-pool") != "" {
+		poolChoices++
+	}
+	if boolFlag(opts, "use-prefix-delegation") {
+		poolChoices++
+	}
+	if boolFlag(opts, "use-default-subnet-pool") {
+		poolChoices++
+	}
+	if poolChoices > 1 {
+		return nil, fmt.Errorf("argument --use-default-subnet-pool: not allowed with argument --subnet-pool or --use-prefix-delegation")
+	}
+	if subnetPool := flagValue(opts, "subnet-pool"); subnetPool != "" {
+		item, err := findSubnetPool(ctx, networkClient, subnetPool)
+		if err != nil {
+			return nil, err
+		}
+		values["subnetpool_id"] = item.ID
+	}
+	if boolFlag(opts, "use-prefix-delegation") {
+		values["subnetpool_id"] = "prefix_delegation"
+	}
+	if boolFlag(opts, "use-default-subnet-pool") {
+		values["use_default_subnet_pool"] = true
+	}
+	if prefixLength := flagValue(opts, "prefix-length"); prefixLength != "" {
+		parsed, err := strconv.Atoi(prefixLength)
+		if err != nil {
+			return nil, fmt.Errorf("argument --prefix-length: invalid int value: %q", prefixLength)
+		}
+		values["prefixlen"] = parsed
+	}
+	if cidr := flagValue(opts, "subnet-range"); cidr != "" {
+		values["cidr"] = cidr
+	} else if poolChoices == 0 {
+		return nil, fmt.Errorf("argument --subnet-range is required when --subnet-pool is not specified")
+	}
+	if err := subnetApplyMutableValues(ctx, opts, networkClient, values, true, nil); err != nil {
+		return nil, err
+	}
+	if value := flagValue(opts, "ipv6-ra-mode"); value != "" {
+		if !validIPv6Mode(value) {
+			return nil, fmt.Errorf("argument --ipv6-ra-mode: invalid choice: %q", value)
+		}
+		values["ipv6_ra_mode"] = value
+	}
+	if value := flagValue(opts, "ipv6-address-mode"); value != "" {
+		if !validIPv6Mode(value) {
+			return nil, fmt.Errorf("argument --ipv6-address-mode: invalid choice: %q", value)
+		}
+		values["ipv6_address_mode"] = value
+	}
+	extra, err := parseExtraProperties(flagValues(opts, "extra-property"))
+	if err != nil {
+		return nil, err
+	}
+	for key, value := range extra {
+		values[key] = value
+	}
+	return values, nil
+}
+
+func subnetDelete(ctx context.Context, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("subnet delete requires <subnet> [<subnet> ...]")
+	}
+	failures := 0
+	for _, subnetArg := range args {
+		item, err := findSubnet(ctx, client, subnetArg)
+		if err != nil {
+			failures++
+			continue
+		}
+		if err := subnets.Delete(ctx, client, item.ID).ExtractErr(); err != nil {
+			failures++
+		}
+	}
+	if failures > 0 {
+		return fmt.Errorf("%d of %d subnets failed to delete.", failures, len(args))
+	}
+	return nil
+}
+
+func subnetSet(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("subnet set requires <subnet>")
+	}
+	item, err := findSubnet(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	values := map[string]any{}
+	if flagChanged(opts, "name") {
+		values["name"] = flagValue(opts, "name")
+	}
+	if err := subnetApplyMutableValues(ctx, opts, client, values, false, item); err != nil {
+		return err
+	}
+	extra, err := parseExtraProperties(flagValues(opts, "extra-property"))
+	if err != nil {
+		return err
+	}
+	for key, value := range extra {
+		values[key] = value
+	}
+	if len(values) > 0 {
+		if _, err := subnets.Update(ctx, client, item.ID, subnetUpdateOpts{Values: values}).Extract(); err != nil {
+			return err
+		}
+	}
+	if boolFlag(opts, "no-tag") || len(flagValues(opts, "tag")) > 0 {
+		_, err := setNeutronResourceTags(ctx, client, "subnets", item.ID, item.Tags, flagValues(opts, "tag"), boolFlag(opts, "no-tag"))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func subnetUnset(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("subnet unset requires <subnet>")
+	}
+	if len(flagValues(opts, "tag")) > 0 && boolFlag(opts, "all-tag") {
+		return fmt.Errorf("argument --all-tag: not allowed with argument --tag")
+	}
+	item, err := findSubnet(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	values, err := subnetUnsetValues(opts, item)
+	if err != nil {
+		return err
+	}
+	extra, err := parseUnsetExtraProperties(flagValues(opts, "extra-property"))
+	if err != nil {
+		return err
+	}
+	for key, value := range extra {
+		values[key] = value
+	}
+	if len(values) > 0 {
+		if _, err := subnets.Update(ctx, client, item.ID, subnetUpdateOpts{Values: values}).Extract(); err != nil {
+			return err
+		}
+	}
+	_, err = unsetNeutronResourceTags(ctx, client, "subnets", item.ID, item.Tags, flagValues(opts, "tag"), boolFlag(opts, "all-tag"))
+	return err
+}
+
+func subnetApplyMutableValues(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, values map[string]any, create bool, existing *subnets.Subnet) error {
+	if segment := flagValue(opts, "network-segment"); segment != "" {
+		item, err := findNetworkSegment(ctx, client, segment)
+		if err != nil {
+			return err
+		}
+		values["segment_id"] = item.ID
+	}
+	if flagChanged(opts, "gateway") {
+		gateway := strings.ToLower(flagValue(opts, "gateway"))
+		if !create && gateway == "auto" {
+			return fmt.Errorf("Auto option is not available for Subnet Set. Valid options are <ip-address> or none")
+		}
+		if gateway == "none" {
+			values["gateway_ip"] = nil
+		} else if gateway != "auto" {
+			values["gateway_ip"] = gateway
+		}
+	}
+	if dhcp, err := networkBoolFlag(opts, "dhcp", "no-dhcp"); err != nil {
+		return err
+	} else if dhcp != nil {
+		values["enable_dhcp"] = *dhcp
+	}
+	if dnsPublish, err := networkBoolFlag(opts, "dns-publish-fixed-ip", "no-dns-publish-fixed-ip"); err != nil {
+		return err
+	} else if dnsPublish != nil {
+		values["dns_publish_fixed_ip"] = *dnsPublish
+	}
+	if flagChanged(opts, "description") {
+		values["description"] = flagValue(opts, "description")
+	}
+	allocationPools, err := parseSubnetAllocationPools(flagValues(opts, "allocation-pool"))
+	if err != nil {
+		return err
+	}
+	if create {
+		if len(allocationPools) > 0 {
+			values["allocation_pools"] = allocationPools
+		}
+	} else if len(allocationPools) > 0 {
+		merged := append([]map[string]string{}, allocationPools...)
+		if !boolFlag(opts, "no-allocation-pool") && existing != nil {
+			merged = append(merged, subnetAllocationPoolMaps(existing.AllocationPools)...)
+		}
+		values["allocation_pools"] = merged
+	} else if boolFlag(opts, "no-allocation-pool") {
+		values["allocation_pools"] = []map[string]string{}
+	}
+	if nameservers := flagValues(opts, "dns-nameserver"); len(nameservers) > 0 {
+		merged := append([]string{}, nameservers...)
+		if !create && !boolFlag(opts, "no-dns-nameservers") && existing != nil {
+			merged = append(merged, existing.DNSNameservers...)
+		}
+		values["dns_nameservers"] = merged
+	} else if !create && boolFlag(opts, "no-dns-nameservers") {
+		values["dns_nameservers"] = []string{}
+	}
+	hostRoutes, err := parseSubnetHostRoutes(flagValues(opts, "host-route"))
+	if err != nil {
+		return err
+	}
+	if create {
+		if len(hostRoutes) > 0 {
+			values["host_routes"] = hostRoutes
+		}
+	} else if len(hostRoutes) > 0 {
+		merged := append([]map[string]string{}, hostRoutes...)
+		if !boolFlag(opts, "no-host-route") && existing != nil {
+			merged = append(merged, subnetHostRouteMaps(existing.HostRoutes)...)
+		}
+		values["host_routes"] = merged
+	} else if boolFlag(opts, "no-host-route") {
+		values["host_routes"] = []map[string]string{}
+	}
+	if serviceTypes := flagValues(opts, "service-type"); len(serviceTypes) > 0 {
+		merged := append([]string{}, serviceTypes...)
+		if !create && existing != nil {
+			merged = append(merged, existing.ServiceTypes...)
+		}
+		values["service_types"] = merged
+	}
+	return nil
+}
+
+func subnetUnsetValues(opts *Options, item *subnets.Subnet) (map[string]any, error) {
+	values := map[string]any{}
+	if boolFlag(opts, "gateway") {
+		values["gateway_ip"] = nil
+	}
+	if valuesToRemove := flagValues(opts, "dns-nameserver"); len(valuesToRemove) > 0 {
+		remaining, err := removeStringValues(item.DNSNameservers, valuesToRemove, "dns-nameserver")
+		if err != nil {
+			return nil, err
+		}
+		values["dns_nameservers"] = remaining
+	}
+	hostRoutes, err := parseSubnetHostRoutes(flagValues(opts, "host-route"))
+	if err != nil {
+		return nil, err
+	}
+	if len(hostRoutes) > 0 {
+		remaining, err := removeMapValues(subnetHostRouteMaps(item.HostRoutes), hostRoutes, "host-route")
+		if err != nil {
+			return nil, err
+		}
+		values["host_routes"] = remaining
+	}
+	allocationPools, err := parseSubnetAllocationPools(flagValues(opts, "allocation-pool"))
+	if err != nil {
+		return nil, err
+	}
+	if len(allocationPools) > 0 {
+		remaining, err := removeMapValues(subnetAllocationPoolMaps(item.AllocationPools), allocationPools, "allocation-pool")
+		if err != nil {
+			return nil, err
+		}
+		values["allocation_pools"] = remaining
+	}
+	if serviceTypes := flagValues(opts, "service-type"); len(serviceTypes) > 0 {
+		remaining, err := removeStringValues(item.ServiceTypes, serviceTypes, "service-type")
+		if err != nil {
+			return nil, err
+		}
+		values["service_types"] = remaining
+	}
+	return values, nil
+}
+
+func validIPv6Mode(value string) bool {
+	switch value {
+	case "dhcpv6-stateful", "dhcpv6-stateless", "slaac":
+		return true
+	default:
+		return false
+	}
+}
+
+func parseSubnetAllocationPools(values []string) ([]map[string]string, error) {
+	entries, err := parseKeyValueEntries(values, "allocation-pool", "start", "end")
+	if err != nil {
+		return nil, err
+	}
+	return entries, nil
+}
+
+func parseSubnetHostRoutes(values []string) ([]map[string]string, error) {
+	entries, err := parseKeyValueEntries(values, "host-route", "destination", "gateway")
+	if err != nil {
+		return nil, err
+	}
+	for _, entry := range entries {
+		entry["nexthop"] = entry["gateway"]
+		delete(entry, "gateway")
+	}
+	return entries, nil
+}
+
+func parseKeyValueEntries(values []string, option string, required ...string) ([]map[string]string, error) {
+	if len(values) == 0 {
+		return nil, nil
+	}
+	entries := make([]map[string]string, 0, len(values))
+	for _, value := range values {
+		entry := map[string]string{}
+		for _, part := range strings.Split(value, ",") {
+			key, raw, ok := strings.Cut(part, "=")
+			if !ok || strings.TrimSpace(key) == "" {
+				return nil, fmt.Errorf("invalid %s %q", option, value)
+			}
+			entry[strings.TrimSpace(key)] = raw
+		}
+		for _, key := range required {
+			if entry[key] == "" {
+				return nil, fmt.Errorf("invalid %s %q, missing %s", option, value, key)
+			}
+		}
+		entries = append(entries, entry)
+	}
+	return entries, nil
+}
+
+func subnetAllocationPoolMaps(values []subnets.AllocationPool) []map[string]string {
+	items := make([]map[string]string, 0, len(values))
+	for _, value := range values {
+		items = append(items, map[string]string{"start": value.Start, "end": value.End})
+	}
+	return items
+}
+
+type subnetAllocationPoolOutput struct {
+	Start string `json:"start" yaml:"start"`
+	End   string `json:"end" yaml:"end"`
+}
+
+func subnetAllocationPoolsForOutput(value any) any {
+	switch typed := value.(type) {
+	case []subnets.AllocationPool:
+		items := make([]subnetAllocationPoolOutput, 0, len(typed))
+		for _, pool := range typed {
+			items = append(items, subnetAllocationPoolOutput{Start: pool.Start, End: pool.End})
+		}
+		return items
+	case []map[string]string:
+		items := make([]subnetAllocationPoolOutput, 0, len(typed))
+		for _, pool := range typed {
+			items = append(items, subnetAllocationPoolOutput{Start: pool["start"], End: pool["end"]})
+		}
+		return items
+	case []any:
+		items := make([]subnetAllocationPoolOutput, 0, len(typed))
+		for _, item := range typed {
+			pool, ok := item.(map[string]any)
+			if !ok {
+				return value
+			}
+			items = append(items, subnetAllocationPoolOutput{
+				Start: valueString(pool["start"]),
+				End:   valueString(pool["end"]),
+			})
+		}
+		return items
+	default:
+		return value
+	}
+}
+
+func subnetHostRouteMaps(values []subnets.HostRoute) []map[string]string {
+	items := make([]map[string]string, 0, len(values))
+	for _, value := range values {
+		items = append(items, map[string]string{"destination": value.DestinationCIDR, "nexthop": value.NextHop})
+	}
+	return items
+}
+
+func removeStringValues(existing []string, values []string, option string) ([]string, error) {
+	remaining := append([]string{}, existing...)
+	for _, value := range values {
+		found := false
+		for index, existingValue := range remaining {
+			if existingValue == value {
+				remaining = append(remaining[:index], remaining[index+1:]...)
+				found = true
+				break
+			}
+		}
+		if !found {
+			return nil, fmt.Errorf("Subnet does not contain %s %s", option, value)
+		}
+	}
+	return remaining, nil
+}
+
+func removeMapValues(existing []map[string]string, values []map[string]string, option string) ([]map[string]string, error) {
+	remaining := append([]map[string]string{}, existing...)
+	for _, value := range values {
+		found := false
+		for index, existingValue := range remaining {
+			if stringMapEqual(existingValue, value) {
+				remaining = append(remaining[:index], remaining[index+1:]...)
+				found = true
+				break
+			}
+		}
+		if !found {
+			return nil, fmt.Errorf("Subnet does not contain %s %v", option, value)
+		}
+	}
+	return remaining, nil
+}
+
+func stringMapEqual(left map[string]string, right map[string]string) bool {
+	if len(left) != len(right) {
+		return false
+	}
+	for key, leftValue := range left {
+		if right[key] != leftValue {
+			return false
+		}
+	}
+	return true
+}
+
 func subnetList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
 	enableDHCP, hasDHCPFilter := subnetDHCPFilter(opts)
 	listOpts := subnets.ListOpts{
@@ -7326,25 +7860,133 @@ func subnetShow(ctx context.Context, stdout io.Writer, opts *Options, client *go
 	if err != nil {
 		return err
 	}
-	return renderShowOutput(stdout, opts, []outputField{
+	if raw, err := neutronSubnetRaw(ctx, client, item.ID); err == nil {
+		return renderShowOutput(stdout, opts, subnetRawFields(raw))
+	}
+	return renderShowOutput(stdout, opts, subnetFields(item))
+}
+
+func neutronSubnetRaw(ctx context.Context, client *gophercloud.ServiceClient, id string) (map[string]any, error) {
+	var body struct {
+		Subnet map[string]any `json:"subnet"`
+	}
+	resp, err := client.Get(ctx, client.ServiceURL("subnets", url.PathEscape(id)), &body, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return nil, err
+	}
+	return body.Subnet, nil
+}
+
+func subnetRawFromBody(body any) (map[string]any, bool) {
+	var wrapper struct {
+		Subnet map[string]any `json:"subnet"`
+	}
+	encoded, err := json.Marshal(body)
+	if err != nil {
+		return nil, false
+	}
+	if err := json.Unmarshal(encoded, &wrapper); err != nil {
+		return nil, false
+	}
+	if wrapper.Subnet == nil {
+		return nil, false
+	}
+	return wrapper.Subnet, true
+}
+
+func subnetRawFields(raw map[string]any) []outputField {
+	known := map[string]bool{
+		"allocation_pools":     true,
+		"cidr":                 true,
+		"created_at":           true,
+		"description":          true,
+		"dns_nameservers":      true,
+		"dns_publish_fixed_ip": true,
+		"enable_dhcp":          true,
+		"gateway_ip":           true,
+		"host_routes":          true,
+		"id":                   true,
+		"ip_version":           true,
+		"ipv6_address_mode":    true,
+		"ipv6_ra_mode":         true,
+		"location":             true,
+		"name":                 true,
+		"network_id":           true,
+		"project_id":           true,
+		"revision_number":      true,
+		"router:external":      true,
+		"segment_id":           true,
+		"service_types":        true,
+		"subnetpool_id":        true,
+		"tags":                 true,
+		"tenant_id":            true,
+		"updated_at":           true,
+	}
+	fields := []outputField{
+		{"allocation_pools", subnetAllocationPoolsForOutput(raw["allocation_pools"])},
+		{"cidr", raw["cidr"]},
+		{"created_at", raw["created_at"]},
+		{"description", raw["description"]},
+		{"dns_nameservers", raw["dns_nameservers"]},
+		{"dns_publish_fixed_ip", raw["dns_publish_fixed_ip"]},
+		{"enable_dhcp", raw["enable_dhcp"]},
+		{"gateway_ip", raw["gateway_ip"]},
+		{"host_routes", raw["host_routes"]},
+		{"id", raw["id"]},
+		{"ip_version", rawNumber(raw["ip_version"])},
+		{"ipv6_address_mode", raw["ipv6_address_mode"]},
+		{"ipv6_ra_mode", raw["ipv6_ra_mode"]},
+		{"name", raw["name"]},
+		{"network_id", raw["network_id"]},
+		{"project_id", firstPresent(raw, "project_id", "tenant_id")},
+		{"revision_number", rawNumber(raw["revision_number"])},
+		{"router:external", raw["router:external"]},
+		{"segment_id", raw["segment_id"]},
+		{"service_types", raw["service_types"]},
+		{"subnetpool_id", raw["subnetpool_id"]},
+		{"tags", raw["tags"]},
+		{"updated_at", raw["updated_at"]},
+	}
+	var extras []string
+	for key := range raw {
+		if !known[key] {
+			extras = append(extras, key)
+		}
+	}
+	sort.Strings(extras)
+	for _, key := range extras {
+		fields = append(fields, outputField{key, raw[key]})
+	}
+	return fields
+}
+
+func subnetFields(item *subnets.Subnet) []outputField {
+	return []outputField{
+		{"allocation_pools", subnetAllocationPoolsForOutput(item.AllocationPools)},
+		{"cidr", item.CIDR},
+		{"created_at", oscTime(item.CreatedAt)},
+		{"description", item.Description},
+		{"dns_nameservers", item.DNSNameservers},
+		{"dns_publish_fixed_ip", item.DNSPublishFixedIP},
+		{"enable_dhcp", item.EnableDHCP},
+		{"gateway_ip", nilIfEmpty(item.GatewayIP)},
+		{"host_routes", subnetHostRouteMaps(item.HostRoutes)},
 		{"id", item.ID},
+		{"ip_version", item.IPVersion},
+		{"ipv6_address_mode", nilIfEmpty(item.IPv6AddressMode)},
+		{"ipv6_ra_mode", nilIfEmpty(item.IPv6RAMode)},
 		{"name", item.Name},
 		{"network_id", item.NetworkID},
-		{"project_id", item.ProjectID},
-		{"cidr", item.CIDR},
-		{"ip_version", item.IPVersion},
-		{"gateway_ip", item.GatewayIP},
-		{"enable_dhcp", item.EnableDHCP},
-		{"dns_nameservers", item.DNSNameservers},
-		{"allocation_pools", item.AllocationPools},
-		{"host_routes", item.HostRoutes},
+		{"project_id", firstNonEmpty(item.ProjectID, item.TenantID)},
+		{"revision_number", item.RevisionNumber},
+		{"router:external", nil},
+		{"segment_id", nilIfEmpty(item.SegmentID)},
 		{"service_types", item.ServiceTypes},
-		{"subnetpool_id", item.SubnetPoolID},
-		{"description", item.Description},
+		{"subnetpool_id", nilIfEmpty(item.SubnetPoolID)},
 		{"tags", item.Tags},
-		{"created_at", item.CreatedAt},
-		{"updated_at", item.UpdatedAt},
-	})
+		{"updated_at", oscTime(item.UpdatedAt)},
+	}
 }
 
 func subnetPoolList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {

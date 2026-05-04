@@ -908,3 +908,17 @@ Sources consulted:
 * Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/network/v2/network.py`, used only as the pinned local oracle implementation source.
 * Local OpenStackSDK source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/network/v2/network.py`, used to map SDK attribute names to Neutron network JSON fields.
 * Gophercloud package docs for [Neutron networks](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/networks).
+
+## 2026-05-04: Subnet Lifecycle Commands
+
+Work done: added `subnet create`, `subnet delete`, `subnet set`, and `subnet unset`, and tightened `subnet show` output.
+
+Implementation note: subnet create/update/delete uses Gophercloud's Neutron subnet helpers with custom request builders for OSC-specific fields and extension values. The implementation resolves network, project, subnet pool, and network segment references, supports CIDR and subnet-pool allocation modes, DHCP and DNS publish flags, gateway handling, IPv6 modes, allocation pools, DNS nameservers, host routes, service types, standard tags, and extra properties. `subnet set` mirrors Python OSC's merge behavior for DNS nameservers, host routes, allocation pools, and service types, while `subnet unset` removes specific entries and reports an error if a requested value is absent. Raw show output follows Python OSC field order, and allocation-pool output uses ordered `start`, then `end` fields to match Python's JSON shape.
+
+Live observations on `cloud6`: Python OSC created disposable network `gocli-test-subnet-python-net-20260504`, then created, showed, deleted subnet `gocli-test-subnet-python-probe-20260504`, and deleted the network to confirm field order. The Go CLI created disposable network `gocli-test-subnet-go-net-20260504`, created subnet `gocli-test-subnet-go-20260504` with allocation pool, DNS nameserver, host route, description, and tag, renamed it, appended additional allocation pool, DNS nameserver, and host route values, overwrote tags, removed the appended values and tag, deleted the subnet, deleted the network, and verified all disposable names returned empty lists after cleanup. A second short Go create/delete check with `gocli-test-subnet-order-20260504` verified nested allocation-pool JSON key order.
+
+Sources consulted:
+
+* Local OSC oracle snapshots in `compat/osc/9.0.0/help/subnet/create.txt`, `compat/osc/9.0.0/help/subnet/delete.txt`, `compat/osc/9.0.0/help/subnet/set.txt`, and `compat/osc/9.0.0/help/subnet/unset.txt`.
+* Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/network/v2/subnet.py`, used only as the pinned local oracle implementation source.
+* Gophercloud package docs for [Neutron subnets](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/subnets).

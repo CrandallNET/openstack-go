@@ -126,7 +126,7 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"server group create", "server group delete", "server group list", "server group show",
 		"server migration list",
 		"server volume list",
-		"subnet list", "subnet show",
+		"subnet create", "subnet delete", "subnet list", "subnet set", "subnet show", "subnet unset",
 		"subnet pool create", "subnet pool delete", "subnet pool list", "subnet pool set", "subnet pool show", "subnet pool unset",
 		"trait list", "trait show",
 		"usage list", "usage show",
@@ -468,6 +468,60 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().String("subnet-range", "", "filter by subnet range")
 		cmd.Flags().String("subnet-pool", "", "filter by subnet pool")
 		addTagFilterFlags(cmd)
+	case "subnet create":
+		cmd.Flags().StringArray("extra-property", nil, "additional property type=<type>,name=<name>,value=<value>")
+		cmd.Flags().String("project", "", "owner project")
+		cmd.Flags().String("project-domain", "", "project domain")
+		cmd.Flags().String("subnet-pool", "", "subnet pool")
+		cmd.Flags().Bool("use-prefix-delegation", false, "use prefix delegation")
+		cmd.Flags().Bool("use-default-subnet-pool", false, "use default subnet pool")
+		cmd.Flags().String("prefix-length", "", "prefix length")
+		cmd.Flags().String("subnet-range", "", "subnet range")
+		cmd.Flags().Bool("dhcp", false, "enable DHCP")
+		cmd.Flags().Bool("no-dhcp", false, "disable DHCP")
+		cmd.Flags().Bool("dns-publish-fixed-ip", false, "publish fixed IPs in DNS")
+		cmd.Flags().Bool("no-dns-publish-fixed-ip", false, "do not publish fixed IPs in DNS")
+		cmd.Flags().String("gateway", "", "gateway IP, auto, or none")
+		cmd.Flags().Int("ip-version", 4, "IP version")
+		cmd.Flags().String("ipv6-ra-mode", "", "IPv6 RA mode")
+		cmd.Flags().String("ipv6-address-mode", "", "IPv6 address mode")
+		cmd.Flags().String("network-segment", "", "network segment")
+		cmd.Flags().String("network", "", "network")
+		cmd.Flags().String("description", "", "subnet description")
+		cmd.Flags().StringArray("allocation-pool", nil, "allocation pool start=<ip>,end=<ip>")
+		cmd.Flags().StringArray("dns-nameserver", nil, "DNS nameserver")
+		cmd.Flags().StringArray("host-route", nil, "host route destination=<cidr>,gateway=<ip>")
+		cmd.Flags().StringArray("service-type", nil, "service type")
+		cmd.Flags().StringArray("tag", nil, "subnet tag")
+		cmd.Flags().Bool("no-tag", false, "create without tags")
+	case "subnet set":
+		cmd.Flags().StringArray("extra-property", nil, "additional property type=<type>,name=<name>,value=<value>")
+		cmd.Flags().String("name", "", "new subnet name")
+		cmd.Flags().Bool("dhcp", false, "enable DHCP")
+		cmd.Flags().Bool("no-dhcp", false, "disable DHCP")
+		cmd.Flags().Bool("dns-publish-fixed-ip", false, "publish fixed IPs in DNS")
+		cmd.Flags().Bool("no-dns-publish-fixed-ip", false, "do not publish fixed IPs in DNS")
+		cmd.Flags().String("gateway", "", "gateway IP or none")
+		cmd.Flags().String("network-segment", "", "network segment")
+		cmd.Flags().String("description", "", "subnet description")
+		cmd.Flags().StringArray("tag", nil, "subnet tag")
+		cmd.Flags().Bool("no-tag", false, "clear tags before applying tags")
+		cmd.Flags().StringArray("allocation-pool", nil, "allocation pool start=<ip>,end=<ip>")
+		cmd.Flags().Bool("no-allocation-pool", false, "clear allocation pools")
+		cmd.Flags().StringArray("dns-nameserver", nil, "DNS nameserver")
+		cmd.Flags().Bool("no-dns-nameservers", false, "clear DNS nameservers")
+		cmd.Flags().StringArray("host-route", nil, "host route destination=<cidr>,gateway=<ip>")
+		cmd.Flags().Bool("no-host-route", false, "clear host routes")
+		cmd.Flags().StringArray("service-type", nil, "service type")
+	case "subnet unset":
+		cmd.Flags().StringArray("extra-property", nil, "additional property type=<type>,name=<name>,value=<value>")
+		cmd.Flags().StringArray("allocation-pool", nil, "allocation pool start=<ip>,end=<ip>")
+		cmd.Flags().Bool("gateway", false, "remove gateway")
+		cmd.Flags().StringArray("dns-nameserver", nil, "DNS nameserver")
+		cmd.Flags().StringArray("host-route", nil, "host route destination=<cidr>,gateway=<ip>")
+		cmd.Flags().StringArray("service-type", nil, "service type")
+		cmd.Flags().StringArray("tag", nil, "subnet tag")
+		cmd.Flags().Bool("all-tag", false, "clear all tags")
 	case "subnet pool list":
 		cmd.Flags().Bool("long", false, "list additional fields")
 		cmd.Flags().Bool("share", false, "list shared subnet pools")
@@ -1059,7 +1113,7 @@ func isCoreReadCommand(path string) bool {
 		"server group create", "server group delete", "server group list", "server group show",
 		"server migration list",
 		"server volume list",
-		"subnet list", "subnet show",
+		"subnet create", "subnet delete", "subnet list", "subnet set", "subnet show", "subnet unset",
 		"subnet pool create", "subnet pool delete", "subnet pool list", "subnet pool set", "subnet pool show", "subnet pool unset",
 		"trait list", "trait show",
 		"usage list", "usage show",
