@@ -484,6 +484,27 @@ func TestPrettyBubbleTableSeparatorLineMatchesColumnWidths(t *testing.T) {
 	}
 }
 
+func TestPrettyTableColumnsFitBubbleTableToTerminalWidth(t *testing.T) {
+	headers := []string{"ID", "Name", "Status", "Networks", "Image", "Flavor", "Project", "Host"}
+	rows := []table.Row{{
+		"7dbf33e2-6d96-43b1-961b-ae58925a382c",
+		"rocky",
+		"ACTIVE",
+		"os6-lan: 172.16.86.56",
+		"N/A (booted from volume)",
+		"m1.small",
+		"17613f25c8d742f8ab589c0fa7b6a66b",
+		"dell6.crandall.haus",
+	}}
+	columns := prettyTableColumns(headers, rows, 80, true)
+	if got := prettyBubbleTableViewWidth(columns); got > 80 {
+		t.Fatalf("expected Fancy bubble-table columns to fit 80 columns, got width %d from %#v", got, columns)
+	}
+	if columns[0].Width < 12 {
+		t.Fatalf("expected ID column to stay wide enough for UUID hyphen wrapping, got %#v", columns)
+	}
+}
+
 func TestPrettyApplyBubbleTableSeparatorsReplacesMarkedRows(t *testing.T) {
 	view := strings.Join([]string{
 		"╭────╮",
@@ -510,9 +531,46 @@ func TestPrettyApplyBubbleTableSeparatorsReplacesMarkedRows(t *testing.T) {
 	}
 }
 
+func TestPrettyTTYOutputFitsDetectedTerminalWidth(t *testing.T) {
+	t.Setenv("NO_COLOR", "")
+	t.Setenv("CLICOLOR", "1")
+	previousWidth := tableTerminalWidth
+	previousTTY := tableWriterIsTerminal
+	tableTerminalWidth = func(stdout io.Writer) (int, bool) {
+		return 80, true
+	}
+	tableWriterIsTerminal = func(stdout io.Writer) bool {
+		return true
+	}
+	defer func() {
+		tableTerminalWidth = previousWidth
+		tableWriterIsTerminal = previousTTY
+	}()
+
+	var stdout bytes.Buffer
+	err := renderListOutput(&stdout, &Options{Format: "pretty"}, []string{"ID", "Name", "Status", "Networks", "Image", "Flavor", "Project", "Host"}, []outputRow{
+		{
+			"ID":       "7dbf33e2-6d96-43b1-961b-ae58925a382c",
+			"Name":     "rocky",
+			"Status":   "ACTIVE",
+			"Networks": "os6-lan: 172.16.86.56",
+			"Image":    "N/A (booted from volume)",
+			"Flavor":   "m1.small",
+			"Project":  "17613f25c8d742f8ab589c0fa7b6a66b",
+			"Host":     "dell6.crandall.haus",
+		},
+	})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if got := maxVisibleOutputLineLength(stdout.String()); got > 80 {
+		t.Fatalf("expected Fancy output to fit detected 80-column terminal, longest visible line was %d:\n%s", got, stdout.String())
+	}
+}
+
 func TestPrettyWrapsIDsAtHyphenBoundaries(t *testing.T) {
 	uuid := "1c77f920-e72d-45d0-8198-5a4a11722214"
-	wrapped := prettyWrapTableCell(uuid, 14, "id")
+	wrapped := prettyWrapTableCell(uuid, 12, "id")
 	if got := strings.Join(wrapped, ""); got != uuid {
 		t.Fatalf("expected wrapped UUID fragments to preserve value, got %q want %q from %#v", got, uuid, wrapped)
 	}
@@ -1420,6 +1478,56 @@ func maxOutputLineLength(output string) int {
 		longest = max(longest, len([]rune(line)))
 	}
 	return longest
+}
+
+func maxVisibleOutputLineLength(output string) int {
+	longest := 0
+	for _, line := range strings.Split(strings.TrimRight(output, "\n"), "\n") {
+		longest = max(longest, displayWidth(stripANSI(line)))
+	}
+	return longest
+}
+
+func stripANSI(output string) string {
+	var builder strings.Builder
+	for i := 0; i < len(output); {
+		if output[i] != '\x1b' {
+			builder.WriteByte(output[i])
+			i++
+			continue
+		}
+		i++
+		if i >= len(output) {
+			break
+		}
+		switch output[i] {
+		case '[':
+			i++
+			for i < len(output) {
+				b := output[i]
+				i++
+				if b >= '@' && b <= '~' {
+					break
+				}
+			}
+		case ']':
+			i++
+			for i < len(output) {
+				if output[i] == '\a' {
+					i++
+					break
+				}
+				if output[i] == '\x1b' && i+1 < len(output) && output[i+1] == '\\' {
+					i += 2
+					break
+				}
+				i++
+			}
+		default:
+			i++
+		}
+	}
+	return builder.String()
 }
 
 func containsANSI(output string) bool {

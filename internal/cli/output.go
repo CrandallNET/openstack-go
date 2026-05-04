@@ -436,13 +436,8 @@ func renderPrettyProgress(stdout io.Writer, opts *Options, label string, percent
 
 func prettyTableColumns(headers []string, rows []table.Row, termWidth int, color bool) []table.Column {
 	widths := prettyNaturalWidths(headers, rows)
-	paddingWidth := 2 * len(widths)
-	borderWidth := 0
-	if color {
-		borderWidth = 2
-	}
-	usableWidth := max(len(widths)*4, termWidth-paddingWidth-borderWidth)
-	widths = prettyFitWidths(widths, prettyMinimumWidths(headers), usableWidth)
+	usableWidth := max(0, termWidth-prettyTableFixedWidth(len(widths), color))
+	widths = prettyFitWidths(widths, prettyMinimumWidthsForWidth(headers, usableWidth), usableWidth)
 
 	columns := make([]table.Column, 0, len(headers))
 	for i, header := range headers {
@@ -451,10 +446,28 @@ func prettyTableColumns(headers []string, rows []table.Row, termWidth int, color
 	return columns
 }
 
+func prettyTableFixedWidth(columnCount int, color bool) int {
+	if columnCount == 0 {
+		return 0
+	}
+	if color {
+		return 3*columnCount + 1
+	}
+	return 2 * columnCount
+}
+
 func prettyTableViewWidth(columns []table.Column) int {
 	width := 0
 	for _, column := range columns {
 		width += column.Width + 2
+	}
+	return width
+}
+
+func prettyBubbleTableViewWidth(columns []table.Column) int {
+	width := prettyTableFixedWidth(len(columns), true)
+	for _, column := range columns {
+		width += column.Width
 	}
 	return width
 }
@@ -591,6 +604,33 @@ func prettyMinimumWidths(headers []string) []int {
 	widths := make([]int, len(headers))
 	for i, header := range headers {
 		widths[i] = min(max(displayWidth(header), 4), 12)
+		if prettyIsIDLikeName(normalizeColumnName(header)) {
+			widths[i] = max(widths[i], 12)
+		}
+	}
+	return widths
+}
+
+func prettyMinimumWidthsForWidth(headers []string, usableWidth int) []int {
+	widths := prettyMinimumWidths(headers)
+	if sumInts(widths) <= usableWidth {
+		return widths
+	}
+	for i, header := range headers {
+		if prettyIsIDLikeName(normalizeColumnName(header)) {
+			continue
+		}
+		widths[i] = 1
+		if sumInts(widths) <= usableWidth {
+			return widths
+		}
+	}
+	minimum := 1
+	if usableWidth < len(headers) {
+		minimum = 0
+	}
+	for i := range widths {
+		widths[i] = minimum
 	}
 	return widths
 }
