@@ -297,6 +297,10 @@ func TestPrettyListUsesTabularOutputWithoutANSIForNonTTY(t *testing.T) {
 	if containsANSI(output) {
 		t.Fatalf("expected non-TTY pretty output without ANSI escapes, got:\n%q", output)
 	}
+	lines := strings.Split(strings.TrimRight(output, "\n"), "\n")
+	if len(lines) < 3 || strings.TrimSpace(lines[1]) != "" {
+		t.Fatalf("expected blank line between pretty headings and content, got:\n%s", output)
+	}
 	if strings.Contains(output, "\n  server-1") {
 		t.Fatalf("expected first pretty row not to be shifted by selected-row padding, got:\n%s", output)
 	}

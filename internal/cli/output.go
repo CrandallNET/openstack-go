@@ -207,7 +207,7 @@ func renderPrettyTable(stdout io.Writer, opts *Options, headers []string, rows [
 		table.WithStyles(prettyTableStyles(color)),
 	)
 
-	view := strings.TrimRight(model.View(), "\n")
+	view := prettyAddHeaderSpacer(strings.TrimRight(model.View(), "\n"))
 	if color {
 		view = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
@@ -216,6 +216,14 @@ func renderPrettyTable(stdout io.Writer, opts *Options, headers []string, rows [
 	}
 	_, err := fmt.Fprintln(stdout, view)
 	return err
+}
+
+func prettyAddHeaderSpacer(view string) string {
+	headerEnd := strings.IndexByte(view, '\n')
+	if headerEnd == -1 {
+		return view
+	}
+	return view[:headerEnd+1] + "\n" + view[headerEnd+1:]
 }
 
 func renderPrettyEmpty(stdout io.Writer) error {

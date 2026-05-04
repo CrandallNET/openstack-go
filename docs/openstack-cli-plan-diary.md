@@ -1204,3 +1204,16 @@ Sources consulted:
 
 * Local implementation file `internal/cli/output.go`.
 * Local pretty-output tests in `internal/cli/root_test.go`.
+
+## 2026-05-04: Pretty Header Spacing
+
+Work done: added one blank line between the Bubbles table heading row and the first content row in pretty output. This keeps the existing blank spacer lines between entries, while making the heading area easier to scan.
+
+Observation: the pinned Bubbles table API does not have a named "filled heading" option. It exposes a `table.Styles.Header` Lip Gloss style through `table.WithStyles`, and Bubbles applies that style to each rendered header cell. Because Lip Gloss styles support backgrounds, a filled header can be built by setting a background on the header style, but that would be a styling choice implemented in this CLI rather than a separate Bubbles table feature.
+
+Sources consulted:
+
+* Local implementation file `internal/cli/output.go`.
+* Local pretty-output tests in `internal/cli/root_test.go`.
+* Local Charm Bubbles table implementation in `/Users/ken/Dev/openstack-go/.cache/gomod/charm.land/bubbles/v2@v2.1.0/table/table.go`.
+* Local Lip Gloss v2 implementation in `/Users/ken/Dev/openstack-go/.cache/gomod/charm.land/lipgloss/v2@v2.0.3`.
