@@ -952,3 +952,18 @@ Sources consulted:
 * Local OSC oracle snapshots in `compat/osc/9.0.0/help/router/add/port.txt`, `compat/osc/9.0.0/help/router/add/subnet.txt`, `compat/osc/9.0.0/help/router/remove/port.txt`, and `compat/osc/9.0.0/help/router/remove/subnet.txt`.
 * Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/network/v2/router.py`, used only as the pinned local oracle implementation source.
 * Gophercloud package docs for [Neutron routers](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/routers).
+
+## 2026-05-04: Port Lifecycle Commands
+
+Work done: added `port create`, `port delete`, `port set`, and `port unset`, and changed `port show` to use Python-compatible raw Neutron field names where possible.
+
+Implementation note: port create/update/delete uses Gophercloud's Neutron port helper methods with custom request builders for OSC extension fields such as `binding:*`, DNS fields, NUMA affinity, hints, trusted status, QoS policy IDs, port security, allowed address pairs, extra DHCP options, data plane status, device profile, hardware offload type, and standard tags. `port show` now maps Neutron's raw `security_groups` and `binding:*` fields to Python OSC's displayed `security_group_ids`, `binding_profile`, `binding_vif_details`, `binding_vif_type`, `binding_vnic_type`, and `binding_host_id` fields.
+
+Live observations on `cloud6`: the Go CLI created disposable network and subnet resources, created disabled tagged port `gocli-test-port-*` with a fixed IP and no security groups, verified create JSON, renamed and enabled the port, replaced its tag, removed the tag with `port unset`, deleted the port, and verified cleanup. A follow-up router interface check used `port create` from the Go CLI instead of a Python fixture, attached the port to a disposable router, detached it, observed that Neutron deletes the interface port on `router remove port`, and cleaned up the remaining network, subnet, and router resources.
+
+Sources consulted:
+
+* Local OSC oracle snapshots in `compat/osc/9.0.0/help/port/create.txt`, `compat/osc/9.0.0/help/port/delete.txt`, `compat/osc/9.0.0/help/port/set.txt`, and `compat/osc/9.0.0/help/port/unset.txt`.
+* Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/network/v2/port.py`, used only as the pinned local oracle implementation source.
+* Local OpenStackSDK source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/network/v2/port.py`, used to map SDK attribute names to Neutron port JSON fields.
+* Gophercloud package docs for [Neutron ports](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/ports).

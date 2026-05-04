@@ -109,7 +109,7 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"network trunk list", "network trunk show",
 		"object create", "object delete", "object list", "object save", "object set", "object show", "object unset",
 		"object store account show",
-		"port list", "port show",
+		"port create", "port delete", "port list", "port set", "port show", "port unset",
 		"quota delete", "quota list", "quota set", "quota show",
 		"resource class list", "resource class show",
 		"resource provider aggregate list",
@@ -355,6 +355,96 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().StringArray("property", nil, "object property key=value")
 	case "object unset":
 		cmd.Flags().StringArray("property", nil, "object property key")
+	case "port create":
+		cmd.Flags().StringArray("extra-property", nil, "additional property type=<type>,name=<name>,value=<value>")
+		cmd.Flags().String("network", "", "network")
+		cmd.Flags().String("description", "", "port description")
+		cmd.Flags().String("device", "", "device ID")
+		cmd.Flags().String("mac-address", "", "MAC address")
+		cmd.Flags().String("device-owner", "", "device owner")
+		cmd.Flags().String("vnic-type", "", "VNIC type")
+		cmd.Flags().String("host", "", "binding host ID")
+		cmd.Flags().String("dns-domain", "", "DNS domain")
+		cmd.Flags().String("dns-name", "", "DNS name")
+		cmd.Flags().Bool("numa-policy-required", false, "NUMA affinity policy required")
+		cmd.Flags().Bool("numa-policy-preferred", false, "NUMA affinity policy preferred")
+		cmd.Flags().Bool("numa-policy-socket", false, "NUMA affinity policy socket")
+		cmd.Flags().Bool("numa-policy-legacy", false, "NUMA affinity policy legacy")
+		cmd.Flags().StringArray("hint", nil, "port hint alias=value or JSON")
+		cmd.Flags().Bool("trusted", false, "trusted port")
+		cmd.Flags().Bool("not-trusted", false, "not trusted port")
+		cmd.Flags().StringArray("fixed-ip", nil, "fixed IP subnet=<subnet>,ip-address=<ip>")
+		cmd.Flags().Bool("no-fixed-ip", false, "create without fixed IPs")
+		cmd.Flags().StringArray("binding-profile", nil, "binding profile key=value or JSON")
+		cmd.Flags().Bool("enable", true, "enable port")
+		cmd.Flags().Bool("disable", false, "disable port")
+		cmd.Flags().Bool("enable-uplink-status-propagation", false, "enable uplink status propagation")
+		cmd.Flags().Bool("disable-uplink-status-propagation", false, "disable uplink status propagation")
+		cmd.Flags().String("project", "", "owner project")
+		cmd.Flags().String("project-domain", "", "project domain")
+		cmd.Flags().StringArray("extra-dhcp-option", nil, "extra DHCP option name=<name>,value=<value>,ip-version=<version>")
+		cmd.Flags().StringArray("security-group", nil, "security group")
+		cmd.Flags().Bool("no-security-group", false, "create without security groups")
+		cmd.Flags().String("qos-policy", "", "QoS policy")
+		cmd.Flags().Bool("enable-port-security", false, "enable port security")
+		cmd.Flags().Bool("disable-port-security", false, "disable port security")
+		cmd.Flags().StringArray("allowed-address", nil, "allowed address ip-address=<ip>,mac-address=<mac>")
+		cmd.Flags().String("device-profile", "", "device profile")
+		cmd.Flags().String("hardware-offload-type", "", "hardware offload type")
+		cmd.Flags().StringArray("tag", nil, "port tag")
+		cmd.Flags().Bool("no-tag", false, "create without tags")
+	case "port set":
+		cmd.Flags().StringArray("extra-property", nil, "additional property type=<type>,name=<name>,value=<value>")
+		cmd.Flags().String("description", "", "port description")
+		cmd.Flags().String("device", "", "device ID")
+		cmd.Flags().String("mac-address", "", "MAC address")
+		cmd.Flags().String("device-owner", "", "device owner")
+		cmd.Flags().String("vnic-type", "", "VNIC type")
+		cmd.Flags().String("host", "", "binding host ID")
+		cmd.Flags().String("dns-domain", "", "DNS domain")
+		cmd.Flags().String("dns-name", "", "DNS name")
+		cmd.Flags().Bool("numa-policy-required", false, "NUMA affinity policy required")
+		cmd.Flags().Bool("numa-policy-preferred", false, "NUMA affinity policy preferred")
+		cmd.Flags().Bool("numa-policy-socket", false, "NUMA affinity policy socket")
+		cmd.Flags().Bool("numa-policy-legacy", false, "NUMA affinity policy legacy")
+		cmd.Flags().StringArray("hint", nil, "port hint alias=value or JSON")
+		cmd.Flags().Bool("trusted", false, "trusted port")
+		cmd.Flags().Bool("not-trusted", false, "not trusted port")
+		cmd.Flags().Bool("enable", false, "enable port")
+		cmd.Flags().Bool("disable", false, "disable port")
+		cmd.Flags().String("name", "", "new port name")
+		cmd.Flags().StringArray("fixed-ip", nil, "fixed IP subnet=<subnet>,ip-address=<ip>")
+		cmd.Flags().Bool("no-fixed-ip", false, "clear fixed IPs")
+		cmd.Flags().StringArray("binding-profile", nil, "binding profile key=value or JSON")
+		cmd.Flags().Bool("no-binding-profile", false, "clear binding profile")
+		cmd.Flags().String("qos-policy", "", "QoS policy")
+		cmd.Flags().StringArray("security-group", nil, "security group")
+		cmd.Flags().Bool("no-security-group", false, "clear security groups")
+		cmd.Flags().Bool("enable-port-security", false, "enable port security")
+		cmd.Flags().Bool("disable-port-security", false, "disable port security")
+		cmd.Flags().StringArray("allowed-address", nil, "allowed address ip-address=<ip>,mac-address=<mac>")
+		cmd.Flags().Bool("no-allowed-address", false, "clear allowed addresses")
+		cmd.Flags().StringArray("extra-dhcp-option", nil, "extra DHCP option name=<name>,value=<value>,ip-version=<version>")
+		cmd.Flags().String("data-plane-status", "", "data plane status")
+		cmd.Flags().Bool("enable-uplink-status-propagation", false, "enable uplink status propagation")
+		cmd.Flags().Bool("disable-uplink-status-propagation", false, "disable uplink status propagation")
+		cmd.Flags().StringArray("tag", nil, "port tag")
+		cmd.Flags().Bool("no-tag", false, "clear tags before applying tags")
+	case "port unset":
+		cmd.Flags().StringArray("extra-property", nil, "additional property type=<type>,name=<name>,value=<value>")
+		cmd.Flags().StringArray("fixed-ip", nil, "fixed IP subnet=<subnet>,ip-address=<ip>")
+		cmd.Flags().StringArray("binding-profile", nil, "binding profile key")
+		cmd.Flags().StringArray("security-group", nil, "security group")
+		cmd.Flags().StringArray("allowed-address", nil, "allowed address ip-address=<ip>,mac-address=<mac>")
+		cmd.Flags().Bool("qos-policy", false, "remove QoS policy")
+		cmd.Flags().Bool("data-plane-status", false, "clear data plane status")
+		cmd.Flags().Bool("numa-policy", false, "clear NUMA affinity policy")
+		cmd.Flags().Bool("host", false, "clear binding host")
+		cmd.Flags().Bool("hints", false, "clear hints")
+		cmd.Flags().Bool("device", false, "clear device ID")
+		cmd.Flags().Bool("device-owner", false, "clear device owner")
+		cmd.Flags().StringArray("tag", nil, "port tag")
+		cmd.Flags().Bool("all-tag", false, "clear all tags")
 	case "extension list":
 		cmd.Flags().Bool("compute", false, "list compute extensions")
 		cmd.Flags().Bool("identity", false, "list identity extensions")
@@ -1155,7 +1245,7 @@ func isCoreReadCommand(path string) bool {
 		"network trunk list", "network trunk show",
 		"object create", "object delete", "object list", "object save", "object set", "object show", "object unset",
 		"object store account show",
-		"port list", "port show",
+		"port create", "port delete", "port list", "port set", "port show", "port unset",
 		"quota delete", "quota list", "quota set", "quota show",
 		"resource class list", "resource class show",
 		"resource provider aggregate list",

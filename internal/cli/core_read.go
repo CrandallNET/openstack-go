@@ -808,6 +808,22 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 			return hypervisorStatsShow(cmd.Context(), stdout, opts, client)
 		case "limits show":
 			return limitsShow(cmd.Context(), stdout, opts, clients)
+		case "port create":
+			networkClient, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			identityClient, err := clients.identityV3()
+			if err != nil {
+				return err
+			}
+			return portCreate(cmd.Context(), stdout, opts, networkClient, identityClient, args)
+		case "port delete":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return portDelete(cmd.Context(), client, args)
 		case "port list":
 			client, err := clients.networkV2()
 			if err != nil {
@@ -815,12 +831,24 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 			}
 			computeClient, _ := clients.computeV2()
 			return portList(cmd.Context(), stdout, opts, client, computeClient)
+		case "port set":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return portSet(cmd.Context(), opts, client, args)
 		case "port show":
 			client, err := clients.networkV2()
 			if err != nil {
 				return err
 			}
 			return portShow(cmd.Context(), stdout, opts, client, args)
+		case "port unset":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return portUnset(cmd.Context(), opts, client, args)
 		case "resource class list":
 			client, err := clients.placementV1()
 			if err != nil {
@@ -8931,6 +8959,760 @@ func subnetPoolFields(item *subnetpools.SubnetPool) []outputField {
 	}
 }
 
+type portCreateOpts struct {
+	Values map[string]any
+}
+
+func (opts portCreateOpts) ToPortCreateMap() (map[string]any, error) {
+	return map[string]any{"port": opts.Values}, nil
+}
+
+type portUpdateOpts struct {
+	Values map[string]any
+}
+
+func (opts portUpdateOpts) ToPortUpdateMap() (map[string]any, error) {
+	return map[string]any{"port": opts.Values}, nil
+}
+
+func portCreate(ctx context.Context, stdout io.Writer, opts *Options, networkClient *gophercloud.ServiceClient, identityClient *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("port create requires <name>")
+	}
+	if flagValue(opts, "network") == "" {
+		return fmt.Errorf("argument --network is required")
+	}
+	if boolFlag(opts, "no-tag") && len(flagValues(opts, "tag")) > 0 {
+		return fmt.Errorf("argument --no-tag: not allowed with argument --tag")
+	}
+	values, err := portCreateValues(ctx, opts, networkClient, identityClient, args[0])
+	if err != nil {
+		return err
+	}
+	result := ports.Create(ctx, networkClient, portCreateOpts{Values: values})
+	item, err := result.Extract()
+	if err != nil {
+		return err
+	}
+	tags := flagValues(opts, "tag")
+	if boolFlag(opts, "no-tag") || len(tags) > 0 {
+		target, err := setNeutronResourceTags(ctx, networkClient, "ports", item.ID, item.Tags, tags, boolFlag(opts, "no-tag"))
+		if err != nil {
+			return err
+		}
+		item.Tags = target
+	}
+	if raw, ok := portRawFromBody(result.Body); ok {
+		if boolFlag(opts, "no-tag") || len(tags) > 0 {
+			raw["tags"] = item.Tags
+		}
+		return renderShowOutput(stdout, opts, portRawFields(raw))
+	}
+	return renderShowOutput(stdout, opts, portFields(item))
+}
+
+func portCreateValues(ctx context.Context, opts *Options, networkClient *gophercloud.ServiceClient, identityClient *gophercloud.ServiceClient, name string) (map[string]any, error) {
+	network, err := findNetwork(ctx, networkClient, flagValue(opts, "network"))
+	if err != nil {
+		return nil, err
+	}
+	values := map[string]any{
+		"name":           name,
+		"network_id":     network.ID,
+		"admin_state_up": true,
+	}
+	if projectNameOrID := flagValue(opts, "project"); projectNameOrID != "" {
+		project, err := findProjectWithDomain(ctx, identityClient, projectNameOrID, flagValue(opts, "project-domain"))
+		if err != nil {
+			return nil, err
+		}
+		values["project_id"] = project.ID
+	}
+	if err := portApplyMutableValues(ctx, opts, networkClient, values, true, nil, nil); err != nil {
+		return nil, err
+	}
+	if boolFlag(opts, "no-fixed-ip") && len(flagValues(opts, "fixed-ip")) > 0 {
+		return nil, fmt.Errorf("argument --no-fixed-ip: not allowed with argument --fixed-ip")
+	}
+	if boolFlag(opts, "no-fixed-ip") {
+		values["fixed_ips"] = []map[string]string{}
+	}
+	if fixedIPs, err := portFixedIPMaps(ctx, networkClient, flagValues(opts, "fixed-ip")); err != nil {
+		return nil, err
+	} else if len(fixedIPs) > 0 {
+		values["fixed_ips"] = fixedIPs
+	}
+	if boolFlag(opts, "no-security-group") && len(flagValues(opts, "security-group")) > 0 {
+		return nil, fmt.Errorf("argument --no-security-group: not allowed with argument --security-group")
+	}
+	if boolFlag(opts, "no-security-group") {
+		values["security_groups"] = []string{}
+	} else if securityGroups, err := portSecurityGroupIDs(ctx, networkClient, flagValues(opts, "security-group")); err != nil {
+		return nil, err
+	} else if len(securityGroups) > 0 {
+		values["security_groups"] = securityGroups
+	}
+	if allowed, err := portAllowedAddressMaps(flagValues(opts, "allowed-address")); err != nil {
+		return nil, err
+	} else if len(allowed) > 0 {
+		values["allowed_address_pairs"] = allowed
+	}
+	if dhcpOptions, err := portExtraDHCPOptions(flagValues(opts, "extra-dhcp-option")); err != nil {
+		return nil, err
+	} else if len(dhcpOptions) > 0 {
+		values["extra_dhcp_opts"] = dhcpOptions
+	}
+	extra, err := parseExtraProperties(flagValues(opts, "extra-property"))
+	if err != nil {
+		return nil, err
+	}
+	for key, value := range extra {
+		values[key] = value
+	}
+	return values, nil
+}
+
+func portDelete(ctx context.Context, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("port delete requires <port> [<port> ...]")
+	}
+	failures := 0
+	for _, portArg := range args {
+		item, err := findPort(ctx, client, portArg)
+		if err != nil {
+			failures++
+			continue
+		}
+		if err := ports.Delete(ctx, client, item.ID).ExtractErr(); err != nil {
+			failures++
+		}
+	}
+	if failures > 0 {
+		return fmt.Errorf("%d of %d ports failed to delete.", failures, len(args))
+	}
+	return nil
+}
+
+func portSet(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("port set requires <port>")
+	}
+	item, err := findPort(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	raw, _ := neutronPortRaw(ctx, client, item.ID)
+	values, err := portSetValues(ctx, opts, client, item, raw)
+	if err != nil {
+		return err
+	}
+	if len(values) > 0 {
+		if _, err := ports.Update(ctx, client, item.ID, portUpdateOpts{Values: values}).Extract(); err != nil {
+			return err
+		}
+	}
+	if boolFlag(opts, "no-tag") || len(flagValues(opts, "tag")) > 0 {
+		_, err := setNeutronResourceTags(ctx, client, "ports", item.ID, item.Tags, flagValues(opts, "tag"), boolFlag(opts, "no-tag"))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func portSetValues(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, item *ports.Port, raw map[string]any) (map[string]any, error) {
+	values := map[string]any{}
+	if flagChanged(opts, "name") {
+		values["name"] = flagValue(opts, "name")
+	}
+	if err := portApplyMutableValues(ctx, opts, client, values, false, raw, item); err != nil {
+		return nil, err
+	}
+	fixedIPs, err := portFixedIPMaps(ctx, client, flagValues(opts, "fixed-ip"))
+	if err != nil {
+		return nil, err
+	}
+	if boolFlag(opts, "no-fixed-ip") {
+		values["fixed_ips"] = []map[string]string{}
+	}
+	if len(fixedIPs) > 0 {
+		merged := fixedIPs
+		if !boolFlag(opts, "no-fixed-ip") {
+			merged = append(portFixedIPMapsFromTyped(item.FixedIPs), fixedIPs...)
+		}
+		values["fixed_ips"] = merged
+	}
+	if boolFlag(opts, "no-security-group") {
+		values["security_groups"] = []string{}
+	}
+	if securityGroups, err := portSecurityGroupIDs(ctx, client, flagValues(opts, "security-group")); err != nil {
+		return nil, err
+	} else if len(securityGroups) > 0 {
+		merged := securityGroups
+		if !boolFlag(opts, "no-security-group") {
+			merged = append(append([]string{}, item.SecurityGroups...), securityGroups...)
+		}
+		values["security_groups"] = merged
+	}
+	if boolFlag(opts, "no-allowed-address") {
+		values["allowed_address_pairs"] = []map[string]string{}
+	}
+	if allowed, err := portAllowedAddressMaps(flagValues(opts, "allowed-address")); err != nil {
+		return nil, err
+	} else if len(allowed) > 0 {
+		merged := allowed
+		if !boolFlag(opts, "no-allowed-address") {
+			merged = append(portAllowedAddressMapsFromTyped(item.AllowedAddressPairs), allowed...)
+		}
+		values["allowed_address_pairs"] = merged
+	}
+	if dhcpOptions, err := portExtraDHCPOptions(flagValues(opts, "extra-dhcp-option")); err != nil {
+		return nil, err
+	} else if len(dhcpOptions) > 0 {
+		values["extra_dhcp_opts"] = dhcpOptions
+	}
+	if flagChanged(opts, "data-plane-status") {
+		status := flagValue(opts, "data-plane-status")
+		if status != "ACTIVE" && status != "DOWN" {
+			return nil, fmt.Errorf("invalid data plane status %q", status)
+		}
+		values["data_plane_status"] = status
+	}
+	extra, err := parseExtraProperties(flagValues(opts, "extra-property"))
+	if err != nil {
+		return nil, err
+	}
+	for key, value := range extra {
+		values[key] = value
+	}
+	return values, nil
+}
+
+func portApplyMutableValues(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, values map[string]any, create bool, raw map[string]any, item *ports.Port) error {
+	if flagChanged(opts, "description") {
+		values["description"] = flagValue(opts, "description")
+	}
+	if flagChanged(opts, "device") {
+		values["device_id"] = flagValue(opts, "device")
+	}
+	if flagChanged(opts, "device-owner") {
+		values["device_owner"] = flagValue(opts, "device-owner")
+	}
+	if flagChanged(opts, "mac-address") {
+		values["mac_address"] = flagValue(opts, "mac-address")
+	}
+	if flagChanged(opts, "vnic-type") {
+		values["binding:vnic_type"] = flagValue(opts, "vnic-type")
+	}
+	if flagChanged(opts, "host") {
+		values["binding:host_id"] = flagValue(opts, "host")
+	}
+	if flagChanged(opts, "dns-domain") {
+		values["dns_domain"] = flagValue(opts, "dns-domain")
+	}
+	if flagChanged(opts, "dns-name") {
+		values["dns_name"] = flagValue(opts, "dns-name")
+	}
+	if adminState, err := networkBoolFlag(opts, "enable", "disable"); err != nil {
+		return err
+	} else if adminState != nil {
+		values["admin_state_up"] = *adminState
+	} else if create {
+		values["admin_state_up"] = true
+	}
+	if portSecurity, err := networkBoolFlag(opts, "enable-port-security", "disable-port-security"); err != nil {
+		return err
+	} else if portSecurity != nil {
+		values["port_security_enabled"] = *portSecurity
+	}
+	if uplink, err := networkBoolFlag(opts, "enable-uplink-status-propagation", "disable-uplink-status-propagation"); err != nil {
+		return err
+	} else if uplink != nil {
+		values["propagate_uplink_status"] = *uplink
+	}
+	numaPolicy, err := portNumaPolicy(opts)
+	if err != nil {
+		return err
+	}
+	if numaPolicy != "" {
+		values["numa_affinity_policy"] = numaPolicy
+	}
+	if flagChanged(opts, "device-profile") {
+		values["device_profile"] = flagValue(opts, "device-profile")
+	}
+	if flagChanged(opts, "hardware-offload-type") {
+		values["hardware_offload_type"] = flagValue(opts, "hardware-offload-type")
+	}
+	if boolFlag(opts, "trusted") && boolFlag(opts, "not-trusted") {
+		return fmt.Errorf("argument --not-trusted: not allowed with argument --trusted")
+	}
+	if boolFlag(opts, "trusted") {
+		values["trusted"] = true
+	}
+	if boolFlag(opts, "not-trusted") {
+		values["trusted"] = false
+	}
+	if profileValues := flagValues(opts, "binding-profile"); len(profileValues) > 0 || boolFlag(opts, "no-binding-profile") {
+		profile := map[string]any{}
+		if !boolFlag(opts, "no-binding-profile") && !create {
+			profile = mapAnyFromRaw(raw["binding:profile"])
+			if len(profile) == 0 && item != nil {
+				profile = map[string]any{}
+			}
+		}
+		parsed, err := parseJSONKeyValueMap(profileValues, "binding-profile")
+		if err != nil {
+			return err
+		}
+		for key, value := range parsed {
+			profile[key] = value
+		}
+		values["binding:profile"] = profile
+	}
+	if hints := flagValues(opts, "hint"); len(hints) > 0 {
+		parsed, err := parsePortHints(hints)
+		if err != nil {
+			return err
+		}
+		values["hints"] = parsed
+	}
+	if qosPolicy := flagValue(opts, "qos-policy"); qosPolicy != "" {
+		policy, err := findNetworkQoSPolicy(ctx, client, qosPolicy)
+		if err != nil {
+			return err
+		}
+		values["qos_policy_id"] = policy.ID
+	}
+	return nil
+}
+
+func portUnset(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("port unset requires <port>")
+	}
+	if len(flagValues(opts, "tag")) > 0 && boolFlag(opts, "all-tag") {
+		return fmt.Errorf("argument --all-tag: not allowed with argument --tag")
+	}
+	item, err := findPort(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	raw, _ := neutronPortRaw(ctx, client, item.ID)
+	values := map[string]any{}
+	if fixedIPs, err := portFixedIPMaps(ctx, client, flagValues(opts, "fixed-ip")); err != nil {
+		return err
+	} else if len(fixedIPs) > 0 {
+		remaining, err := removePortMapValues(portFixedIPMapsFromTyped(item.FixedIPs), fixedIPs, "fixed-ip")
+		if err != nil {
+			return err
+		}
+		values["fixed_ips"] = remaining
+	}
+	if keys := flagValues(opts, "binding-profile"); len(keys) > 0 {
+		profile := mapAnyFromRaw(raw["binding:profile"])
+		for _, key := range keys {
+			if _, ok := profile[key]; !ok {
+				return fmt.Errorf("Port does not contain binding-profile %s", key)
+			}
+			delete(profile, key)
+		}
+		values["binding:profile"] = profile
+	}
+	if securityGroups, err := portSecurityGroupIDs(ctx, client, flagValues(opts, "security-group")); err != nil {
+		return err
+	} else if len(securityGroups) > 0 {
+		remaining, err := removePortStringValues(item.SecurityGroups, securityGroups, "security group")
+		if err != nil {
+			return err
+		}
+		values["security_groups"] = remaining
+	}
+	if allowed, err := portAllowedAddressMaps(flagValues(opts, "allowed-address")); err != nil {
+		return err
+	} else if len(allowed) > 0 {
+		remaining, err := removePortMapValues(portAllowedAddressMapsFromTyped(item.AllowedAddressPairs), allowed, "allowed-address-pair")
+		if err != nil {
+			return err
+		}
+		values["allowed_address_pairs"] = remaining
+	}
+	if boolFlag(opts, "qos-policy") {
+		values["qos_policy_id"] = nil
+	}
+	if boolFlag(opts, "data-plane-status") {
+		values["data_plane_status"] = nil
+	}
+	if boolFlag(opts, "numa-policy") {
+		values["numa_affinity_policy"] = nil
+	}
+	if boolFlag(opts, "host") {
+		values["binding:host_id"] = nil
+	}
+	if boolFlag(opts, "hints") {
+		values["hints"] = nil
+	}
+	if boolFlag(opts, "device") {
+		values["device_id"] = ""
+	}
+	if boolFlag(opts, "device-owner") {
+		values["device_owner"] = ""
+	}
+	extra, err := parseUnsetExtraProperties(flagValues(opts, "extra-property"))
+	if err != nil {
+		return err
+	}
+	for key, value := range extra {
+		values[key] = value
+	}
+	if len(values) > 0 {
+		if _, err := ports.Update(ctx, client, item.ID, portUpdateOpts{Values: values}).Extract(); err != nil {
+			return err
+		}
+	}
+	_, err = unsetNeutronResourceTags(ctx, client, "ports", item.ID, item.Tags, flagValues(opts, "tag"), boolFlag(opts, "all-tag"))
+	return err
+}
+
+func portNumaPolicy(opts *Options) (string, error) {
+	policies := []struct {
+		flag  string
+		value string
+	}{
+		{"numa-policy-required", "required"},
+		{"numa-policy-preferred", "preferred"},
+		{"numa-policy-socket", "socket"},
+		{"numa-policy-legacy", "legacy"},
+	}
+	selected := ""
+	for _, policy := range policies {
+		if !boolFlag(opts, policy.flag) {
+			continue
+		}
+		if selected != "" {
+			return "", fmt.Errorf("NUMA policy options are mutually exclusive")
+		}
+		selected = policy.value
+	}
+	return selected, nil
+}
+
+func portFixedIPMaps(ctx context.Context, client *gophercloud.ServiceClient, values []string) ([]map[string]string, error) {
+	entries, err := parseKeyValueEntries(values, "fixed-ip")
+	if err != nil {
+		return nil, err
+	}
+	for _, entry := range entries {
+		if subnetNameOrID := entry["subnet"]; subnetNameOrID != "" {
+			subnet, err := findSubnet(ctx, client, subnetNameOrID)
+			if err != nil {
+				return nil, err
+			}
+			entry["subnet_id"] = subnet.ID
+			delete(entry, "subnet")
+		}
+		if ipAddress := entry["ip-address"]; ipAddress != "" {
+			entry["ip_address"] = ipAddress
+			delete(entry, "ip-address")
+		}
+	}
+	return entries, nil
+}
+
+func portFixedIPMapsFromTyped(values []ports.IP) []map[string]string {
+	items := make([]map[string]string, 0, len(values))
+	for _, value := range values {
+		entry := map[string]string{}
+		if value.SubnetID != "" {
+			entry["subnet_id"] = value.SubnetID
+		}
+		if value.IPAddress != "" {
+			entry["ip_address"] = value.IPAddress
+		}
+		if len(entry) > 0 {
+			items = append(items, entry)
+		}
+	}
+	return items
+}
+
+func portSecurityGroupIDs(ctx context.Context, client *gophercloud.ServiceClient, values []string) ([]string, error) {
+	if len(values) == 0 {
+		return nil, nil
+	}
+	ids := make([]string, 0, len(values))
+	for _, value := range values {
+		group, err := findSecurityGroup(ctx, client, value)
+		if err != nil {
+			return nil, err
+		}
+		ids = append(ids, group.ID)
+	}
+	return ids, nil
+}
+
+func portAllowedAddressMaps(values []string) ([]map[string]string, error) {
+	entries, err := parseKeyValueEntries(values, "allowed-address", "ip-address")
+	if err != nil {
+		return nil, err
+	}
+	for _, entry := range entries {
+		entry["ip_address"] = entry["ip-address"]
+		delete(entry, "ip-address")
+		if macAddress := entry["mac-address"]; macAddress != "" {
+			entry["mac_address"] = macAddress
+			delete(entry, "mac-address")
+		}
+	}
+	return entries, nil
+}
+
+func portAllowedAddressMapsFromTyped(values []ports.AddressPair) []map[string]string {
+	items := make([]map[string]string, 0, len(values))
+	for _, value := range values {
+		entry := map[string]string{}
+		if value.IPAddress != "" {
+			entry["ip_address"] = value.IPAddress
+		}
+		if value.MACAddress != "" {
+			entry["mac_address"] = value.MACAddress
+		}
+		if len(entry) > 0 {
+			items = append(items, entry)
+		}
+	}
+	return items
+}
+
+func portExtraDHCPOptions(values []string) ([]map[string]string, error) {
+	entries, err := parseKeyValueEntries(values, "extra-dhcp-option", "name")
+	if err != nil {
+		return nil, err
+	}
+	for _, entry := range entries {
+		entry["opt_name"] = entry["name"]
+		delete(entry, "name")
+		if value := entry["value"]; value != "" {
+			entry["opt_value"] = value
+			delete(entry, "value")
+		}
+		if version := entry["ip-version"]; version != "" {
+			entry["ip_version"] = version
+			delete(entry, "ip-version")
+		}
+	}
+	return entries, nil
+}
+
+func parseJSONKeyValueMap(values []string, option string) (map[string]any, error) {
+	result := map[string]any{}
+	for _, value := range values {
+		trimmed := strings.TrimSpace(value)
+		if strings.HasPrefix(trimmed, "{") {
+			decoded := map[string]any{}
+			if err := json.Unmarshal([]byte(trimmed), &decoded); err != nil {
+				return nil, fmt.Errorf("invalid %s JSON %q: %w", option, value, err)
+			}
+			for key, decodedValue := range decoded {
+				result[key] = decodedValue
+			}
+			continue
+		}
+		key, raw, ok := strings.Cut(value, "=")
+		if !ok || strings.TrimSpace(key) == "" {
+			return nil, fmt.Errorf("invalid %s %q, expected <key>=<value> or JSON", option, value)
+		}
+		result[strings.TrimSpace(key)] = raw
+	}
+	return result, nil
+}
+
+func parsePortHints(values []string) (map[string]any, error) {
+	hints, err := parseJSONKeyValueMap(values, "hint")
+	if err != nil {
+		return nil, err
+	}
+	if len(hints) == 0 {
+		return nil, nil
+	}
+	if value, ok := hints["ovs-tx-steering"].(string); ok && len(hints) == 1 {
+		if value != "thread" && value != "hash" {
+			return nil, fmt.Errorf("invalid value to --hint, see --help for valid values")
+		}
+		return map[string]any{"openvswitch": map[string]any{"other_config": map[string]any{"tx-steering": value}}}, nil
+	}
+	if openvswitch, ok := hints["openvswitch"].(map[string]any); ok && len(hints) == 1 {
+		otherConfig, _ := openvswitch["other_config"].(map[string]any)
+		value, _ := otherConfig["tx-steering"].(string)
+		if value == "thread" || value == "hash" {
+			return hints, nil
+		}
+	}
+	return nil, fmt.Errorf("invalid value to --hint, see --help for valid values")
+}
+
+func mapAnyFromRaw(value any) map[string]any {
+	result := map[string]any{}
+	if typed, ok := value.(map[string]any); ok {
+		for key, mapValue := range typed {
+			result[key] = mapValue
+		}
+	}
+	return result
+}
+
+func removePortStringValues(existing []string, values []string, option string) ([]string, error) {
+	remaining := append([]string{}, existing...)
+	for _, value := range values {
+		found := false
+		for index, existingValue := range remaining {
+			if existingValue == value {
+				remaining = append(remaining[:index], remaining[index+1:]...)
+				found = true
+				break
+			}
+		}
+		if !found {
+			return nil, fmt.Errorf("Port does not contain %s %s", option, value)
+		}
+	}
+	return remaining, nil
+}
+
+func removePortMapValues(existing []map[string]string, values []map[string]string, option string) ([]map[string]string, error) {
+	remaining := append([]map[string]string{}, existing...)
+	for _, value := range values {
+		found := false
+		for index, existingValue := range remaining {
+			if stringMapEqual(existingValue, value) {
+				remaining = append(remaining[:index], remaining[index+1:]...)
+				found = true
+				break
+			}
+		}
+		if !found {
+			return nil, fmt.Errorf("Port does not contain %s %v", option, value)
+		}
+	}
+	return remaining, nil
+}
+
+func neutronPortRaw(ctx context.Context, client *gophercloud.ServiceClient, id string) (map[string]any, error) {
+	var body struct {
+		Port map[string]any `json:"port"`
+	}
+	resp, err := client.Get(ctx, client.ServiceURL("ports", url.PathEscape(id)), &body, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return nil, err
+	}
+	return body.Port, nil
+}
+
+func portRawFromBody(body any) (map[string]any, bool) {
+	var wrapper struct {
+		Port map[string]any `json:"port"`
+	}
+	encoded, err := json.Marshal(body)
+	if err != nil {
+		return nil, false
+	}
+	if err := json.Unmarshal(encoded, &wrapper); err != nil {
+		return nil, false
+	}
+	if wrapper.Port == nil {
+		return nil, false
+	}
+	return wrapper.Port, true
+}
+
+func portRawFields(raw map[string]any) []outputField {
+	return []outputField{
+		{"admin_state_up", raw["admin_state_up"]},
+		{"allowed_address_pairs", raw["allowed_address_pairs"]},
+		{"binding_host_id", raw["binding:host_id"]},
+		{"binding_profile", raw["binding:profile"]},
+		{"binding_vif_details", raw["binding:vif_details"]},
+		{"binding_vif_type", raw["binding:vif_type"]},
+		{"binding_vnic_type", raw["binding:vnic_type"]},
+		{"created_at", raw["created_at"]},
+		{"data_plane_status", raw["data_plane_status"]},
+		{"description", raw["description"]},
+		{"device_id", raw["device_id"]},
+		{"device_owner", raw["device_owner"]},
+		{"device_profile", raw["device_profile"]},
+		{"dns_assignment", raw["dns_assignment"]},
+		{"dns_domain", raw["dns_domain"]},
+		{"dns_name", raw["dns_name"]},
+		{"extra_dhcp_opts", raw["extra_dhcp_opts"]},
+		{"fixed_ips", raw["fixed_ips"]},
+		{"hardware_offload_type", raw["hardware_offload_type"]},
+		{"hints", raw["hints"]},
+		{"id", raw["id"]},
+		{"ip_allocation", raw["ip_allocation"]},
+		{"mac_address", raw["mac_address"]},
+		{"name", raw["name"]},
+		{"network_id", raw["network_id"]},
+		{"numa_affinity_policy", raw["numa_affinity_policy"]},
+		{"port_security_enabled", raw["port_security_enabled"]},
+		{"project_id", firstPresent(raw, "project_id", "tenant_id")},
+		{"propagate_uplink_status", raw["propagate_uplink_status"]},
+		{"resource_request", raw["resource_request"]},
+		{"revision_number", rawNumber(raw["revision_number"])},
+		{"qos_network_policy_id", raw["qos_network_policy_id"]},
+		{"qos_policy_id", raw["qos_policy_id"]},
+		{"security_group_ids", raw["security_groups"]},
+		{"status", raw["status"]},
+		{"tags", raw["tags"]},
+		{"trunk_details", raw["trunk_details"]},
+		{"trusted", raw["trusted"]},
+		{"updated_at", raw["updated_at"]},
+	}
+}
+
+func portFields(item *ports.Port) []outputField {
+	return []outputField{
+		{"admin_state_up", item.AdminStateUp},
+		{"allowed_address_pairs", item.AllowedAddressPairs},
+		{"binding_host_id", nil},
+		{"binding_profile", nil},
+		{"binding_vif_details", nil},
+		{"binding_vif_type", nil},
+		{"binding_vnic_type", nil},
+		{"created_at", oscTime(item.CreatedAt)},
+		{"data_plane_status", nil},
+		{"description", item.Description},
+		{"device_id", item.DeviceID},
+		{"device_owner", item.DeviceOwner},
+		{"device_profile", nil},
+		{"dns_assignment", nil},
+		{"dns_domain", nil},
+		{"dns_name", nil},
+		{"extra_dhcp_opts", nil},
+		{"fixed_ips", item.FixedIPs},
+		{"hardware_offload_type", nil},
+		{"hints", nil},
+		{"id", item.ID},
+		{"ip_allocation", nil},
+		{"mac_address", item.MACAddress},
+		{"name", item.Name},
+		{"network_id", item.NetworkID},
+		{"numa_affinity_policy", nil},
+		{"port_security_enabled", nil},
+		{"project_id", firstNonEmpty(item.ProjectID, item.TenantID)},
+		{"propagate_uplink_status", item.PropagateUplinkStatus},
+		{"resource_request", nil},
+		{"revision_number", item.RevisionNumber},
+		{"qos_network_policy_id", nil},
+		{"qos_policy_id", nil},
+		{"security_group_ids", item.SecurityGroups},
+		{"status", item.Status},
+		{"tags", item.Tags},
+		{"trunk_details", nil},
+		{"trusted", nil},
+		{"updated_at", oscTime(item.UpdatedAt)},
+	}
+}
+
 func portList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, computeClient *gophercloud.ServiceClient) error {
 	listOpts := ports.ListOpts{
 		Name:           flagValue(opts, "name"),
@@ -8998,24 +9780,10 @@ func portShow(ctx context.Context, stdout io.Writer, opts *Options, client *goph
 	if err != nil {
 		return err
 	}
-	return renderShowOutput(stdout, opts, []outputField{
-		{"id", item.ID},
-		{"name", item.Name},
-		{"network_id", item.NetworkID},
-		{"project_id", item.ProjectID},
-		{"status", item.Status},
-		{"admin_state_up", item.AdminStateUp},
-		{"mac_address", item.MACAddress},
-		{"fixed_ips", item.FixedIPs},
-		{"device_id", item.DeviceID},
-		{"device_owner", item.DeviceOwner},
-		{"security_group_ids", item.SecurityGroups},
-		{"allowed_address_pairs", item.AllowedAddressPairs},
-		{"description", item.Description},
-		{"tags", item.Tags},
-		{"created_at", item.CreatedAt},
-		{"updated_at", item.UpdatedAt},
-	})
+	if raw, err := neutronPortRaw(ctx, client, item.ID); err == nil {
+		return renderShowOutput(stdout, opts, portRawFields(raw))
+	}
+	return renderShowOutput(stdout, opts, portFields(item))
 }
 
 func floatingIPList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
