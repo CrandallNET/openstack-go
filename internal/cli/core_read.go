@@ -804,12 +804,30 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return networkRBACShow(cmd.Context(), stdout, opts, client, args)
+		case "network segment create":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return networkSegmentCreate(cmd.Context(), stdout, opts, client, args)
+		case "network segment delete":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return networkSegmentDelete(cmd.Context(), client, args)
 		case "network segment list":
 			client, err := clients.networkV2()
 			if err != nil {
 				return err
 			}
 			return networkSegmentList(cmd.Context(), stdout, opts, client)
+		case "network segment set":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return networkSegmentSet(cmd.Context(), opts, client, args)
 		case "network segment show":
 			client, err := clients.networkV2()
 			if err != nil {
@@ -5438,6 +5456,147 @@ func networkRBACFields(item *rbacpolicies.RBACPolicy) []outputField {
 	}
 }
 
+type networkSegmentCreateOpts struct {
+	Values map[string]any
+}
+
+func (opts networkSegmentCreateOpts) ToSegmentCreateMap() (map[string]any, error) {
+	return map[string]any{"segment": opts.Values}, nil
+}
+
+type networkSegmentUpdateOpts struct {
+	Values map[string]any
+}
+
+func (opts networkSegmentUpdateOpts) ToSegmentUpdateMap() (map[string]any, error) {
+	return map[string]any{"segment": opts.Values}, nil
+}
+
+func networkSegmentCreate(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("network segment create requires <name>")
+	}
+	values, err := networkSegmentCreateValues(ctx, opts, client, args[0])
+	if err != nil {
+		return err
+	}
+	result := segments.Create(ctx, client, networkSegmentCreateOpts{Values: values})
+	item, err := result.Extract()
+	if err != nil {
+		return err
+	}
+	if raw, ok := networkSegmentRawFromBody(result.Body); ok {
+		return renderShowOutput(stdout, opts, networkSegmentRawFields(raw))
+	}
+	return renderShowOutput(stdout, opts, networkSegmentFields(item))
+}
+
+func networkSegmentCreateValues(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, name string) (map[string]any, error) {
+	if !flagChanged(opts, "network") || flagValue(opts, "network") == "" {
+		return nil, fmt.Errorf("the following arguments are required: --network")
+	}
+	if !flagChanged(opts, "network-type") || flagValue(opts, "network-type") == "" {
+		return nil, fmt.Errorf("the following arguments are required: --network-type")
+	}
+	networkType := flagValue(opts, "network-type")
+	if !networkSegmentTypeValid(networkType) {
+		return nil, fmt.Errorf("invalid choice: %q (choose from 'flat', 'geneve', 'gre', 'local', 'vlan', 'vxlan')", networkType)
+	}
+	network, err := findNetwork(ctx, client, flagValue(opts, "network"))
+	if err != nil {
+		return nil, err
+	}
+	values := map[string]any{
+		"name":         name,
+		"network_id":   network.ID,
+		"network_type": networkType,
+	}
+	if flagChanged(opts, "description") {
+		values["description"] = flagValue(opts, "description")
+	}
+	if flagChanged(opts, "physical-network") {
+		values["physical_network"] = flagValue(opts, "physical-network")
+	}
+	if flagChanged(opts, "segment") {
+		values["segmentation_id"] = intFlag(opts, "segment")
+	}
+	extra, err := parseExtraProperties(flagValues(opts, "extra-property"))
+	if err != nil {
+		return nil, err
+	}
+	for key, value := range extra {
+		values[key] = value
+	}
+	return values, nil
+}
+
+func networkSegmentDelete(ctx context.Context, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("network segment delete requires <network-segment> [<network-segment> ...]")
+	}
+	failures := 0
+	for _, segmentArg := range args {
+		item, err := findNetworkSegment(ctx, client, segmentArg)
+		if err != nil {
+			failures++
+			continue
+		}
+		if err := segments.Delete(ctx, client, item.ID).ExtractErr(); err != nil {
+			failures++
+		}
+	}
+	if failures > 0 {
+		return fmt.Errorf("%d of %d network segments failed to delete.", failures, len(args))
+	}
+	return nil
+}
+
+func networkSegmentSet(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("network segment set requires <network-segment>")
+	}
+	item, err := findNetworkSegment(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	values, err := networkSegmentSetValues(opts)
+	if err != nil {
+		return err
+	}
+	if len(values) == 0 {
+		return nil
+	}
+	_, err = segments.Update(ctx, client, item.ID, networkSegmentUpdateOpts{Values: values}).Extract()
+	return err
+}
+
+func networkSegmentSetValues(opts *Options) (map[string]any, error) {
+	values := map[string]any{}
+	if flagChanged(opts, "description") {
+		values["description"] = flagValue(opts, "description")
+	}
+	if flagChanged(opts, "name") {
+		values["name"] = flagValue(opts, "name")
+	}
+	extra, err := parseExtraProperties(flagValues(opts, "extra-property"))
+	if err != nil {
+		return nil, err
+	}
+	for key, value := range extra {
+		values[key] = value
+	}
+	return values, nil
+}
+
+func networkSegmentTypeValid(networkType string) bool {
+	switch networkType {
+	case "flat", "geneve", "gre", "local", "vlan", "vxlan":
+		return true
+	default:
+		return false
+	}
+}
+
 func networkSegmentList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
 	page, err := segments.List(client, segments.ListOpts{
 		NetworkID: resolveNetworkID(ctx, client, flagValue(opts, "network")),
@@ -5479,7 +5638,86 @@ func networkSegmentShow(ctx context.Context, stdout io.Writer, opts *Options, cl
 	if err != nil {
 		return err
 	}
-	return renderShowOutput(stdout, opts, []outputField{
+	if raw, err := neutronSegmentRaw(ctx, client, item.ID); err == nil {
+		return renderShowOutput(stdout, opts, networkSegmentRawFields(raw))
+	}
+	return renderShowOutput(stdout, opts, networkSegmentFields(item))
+}
+
+func neutronSegmentRaw(ctx context.Context, client *gophercloud.ServiceClient, id string) (map[string]any, error) {
+	var body struct {
+		Segment map[string]any `json:"segment"`
+	}
+	resp, err := client.Get(ctx, client.ServiceURL("segments", id), &body, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return nil, err
+	}
+	return body.Segment, nil
+}
+
+func networkSegmentRawFromBody(body any) (map[string]any, bool) {
+	var wrapper struct {
+		Segment map[string]any `json:"segment"`
+	}
+	encoded, err := json.Marshal(body)
+	if err != nil {
+		return nil, false
+	}
+	if err := json.Unmarshal(encoded, &wrapper); err != nil {
+		return nil, false
+	}
+	if wrapper.Segment == nil {
+		return nil, false
+	}
+	return wrapper.Segment, true
+}
+
+func networkSegmentRawFields(raw map[string]any) []outputField {
+	hidden := map[string]bool{
+		"location":  true,
+		"tenant_id": true,
+	}
+	namesByKey := map[string]bool{
+		"created_at":       true,
+		"description":      true,
+		"id":               true,
+		"name":             true,
+		"network_id":       true,
+		"network_type":     true,
+		"physical_network": true,
+		"revision_number":  true,
+		"segmentation_id":  true,
+		"updated_at":       true,
+	}
+	for name := range raw {
+		if !hidden[name] {
+			namesByKey[name] = true
+		}
+	}
+	names := make([]string, 0, len(namesByKey))
+	for name := range namesByKey {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	fields := make([]outputField, 0, len(names))
+	for _, name := range names {
+		fields = append(fields, outputField{name, networkSegmentRawValue(name, raw[name])})
+	}
+	return fields
+}
+
+func networkSegmentRawValue(name string, value any) any {
+	switch name {
+	case "revision_number", "segmentation_id":
+		return rawNumber(value)
+	default:
+		return value
+	}
+}
+
+func networkSegmentFields(item *segments.Segment) []outputField {
+	return []outputField{
 		{"created_at", oscTime(item.CreatedAt)},
 		{"description", item.Description},
 		{"id", item.ID},
@@ -5490,7 +5728,7 @@ func networkSegmentShow(ctx context.Context, stdout io.Writer, opts *Options, cl
 		{"revision_number", item.RevisionNumber},
 		{"segmentation_id", item.SegmentationID},
 		{"updated_at", oscTime(item.UpdatedAt)},
-	})
+	}
 }
 
 func networkTrunkList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {

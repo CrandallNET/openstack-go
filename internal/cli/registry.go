@@ -108,7 +108,7 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"network qos rule create", "network qos rule delete", "network qos rule list", "network qos rule set", "network qos rule show",
 		"network qos rule type list", "network qos rule type show",
 		"network rbac create", "network rbac delete", "network rbac list", "network rbac set", "network rbac show",
-		"network segment list", "network segment show",
+		"network segment create", "network segment delete", "network segment list", "network segment set", "network segment show",
 		"network trunk list", "network trunk show",
 		"object create", "object delete", "object list", "object save", "object set", "object show", "object unset",
 		"object store account show",
@@ -541,9 +541,20 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().StringArray("extra-property", nil, "additional property type=<type>,name=<name>,value=<value>")
 		cmd.Flags().String("target-project", "", "target project")
 		cmd.Flags().String("target-project-domain", "", "target project domain")
+	case "network segment create":
+		cmd.Flags().StringArray("extra-property", nil, "additional property type=<type>,name=<name>,value=<value>")
+		cmd.Flags().String("description", "", "segment description")
+		cmd.Flags().String("physical-network", "", "physical network")
+		cmd.Flags().Int("segment", 0, "segment identifier")
+		cmd.Flags().String("network", "", "parent network")
+		cmd.Flags().String("network-type", "", "network type")
 	case "network segment list":
 		cmd.Flags().Bool("long", false, "list additional fields")
 		cmd.Flags().String("network", "", "filter by network")
+	case "network segment set":
+		cmd.Flags().StringArray("extra-property", nil, "additional property type=<type>,name=<name>,value=<value>")
+		cmd.Flags().String("description", "", "segment description")
+		cmd.Flags().String("name", "", "segment name")
 	case "network trunk list":
 		cmd.Flags().Bool("long", false, "list additional fields")
 	case "network create":
@@ -1355,9 +1366,10 @@ func isCoreReadCommand(path string) bool {
 		"network create", "network delete", "network list", "network set", "network show", "network unset",
 		"network service provider list",
 		"network qos policy create", "network qos policy delete", "network qos policy list", "network qos policy set", "network qos policy show",
+		"network qos rule create", "network qos rule delete", "network qos rule list", "network qos rule set", "network qos rule show",
 		"network qos rule type list", "network qos rule type show",
 		"network rbac create", "network rbac delete", "network rbac list", "network rbac set", "network rbac show",
-		"network segment list", "network segment show",
+		"network segment create", "network segment delete", "network segment list", "network segment set", "network segment show",
 		"network trunk list", "network trunk show",
 		"object create", "object delete", "object list", "object save", "object set", "object show", "object unset",
 		"object store account show",

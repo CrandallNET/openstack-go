@@ -224,6 +224,10 @@ func newCommandEntry(group string, command string) commandEntry {
 			entry.Tests = []string{"unit: command registry", "unit: QoS rule parameter validation"}
 			entry.Notes = "Implemented with Gophercloud QoS rule calls for bandwidth-limit, dscp-marking, and minimum-bandwidth. minimum-packet-rate uses a narrow authenticated Neutron request because Gophercloud v2.12.0 does not expose that subtype. cloud6 returns Neutron 404 for the QoS policy collection in both Python OSC and the Go CLI, so a cloud exposing this extension is still needed for live lifecycle verification."
 		}
+		if strings.HasPrefix(command, "network segment ") {
+			entry.Tests = []string{"unit: command registry"}
+			entry.Notes = "Implemented with Gophercloud segment calls and custom request builders where extension fields are needed. cloud6 returns Neutron 404 for the segment collection in both Python OSC and the Go CLI, so a cloud exposing this extension is still needed for live lifecycle verification."
+		}
 	}
 	return entry
 }
@@ -432,9 +436,12 @@ func coreReadPackages() map[string]string {
 		"network rbac list":                  "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/rbacpolicies",
 		"network rbac set":                   "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/rbacpolicies; extension fields via custom request builders",
 		"network rbac show":                  "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/rbacpolicies",
+		"network segment create":             "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/segments; extension fields via custom request builders",
+		"network segment delete":             "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/segments",
 		"network set":                        "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/networks; standard tags via gophercloud.ServiceClient",
 		"network service provider list":      "Neutron service-providers via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0",
 		"network segment list":               "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/segments",
+		"network segment set":                "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/segments; extension fields via custom request builders",
 		"network segment show":               "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/segments",
 		"network show":                       "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/networks",
 		"network trunk list":                 "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/trunks",
@@ -889,6 +896,9 @@ func coreWriteCommands() map[string]bool {
 		"network rbac create":                true,
 		"network rbac delete":                true,
 		"network rbac set":                   true,
+		"network segment create":             true,
+		"network segment delete":             true,
+		"network segment set":                true,
 		"network set":                        true,
 		"network unset":                      true,
 		"port create":                        true,

@@ -3374,24 +3374,26 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/segments; extension fields via custom request builders"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Implemented with Gophercloud segment calls and custom request builders where extension fields are needed. cloud6 returns Neutron 404 for the segment collection in both Python OSC and the Go CLI, so a cloud exposing this extension is still needed for live lifecycle verification."
   - command: "network segment delete"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/segments"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Implemented with Gophercloud segment calls and custom request builders where extension fields are needed. cloud6 returns Neutron 404 for the segment collection in both Python OSC and the Go CLI, so a cloud exposing this extension is still needed for live lifecycle verification."
   - command: "network segment list"
     group: "openstack.network.v2"
     service: "network"
@@ -3403,7 +3405,7 @@ commands:
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion. Live fixture still needed before this row can be marked cloud-verified."
+    notes: "Implemented with Gophercloud segment calls and custom request builders where extension fields are needed. cloud6 returns Neutron 404 for the segment collection in both Python OSC and the Go CLI, so a cloud exposing this extension is still needed for live lifecycle verification."
   - command: "network segment range create"
     group: "openstack.network.v2"
     service: "network"
@@ -3463,13 +3465,14 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/segments; extension fields via custom request builders"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Implemented with Gophercloud segment calls and custom request builders where extension fields are needed. cloud6 returns Neutron 404 for the segment collection in both Python OSC and the Go CLI, so a cloud exposing this extension is still needed for live lifecycle verification."
   - command: "network segment show"
     group: "openstack.network.v2"
     service: "network"
@@ -3481,7 +3484,7 @@ commands:
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion. Live fixture still needed before this row can be marked cloud-verified."
+    notes: "Implemented with Gophercloud segment calls and custom request builders where extension fields are needed. cloud6 returns Neutron 404 for the segment collection in both Python OSC and the Go CLI, so a cloud exposing this extension is still needed for live lifecycle verification."
   - command: "network service provider list"
     group: "openstack.network.v2"
     service: "network"

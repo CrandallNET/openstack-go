@@ -457,6 +457,37 @@ func TestNetworkQoSRuleRawFieldsMatchOSCOrder(t *testing.T) {
 	}
 }
 
+func TestNetworkSegmentSetValues(t *testing.T) {
+	opts := &Options{
+		CommandFlags: map[string]string{
+			"description": "updated",
+			"name":        "segment-name",
+		},
+		CommandFlagList: map[string][]string{
+			"extra-property": {"type=int,name=custom,value=7"},
+		},
+	}
+	values, err := networkSegmentSetValues(opts)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	want := map[string]any{"description": "updated", "name": "segment-name", "custom": 7}
+	if encoded, _ := json.Marshal(values); string(encoded) != mustJSON(want) {
+		t.Fatalf("values mismatch: got %s want %s", encoded, mustJSON(want))
+	}
+}
+
+func TestNetworkSegmentTypeValidation(t *testing.T) {
+	for _, networkType := range []string{"flat", "geneve", "gre", "local", "vlan", "vxlan"} {
+		if !networkSegmentTypeValid(networkType) {
+			t.Fatalf("expected %q to be valid", networkType)
+		}
+	}
+	if networkSegmentTypeValid("invalid") {
+		t.Fatal("expected invalid network segment type to be rejected")
+	}
+}
+
 func TestTokenIssueUsesInjectedIssuer(t *testing.T) {
 	previous := issueToken
 	issueToken = func(ctx context.Context, opts *Options) (tokenIssueRow, error) {

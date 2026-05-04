@@ -1054,3 +1054,18 @@ Sources consulted:
 * Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/network/v2/network_qos_rule.py`, used only as the pinned local oracle implementation source.
 * Local OpenStackSDK resource files `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/network/v2/qos_bandwidth_limit_rule.py`, `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/network/v2/qos_dscp_marking_rule.py`, `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/network/v2/qos_minimum_bandwidth_rule.py`, and `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/network/v2/qos_minimum_packet_rate_rule.py`, used to confirm resource keys and endpoint paths.
 * Gophercloud package docs for [Neutron QoS rules](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/qos/rules).
+
+## 2026-05-04: Network Segment Lifecycle Commands
+
+Work done: added `network segment create`, `network segment delete`, and `network segment set`, and changed segment show/create rendering to preserve raw extension fields when available.
+
+Implementation note: segment create/update/delete uses Gophercloud's segment package. Create and update use custom request builders so Python OSC `--extra-property` values are retained in the Neutron `segment` body. Create resolves `--network` through the existing network lookup helper, validates the Python OSC network-type choices, and maps `--segment` to Neutron's `segmentation_id`.
+
+Live observations on `cloud6`: no disposable segment lifecycle was attempted because the segment collection returns Neutron `404` on `cloud6` for both Python OSC and the Go CLI. The Go CLI and Python OSC both returned endpoint-level `404` for `network segment list -f json`. The commands remain implemented but not cloud-verified until a test cloud exposes the segment extension.
+
+Sources consulted:
+
+* Local OSC oracle snapshots in `compat/osc/9.0.0/help/network/segment/create.txt`, `compat/osc/9.0.0/help/network/segment/delete.txt`, and `compat/osc/9.0.0/help/network/segment/set.txt`.
+* Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/network/v2/network_segment.py`, used only as the pinned local oracle implementation source.
+* Local OpenStackSDK resource file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/network/v2/segment.py`, used to confirm resource keys and field names.
+* Gophercloud package docs for [Neutron segments](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/segments).
