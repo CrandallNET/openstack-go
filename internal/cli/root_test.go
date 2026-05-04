@@ -10,6 +10,7 @@ import (
 
 	"charm.land/bubbles/v2/table"
 	"github.com/gophercloud/gophercloud/v2"
+	"github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/volumes"
 	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/ports"
 )
 
@@ -752,6 +753,36 @@ func TestPrettyVolumeSemanticRoleColorsGenericID(t *testing.T) {
 	want := prettyColorizeTextWithUUIDStyle(uuid, prettyVolumeStyle)
 	if got := colorizer(0, 0, uuid); got != want {
 		t.Fatalf("expected volume role to color generic ID as volume, got %q want %q", got, want)
+	}
+}
+
+func TestPrettyVolumeListIDUsesGenericUUIDRole(t *testing.T) {
+	uuid := "52c4cf8d-4ef3-4479-b7b9-ffb814f9dd5b"
+	row := volumeListRow(volumes.Volume{ID: uuid, Name: "Rocky10-Boot"})
+	if role := prettySemanticRole(row["ID"]); role != "" {
+		t.Fatalf("expected volume list ID to use generic UUID styling, got semantic role %q", role)
+	}
+	if role := prettySemanticRole(row["Name"]); role != "volume" {
+		t.Fatalf("expected volume list name to keep volume styling, got semantic role %q", role)
+	}
+	colorizer := prettyListCellColorizer([]string{"ID"})
+	want := prettyColorizeUUID(uuid)
+	if got := colorizer(0, 0, uuid); got != want {
+		t.Fatalf("expected volume list ID colorizer to use generic UUID style, got %q want %q", got, want)
+	}
+	wrapped := prettyWrapRows(
+		[]table.Row{{"52c4cf8d-4ef3-4479-"}},
+		[]table.Column{{Title: "ID", Width: 8}},
+		colorizer,
+		prettyListCellContext([]string{"ID"}),
+	)
+	if len(wrapped) != 3 {
+		t.Fatalf("expected wrapped UUID fragment rows, got %#v", wrapped)
+	}
+	for rowIndex, row := range wrapped {
+		if !containsANSI(row[0]) {
+			t.Fatalf("expected wrapped volume list ID row %d to use generic UUID fragment color, got %#v", rowIndex, wrapped)
+		}
 	}
 }
 

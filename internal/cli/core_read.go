@@ -8622,15 +8622,19 @@ func volumeList(ctx context.Context, stdout io.Writer, opts *Options, client *go
 	}
 	rows := make([]outputRow, 0, len(items))
 	for _, item := range items {
-		rows = append(rows, outputRow{
-			"ID":          prettyVolumeValue(item.ID),
-			"Name":        prettyVolumeValue(item.Name),
-			"Status":      item.Status,
-			"Size":        item.Size,
-			"Attached to": volumeAttachments(item.Attachments),
-		})
+		rows = append(rows, volumeListRow(item))
 	}
 	return renderListOutput(stdout, opts, []string{"ID", "Name", "Status", "Size", "Attached to"}, rows)
+}
+
+func volumeListRow(item volumes.Volume) outputRow {
+	return outputRow{
+		"ID":          item.ID,
+		"Name":        prettyVolumeValue(item.Name),
+		"Status":      item.Status,
+		"Size":        item.Size,
+		"Attached to": volumeAttachments(item.Attachments),
+	}
 }
 
 func volumeShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {

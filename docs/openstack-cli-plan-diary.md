@@ -1275,7 +1275,7 @@ Current palette:
 
 Implementation notes: volume, image, and flavor colors take precedence over generic UUID coloring. Status matching normalizes hyphens and spaces to underscores, so Cinder statuses such as `in-use` are colored through the same status buckets as compute statuses.
 
-Follow-up: device paths now use the device color, and nested `id:` fields inside volume attachment output are treated as volume UUIDs. Full UUIDs and UUID fragments continue to color only the UUID/GUID segments, leaving hyphen separators uncolored.
+Follow-up: device paths now use the device color, and nested `id:` fields inside volume attachment output are treated as volume UUIDs. The top-level `volume list` `ID` column uses the generic UUID/GUID style, while volume names and explicit `volume_id` references retain the volume color. Full UUIDs and UUID fragments continue to color only the UUID/GUID segments, leaving hyphen separators uncolored.
 
 Sources consulted:
 

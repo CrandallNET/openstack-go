@@ -568,6 +568,8 @@ func prettyColorizeByNormalizedName(normalized string, text string) string {
 		return prettyColorizeStatus(text)
 	case prettyIsBooleanText(text):
 		return prettyColorizeBoolean(text)
+	case prettyIsIDLikeName(normalized):
+		return prettyColorizeID(text)
 	case prettyContainsAddressToken(text):
 		return prettyColorizeTokens(text)
 	case prettyIsNameField(normalized):
@@ -784,6 +786,13 @@ func prettyColorizeUUIDFragment(text string) string {
 	return prettyColorizeUUIDFragmentWithStyle(text, prettyUUIDStyle)
 }
 
+func prettyColorizeID(text string) string {
+	if prettyLooksLikeUUIDFragment(text) || prettyLooksLikeHexUUIDFragment(text) {
+		return prettyColorizeUUIDFragment(text)
+	}
+	return prettyColorizeTokens(text)
+}
+
 func prettyColorizeUUIDFragmentWithStyle(text string, style lipgloss.Style) string {
 	return prettyUUIDFragmentPattern.ReplaceAllStringFunc(text, func(part string) string {
 		return style.Render(part)
@@ -869,6 +878,15 @@ func prettyLooksLikeUUIDFragment(text string) bool {
 	if !strings.Contains(trimmed, "-") {
 		return false
 	}
+	return prettyLooksLikeHexUUIDFragment(trimmed)
+}
+
+func prettyLooksLikeHexUUIDFragment(text string) bool {
+	trimmed := strings.TrimSpace(text)
+	if trimmed == "" {
+		return false
+	}
+	hasHex := false
 	for _, r := range trimmed {
 		if r == '-' {
 			continue
@@ -876,8 +894,9 @@ func prettyLooksLikeUUIDFragment(text string) bool {
 		if !((r >= '0' && r <= '9') || (r >= 'a' && r <= 'f') || (r >= 'A' && r <= 'F')) {
 			return false
 		}
+		hasHex = true
 	}
-	return true
+	return hasHex
 }
 
 func prettyContainsAddressToken(text string) bool {
