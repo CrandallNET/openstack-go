@@ -308,6 +308,22 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return containerUnset(cmd.Context(), opts, client, args)
+		case "floating ip create":
+			networkClient, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			identityClient, err := clients.identityV3()
+			if err != nil {
+				return err
+			}
+			return floatingIPCreate(cmd.Context(), stdout, opts, networkClient, identityClient, args)
+		case "floating ip delete":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return floatingIPDelete(cmd.Context(), client, args)
 		case "floating ip list":
 			client, err := clients.networkV2()
 			if err != nil {
@@ -316,12 +332,24 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 			return floatingIPList(cmd.Context(), stdout, opts, client)
 		case "floating ip pool list":
 			return floatingIPPoolList()
+		case "floating ip set":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return floatingIPSet(cmd.Context(), opts, client, args)
 		case "floating ip show":
 			client, err := clients.networkV2()
 			if err != nil {
 				return err
 			}
 			return floatingIPShow(cmd.Context(), stdout, opts, client, args)
+		case "floating ip unset":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return floatingIPUnset(cmd.Context(), opts, client, args)
 		case "host list":
 			client, err := clients.computeV2()
 			if err != nil {
@@ -8937,6 +8965,15 @@ func rawNumber(value any) any {
 	return parsed
 }
 
+func firstNonNil(values ...any) any {
+	for _, value := range values {
+		if value != nil {
+			return value
+		}
+	}
+	return nil
+}
+
 func subnetPoolFields(item *subnetpools.SubnetPool) []outputField {
 	return []outputField{
 		{"address_scope_id", nilIfEmpty(item.AddressScopeID)},
@@ -9786,6 +9823,233 @@ func portShow(ctx context.Context, stdout io.Writer, opts *Options, client *goph
 	return renderShowOutput(stdout, opts, portFields(item))
 }
 
+type floatingIPCreateOpts struct {
+	Values map[string]any
+}
+
+func (opts floatingIPCreateOpts) ToFloatingIPCreateMap() (map[string]any, error) {
+	return map[string]any{"floatingip": opts.Values}, nil
+}
+
+type floatingIPUpdateOpts struct {
+	Values map[string]any
+}
+
+func (opts floatingIPUpdateOpts) ToFloatingIPUpdateMap() (map[string]any, error) {
+	return map[string]any{"floatingip": opts.Values}, nil
+}
+
+func floatingIPCreate(ctx context.Context, stdout io.Writer, opts *Options, networkClient *gophercloud.ServiceClient, identityClient *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("floating ip create requires <network>")
+	}
+	if boolFlag(opts, "no-tag") && len(flagValues(opts, "tag")) > 0 {
+		return fmt.Errorf("argument --no-tag: not allowed with argument --tag")
+	}
+	values, err := floatingIPCreateValues(ctx, opts, networkClient, identityClient, args[0])
+	if err != nil {
+		return err
+	}
+	result := floatingips.Create(ctx, networkClient, floatingIPCreateOpts{Values: values})
+	item, err := result.Extract()
+	if err != nil {
+		return err
+	}
+	tags := flagValues(opts, "tag")
+	if boolFlag(opts, "no-tag") || len(tags) > 0 {
+		target, err := setNeutronResourceTags(ctx, networkClient, "floatingips", item.ID, item.Tags, tags, boolFlag(opts, "no-tag"))
+		if err != nil {
+			return err
+		}
+		item.Tags = target
+	}
+	if raw, ok := floatingIPRawFromBody(result.Body); ok {
+		if boolFlag(opts, "no-tag") || len(tags) > 0 {
+			raw["tags"] = item.Tags
+		}
+		return renderShowOutput(stdout, opts, floatingIPRawFields(raw))
+	}
+	return renderShowOutput(stdout, opts, floatingIPFields(item))
+}
+
+func floatingIPCreateValues(ctx context.Context, opts *Options, networkClient *gophercloud.ServiceClient, identityClient *gophercloud.ServiceClient, networkNameOrID string) (map[string]any, error) {
+	network, err := findNetwork(ctx, networkClient, networkNameOrID)
+	if err != nil {
+		return nil, err
+	}
+	values := map[string]any{"floating_network_id": network.ID}
+	if subnetNameOrID := flagValue(opts, "subnet"); subnetNameOrID != "" {
+		subnet, err := findSubnet(ctx, networkClient, subnetNameOrID)
+		if err != nil {
+			return nil, err
+		}
+		values["subnet_id"] = subnet.ID
+	}
+	if portNameOrID := flagValue(opts, "port"); portNameOrID != "" {
+		port, err := findPort(ctx, networkClient, portNameOrID)
+		if err != nil {
+			return nil, err
+		}
+		values["port_id"] = port.ID
+	}
+	if flagChanged(opts, "floating-ip-address") {
+		values["floating_ip_address"] = flagValue(opts, "floating-ip-address")
+	}
+	if flagChanged(opts, "fixed-ip-address") {
+		values["fixed_ip_address"] = flagValue(opts, "fixed-ip-address")
+	}
+	if qosPolicy := flagValue(opts, "qos-policy"); qosPolicy != "" {
+		policy, err := findNetworkQoSPolicy(ctx, networkClient, qosPolicy)
+		if err != nil {
+			return nil, err
+		}
+		values["qos_policy_id"] = policy.ID
+	}
+	if flagChanged(opts, "description") {
+		values["description"] = flagValue(opts, "description")
+	}
+	if projectNameOrID := flagValue(opts, "project"); projectNameOrID != "" {
+		project, err := findProjectWithDomain(ctx, identityClient, projectNameOrID, flagValue(opts, "project-domain"))
+		if err != nil {
+			return nil, err
+		}
+		values["project_id"] = project.ID
+	}
+	if flagChanged(opts, "dns-domain") {
+		values["dns_domain"] = flagValue(opts, "dns-domain")
+	}
+	if flagChanged(opts, "dns-name") {
+		values["dns_name"] = flagValue(opts, "dns-name")
+	}
+	extra, err := parseExtraProperties(flagValues(opts, "extra-property"))
+	if err != nil {
+		return nil, err
+	}
+	for key, value := range extra {
+		values[key] = value
+	}
+	return values, nil
+}
+
+func floatingIPDelete(ctx context.Context, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("floating ip delete requires <floating-ip> [<floating-ip> ...]")
+	}
+	failures := 0
+	for _, floatingIPArg := range args {
+		item, err := findFloatingIP(ctx, client, floatingIPArg)
+		if err != nil {
+			failures++
+			continue
+		}
+		if err := floatingips.Delete(ctx, client, item.ID).ExtractErr(); err != nil {
+			failures++
+		}
+	}
+	if failures > 0 {
+		return fmt.Errorf("%d of %d floating IPs failed to delete.", failures, len(args))
+	}
+	return nil
+}
+
+func floatingIPSet(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("floating ip set requires <floating-ip>")
+	}
+	if flagChanged(opts, "qos-policy") && boolFlag(opts, "no-qos-policy") {
+		return fmt.Errorf("argument --no-qos-policy: not allowed with argument --qos-policy")
+	}
+	item, err := findFloatingIP(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	values, err := floatingIPSetValues(ctx, opts, client)
+	if err != nil {
+		return err
+	}
+	if len(values) > 0 {
+		if _, err := floatingips.Update(ctx, client, item.ID, floatingIPUpdateOpts{Values: values}).Extract(); err != nil {
+			return err
+		}
+	}
+	if boolFlag(opts, "no-tag") || len(flagValues(opts, "tag")) > 0 {
+		_, err := setNeutronResourceTags(ctx, client, "floatingips", item.ID, item.Tags, flagValues(opts, "tag"), boolFlag(opts, "no-tag"))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func floatingIPSetValues(ctx context.Context, opts *Options, client *gophercloud.ServiceClient) (map[string]any, error) {
+	values := map[string]any{}
+	if portNameOrID := flagValue(opts, "port"); portNameOrID != "" {
+		port, err := findPort(ctx, client, portNameOrID)
+		if err != nil {
+			return nil, err
+		}
+		values["port_id"] = port.ID
+	}
+	if flagChanged(opts, "fixed-ip-address") {
+		values["fixed_ip_address"] = flagValue(opts, "fixed-ip-address")
+	}
+	if flagChanged(opts, "description") {
+		values["description"] = flagValue(opts, "description")
+	}
+	if qosPolicy := flagValue(opts, "qos-policy"); qosPolicy != "" {
+		policy, err := findNetworkQoSPolicy(ctx, client, qosPolicy)
+		if err != nil {
+			return nil, err
+		}
+		values["qos_policy_id"] = policy.ID
+	}
+	if boolFlag(opts, "no-qos-policy") {
+		values["qos_policy_id"] = nil
+	}
+	extra, err := parseExtraProperties(flagValues(opts, "extra-property"))
+	if err != nil {
+		return nil, err
+	}
+	for key, value := range extra {
+		values[key] = value
+	}
+	return values, nil
+}
+
+func floatingIPUnset(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("floating ip unset requires <floating-ip>")
+	}
+	if len(flagValues(opts, "tag")) > 0 && boolFlag(opts, "all-tag") {
+		return fmt.Errorf("argument --all-tag: not allowed with argument --tag")
+	}
+	item, err := findFloatingIP(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	values := map[string]any{}
+	if boolFlag(opts, "port") {
+		values["port_id"] = nil
+	}
+	if boolFlag(opts, "qos-policy") {
+		values["qos_policy_id"] = nil
+	}
+	extra, err := parseUnsetExtraProperties(flagValues(opts, "extra-property"))
+	if err != nil {
+		return err
+	}
+	for key, value := range extra {
+		values[key] = value
+	}
+	if len(values) > 0 {
+		if _, err := floatingips.Update(ctx, client, item.ID, floatingIPUpdateOpts{Values: values}).Extract(); err != nil {
+			return err
+		}
+	}
+	_, err = unsetNeutronResourceTags(ctx, client, "floatingips", item.ID, item.Tags, flagValues(opts, "tag"), boolFlag(opts, "all-tag"))
+	return err
+}
+
 func floatingIPList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
 	listOpts := floatingips.ListOpts{
 		FixedIP:    flagValue(opts, "fixed-ip-address"),
@@ -9817,21 +10081,21 @@ func floatingIPList(ctx context.Context, stdout io.Writer, opts *Options, client
 		row := outputRow{
 			"ID":                  item.ID,
 			"Floating IP Address": item.FloatingIP,
-			"Fixed IP Address":    item.FixedIP,
-			"Port":                item.PortID,
+			"Fixed IP Address":    nilIfEmpty(item.FixedIP),
+			"Port":                nilIfEmpty(item.PortID),
 			"Floating Network":    item.FloatingNetworkID,
+			"Project":             firstNonEmpty(item.ProjectID, item.TenantID),
 		}
 		if boolFlag(opts, "long") {
-			row["Project"] = item.ProjectID
 			row["Router"] = item.RouterID
 			row["Status"] = item.Status
 			row["Tags"] = item.Tags
 		}
 		rows = append(rows, row)
 	}
-	columns := []string{"ID", "Floating IP Address", "Fixed IP Address", "Port", "Floating Network"}
+	columns := []string{"ID", "Floating IP Address", "Fixed IP Address", "Port", "Floating Network", "Project"}
 	if boolFlag(opts, "long") {
-		columns = append(columns, "Project", "Router", "Status", "Tags")
+		columns = append(columns, "Router", "Status", "Tags")
 	}
 	return renderListOutput(stdout, opts, columns, rows)
 }
@@ -9844,20 +10108,87 @@ func floatingIPShow(ctx context.Context, stdout io.Writer, opts *Options, client
 	if err != nil {
 		return err
 	}
-	return renderShowOutput(stdout, opts, []outputField{
-		{"id", item.ID},
-		{"floating_ip_address", item.FloatingIP},
-		{"fixed_ip_address", item.FixedIP},
-		{"floating_network_id", item.FloatingNetworkID},
-		{"port_id", item.PortID},
-		{"router_id", item.RouterID},
-		{"project_id", item.ProjectID},
-		{"status", item.Status},
+	if raw, err := neutronFloatingIPRaw(ctx, client, item.ID); err == nil {
+		return renderShowOutput(stdout, opts, floatingIPRawFields(raw))
+	}
+	return renderShowOutput(stdout, opts, floatingIPFields(item))
+}
+
+func neutronFloatingIPRaw(ctx context.Context, client *gophercloud.ServiceClient, id string) (map[string]any, error) {
+	var body struct {
+		FloatingIP map[string]any `json:"floatingip"`
+	}
+	resp, err := client.Get(ctx, client.ServiceURL("floatingips", url.PathEscape(id)), &body, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return nil, err
+	}
+	return body.FloatingIP, nil
+}
+
+func floatingIPRawFromBody(body any) (map[string]any, bool) {
+	var wrapper struct {
+		FloatingIP map[string]any `json:"floatingip"`
+	}
+	encoded, err := json.Marshal(body)
+	if err != nil {
+		return nil, false
+	}
+	if err := json.Unmarshal(encoded, &wrapper); err != nil {
+		return nil, false
+	}
+	if wrapper.FloatingIP == nil {
+		return nil, false
+	}
+	return wrapper.FloatingIP, true
+}
+
+func floatingIPRawFields(raw map[string]any) []outputField {
+	return []outputField{
+		{"created_at", raw["created_at"]},
+		{"description", raw["description"]},
+		{"dns_domain", raw["dns_domain"]},
+		{"dns_name", raw["dns_name"]},
+		{"fixed_ip_address", raw["fixed_ip_address"]},
+		{"floating_ip_address", raw["floating_ip_address"]},
+		{"floating_network_id", raw["floating_network_id"]},
+		{"id", raw["id"]},
+		{"name", raw["floating_ip_address"]},
+		{"port_details", firstNonNil(raw["port_details"], map[string]any{})},
+		{"port_id", raw["port_id"]},
+		{"project_id", firstPresent(raw, "project_id", "tenant_id")},
+		{"qos_policy_id", raw["qos_policy_id"]},
+		{"revision_number", rawNumber(raw["revision_number"])},
+		{"router_id", raw["router_id"]},
+		{"status", raw["status"]},
+		{"subnet_id", raw["subnet_id"]},
+		{"tags", raw["tags"]},
+		{"updated_at", raw["updated_at"]},
+	}
+}
+
+func floatingIPFields(item *floatingips.FloatingIP) []outputField {
+	return []outputField{
+		{"created_at", oscTime(item.CreatedAt)},
 		{"description", item.Description},
+		{"dns_domain", nil},
+		{"dns_name", nil},
+		{"fixed_ip_address", nilIfEmpty(item.FixedIP)},
+		{"floating_ip_address", item.FloatingIP},
+		{"floating_network_id", item.FloatingNetworkID},
+		{"id", item.ID},
+		{"name", item.FloatingIP},
+		{"port_details", map[string]any{}},
+		{"port_id", nilIfEmpty(item.PortID)},
+		{"project_id", firstNonEmpty(item.ProjectID, item.TenantID)},
+		{"qos_policy_id", nil},
+		{"revision_number", item.RevisionNumber},
+		{"router_id", nilIfEmpty(item.RouterID)},
+		{"status", item.Status},
+		{"subnet_id", nil},
 		{"tags", item.Tags},
-		{"created_at", item.CreatedAt},
-		{"updated_at", item.UpdatedAt},
-	})
+		{"updated_at", oscTime(item.UpdatedAt)},
+	}
 }
 
 func floatingIPPoolList() error {

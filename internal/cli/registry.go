@@ -73,7 +73,7 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"container create", "container delete", "container list", "container set", "container show", "container unset",
 		"extension list", "extension show",
 		"flavor list", "flavor show",
-		"floating ip list", "floating ip pool list", "floating ip show",
+		"floating ip create", "floating ip delete", "floating ip list", "floating ip pool list", "floating ip set", "floating ip show", "floating ip unset",
 		"host list", "host show",
 		"hypervisor list", "hypervisor show", "hypervisor stats show",
 		"image add project",
@@ -685,6 +685,35 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().String("router", "", "filter by router")
 		addTagFilterFlags(cmd)
 		cmd.Flags().Bool("long", false, "list additional fields")
+	case "floating ip create":
+		cmd.Flags().StringArray("extra-property", nil, "additional property type=<type>,name=<name>,value=<value>")
+		cmd.Flags().String("subnet", "", "subnet")
+		cmd.Flags().String("port", "", "port")
+		cmd.Flags().String("floating-ip-address", "", "floating IP address")
+		cmd.Flags().String("fixed-ip-address", "", "fixed IP address")
+		cmd.Flags().String("qos-policy", "", "QoS policy")
+		cmd.Flags().String("description", "", "floating IP description")
+		cmd.Flags().String("project", "", "owner project")
+		cmd.Flags().String("dns-domain", "", "DNS domain")
+		cmd.Flags().String("dns-name", "", "DNS name")
+		cmd.Flags().String("project-domain", "", "project domain")
+		cmd.Flags().StringArray("tag", nil, "floating IP tag")
+		cmd.Flags().Bool("no-tag", false, "create without tags")
+	case "floating ip set":
+		cmd.Flags().StringArray("extra-property", nil, "additional property type=<type>,name=<name>,value=<value>")
+		cmd.Flags().String("port", "", "port")
+		cmd.Flags().String("fixed-ip-address", "", "fixed IP address")
+		cmd.Flags().String("description", "", "floating IP description")
+		cmd.Flags().String("qos-policy", "", "QoS policy")
+		cmd.Flags().Bool("no-qos-policy", false, "remove QoS policy")
+		cmd.Flags().StringArray("tag", nil, "floating IP tag")
+		cmd.Flags().Bool("no-tag", false, "clear tags before applying tags")
+	case "floating ip unset":
+		cmd.Flags().StringArray("extra-property", nil, "additional property type=<type>,name=<name>,value=<value>")
+		cmd.Flags().Bool("port", false, "disassociate port")
+		cmd.Flags().Bool("qos-policy", false, "remove QoS policy")
+		cmd.Flags().StringArray("tag", nil, "floating IP tag")
+		cmd.Flags().Bool("all-tag", false, "clear all tags")
 	case "ip availability list":
 		cmd.Flags().Int("ip-version", 0, "filter by IP version")
 		cmd.Flags().String("project", "", "filter by project")
@@ -1209,7 +1238,7 @@ func isCoreReadCommand(path string) bool {
 		"container create", "container delete", "container list", "container set", "container show", "container unset",
 		"extension list", "extension show",
 		"flavor list", "flavor show",
-		"floating ip list", "floating ip pool list", "floating ip show",
+		"floating ip create", "floating ip delete", "floating ip list", "floating ip pool list", "floating ip set", "floating ip show", "floating ip unset",
 		"host list", "host show",
 		"hypervisor list", "hypervisor show", "hypervisor stats show",
 		"image add project",

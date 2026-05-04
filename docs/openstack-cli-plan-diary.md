@@ -967,3 +967,18 @@ Sources consulted:
 * Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/network/v2/port.py`, used only as the pinned local oracle implementation source.
 * Local OpenStackSDK source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/network/v2/port.py`, used to map SDK attribute names to Neutron port JSON fields.
 * Gophercloud package docs for [Neutron ports](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/ports).
+
+## 2026-05-04: Floating IP Lifecycle Commands
+
+Work done: added `floating ip create`, `floating ip delete`, `floating ip set`, and `floating ip unset`, and tightened `floating ip list/show` output.
+
+Implementation note: floating IP create/update/delete uses Gophercloud's Neutron floating IP helpers with custom request builders for OSC extension fields, including `qos_policy_id`, DNS fields, tags, and extra properties. Show output now follows the Python OpenStackSDK sorted column behavior for floating IPs, including nullable fields such as `dns_domain`, `fixed_ip_address`, `port_id`, `qos_policy_id`, `router_id`, and `subnet_id`. List output now includes the default `Project` column and emits null fixed IP and port values for unassociated floating IPs, matching the Python OSC JSON shape checked on `cloud6`.
+
+Live observations on `cloud6`: the Go CLI allocated a disposable floating IP from external network `os6-lan`, set the description and initial tag, showed it by allocated address, replaced the tag with `floating ip set --no-tag --tag second`, removed the tag with `floating ip unset`, deleted the floating IP, and verified list/show parity against Python OSC for an existing unassociated floating IP fixture.
+
+Sources consulted:
+
+* Local OSC oracle snapshots in `compat/osc/9.0.0/help/floating/ip/create.txt`, `compat/osc/9.0.0/help/floating/ip/delete.txt`, `compat/osc/9.0.0/help/floating/ip/set.txt`, and `compat/osc/9.0.0/help/floating/ip/unset.txt`.
+* Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/network/v2/floating_ip.py`, used only as the pinned local oracle implementation source.
+* Local OpenStackSDK source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/network/v2/floating_ip.py`, used to map SDK attribute names to Neutron floating IP JSON fields.
+* Gophercloud package docs for [Neutron floating IPs](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/floatingips).
