@@ -915,6 +915,40 @@ func TestPrettyImageSemanticRoleColorsImageNames(t *testing.T) {
 	}
 }
 
+func TestPrettyOSImageColorsUseSpecificBrandMatches(t *testing.T) {
+	cases := []struct {
+		name  string
+		value string
+		color string
+	}{
+		{name: "centos stream before centos", value: "CentOS Stream 10", color: prettyColorOSCentOSStream},
+		{name: "centos classic", value: "CentOS 7", color: prettyColorOSCentOS},
+		{name: "oracle linux before rhel", value: "Oracle Linux 9", color: prettyColorOSOracleLinux},
+		{name: "cirros openstack", value: "CirrOS 0.6.2", color: prettyColorOSCirrOS},
+		{name: "vyos yellow", value: "VyOS 1.5", color: prettyColorOSVyOS},
+		{name: "pop os punctuation", value: "Pop!_OS 22.04", color: prettyColorOSPopOS},
+		{name: "freebsd", value: "FreeBSD 14", color: prettyColorOSFreeBSD},
+		{name: "netbsd", value: "NetBSD 10", color: prettyColorOSNetBSD},
+		{name: "openbsd", value: "OpenBSD 7.7", color: prettyColorOSOpenBSD},
+		{name: "linux mint", value: "Linux Mint 22", color: prettyColorOSLinuxMint},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			color, ok := prettyOSImageColorForText(tc.value)
+			if !ok {
+				t.Fatalf("expected %q to match an OS image color", tc.value)
+			}
+			if color != tc.color {
+				t.Fatalf("expected %q to use %s, got %s", tc.value, tc.color, color)
+			}
+			want := prettyStyleForColor(tc.color).Render(tc.value)
+			if got := prettyColorizeByName("Image", tc.value); got != want {
+				t.Fatalf("expected %q to render with %s, got %q want %q", tc.value, tc.color, got, want)
+			}
+		})
+	}
+}
+
 func TestPrettyWrappedOSImageContinuationKeepsOSColor(t *testing.T) {
 	rows := prettyWrapRows(
 		[]table.Row{{"Ubuntu 24.04 LTS"}},
@@ -950,6 +984,24 @@ func TestPrettyWrappedShortOSImageNameKeepsOSColor(t *testing.T) {
 		colored := prettyStyleForColor(prettyColorOSArch).Render(want)
 		if rows[index][0] != colored {
 			t.Fatalf("expected wrapped Arch image row %d to keep Arch color, got %#v want %q", index, rows[index], colored)
+		}
+	}
+}
+
+func TestPrettyWrappedSplitOSImageWordKeepsOSColor(t *testing.T) {
+	rows := prettyWrapRows(
+		[]table.Row{{"AlmaLinux"}},
+		[]table.Column{{Title: "Image", Width: 8}},
+		prettyListCellColorizer([]string{"Image"}),
+		prettyListCellContext([]string{"Image"}),
+	)
+	if len(rows) < 2 {
+		t.Fatalf("expected wrapped AlmaLinux image rows, got %#v", rows)
+	}
+	for index, want := range []string{"AlmaLinu", "x"} {
+		colored := prettyStyleForColor(prettyColorOSAlmaLinux).Render(want)
+		if rows[index][0] != colored {
+			t.Fatalf("expected wrapped AlmaLinux row %d to keep AlmaLinux color, got %#v want %q", index, rows[index], colored)
 		}
 	}
 }

@@ -1277,7 +1277,9 @@ Implementation notes: ID-like fields take precedence over resource colors so IDs
 
 Follow-up: device paths now use the device color, and nested `id:` fields inside volume attachment output use the generic UUID/GUID style. The top-level `volume list` `ID` column uses the generic UUID/GUID style, and the top-level `volume list` `Name` column uses the same generic name color as `server list`. Full UUIDs and UUID fragments continue to color only the UUID/GUID segments, leaving hyphen separators uncolored.
 
-Follow-up: image values now use OS-specific colors when their name or image-related text contains a supported operating-system marker. The first supported palette is Ubuntu `#E95420`, Debian `#CE0056`, Rocky Linux `#10B981`, Red Hat/RHEL `#EE0000`, Fedora `#3C6EB4`, CentOS `#262577`, openSUSE `#73BA25`, SUSE `#30BA78`, Alpine Linux `#0D597F`, Arch Linux `#1793D1`, and Windows `#0078D7`. Unknown image names still use the generic image color `130`, and `N/A` image values keep the no-image color.
+Follow-up: image values now use OS-specific colors when their name or image-related text contains a supported operating-system marker. The supported palette is AlmaLinux `#0069DA`, Alpine Linux `#0D597F`, Arch Linux `#1793D1`, CentOS `#262577`, CentOS Stream `#A14F8C`, CirrOS `#ED1844`, Debian `#CE0056`, deepin `#007CFF`, elementary OS `#64BAFF`, EndeavourOS `#7F7FFF`, Fedora `#3C6EB4`, FreeBSD `#E31E26`, Gentoo `#54487A`, Kali Linux `#557C94`, Linux Mint `#86BE43`, Manjaro `#35BFA4`, NetBSD `#F26711`, NixOS `#5277C3`, OpenBSD `#F2CA30`, openSUSE `#73BA25`, Oracle Linux `#E32124`, Pop!_OS `#48B9C7`, Qubes OS `#3874D8`, Red Hat/RHEL `#EE0000`, Rocky Linux `#10B981`, Solus `#5294E2`, SUSE `#30BA78`, Tails `#56347C`, Ubuntu `#E95420`, Void Linux `#478061`, VyOS `#FFBF12`, Windows `#0078D7`, and Zorin OS `#15A6F0`. Unknown image names still use the generic image color `130`, and `N/A` image values keep the no-image color.
+
+Decision update: the OS image matcher keeps more specific names before broader family names. This makes `CentOS Stream` render with the newer CentOS Stream color instead of the classic CentOS color, `Oracle Linux` render with the Oracle color instead of falling into an enterprise Linux family, and `CirrOS` render with OpenStack logo red because CirrOS is primarily used as an OpenStack test image. Oracle Linux intentionally uses the brighter Oracle logo red `#E32124` for visual separation from Red Hat `#EE0000`; current Oracle Redwood brand materials also publish Oracle Red `#C74634`, so this is a reviewed display choice rather than a claim that every Oracle asset uses `#E32124`.
 
 Work done: added `make os-test`, backed by `tools/os-test`, to render the supported OS image color palette with the same Fancy table path used by CLI output. The command is meant as a quick visual consistency check for the supported image color rules.
 
@@ -1296,6 +1298,17 @@ Sources consulted:
 * SUSE/Rancher brand page, which lists SUSE brand colors including Jungle Green `#30BA78`: https://ranchercomprd.eks-prod.suse.com/brand-guidelines.
 * Simple Icons color data, used for Alpine Linux `#0D597F` and Arch Linux `#1793D1` after checking project/logo sources: https://pub.dev/documentation/simple_icons/latest/simple_icons/SimpleIconColors-class.html.
 * Microsoft Windows unattend `WindowColor` documentation, which lists the default Windows accent as `0xff0078d7`: https://learn.microsoft.com/en-us/windows-hardware/customize/desktop/unattend/microsoft-windows-shell-setup-themes-windowcolor.
+* AlmaLinux current site icon and theme metadata, used for AlmaLinux blue `#0069DA`: https://almalinux.org/images/icon.svg and https://almalinux.org/.
+* CentOS 2022 logo SVG, used for CentOS Stream purple `#A14F8C`; classic CentOS keeps the archived brand/logo dark blue `#262577`: https://commons.wikimedia.org/wiki/File:Centos-logo-2022.svg.
+* Oracle logo SVG, used for Oracle Linux bright red `#E32124`, and Oracle Redwood brand guide, which records the newer Oracle Red `#C74634` considered during review: https://commons.wikimedia.org/wiki/File:Oracle_Logo.svg and https://www.oracle.com/a/ocom/docs/oracle-brand-guidelines.pdf.
+* OpenStack 2016 logo SVG, used for CirrOS/OpenStack red `#ED1844`: https://commons.wikimedia.org/wiki/File:OpenStack%C2%AE_Logo_2016.svg.
+* VyOS official logo SVG, whose yellow/orange gradient starts at `#FFBF12`; the palette uses that yellow endpoint for VyOS: https://vyos.io/wp-content/themes/vyos_theme/images/main/vyos-logo.svg.
+* Linux Mint official brand logo repository, used for Linux Mint green `#86BE43`: https://github.com/linuxmint/brand-logo.
+* System76 Pop!_OS brand repository, used for Pop!_OS teal `#48B9C7`: https://github.com/system76/brand.
+* FreeBSD Foundation brand page, used for FreeBSD red `#E31E26`: https://freebsdfoundation.org/brand/.
+* NetBSD official logo page and NetBSD text logo SVG, used for NetBSD orange `#F26711`: https://www.netbsd.org/gallery/logos.html and https://commons.wikimedia.org/wiki/File:NetBSD_textlogo.svg.
+* OpenBSD textual logo SVG, used for OpenBSD yellow `#F2CA30`: https://commons.wikimedia.org/wiki/File:OpenBSD_textual_logo.svg.
+* Simple Icons source-backed color data, used where official project pages or logo sources did not expose a simple brand palette for popular distro entries such as deepin, elementary OS, EndeavourOS, Gentoo, Kali Linux, Manjaro, NixOS, Qubes OS, Solus, Tails, Void Linux, and Zorin OS: https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/data/simple-icons.json.
 
 ## 2026-05-04: Top-Level Makefile
 

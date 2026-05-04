@@ -961,6 +961,12 @@ func prettyColorizeWrappedCellLines(rowIndex int, columnIndex int, lines []strin
 	pendingLabel := ""
 	pendingNeutralValue := false
 	pendingImageColor := ""
+	wrappedImageColor := ""
+	if prettyIsImageField(contextName) {
+		if color, ok := prettyOSImageColorForText(strings.Join(lines, "")); ok {
+			wrappedImageColor = color
+		}
+	}
 	for index, line := range lines {
 		if line == "" {
 			pendingLabel = ""
@@ -999,6 +1005,10 @@ func prettyColorizeWrappedCellLines(rowIndex int, columnIndex int, lines []strin
 			if color, ok := prettyOSImageColorForText(line); ok {
 				pendingImageColor = color
 				colored[index] = colorizer(rowIndex, columnIndex, line)
+				continue
+			}
+			if wrappedImageColor != "" {
+				colored[index] = prettyColorizeResourceText(line, prettyStyleForColor(wrappedImageColor))
 				continue
 			}
 			if pendingImageColor != "" {
