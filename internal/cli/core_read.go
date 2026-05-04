@@ -836,12 +836,24 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return securityGroupDelete(cmd.Context(), client, args)
+		case "security group set":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return securityGroupSet(cmd.Context(), opts, client, args)
 		case "security group show":
 			client, err := clients.networkV2()
 			if err != nil {
 				return err
 			}
 			return securityGroupShow(cmd.Context(), stdout, opts, client, args)
+		case "security group unset":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return securityGroupUnset(cmd.Context(), opts, client, args)
 		case "security group rule list":
 			client, err := clients.networkV2()
 			if err != nil {
@@ -4273,6 +4285,26 @@ func (opts securityGroupCreateOpts) ToSecGroupCreateMap() (map[string]any, error
 	return body, nil
 }
 
+type securityGroupUpdateOpts struct {
+	secgroups.UpdateOpts
+	Extra map[string]any
+}
+
+func (opts securityGroupUpdateOpts) ToSecGroupUpdateMap() (map[string]any, error) {
+	body, err := opts.UpdateOpts.ToSecGroupUpdateMap()
+	if err != nil {
+		return nil, err
+	}
+	group, ok := body["security_group"].(map[string]any)
+	if !ok {
+		return nil, fmt.Errorf("invalid security group update request body")
+	}
+	for key, value := range opts.Extra {
+		group[key] = value
+	}
+	return body, nil
+}
+
 func securityGroupCreate(ctx context.Context, stdout io.Writer, opts *Options, networkClient *gophercloud.ServiceClient, identityClient *gophercloud.ServiceClient, args []string) error {
 	if len(args) < 1 {
 		return fmt.Errorf("security group create requires <name>")
@@ -4329,6 +4361,59 @@ func securityGroupCreate(ctx context.Context, stdout io.Writer, opts *Options, n
 		return renderShowOutput(stdout, opts, securityGroupRawFields(raw))
 	}
 	return renderShowOutput(stdout, opts, securityGroupFields(item))
+}
+
+func securityGroupSet(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("security group set requires <group>")
+	}
+	if flagChanged(opts, "stateful") && flagChanged(opts, "stateless") {
+		return fmt.Errorf("argument --stateless: not allowed with argument --stateful")
+	}
+	extra, err := parseExtraProperties(flagValues(opts, "extra-property"))
+	if err != nil {
+		return err
+	}
+	item, err := findSecurityGroup(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	updateOpts := securityGroupUpdateOpts{Extra: extra}
+	if flagChanged(opts, "name") {
+		updateOpts.Name = flagValue(opts, "name")
+	}
+	if flagChanged(opts, "description") {
+		description := flagValue(opts, "description")
+		updateOpts.Description = &description
+	}
+	if flagChanged(opts, "stateful") {
+		stateful := true
+		updateOpts.Stateful = &stateful
+	}
+	if flagChanged(opts, "stateless") {
+		stateful := false
+		updateOpts.Stateful = &stateful
+	}
+	if _, err := secgroups.Update(ctx, client, item.ID, updateOpts).Extract(); err != nil {
+		return err
+	}
+	_, err = setNeutronResourceTags(ctx, client, "security-groups", item.ID, item.Tags, flagValues(opts, "tag"), boolFlag(opts, "no-tag"))
+	return err
+}
+
+func securityGroupUnset(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("security group unset requires <group>")
+	}
+	if len(flagValues(opts, "tag")) > 0 && boolFlag(opts, "all-tag") {
+		return fmt.Errorf("argument --all-tag: not allowed with argument --tag")
+	}
+	item, err := findSecurityGroup(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	_, err = unsetNeutronResourceTags(ctx, client, "security-groups", item.ID, item.Tags, flagValues(opts, "tag"), boolFlag(opts, "all-tag"))
+	return err
 }
 
 func securityGroupDelete(ctx context.Context, client *gophercloud.ServiceClient, args []string) error {
@@ -4548,6 +4633,36 @@ func neutronResourceTargetTags(existing []string, additions []string, clear bool
 		target = append(target, existing...)
 	}
 	target = append(target, additions...)
+	return uniqueSortedStrings(target)
+}
+
+func unsetNeutronResourceTags(ctx context.Context, client *gophercloud.ServiceClient, resourcePath string, id string, existing []string, removals []string, clear bool) ([]string, error) {
+	target := neutronResourceTagsAfterRemoval(existing, removals, clear)
+	if len(removals) == 0 && !clear {
+		return target, nil
+	}
+	if stringSlicesEqual(uniqueSortedStrings(existing), target) {
+		return target, nil
+	}
+	resp, err := client.Put(ctx, client.ServiceURL(resourcePath, url.PathEscape(id), "tags"), map[string]any{"tags": target}, nil, &gophercloud.RequestOpts{OkCodes: []int{200}})
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	return target, err
+}
+
+func neutronResourceTagsAfterRemoval(existing []string, removals []string, clear bool) []string {
+	if clear {
+		return []string{}
+	}
+	remove := map[string]bool{}
+	for _, value := range removals {
+		remove[value] = true
+	}
+	target := make([]string, 0, len(existing))
+	for _, value := range existing {
+		if !remove[value] {
+			target = append(target, value)
+		}
+	}
 	return uniqueSortedStrings(target)
 }
 

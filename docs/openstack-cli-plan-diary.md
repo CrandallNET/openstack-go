@@ -819,3 +819,18 @@ Sources consulted:
 * Local osc-lib tag helper source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/osc_lib/utils/tags.py`, used to mirror create-time tag behavior.
 * Local OpenStackSDK resource sources `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/network/v2/security_group.py` and `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/common/tag.py`, which document the Neutron security-group path and tag subresource behavior.
 * Gophercloud package docs for [Neutron security groups](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/security/groups).
+
+## 2026-05-04: Security Group Set And Unset
+
+Work done: added `security group set` and `security group unset`.
+
+Implementation note: `security group set` uses Gophercloud's Neutron security group update helper for name, description, statefulness, and OSC-style extra properties. It then reconciles tags through the same Neutron standard tag subresource used by create. The `--no-tag --tag ...` combination is intentionally supported because Python OSC treats it as "clear existing tags, then apply the requested tags." `security group unset` removes selected tags or clears all tags without failing when a requested tag is already absent, matching the osc-lib tag helper behavior.
+
+Live observations on `cloud6`: the Go CLI created disposable group `gocli-test-sg-set-go-20260504`, renamed it to `gocli-test-sg-set-go-renamed-20260504`, changed its description, overwrote tags with `--no-tag --tag keep --tag newtag`, removed one tag with `security group unset --tag keep`, cleared the remaining tag with `--all-tag`, deleted the group, and verified only preexisting default security groups remained.
+
+Sources consulted:
+
+* Local OSC oracle snapshots in `compat/osc/9.0.0/help/security/group/set.txt` and `compat/osc/9.0.0/help/security/group/unset.txt`.
+* Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/network/v2/security_group.py`, used only as the pinned local oracle implementation source.
+* Local osc-lib tag helper source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/osc_lib/utils/tags.py`, used to mirror set and unset tag behavior.
+* Gophercloud package docs for [Neutron security groups](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/security/groups).

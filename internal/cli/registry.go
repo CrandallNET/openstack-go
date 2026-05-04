@@ -119,7 +119,7 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"resource provider trait list",
 		"resource provider usage show",
 		"router list", "router show",
-		"security group create", "security group delete", "security group list", "security group show",
+		"security group create", "security group delete", "security group list", "security group set", "security group show", "security group unset",
 		"security group rule list", "security group rule show",
 		"server event list", "server event show",
 		"server list", "server show",
@@ -655,12 +655,23 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().String("project-domain", "", "project domain")
 		cmd.Flags().StringArray("tag", nil, "security group tag")
 		cmd.Flags().Bool("no-tag", false, "create without tags")
+	case "security group set":
+		cmd.Flags().StringArray("extra-property", nil, "additional property type=<type>,name=<name>,value=<value>")
+		cmd.Flags().String("name", "", "new security group name")
+		cmd.Flags().String("description", "", "new security group description")
+		cmd.Flags().Bool("stateful", false, "set a stateful security group")
+		cmd.Flags().Bool("stateless", false, "set a stateless security group")
+		cmd.Flags().StringArray("tag", nil, "security group tag")
+		cmd.Flags().Bool("no-tag", false, "clear tags before applying tags")
 	case "security group list":
 		cmd.Flags().String("project", "", "filter by project")
 		cmd.Flags().String("project-domain", "", "project domain")
 		cmd.Flags().Bool("share", false, "list shared security groups")
 		cmd.Flags().Bool("no-share", false, "list non-shared security groups")
 		addTagFilterFlags(cmd)
+	case "security group unset":
+		cmd.Flags().StringArray("tag", nil, "security group tag")
+		cmd.Flags().Bool("all-tag", false, "clear all tags")
 	case "security group rule list":
 		cmd.Flags().String("protocol", "", "filter by IP protocol")
 		cmd.Flags().String("ethertype", "", "filter by ethertype")
@@ -909,7 +920,7 @@ func isCoreReadCommand(path string) bool {
 		"resource provider trait list",
 		"resource provider usage show",
 		"router list", "router show",
-		"security group create", "security group delete", "security group list", "security group show",
+		"security group create", "security group delete", "security group list", "security group set", "security group show", "security group unset",
 		"security group rule list", "security group rule show",
 		"server event list", "server event show",
 		"server list", "server show",
