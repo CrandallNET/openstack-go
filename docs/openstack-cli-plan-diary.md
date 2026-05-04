@@ -803,3 +803,19 @@ Sources consulted:
 * Local OSC oracle snapshots in `compat/osc/9.0.0/help/object/create.txt`, `compat/osc/9.0.0/help/object/delete.txt`, `compat/osc/9.0.0/help/object/save.txt`, `compat/osc/9.0.0/help/object/set.txt`, and `compat/osc/9.0.0/help/object/unset.txt`.
 * Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/object/v1/object.py`, used only as the pinned local oracle implementation source.
 * Gophercloud package docs for [Object Storage objects](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/objects).
+
+## 2026-05-04: Security Group Create And Delete
+
+Work done: added `security group create` and `security group delete`, and tightened `security group show` output.
+
+Implementation note: `security group create` uses Gophercloud's Neutron security group create helper for the base resource. It mirrors Python OSC's default description behavior by using the group name when `--description` is not supplied, resolves `--project` through Identity when provided, supports `--stateful` and `--stateless`, accepts OSC-style `--extra-property`, and applies `--tag` through Neutron's standard tag subresource after create. The create output renders the raw Neutron create body with the local tag update applied, so tagged creates preserve Python OSC's create-time revision behavior. `security group show` now renders the raw Neutron security group body after Gophercloud lookup, including `is_shared` and the full nested rule dictionaries that Python OSC exposes.
+
+Live observations on `cloud6`: Python OSC created and deleted disposable groups `gocli-test-sg-python-20260504` and `gocli-test-sg-tag-python-20260504`. The Go CLI created and deleted disposable groups `gocli-test-sg-go-20260504`, `gocli-test-sg-tag-go-20260504`, and `gocli-test-sg-tag-go2-20260504`. The tagged create path was checked against Python OSC's JSON behavior, the Go delete command deleted multiple groups in one invocation, and Python/Go `security group list -f json` matched after cleanup.
+
+Sources consulted:
+
+* Local OSC oracle snapshots in `compat/osc/9.0.0/help/security/group/create.txt` and `compat/osc/9.0.0/help/security/group/delete.txt`.
+* Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/network/v2/security_group.py`, used only as the pinned local oracle implementation source.
+* Local osc-lib tag helper source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/osc_lib/utils/tags.py`, used to mirror create-time tag behavior.
+* Local OpenStackSDK resource sources `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/network/v2/security_group.py` and `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/common/tag.py`, which document the Neutron security-group path and tag subresource behavior.
+* Gophercloud package docs for [Neutron security groups](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/security/groups).

@@ -119,7 +119,7 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"resource provider trait list",
 		"resource provider usage show",
 		"router list", "router show",
-		"security group list", "security group show",
+		"security group create", "security group delete", "security group list", "security group show",
 		"security group rule list", "security group rule show",
 		"server event list", "server event show",
 		"server list", "server show",
@@ -646,6 +646,15 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().String("project-domain", "", "project domain")
 		cmd.Flags().String("agent", "", "filter by agent")
 		addTagFilterFlags(cmd)
+	case "security group create":
+		cmd.Flags().StringArray("extra-property", nil, "additional property type=<type>,name=<name>,value=<value>")
+		cmd.Flags().String("description", "", "security group description")
+		cmd.Flags().String("project", "", "owner project")
+		cmd.Flags().Bool("stateful", false, "create a stateful security group")
+		cmd.Flags().Bool("stateless", false, "create a stateless security group")
+		cmd.Flags().String("project-domain", "", "project domain")
+		cmd.Flags().StringArray("tag", nil, "security group tag")
+		cmd.Flags().Bool("no-tag", false, "create without tags")
 	case "security group list":
 		cmd.Flags().String("project", "", "filter by project")
 		cmd.Flags().String("project-domain", "", "project domain")
@@ -900,7 +909,7 @@ func isCoreReadCommand(path string) bool {
 		"resource provider trait list",
 		"resource provider usage show",
 		"router list", "router show",
-		"security group list", "security group show",
+		"security group create", "security group delete", "security group list", "security group show",
 		"security group rule list", "security group rule show",
 		"server event list", "server event show",
 		"server list", "server show",

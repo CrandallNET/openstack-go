@@ -820,6 +820,22 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return securityGroupList(cmd.Context(), stdout, opts, client)
+		case "security group create":
+			networkClient, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			identityClient, err := clients.identityV3()
+			if err != nil {
+				return err
+			}
+			return securityGroupCreate(cmd.Context(), stdout, opts, networkClient, identityClient, args)
+		case "security group delete":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return securityGroupDelete(cmd.Context(), client, args)
 		case "security group show":
 			client, err := clients.networkV2()
 			if err != nil {
@@ -4234,6 +4250,108 @@ func securityGroupList(ctx context.Context, stdout io.Writer, opts *Options, cli
 	return renderListOutput(stdout, opts, []string{"ID", "Name", "Description", "Project", "Tags", "Shared"}, rows)
 }
 
+type securityGroupCreateOpts struct {
+	secgroups.CreateOpts
+	Extra map[string]any
+}
+
+func (opts securityGroupCreateOpts) ToSecGroupCreateMap() (map[string]any, error) {
+	body, err := opts.CreateOpts.ToSecGroupCreateMap()
+	if err != nil {
+		return nil, err
+	}
+	if len(opts.Extra) == 0 {
+		return body, nil
+	}
+	group, ok := body["security_group"].(map[string]any)
+	if !ok {
+		return nil, fmt.Errorf("invalid security group create request body")
+	}
+	for key, value := range opts.Extra {
+		group[key] = value
+	}
+	return body, nil
+}
+
+func securityGroupCreate(ctx context.Context, stdout io.Writer, opts *Options, networkClient *gophercloud.ServiceClient, identityClient *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("security group create requires <name>")
+	}
+	if flagChanged(opts, "stateful") && flagChanged(opts, "stateless") {
+		return fmt.Errorf("argument --stateless: not allowed with argument --stateful")
+	}
+	if len(flagValues(opts, "tag")) > 0 && boolFlag(opts, "no-tag") {
+		return fmt.Errorf("argument --no-tag: not allowed with argument --tag")
+	}
+	extra, err := parseExtraProperties(flagValues(opts, "extra-property"))
+	if err != nil {
+		return err
+	}
+	createOpts := securityGroupCreateOpts{
+		CreateOpts: secgroups.CreateOpts{
+			Name:        args[0],
+			Description: args[0],
+		},
+		Extra: extra,
+	}
+	if flagChanged(opts, "description") {
+		createOpts.Description = flagValue(opts, "description")
+	}
+	if flagChanged(opts, "stateful") {
+		stateful := true
+		createOpts.Stateful = &stateful
+	}
+	if flagChanged(opts, "stateless") {
+		stateful := false
+		createOpts.Stateful = &stateful
+	}
+	if projectNameOrID := flagValue(opts, "project"); projectNameOrID != "" {
+		project, err := findProjectWithDomain(ctx, identityClient, projectNameOrID, flagValue(opts, "project-domain"))
+		if err != nil {
+			return err
+		}
+		createOpts.ProjectID = project.ID
+	}
+
+	result := secgroups.Create(ctx, networkClient, createOpts)
+	item, err := result.Extract()
+	if err != nil {
+		return err
+	}
+	raw, _ := securityGroupRawFromBody(result.Body)
+	tags, err := setNeutronResourceTags(ctx, networkClient, "security-groups", item.ID, item.Tags, flagValues(opts, "tag"), boolFlag(opts, "no-tag"))
+	if err != nil {
+		return err
+	}
+	item.Tags = tags
+	if raw != nil {
+		raw["tags"] = tags
+		return renderShowOutput(stdout, opts, securityGroupRawFields(raw))
+	}
+	return renderShowOutput(stdout, opts, securityGroupFields(item))
+}
+
+func securityGroupDelete(ctx context.Context, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("security group delete requires <group> [<group> ...]")
+	}
+	failures := 0
+	for _, groupArg := range args {
+		item, err := findSecurityGroup(ctx, client, groupArg)
+		if err != nil {
+			failures++
+			continue
+		}
+		if err := secgroups.Delete(ctx, client, item.ID).ExtractErr(); err != nil {
+			failures++
+		}
+	}
+	if failures > 0 {
+		return fmt.Errorf("%d of %d security groups failed to delete.", failures, len(args))
+	}
+	return nil
+}
+
 func securityGroupShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
 	if len(args) < 1 {
 		return fmt.Errorf("security group show requires <group>")
@@ -4242,7 +4360,14 @@ func securityGroupShow(ctx context.Context, stdout io.Writer, opts *Options, cli
 	if err != nil {
 		return err
 	}
-	return renderShowOutput(stdout, opts, []outputField{
+	if raw, err := neutronSecurityGroupRaw(ctx, client, item.ID); err == nil {
+		return renderShowOutput(stdout, opts, securityGroupRawFields(raw))
+	}
+	return renderShowOutput(stdout, opts, securityGroupFields(item))
+}
+
+func securityGroupFields(item *secgroups.SecGroup) []outputField {
+	return []outputField{
 		{"created_at", oscTime(item.CreatedAt)},
 		{"description", item.Description},
 		{"id", item.ID},
@@ -4253,7 +4378,206 @@ func securityGroupShow(ctx context.Context, stdout io.Writer, opts *Options, cli
 		{"stateful", item.Stateful},
 		{"tags", item.Tags},
 		{"updated_at", oscTime(item.UpdatedAt)},
-	})
+	}
+}
+
+func neutronSecurityGroupRaw(ctx context.Context, client *gophercloud.ServiceClient, id string) (map[string]any, error) {
+	var body struct {
+		SecurityGroup map[string]any `json:"security_group"`
+	}
+	resp, err := client.Get(ctx, client.ServiceURL("security-groups", url.PathEscape(id)), &body, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return nil, err
+	}
+	return body.SecurityGroup, nil
+}
+
+func securityGroupRawFromBody(body any) (map[string]any, bool) {
+	var wrapper struct {
+		SecurityGroup map[string]any `json:"security_group"`
+	}
+	encoded, err := json.Marshal(body)
+	if err != nil {
+		return nil, false
+	}
+	if err := json.Unmarshal(encoded, &wrapper); err != nil {
+		return nil, false
+	}
+	if wrapper.SecurityGroup == nil {
+		return nil, false
+	}
+	return wrapper.SecurityGroup, true
+}
+
+func securityGroupRawFields(raw map[string]any) []outputField {
+	known := map[string]bool{
+		"created_at":           true,
+		"description":          true,
+		"id":                   true,
+		"is_shared":            true,
+		"location":             true,
+		"name":                 true,
+		"project_id":           true,
+		"revision_number":      true,
+		"rules":                true,
+		"security_group_rules": true,
+		"shared":               true,
+		"stateful":             true,
+		"tags":                 true,
+		"tenant_id":            true,
+		"updated_at":           true,
+	}
+	fields := []outputField{
+		{"created_at", raw["created_at"]},
+		{"description", raw["description"]},
+		{"id", raw["id"]},
+		{"is_shared", firstPresent(raw, "is_shared", "shared")},
+		{"name", raw["name"]},
+		{"project_id", raw["project_id"]},
+		{"revision_number", raw["revision_number"]},
+		{"rules", firstPresent(raw, "rules", "security_group_rules")},
+		{"stateful", raw["stateful"]},
+		{"tags", raw["tags"]},
+		{"updated_at", raw["updated_at"]},
+	}
+	var extras []string
+	for key := range raw {
+		if !known[key] {
+			extras = append(extras, key)
+		}
+	}
+	sort.Strings(extras)
+	for _, key := range extras {
+		fields = append(fields, outputField{key, raw[key]})
+	}
+	return fields
+}
+
+func firstPresent(values map[string]any, names ...string) any {
+	for _, name := range names {
+		if value, ok := values[name]; ok {
+			return value
+		}
+	}
+	return nil
+}
+
+func parseExtraProperties(values []string) (map[string]any, error) {
+	if len(values) == 0 {
+		return nil, nil
+	}
+	properties := make(map[string]any, len(values))
+	for _, value := range values {
+		parts := map[string]string{}
+		for _, part := range strings.Split(value, ",") {
+			key, raw, ok := strings.Cut(part, "=")
+			if !ok || strings.TrimSpace(key) == "" {
+				return nil, fmt.Errorf("invalid extra property %q, expected type=<type>,name=<name>,value=<value>", value)
+			}
+			parts[strings.TrimSpace(key)] = raw
+		}
+		name := parts["name"]
+		if name == "" {
+			return nil, fmt.Errorf("invalid extra property %q, missing name", value)
+		}
+		parsed, err := parseExtraPropertyValue(parts["type"], parts["value"])
+		if err != nil {
+			return nil, fmt.Errorf("invalid extra property %q: %w", value, err)
+		}
+		properties[name] = parsed
+	}
+	return properties, nil
+}
+
+func parseExtraPropertyValue(valueType string, raw string) (any, error) {
+	switch valueType {
+	case "", "str", "string":
+		return raw, nil
+	case "bool":
+		parsed, err := strconv.ParseBool(raw)
+		if err != nil {
+			return nil, fmt.Errorf("invalid bool value %q", raw)
+		}
+		return parsed, nil
+	case "int":
+		parsed, err := strconv.Atoi(raw)
+		if err != nil {
+			return nil, fmt.Errorf("invalid int value %q", raw)
+		}
+		return parsed, nil
+	case "list":
+		if raw == "" {
+			return []string{}, nil
+		}
+		return strings.Split(raw, ";"), nil
+	case "dict":
+		result := map[string]string{}
+		if raw == "" {
+			return result, nil
+		}
+		for _, pair := range strings.Split(raw, ";") {
+			key, value, ok := strings.Cut(pair, ":")
+			if !ok || key == "" {
+				return nil, fmt.Errorf("invalid dict value %q", raw)
+			}
+			result[key] = value
+		}
+		return result, nil
+	default:
+		return nil, fmt.Errorf("unsupported type %q", valueType)
+	}
+}
+
+func setNeutronResourceTags(ctx context.Context, client *gophercloud.ServiceClient, resourcePath string, id string, existing []string, additions []string, clear bool) ([]string, error) {
+	target := neutronResourceTargetTags(existing, additions, clear)
+	if len(additions) == 0 && !clear {
+		return target, nil
+	}
+	if stringSlicesEqual(uniqueSortedStrings(existing), target) {
+		return target, nil
+	}
+	resp, err := client.Put(ctx, client.ServiceURL(resourcePath, url.PathEscape(id), "tags"), map[string]any{"tags": target}, nil, &gophercloud.RequestOpts{OkCodes: []int{200}})
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	return target, err
+}
+
+func neutronResourceTargetTags(existing []string, additions []string, clear bool) []string {
+	target := []string{}
+	if !clear {
+		target = append(target, existing...)
+	}
+	target = append(target, additions...)
+	return uniqueSortedStrings(target)
+}
+
+func uniqueSortedStrings(values []string) []string {
+	if len(values) == 0 {
+		return []string{}
+	}
+	seen := map[string]bool{}
+	result := make([]string, 0, len(values))
+	for _, value := range values {
+		if seen[value] {
+			continue
+		}
+		seen[value] = true
+		result = append(result, value)
+	}
+	sort.Strings(result)
+	return result
+}
+
+func stringSlicesEqual(left []string, right []string) bool {
+	if len(left) != len(right) {
+		return false
+	}
+	for i := range left {
+		if left[i] != right[i] {
+			return false
+		}
+	}
+	return true
 }
 
 func securityGroupRuleDetails(items []secgrouprules.SecGroupRule) []map[string]any {
