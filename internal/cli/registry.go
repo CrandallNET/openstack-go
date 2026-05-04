@@ -56,7 +56,7 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		registry.implemented[path] = runIdentityRead(path, stdout, opts)
 	}
 	for _, path := range []string{
-		"address group list", "address group show",
+		"address group create", "address group delete", "address group list", "address group set", "address group show", "address group unset",
 		"address scope list", "address scope show",
 		"aggregate list", "aggregate show",
 		"allocation candidate list",
@@ -245,6 +245,19 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().String("name", "", "filter by name")
 		cmd.Flags().String("project", "", "filter by project")
 		cmd.Flags().String("project-domain", "", "project domain")
+	case "address group create":
+		cmd.Flags().StringArray("extra-property", nil, "additional property type=<type>,name=<name>,value=<value>")
+		cmd.Flags().String("description", "", "address group description")
+		cmd.Flags().StringArray("address", nil, "IP address or CIDR")
+		cmd.Flags().String("project", "", "owner project")
+		cmd.Flags().String("project-domain", "", "project domain")
+	case "address group set":
+		cmd.Flags().StringArray("extra-property", nil, "additional property type=<type>,name=<name>,value=<value>")
+		cmd.Flags().String("name", "", "new address group name")
+		cmd.Flags().String("description", "", "new address group description")
+		cmd.Flags().StringArray("address", nil, "IP address or CIDR")
+	case "address group unset":
+		cmd.Flags().StringArray("address", nil, "IP address or CIDR")
 	case "address scope list":
 		cmd.Flags().String("name", "", "filter by name")
 		cmd.Flags().Int("ip-version", 0, "filter by IP version")
@@ -874,7 +887,7 @@ func isIdentityReadCommand(path string) bool {
 
 func isCoreReadCommand(path string) bool {
 	switch path {
-	case "address group list", "address group show",
+	case "address group create", "address group delete", "address group list", "address group set", "address group show", "address group unset",
 		"address scope list", "address scope show",
 		"aggregate list", "aggregate show",
 		"allocation candidate list",

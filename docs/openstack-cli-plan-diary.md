@@ -850,3 +850,18 @@ Sources consulted:
 * Local Python OSC network utility source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/network/utils.py`, used for protocol, ethertype, port-range, and remote-prefix behavior.
 * Local osc-lib parser action source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/osc_lib/cli/parseractions.py`, used for `--dst-port` range parsing behavior.
 * Gophercloud package docs for [Neutron security group rules](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/security/rules).
+
+## 2026-05-04: Address Group Lifecycle Commands
+
+Work done: added `address group create`, `address group delete`, `address group set`, and `address group unset`, and tightened `address group show` output.
+
+Implementation note: address group create/update/delete uses Gophercloud's Neutron address group helpers. The Go CLI normalizes `--address` values with Go's `net/netip` to mirror Python OSC's `netaddr.IPNetwork` behavior, so plain IPv4 addresses become `/32` and plain IPv6 addresses become `/128`. Create and show output render the raw Neutron address group body, because Python OSC exposes `created_at`, `revision_number`, and `updated_at`, while Gophercloud's typed `AddressGroup` struct currently omits those fields.
+
+Live observations on `cloud6`: the Go CLI created disposable groups `gocli-test-address-group-go-20260504` and `gocli-test-address-group-go2-20260504`, verified address normalization against Python OSC's `gocli-test-address-group-python-20260504` output, added an address with `address group set`, removed one with `address group unset`, renamed and updated the description, deleted the group, and verified `address group list -f json` returned an empty list after cleanup.
+
+Sources consulted:
+
+* Local OSC oracle snapshots in `compat/osc/9.0.0/help/address/group/create.txt`, `compat/osc/9.0.0/help/address/group/delete.txt`, `compat/osc/9.0.0/help/address/group/set.txt`, and `compat/osc/9.0.0/help/address/group/unset.txt`.
+* Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/network/v2/address_group.py`, used only as the pinned local oracle implementation source.
+* Gophercloud package docs for [Neutron address groups](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/security/addressgroups).
+* Go package docs for [net/netip](https://pkg.go.dev/net/netip), used for address and CIDR normalization.

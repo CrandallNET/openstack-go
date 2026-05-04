@@ -306,8 +306,12 @@ func identityCloudVerified() map[string]bool {
 
 func coreReadPackages() map[string]string {
 	packages := map[string]string{
+		"address group create":               "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/security/addressgroups",
+		"address group delete":               "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/security/addressgroups",
 		"address group list":                 "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/security/addressgroups",
+		"address group set":                  "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/security/addressgroups",
 		"address group show":                 "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/security/addressgroups",
+		"address group unset":                "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/security/addressgroups",
 		"address scope list":                 "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/addressscopes",
 		"address scope show":                 "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/addressscopes",
 		"aggregate list":                     "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/aggregates",
@@ -555,7 +559,11 @@ func coreReadShims() map[string]bool {
 
 func coreCloudVerified() map[string]bool {
 	verified := map[string]bool{
+		"address group create":               true,
+		"address group delete":               true,
 		"address group list":                 true,
+		"address group set":                  true,
+		"address group unset":                true,
 		"address scope list":                 true,
 		"aggregate list":                     true,
 		"allocation candidate list":          true,
@@ -715,6 +723,10 @@ func coreCloudVerified() map[string]bool {
 
 func coreWriteCommands() map[string]bool {
 	return map[string]bool{
+		"address group create":                           true,
+		"address group delete":                           true,
+		"address group set":                              true,
+		"address group unset":                            true,
 		"image metadef namespace create":                 true,
 		"cached image clear":                             true,
 		"cached image delete":                            true,

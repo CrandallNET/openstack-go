@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/netip"
 	"net/url"
 	"os"
 	"sort"
@@ -107,18 +108,46 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return blockStorageResourceFilterShow(cmd.Context(), stdout, opts, client, args)
+		case "address group create":
+			networkClient, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			identityClient, err := clients.identityV3()
+			if err != nil {
+				return err
+			}
+			return addressGroupCreate(cmd.Context(), stdout, opts, networkClient, identityClient, args)
+		case "address group delete":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return addressGroupDelete(cmd.Context(), client, args)
 		case "address group list":
 			client, err := clients.networkV2()
 			if err != nil {
 				return err
 			}
 			return addressGroupList(cmd.Context(), stdout, opts, client)
+		case "address group set":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return addressGroupSet(cmd.Context(), opts, client, args)
 		case "address group show":
 			client, err := clients.networkV2()
 			if err != nil {
 				return err
 			}
 			return addressGroupShow(cmd.Context(), stdout, opts, client, args)
+		case "address group unset":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return addressGroupUnset(cmd.Context(), opts, client, args)
 		case "address scope list":
 			client, err := clients.networkV2()
 			if err != nil {
@@ -3691,6 +3720,197 @@ func storeDefault(value any) any {
 	}
 }
 
+type addressGroupCreateOpts struct {
+	Name        string
+	Description string
+	ProjectID   string
+	Addresses   []string
+	Extra       map[string]any
+}
+
+func (opts addressGroupCreateOpts) ToAddressGroupCreateMap() (map[string]any, error) {
+	group := map[string]any{
+		"name":      opts.Name,
+		"addresses": opts.Addresses,
+	}
+	if opts.Description != "" {
+		group["description"] = opts.Description
+	}
+	if opts.ProjectID != "" {
+		group["project_id"] = opts.ProjectID
+	}
+	for key, value := range opts.Extra {
+		group[key] = value
+	}
+	return map[string]any{"address_group": group}, nil
+}
+
+type addressGroupUpdateOpts struct {
+	addressgroups.UpdateOpts
+	Extra map[string]any
+}
+
+func (opts addressGroupUpdateOpts) ToAddressGroupUpdateMap() (map[string]any, error) {
+	body, err := opts.UpdateOpts.ToAddressGroupUpdateMap()
+	if err != nil {
+		return nil, err
+	}
+	group, ok := body["address_group"].(map[string]any)
+	if !ok {
+		return nil, fmt.Errorf("invalid address group update request body")
+	}
+	for key, value := range opts.Extra {
+		group[key] = value
+	}
+	return body, nil
+}
+
+func addressGroupCreate(ctx context.Context, stdout io.Writer, opts *Options, networkClient *gophercloud.ServiceClient, identityClient *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("address group create requires <name>")
+	}
+	addresses, err := normalizeAddressGroupAddresses(flagValues(opts, "address"))
+	if err != nil {
+		return err
+	}
+	extra, err := parseExtraProperties(flagValues(opts, "extra-property"))
+	if err != nil {
+		return err
+	}
+	createOpts := addressGroupCreateOpts{
+		Name:      args[0],
+		Addresses: addresses,
+		Extra:     extra,
+	}
+	if description := flagValue(opts, "description"); description != "" {
+		createOpts.Description = description
+	}
+	if projectNameOrID := flagValue(opts, "project"); projectNameOrID != "" {
+		project, err := findProjectWithDomain(ctx, identityClient, projectNameOrID, flagValue(opts, "project-domain"))
+		if err != nil {
+			return err
+		}
+		createOpts.ProjectID = project.ID
+	}
+	result := addressgroups.Create(ctx, networkClient, createOpts)
+	item, err := result.Extract()
+	if err != nil {
+		return err
+	}
+	if raw, ok := addressGroupRawFromBody(result.Body); ok {
+		return renderShowOutput(stdout, opts, addressGroupRawFields(raw))
+	}
+	return renderShowOutput(stdout, opts, addressGroupFields(item))
+}
+
+func addressGroupDelete(ctx context.Context, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("address group delete requires <address-group> [<address-group> ...]")
+	}
+	failures := 0
+	for _, groupArg := range args {
+		item, err := findAddressGroup(ctx, client, groupArg)
+		if err != nil {
+			failures++
+			continue
+		}
+		if err := addressgroups.Delete(ctx, client, item.ID).ExtractErr(); err != nil {
+			failures++
+		}
+	}
+	if failures > 0 {
+		return fmt.Errorf("%d of %d address groups failed to delete.", failures, len(args))
+	}
+	return nil
+}
+
+func addressGroupSet(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("address group set requires <address-group>")
+	}
+	item, err := findAddressGroup(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	extra, err := parseExtraProperties(flagValues(opts, "extra-property"))
+	if err != nil {
+		return err
+	}
+	updateOpts := addressGroupUpdateOpts{Extra: extra}
+	hasUpdate := len(extra) > 0
+	if flagChanged(opts, "name") {
+		name := flagValue(opts, "name")
+		updateOpts.Name = &name
+		hasUpdate = true
+	}
+	if flagChanged(opts, "description") {
+		description := flagValue(opts, "description")
+		updateOpts.Description = &description
+		hasUpdate = true
+	}
+	if hasUpdate {
+		if _, err := addressgroups.Update(ctx, client, item.ID, updateOpts).Extract(); err != nil {
+			return err
+		}
+	}
+	addresses, err := normalizeAddressGroupAddresses(flagValues(opts, "address"))
+	if err != nil {
+		return err
+	}
+	if len(addresses) > 0 {
+		if _, err := addressgroups.AddAddresses(ctx, client, item.ID, addressgroups.UpdateAddressesOpts{Addresses: addresses}).Extract(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func addressGroupUnset(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("address group unset requires <address-group>")
+	}
+	item, err := findAddressGroup(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	addresses, err := normalizeAddressGroupAddresses(flagValues(opts, "address"))
+	if err != nil {
+		return err
+	}
+	if len(addresses) > 0 {
+		if _, err := addressgroups.RemoveAddresses(ctx, client, item.ID, addressgroups.UpdateAddressesOpts{Addresses: addresses}).Extract(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func normalizeAddressGroupAddresses(values []string) ([]string, error) {
+	addresses := make([]string, 0, len(values))
+	for _, value := range values {
+		address, err := normalizeAddressGroupAddress(value)
+		if err != nil {
+			return nil, err
+		}
+		addresses = append(addresses, address)
+	}
+	return addresses, nil
+}
+
+func normalizeAddressGroupAddress(value string) (string, error) {
+	if prefix, err := netip.ParsePrefix(value); err == nil {
+		return prefix.String(), nil
+	}
+	addr, err := netip.ParseAddr(value)
+	if err != nil {
+		return "", fmt.Errorf("invalid address %q", value)
+	}
+	if addr.Is4() {
+		return addr.String() + "/32", nil
+	}
+	return addr.String() + "/128", nil
+}
+
 func networkList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
 	page, err := networks.List(client, networks.ListOpts{}).AllPages(ctx)
 	if err != nil {
@@ -3761,13 +3981,85 @@ func addressGroupShow(ctx context.Context, stdout io.Writer, opts *Options, clie
 	if err != nil {
 		return err
 	}
-	return renderShowOutput(stdout, opts, []outputField{
+	if raw, err := neutronAddressGroupRaw(ctx, client, item.ID); err == nil {
+		return renderShowOutput(stdout, opts, addressGroupRawFields(raw))
+	}
+	return renderShowOutput(stdout, opts, addressGroupFields(item))
+}
+
+func neutronAddressGroupRaw(ctx context.Context, client *gophercloud.ServiceClient, id string) (map[string]any, error) {
+	var body struct {
+		AddressGroup map[string]any `json:"address_group"`
+	}
+	resp, err := client.Get(ctx, client.ServiceURL("address-groups", url.PathEscape(id)), &body, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return nil, err
+	}
+	return body.AddressGroup, nil
+}
+
+func addressGroupRawFromBody(body any) (map[string]any, bool) {
+	var wrapper struct {
+		AddressGroup map[string]any `json:"address_group"`
+	}
+	encoded, err := json.Marshal(body)
+	if err != nil {
+		return nil, false
+	}
+	if err := json.Unmarshal(encoded, &wrapper); err != nil {
+		return nil, false
+	}
+	if wrapper.AddressGroup == nil {
+		return nil, false
+	}
+	return wrapper.AddressGroup, true
+}
+
+func addressGroupRawFields(raw map[string]any) []outputField {
+	known := map[string]bool{
+		"addresses":       true,
+		"created_at":      true,
+		"description":     true,
+		"id":              true,
+		"location":        true,
+		"name":            true,
+		"project_id":      true,
+		"revision_number": true,
+		"tenant_id":       true,
+		"updated_at":      true,
+	}
+	fields := []outputField{
+		{"addresses", raw["addresses"]},
+		{"created_at", raw["created_at"]},
+		{"description", raw["description"]},
+		{"id", raw["id"]},
+		{"name", raw["name"]},
+		{"project_id", raw["project_id"]},
+		{"revision_number", raw["revision_number"]},
+		{"updated_at", raw["updated_at"]},
+	}
+	var extras []string
+	for key := range raw {
+		if !known[key] {
+			extras = append(extras, key)
+		}
+	}
+	sort.Strings(extras)
+	for _, key := range extras {
+		fields = append(fields, outputField{key, raw[key]})
+	}
+	return fields
+}
+
+func addressGroupFields(item *addressgroups.AddressGroup) []outputField {
+	return []outputField{
 		{"addresses", item.Addresses},
 		{"description", item.Description},
 		{"id", item.ID},
 		{"name", item.Name},
 		{"project_id", item.ProjectID},
-	})
+	}
 }
 
 func addressScopeList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
