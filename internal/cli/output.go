@@ -7,8 +7,10 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"net/netip"
 	"os"
 	"reflect"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -32,10 +34,28 @@ type prettyValueFormatter interface {
 	PrettyString() string
 }
 
+type prettyCellColorizer func(rowIndex int, columnIndex int, text string) string
+
 type orderedJSONObject struct {
 	keys   []string
 	values map[string]any
 }
+
+var (
+	prettyUUIDPattern        = regexp.MustCompile(`(?i)\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b`)
+	prettyIPCandidatePattern = regexp.MustCompile(`(?i)(?:\b(?:\d{1,3}\.){3}\d{1,3}(?:/\d{1,3})?\b|\b[0-9a-f]*:[0-9a-f:.]*(?:/\d{1,3})?\b|::(?:/\d{1,3})?)`)
+
+	prettyBooleanFalseStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Bold(true)
+	prettyBooleanTrueStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("82")).Bold(true)
+	prettyErrorStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("203")).Bold(true)
+	prettyFieldStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("111")).Bold(true)
+	prettyFlavorStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color("215")).Bold(true)
+	prettyIPStyle           = lipgloss.NewStyle().Foreground(lipgloss.Color("114")).Bold(true)
+	prettyNameStyle         = lipgloss.NewStyle().Foreground(lipgloss.Color("213")).Bold(true)
+	prettyNumberStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color("141")).Bold(true)
+	prettyUUIDStyle         = lipgloss.NewStyle().Foreground(lipgloss.Color("75")).Bold(true)
+	prettyWarningStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("220")).Bold(true)
+)
 
 func (object orderedJSONObject) MarshalJSON() ([]byte, error) {
 	var buffer bytes.Buffer
@@ -154,7 +174,7 @@ func renderPrettyList(stdout io.Writer, opts *Options, columns []string, rows []
 		}
 		tableRows = append(tableRows, tableRow)
 	}
-	return renderPrettyTable(stdout, opts, columns, tableRows)
+	return renderPrettyTable(stdout, opts, columns, tableRows, prettyListCellColorizer(columns))
 }
 
 func renderPrettyShow(stdout io.Writer, opts *Options, fields []outputField) error {
@@ -162,10 +182,10 @@ func renderPrettyShow(stdout io.Writer, opts *Options, fields []outputField) err
 	for _, field := range fields {
 		rows = append(rows, table.Row{field.Name, prettyCellValue(field.Value)})
 	}
-	return renderPrettyTable(stdout, opts, []string{"Field", "Value"}, rows)
+	return renderPrettyTable(stdout, opts, []string{"Field", "Value"}, rows, prettyShowCellColorizer(fields))
 }
 
-func renderPrettyTable(stdout io.Writer, opts *Options, headers []string, rows []table.Row) error {
+func renderPrettyTable(stdout io.Writer, opts *Options, headers []string, rows []table.Row, colorizer prettyCellColorizer) error {
 	if len(rows) == 0 {
 		return renderPrettyEmpty(stdout)
 	}
@@ -173,7 +193,10 @@ func renderPrettyTable(stdout io.Writer, opts *Options, headers []string, rows [
 	color := prettyColorEnabled(stdout)
 	termWidth := prettyOutputWidth(stdout, opts, color)
 	columns := prettyTableColumns(headers, rows, termWidth, color)
-	wrappedRows := prettyWrapRows(rows, columns)
+	if !color {
+		colorizer = nil
+	}
+	wrappedRows := prettyWrapRows(rows, columns, colorizer)
 	model := table.New(
 		table.WithColumns(columns),
 		table.WithRows(wrappedRows),
@@ -271,9 +294,9 @@ func prettyNaturalWidths(headers []string, rows []table.Row) []int {
 	return widths
 }
 
-func prettyWrapRows(rows []table.Row, columns []table.Column) []table.Row {
+func prettyWrapRows(rows []table.Row, columns []table.Column, colorizer prettyCellColorizer) []table.Row {
 	wrappedRows := make([]table.Row, 0, len(rows))
-	for _, row := range rows {
+	for rowIndex, row := range rows {
 		cellLines := make([][]string, len(columns))
 		height := 1
 		for i, column := range columns {
@@ -289,6 +312,9 @@ func prettyWrapRows(rows []table.Row, columns []table.Column) []table.Row {
 			for column := range columns {
 				if line < len(cellLines[column]) {
 					wrappedRow[column] = cellLines[column][line]
+				}
+				if colorizer != nil && wrappedRow[column] != "" {
+					wrappedRow[column] = colorizer(rowIndex, column, wrappedRow[column])
 				}
 			}
 			wrappedRows = append(wrappedRows, wrappedRow)
@@ -357,6 +383,149 @@ func prettyOutputWidth(stdout io.Writer, opts *Options, color bool) int {
 
 func prettyColorEnabled(stdout io.Writer) bool {
 	return os.Getenv("NO_COLOR") == "" && os.Getenv("CLICOLOR") != "0" && tableWriterIsTerminal(stdout)
+}
+
+func prettyListCellColorizer(columns []string) prettyCellColorizer {
+	return func(rowIndex int, columnIndex int, text string) string {
+		if columnIndex >= len(columns) {
+			return prettyColorizeTokens(text)
+		}
+		return prettyColorizeByName(columns[columnIndex], text)
+	}
+}
+
+func prettyShowCellColorizer(fields []outputField) prettyCellColorizer {
+	return func(rowIndex int, columnIndex int, text string) string {
+		if columnIndex == 0 {
+			return prettyFieldStyle.Render(text)
+		}
+		if columnIndex == 1 && rowIndex < len(fields) {
+			return prettyColorizeByName(fields[rowIndex].Name, text)
+		}
+		return prettyColorizeTokens(text)
+	}
+}
+
+func prettyColorizeByName(name string, text string) string {
+	if strings.TrimSpace(text) == "" {
+		return text
+	}
+	normalized := normalizeColumnName(name)
+	if prettyContainsAddressToken(text) {
+		return prettyColorizeTokens(text)
+	}
+	switch {
+	case prettyIsNameField(normalized):
+		return prettyNameStyle.Render(text)
+	case prettyIsFlavorField(normalized):
+		return prettyFlavorStyle.Render(text)
+	case prettyIsFlavorComponentField(normalized):
+		return prettyNumberStyle.Render(prettyColorizeTokens(text))
+	case prettyIsStatusField(normalized):
+		return prettyColorizeStatus(text)
+	case prettyIsBooleanText(text):
+		return prettyColorizeBoolean(text)
+	default:
+		return prettyColorizeTokens(text)
+	}
+}
+
+func prettyIsNameField(name string) bool {
+	return name == "name" ||
+		name == "display_name" ||
+		strings.HasSuffix(name, "_name") ||
+		strings.HasSuffix(name, "_hostname") ||
+		name == "hostname" ||
+		name == "hypervisor_hostname"
+}
+
+func prettyIsFlavorField(name string) bool {
+	return name == "flavor" ||
+		name == "flavor_id" ||
+		name == "flavor_name" ||
+		strings.Contains(name, "flavor")
+}
+
+func prettyIsFlavorComponentField(name string) bool {
+	switch name {
+	case "ram", "disk", "ephemeral", "vcpus", "swap", "rxtx_factor":
+		return true
+	default:
+		return false
+	}
+}
+
+func prettyIsStatusField(name string) bool {
+	switch name {
+	case "status", "state", "power_state", "task_state", "vm_state":
+		return true
+	default:
+		return false
+	}
+}
+
+func prettyIsBooleanText(text string) bool {
+	trimmed := strings.TrimSpace(text)
+	return trimmed == "True" || trimmed == "False"
+}
+
+func prettyColorizeBoolean(text string) string {
+	switch strings.TrimSpace(text) {
+	case "True":
+		return prettyBooleanTrueStyle.Render(text)
+	case "False":
+		return prettyBooleanFalseStyle.Render(text)
+	default:
+		return text
+	}
+}
+
+func prettyColorizeStatus(text string) string {
+	trimmed := strings.ToUpper(strings.TrimSpace(text))
+	switch trimmed {
+	case "ACTIVE", "AVAILABLE", "ENABLED", "HEALTHY", "IN_USE", "ONLINE", "READY", "RUNNING", "UP":
+		return prettyBooleanTrueStyle.Render(text)
+	case "BUILD", "CREATING", "DELETING", "MIGRATING", "PENDING", "REBOOT", "REBUILD", "RESIZE", "SAVING", "VERIFY_RESIZE":
+		return prettyWarningStyle.Render(text)
+	case "DELETED", "DISABLED", "DOWN", "ERROR", "FAILED", "FAULT", "KILLED", "SHUTOFF", "SUSPENDED":
+		return prettyErrorStyle.Render(text)
+	default:
+		return prettyColorizeTokens(text)
+	}
+}
+
+func prettyColorizeTokens(text string) string {
+	text = prettyIPCandidatePattern.ReplaceAllStringFunc(text, func(candidate string) string {
+		if !prettyValidIPToken(candidate) {
+			return candidate
+		}
+		return prettyIPStyle.Render(candidate)
+	})
+	text = prettyUUIDPattern.ReplaceAllStringFunc(text, func(candidate string) string {
+		return prettyUUIDStyle.Render(candidate)
+	})
+	return text
+}
+
+func prettyContainsAddressToken(text string) bool {
+	if prettyUUIDPattern.MatchString(text) {
+		return true
+	}
+	for _, candidate := range prettyIPCandidatePattern.FindAllString(text, -1) {
+		if prettyValidIPToken(candidate) {
+			return true
+		}
+	}
+	return false
+}
+
+func prettyValidIPToken(candidate string) bool {
+	if strings.Contains(candidate, "/") {
+		_, err := netip.ParsePrefix(candidate)
+		return err == nil
+	}
+	_, err := netip.ParseAddr(candidate)
+	return err == nil
 }
 
 func prettyCellValue(value any) string {

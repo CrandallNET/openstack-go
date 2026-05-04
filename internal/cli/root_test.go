@@ -570,14 +570,77 @@ func TestPrettyColorHonorsNoColor(t *testing.T) {
 	}()
 
 	var stdout bytes.Buffer
-	err := renderListOutput(&stdout, &Options{Format: "pretty"}, []string{"ID", "Name"}, []outputRow{
-		{"ID": "server-1", "Name": "alpha"},
+	err := renderListOutput(&stdout, &Options{Format: "pretty"}, []string{"ID", "Name", "Networks"}, []outputRow{
+		{
+			"ID":       "7dbf33e2-6d96-43b1-961b-ae58925a382c",
+			"Name":     "alpha",
+			"Networks": "testNet:\n  172.16.86.56",
+		},
 	})
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 	if containsANSI(stdout.String()) {
 		t.Fatalf("expected NO_COLOR pretty output without ANSI escapes, got:\n%q", stdout.String())
+	}
+}
+
+func TestPrettySemanticColorUsesANSIForTTY(t *testing.T) {
+	t.Setenv("NO_COLOR", "")
+	t.Setenv("CLICOLOR", "1")
+	previousTTY := tableWriterIsTerminal
+	tableWriterIsTerminal = func(stdout io.Writer) bool {
+		return true
+	}
+	defer func() {
+		tableWriterIsTerminal = previousTTY
+	}()
+
+	var stdout bytes.Buffer
+	err := renderListOutput(&stdout, &Options{Format: "pretty"}, []string{"ID", "Name", "Networks", "Flavor", "RAM", "Status"}, []outputRow{
+		{
+			"ID":       "7dbf33e2-6d96-43b1-961b-ae58925a382c",
+			"Name":     "rocky",
+			"Networks": "os6-lan:\n  172.16.86.56",
+			"Flavor":   "m1.small",
+			"RAM":      2048,
+			"Status":   "ACTIVE",
+		},
+	})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	output := stdout.String()
+	if !containsANSI(output) {
+		t.Fatalf("expected TTY pretty output to contain ANSI color, got:\n%s", output)
+	}
+	for _, want := range []string{"7dbf33e2-6d96-43b1-961b-ae58925a382c", "rocky", "172.16.86.56", "m1.small", "2048", "ACTIVE"} {
+		if !strings.Contains(output, want) {
+			t.Fatalf("colored pretty output missing raw text %q:\n%s", want, output)
+		}
+	}
+}
+
+func TestPrettySemanticColorizersStyleKnownValues(t *testing.T) {
+	cases := []struct {
+		name  string
+		value string
+	}{
+		{name: "ID", value: "7dbf33e2-6d96-43b1-961b-ae58925a382c"},
+		{name: "Name", value: "rocky"},
+		{name: "Networks", value: "172.16.86.56"},
+		{name: "Flavor", value: "m1.small"},
+		{name: "RAM", value: "2048"},
+		{name: "Status", value: "ACTIVE"},
+	}
+	for _, tc := range cases {
+		colored := prettyColorizeByName(tc.name, tc.value)
+		if !containsANSI(colored) {
+			t.Fatalf("expected %s value %q to be colorized, got %q", tc.name, tc.value, colored)
+		}
+		if !strings.Contains(colored, tc.value) {
+			t.Fatalf("expected colorized value to preserve %q, got %q", tc.value, colored)
+		}
 	}
 }
 

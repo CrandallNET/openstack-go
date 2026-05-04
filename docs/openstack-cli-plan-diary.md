@@ -1160,3 +1160,16 @@ Sources consulted:
 * Local pretty-output tests in `internal/cli/root_test.go`.
 * Gophercloud local type definitions for ports in `/Users/ken/Dev/openstack-go/.cache/gomod/github.com/gophercloud/gophercloud/v2@v2.12.0/openstack/networking/v2/ports/results.go`.
 * Gophercloud local type definitions for router gateway fixed IPs in `/Users/ken/Dev/openstack-go/.cache/gomod/github.com/gophercloud/gophercloud/v2@v2.12.0/openstack/networking/v2/extensions/layer3/routers/results.go`.
+
+## 2026-05-04: Pretty Semantic Color
+
+Work done: added semantic colorization to the pretty renderer for TTY output. UUIDs, IP addresses, names, flavor names, flavor component numbers, booleans, and common status values now receive distinct colors. Non-TTY output and `NO_COLOR=1` remain ANSI-free.
+
+Implementation note: pretty output still computes widths and wraps cells before applying semantic color. This keeps ANSI escape sequences out of the local wrapping math while still allowing Charm Bubbles and Lip Gloss to render styled cells.
+
+Sources consulted:
+
+* Local implementation files `internal/cli/output.go` and `internal/cli/command_list.go`.
+* Local pretty-output tests in `internal/cli/root_test.go`.
+* Local Charm Bubbles table implementation in `/Users/ken/Dev/openstack-go/.cache/gomod/charm.land/bubbles/v2@v2.1.0/table/table.go`, used to confirm table rendering truncates ANSI-aware cell strings.
+* Local Lip Gloss v2 implementation in `/Users/ken/Dev/openstack-go/.cache/gomod/charm.land/lipgloss/v2@v2.0.3`, used for semantic terminal styles.
