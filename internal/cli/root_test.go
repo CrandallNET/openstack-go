@@ -409,18 +409,18 @@ func TestPrettyShowWrapsLongValuesInsteadOfTruncating(t *testing.T) {
 	}
 }
 
-func TestPrettyWrapRowsAddsSpacerBetweenEntries(t *testing.T) {
+func TestPrettyWrapRowsAddsRuleBetweenEntries(t *testing.T) {
 	rows := prettyWrapRows(
 		[]table.Row{{"server-1", "alpha"}, {"server-2", "beta"}},
 		[]table.Column{{Title: "ID", Width: 8}, {Title: "Name", Width: 8}},
 		nil,
 	)
 	if len(rows) != 3 {
-		t.Fatalf("expected spacer row between pretty entries, got %#v", rows)
+		t.Fatalf("expected separator row between pretty entries, got %#v", rows)
 	}
-	for column, value := range rows[1] {
-		if value != "" {
-			t.Fatalf("expected spacer column %d to be empty, got %q in %#v", column, value, rows)
+	for column, got := range rows[1] {
+		if want := strings.Repeat("-", 8); got != want {
+			t.Fatalf("expected separator column %d to be %q, got %q in %#v", column, want, got, rows)
 		}
 	}
 }
