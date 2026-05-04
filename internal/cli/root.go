@@ -67,6 +67,7 @@ func Execute(args []string, stdout io.Writer, stderr io.Writer) error {
 func NewRootCommand(stdout io.Writer, stderr io.Writer) *cobra.Command {
 	opts := &Options{
 		Format:   defaultOutputFormat,
+		Pretty:   envBoolInt("OS_PRETTY"),
 		MaxWidth: envInt("CLIFF_MAX_TERM_WIDTH"),
 		FitWidth: envBoolInt("CLIFF_FIT_WIDTH"),
 	}
@@ -94,7 +95,9 @@ func NewRootCommand(stdout io.Writer, stderr io.Writer) *cobra.Command {
 	addGlobalFlags(root.PersistentFlags(), opts)
 
 	root.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
-		if opts.Pretty {
+		prettyFlagChanged := cmd.Flags().Changed("pretty")
+		formatFlagChanged := cmd.Flags().Changed("format")
+		if opts.Pretty && (!formatFlagChanged || prettyFlagChanged) {
 			opts.Format = "pretty"
 		}
 		opts.CommandFlags = commandFlagValues(cmd)
@@ -111,7 +114,7 @@ func NewRootCommand(stdout io.Writer, stderr io.Writer) *cobra.Command {
 
 func addGlobalFlags(flags *pflag.FlagSet, opts *Options) {
 	flags.StringVarP(&opts.Format, "format", "f", defaultOutputFormat, "the output format")
-	flags.BoolVar(&opts.Pretty, "pretty", false, "use enhanced human-readable output")
+	flags.BoolVar(&opts.Pretty, "pretty", opts.Pretty, "use enhanced human-readable output")
 	flags.BoolVar(&opts.Debug, "debug", false, "show tracebacks on errors")
 	flags.IntVar(&opts.MaxWidth, "max-width", opts.MaxWidth, "maximum display width, <1 to disable")
 	flags.BoolVar(&opts.FitWidth, "fit-width", opts.FitWidth, "fit table output to the display width")

@@ -2,7 +2,7 @@
 
 Status: living plan and progress tracker, with an initial gap catalog, ordered workplan, and cloud test matrix.
 
-This plan targets a Go `openstack` CLI built on [Gophercloud](https://github.com/gophercloud/gophercloud) that can replace `python-openstackclient` command-for-command where coverage exists. The default behavior must match Python OpenStackClient, including command names, flag names, exit behavior, stdout/stderr behavior, and default output. The new enhanced human output is opt-in via `--format=pretty` or `--pretty`; those two flags are synonymous.
+This plan targets a Go `openstack` CLI built on [Gophercloud](https://github.com/gophercloud/gophercloud) that can replace `python-openstackclient` command-for-command where coverage exists. The default behavior must match Python OpenStackClient, including command names, flag names, exit behavior, stdout/stderr behavior, and default output. The new enhanced human output is opt-in via `--format=pretty`, `--pretty`, or the Go-only `OS_PRETTY=1` environment default; the two flags are synonymous, and an explicit `--format` overrides the environment default.
 
 This document is the active execution tracker. It should show what needs to be done, the dependency order, current progress, and known blockers. Decisions, experiments, rejected alternatives, and research notes belong in the [plan diary](openstack-cli-plan-diary.md).
 
@@ -323,7 +323,7 @@ Add a catalog regeneration workflow after the first usable command set exists. T
 
 The default renderer must match OSC, even though OSC's own guide describes the default as pretty-printed with Python `prettytable`. In this project, call that renderer `table` or `osc-table` internally to avoid confusing it with the new enhanced `pretty` format.
 
-`--format=pretty` and `--pretty` must set the same output mode. `--pretty` should be parsed as a global convenience flag, but it should apply only to commands that produce structured output. Commands whose Python output is intentionally raw text, such as console logs or object saves, should remain compatible by default and only use enhanced output where it makes sense and tests define the behavior.
+`--format=pretty` and `--pretty` must set the same output mode. `OS_PRETTY=1` should make `pretty` the default output mode for Go CLI invocations, but explicit `--format` values such as `-f json` must override that environment default. `--pretty` should be parsed as a global convenience flag, but it should apply only to commands that produce structured output. Commands whose Python output is intentionally raw text, such as console logs or object saves, should remain compatible by default and only use enhanced output where it makes sense and tests define the behavior.
 
 The enhanced pretty renderer should be stable enough for screenshots and operator use, but it is not a script API. It can use aligned sections, labels, status coloring when stdout is a TTY, condensed nested fields, service-specific summaries, and progress bars for wait-capable operations. It must degrade to plain text when color is disabled or stdout is not a TTY. Charm Bubbles and Lip Gloss are restricted to this `pretty` path; the default OSC-compatible renderer must not depend on them for behavior.
 

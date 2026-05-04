@@ -1111,3 +1111,14 @@ Sources consulted:
 * Local Python OSC oracle `/Users/ken/.local/bin/openstack`, which reports `openstack 9.0.0`.
 * Local Go command `./bin/openstack`, built from this repository during the check.
 * Local implementation files `internal/cli/output.go`, `internal/cli/table.go`, `internal/cli/identity_read.go`, and `internal/cli/core_read.go`.
+
+## 2026-05-04: OS_PRETTY Environment Default
+
+Work done: added `OS_PRETTY=1` as a Go-only environment default for enhanced pretty output. This mirrors the convenience of `OS_CLOUD`-style environment configuration without changing the Python-compatible default when the variable is absent.
+
+Decision: `OS_PRETTY=1` is a default, not a hard override. An explicit `--format` value such as `-f json` wins over the environment default, while an explicit `--pretty` still forces pretty output even if a format flag is also present.
+
+Sources consulted:
+
+* Local implementation file `internal/cli/root.go`.
+* Local parser and pretty-output tests in `internal/cli/root_test.go`.

@@ -227,6 +227,53 @@ func TestPrettyFlagParses(t *testing.T) {
 	}
 }
 
+func TestOSPrettyEnvDefaultsToPretty(t *testing.T) {
+	t.Setenv("OS_PRETTY", "1")
+	stdout, stderr, err := executeForTest("configuration", "show")
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if stderr != "" {
+		t.Fatalf("expected empty stderr, got %q", stderr)
+	}
+	if strings.Contains(stdout, "+---") {
+		t.Fatalf("expected OS_PRETTY=1 to use pretty output by default, got:\n%s", stdout)
+	}
+	if !strings.Contains(stdout, "auth_type") {
+		t.Fatalf("pretty configuration output missing auth_type:\n%s", stdout)
+	}
+}
+
+func TestOSPrettyEnvDoesNotOverrideExplicitFormat(t *testing.T) {
+	t.Setenv("OS_PRETTY", "1")
+	stdout, stderr, err := executeForTest("-f", "json", "configuration", "show")
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if stderr != "" {
+		t.Fatalf("expected empty stderr, got %q", stderr)
+	}
+	if !strings.Contains(stdout, `"auth_type"`) {
+		t.Fatalf("expected explicit JSON format to win over OS_PRETTY, got:\n%s", stdout)
+	}
+}
+
+func TestPrettyFlagOverridesExplicitFormat(t *testing.T) {
+	stdout, stderr, err := executeForTest("-f", "json", "--pretty", "configuration", "show")
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if stderr != "" {
+		t.Fatalf("expected empty stderr, got %q", stderr)
+	}
+	if strings.Contains(stdout, `"auth_type"`) || strings.Contains(stdout, "+---") {
+		t.Fatalf("expected explicit --pretty to use pretty output, got:\n%s", stdout)
+	}
+	if !strings.Contains(stdout, "auth_type") {
+		t.Fatalf("pretty configuration output missing auth_type:\n%s", stdout)
+	}
+}
+
 func TestPrettyListUsesTabularOutputWithoutANSIForNonTTY(t *testing.T) {
 	var stdout bytes.Buffer
 	err := renderListOutput(&stdout, &Options{Format: "pretty"}, []string{"ID", "Name", "Status"}, []outputRow{
