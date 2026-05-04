@@ -1122,3 +1122,14 @@ Sources consulted:
 
 * Local implementation file `internal/cli/root.go`.
 * Local parser and pretty-output tests in `internal/cli/root_test.go`.
+
+## 2026-05-04: Pretty Multiline Wrapping
+
+Work done: changed the `pretty` renderer to preserve explicit multiline cell values and wrap long cells into aligned continuation rows before passing them to the Bubbles table component. This prevents long values, such as `hypervisor show` `cpu_info`, from being truncated to a single ellipsis-ended row.
+
+Live observations on `cloud6`: `OS_CLOUD=cloud6 ./bin/openstack --pretty hypervisor show 3e999761-e6fa-4ad7-9d89-ddd2592e7554` now renders `cpu_info` and `uptime` over multiple aligned rows instead of truncating them.
+
+Sources consulted:
+
+* Local implementation file `internal/cli/output.go`.
+* Local pretty-output tests in `internal/cli/root_test.go`.

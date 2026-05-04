@@ -169,11 +169,12 @@ func renderPrettyTable(stdout io.Writer, opts *Options, headers []string, rows [
 	color := prettyColorEnabled(stdout)
 	termWidth := prettyOutputWidth(stdout, opts, color)
 	columns := prettyTableColumns(headers, rows, termWidth, color)
+	wrappedRows := prettyWrapRows(rows, columns)
 	model := table.New(
 		table.WithColumns(columns),
-		table.WithRows(rows),
+		table.WithRows(wrappedRows),
 		table.WithWidth(prettyTableViewWidth(columns)),
-		table.WithHeight(len(rows)+1),
+		table.WithHeight(len(wrappedRows)+1),
 		table.WithFocused(false),
 		table.WithStyles(prettyTableStyles(color)),
 	)
@@ -253,17 +254,43 @@ func prettyTableViewWidth(columns []table.Column) int {
 func prettyNaturalWidths(headers []string, rows []table.Row) []int {
 	widths := make([]int, len(headers))
 	for i, header := range headers {
-		widths[i] = min(max(displayWidth(header), 4), 64)
+		widths[i] = min(max(maxLineWidth(header), 4), 64)
 	}
 	for _, row := range rows {
 		for i := range headers {
 			if i >= len(row) {
 				continue
 			}
-			widths[i] = min(max(widths[i], displayWidth(row[i])), 64)
+			widths[i] = min(max(widths[i], maxLineWidth(row[i])), 64)
 		}
 	}
 	return widths
+}
+
+func prettyWrapRows(rows []table.Row, columns []table.Column) []table.Row {
+	wrappedRows := make([]table.Row, 0, len(rows))
+	for _, row := range rows {
+		cellLines := make([][]string, len(columns))
+		height := 1
+		for i, column := range columns {
+			value := ""
+			if i < len(row) {
+				value = row[i]
+			}
+			cellLines[i] = wrapTableCell(value, column.Width)
+			height = max(height, len(cellLines[i]))
+		}
+		for line := 0; line < height; line++ {
+			wrappedRow := make(table.Row, len(columns))
+			for column := range columns {
+				if line < len(cellLines[column]) {
+					wrappedRow[column] = cellLines[column][line]
+				}
+			}
+			wrappedRows = append(wrappedRows, wrappedRow)
+		}
+	}
+	return wrappedRows
 }
 
 func prettyMinimumWidths(headers []string) []int {
@@ -331,9 +358,7 @@ func prettyColorEnabled(stdout io.Writer) bool {
 func prettyCellValue(value any) string {
 	text := valueString(value)
 	text = strings.ReplaceAll(strings.ReplaceAll(text, "\r\n", "\n"), "\r", "\n")
-	text = strings.Join(strings.FieldsFunc(text, func(r rune) bool {
-		return r == '\n' || r == '\t'
-	}), " ")
+	text = strings.ReplaceAll(text, "\t", "  ")
 	return strings.TrimSpace(text)
 }
 

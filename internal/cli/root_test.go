@@ -323,6 +323,43 @@ func TestPrettyShowUsesTabularOutputWithoutANSIForNonTTY(t *testing.T) {
 	}
 }
 
+func TestPrettyShowPreservesMultilineValues(t *testing.T) {
+	var stdout bytes.Buffer
+	err := renderShowOutput(&stdout, &Options{Format: "pretty"}, []outputField{
+		{Name: "cpu_info", Value: "arch: x86_64\nfeatures: sse avx"},
+	})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	output := stdout.String()
+	if strings.Contains(output, "arch: x86_64 features: sse avx") {
+		t.Fatalf("expected pretty output to preserve multiline values, got:\n%s", output)
+	}
+	for _, want := range []string{"cpu_info", "arch: x86_64", "features: sse avx"} {
+		if !strings.Contains(output, want) {
+			t.Fatalf("pretty multiline output missing %q:\n%s", want, output)
+		}
+	}
+}
+
+func TestPrettyShowWrapsLongValuesInsteadOfTruncating(t *testing.T) {
+	var stdout bytes.Buffer
+	longValue := strings.Repeat("abcdef ", 12)
+	err := renderShowOutput(&stdout, &Options{Format: "pretty", MaxWidth: 40}, []outputField{
+		{Name: "cpu_info", Value: longValue},
+	})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	output := stdout.String()
+	if strings.Contains(output, "\u2026") {
+		t.Fatalf("expected pretty output to wrap long values instead of truncating, got:\n%s", output)
+	}
+	if strings.Count(output, "\n") < 3 {
+		t.Fatalf("expected wrapped pretty output to span multiple rows, got:\n%s", output)
+	}
+}
+
 func TestCommandListPrettyUsesPrettyRenderer(t *testing.T) {
 	stdout, stderr, err := executeForTest("--pretty", "command", "list", "--group", "openstack.cli")
 	if err != nil {
