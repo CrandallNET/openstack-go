@@ -216,6 +216,10 @@ func newCommandEntry(group string, command string) commandEntry {
 			entry.Tests = []string{"unit: command registry", "live: cloud6 router extra-route lifecycle smoke"}
 			entry.Notes = "Implemented through Neutron add_extraroutes and remove_extraroutes action endpoints. Disposable route add, remove, repeated missing-route remove, and cleanup passed on cloud6."
 		}
+		if strings.HasPrefix(command, "network qos policy ") {
+			entry.Tests = []string{"unit: command registry"}
+			entry.Notes = "Implemented with Gophercloud QoS policy calls and custom request builders where explicit false booleans or extension fields are needed. cloud6 returns Neutron 404 for the QoS policy collection in both Python OSC and the Go CLI, so a cloud exposing this extension is still needed for live verification."
+		}
 	}
 	return entry
 }
@@ -407,7 +411,10 @@ func coreReadPackages() map[string]string {
 		"network create":                     "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/networks; standard tags via gophercloud.ServiceClient",
 		"network delete":                     "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/networks",
 		"network list":                       "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/networks",
+		"network qos policy create":          "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/qos/policies; false booleans and extension fields via custom request builders",
+		"network qos policy delete":          "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/qos/policies",
 		"network qos policy list":            "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/qos/policies",
+		"network qos policy set":             "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/qos/policies; false booleans and extension fields via custom request builders",
 		"network qos policy show":            "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/qos/policies",
 		"network qos rule type list":         "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/qos/ruletypes",
 		"network qos rule type show":         "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/qos/ruletypes",
@@ -858,6 +865,9 @@ func coreWriteCommands() map[string]bool {
 		"keypair delete":                     true,
 		"network create":                     true,
 		"network delete":                     true,
+		"network qos policy create":          true,
+		"network qos policy delete":          true,
+		"network qos policy set":             true,
 		"network set":                        true,
 		"network unset":                      true,
 		"port create":                        true,

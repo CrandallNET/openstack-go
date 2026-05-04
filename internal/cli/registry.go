@@ -104,7 +104,7 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"network agent list", "network agent show",
 		"network create", "network delete", "network list", "network set", "network show", "network unset",
 		"network service provider list",
-		"network qos policy list", "network qos policy show",
+		"network qos policy create", "network qos policy delete", "network qos policy list", "network qos policy set", "network qos policy show",
 		"network qos rule type list", "network qos rule type show",
 		"network rbac list", "network rbac show",
 		"network segment list", "network segment show",
@@ -481,6 +481,23 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().String("project-domain", "", "project domain")
 		cmd.Flags().Bool("share", false, "list shared policies")
 		cmd.Flags().Bool("no-share", false, "list non-shared policies")
+	case "network qos policy create":
+		cmd.Flags().StringArray("extra-property", nil, "additional property type=<type>,name=<name>,value=<value>")
+		cmd.Flags().String("description", "", "QoS policy description")
+		cmd.Flags().Bool("share", false, "share policy")
+		cmd.Flags().Bool("no-share", false, "do not share policy")
+		cmd.Flags().String("project", "", "owner project")
+		cmd.Flags().String("project-domain", "", "project domain")
+		cmd.Flags().Bool("default", false, "set as default policy")
+		cmd.Flags().Bool("no-default", false, "set as non-default policy")
+	case "network qos policy set":
+		cmd.Flags().StringArray("extra-property", nil, "additional property type=<type>,name=<name>,value=<value>")
+		cmd.Flags().String("name", "", "new QoS policy name")
+		cmd.Flags().String("description", "", "QoS policy description")
+		cmd.Flags().Bool("share", false, "share policy")
+		cmd.Flags().Bool("no-share", false, "do not share policy")
+		cmd.Flags().Bool("default", false, "set as default policy")
+		cmd.Flags().Bool("no-default", false, "set as non-default policy")
 	case "network qos rule type list":
 		cmd.Flags().Bool("all-supported", false, "list all supported rule types")
 		cmd.Flags().Bool("all-rules", false, "list all implemented rule types")
@@ -1302,7 +1319,7 @@ func isCoreReadCommand(path string) bool {
 		"network agent list", "network agent show",
 		"network create", "network delete", "network list", "network set", "network show", "network unset",
 		"network service provider list",
-		"network qos policy list", "network qos policy show",
+		"network qos policy create", "network qos policy delete", "network qos policy list", "network qos policy set", "network qos policy show",
 		"network qos rule type list", "network qos rule type show",
 		"network rbac list", "network rbac show",
 		"network segment list", "network segment show",

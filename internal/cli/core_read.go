@@ -695,6 +695,28 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return networkQoSPolicyList(cmd.Context(), stdout, opts, client)
+		case "network qos policy create":
+			networkClient, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			identityClient, err := clients.identityV3()
+			if err != nil {
+				return err
+			}
+			return networkQoSPolicyCreate(cmd.Context(), stdout, opts, networkClient, identityClient, args)
+		case "network qos policy delete":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return networkQoSPolicyDelete(cmd.Context(), client, args)
+		case "network qos policy set":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return networkQoSPolicySet(cmd.Context(), opts, client, args)
 		case "network qos policy show":
 			client, err := clients.networkV2()
 			if err != nil {
@@ -5282,6 +5304,157 @@ func networkQoSPolicyList(ctx context.Context, stdout io.Writer, opts *Options, 
 	return renderListOutput(stdout, opts, []string{"ID", "Name", "Shared", "Default", "Project"}, rows)
 }
 
+type networkQoSPolicyCreateOpts struct {
+	Values map[string]any
+}
+
+func (opts networkQoSPolicyCreateOpts) ToPolicyCreateMap() (map[string]any, error) {
+	return map[string]any{"policy": opts.Values}, nil
+}
+
+type networkQoSPolicyUpdateOpts struct {
+	Values map[string]any
+}
+
+func (opts networkQoSPolicyUpdateOpts) ToPolicyUpdateMap() (map[string]any, error) {
+	return map[string]any{"policy": opts.Values}, nil
+}
+
+func networkQoSPolicyCreate(ctx context.Context, stdout io.Writer, opts *Options, networkClient *gophercloud.ServiceClient, identityClient *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("network qos policy create requires <name>")
+	}
+	values, err := networkQoSPolicyCreateValues(ctx, opts, identityClient, args[0])
+	if err != nil {
+		return err
+	}
+	result := qospolicies.Create(ctx, networkClient, networkQoSPolicyCreateOpts{Values: values})
+	item, err := result.Extract()
+	if err != nil {
+		return err
+	}
+	if raw, ok := networkQoSPolicyRawFromBody(result.Body); ok {
+		return renderShowOutput(stdout, opts, networkQoSPolicyRawFields(raw))
+	}
+	return renderShowOutput(stdout, opts, networkQoSPolicyFields(item))
+}
+
+func networkQoSPolicyCreateValues(ctx context.Context, opts *Options, identityClient *gophercloud.ServiceClient, name string) (map[string]any, error) {
+	if boolFlag(opts, "share") && boolFlag(opts, "no-share") {
+		return nil, fmt.Errorf("argument --no-share: not allowed with argument --share")
+	}
+	if boolFlag(opts, "default") && boolFlag(opts, "no-default") {
+		return nil, fmt.Errorf("argument --no-default: not allowed with argument --default")
+	}
+	values := map[string]any{"name": name}
+	if flagChanged(opts, "description") {
+		values["description"] = flagValue(opts, "description")
+	}
+	if boolFlag(opts, "share") {
+		values["shared"] = true
+	}
+	if boolFlag(opts, "no-share") {
+		values["shared"] = false
+	}
+	if boolFlag(opts, "default") {
+		values["is_default"] = true
+	}
+	if boolFlag(opts, "no-default") {
+		values["is_default"] = false
+	}
+	if projectNameOrID := flagValue(opts, "project"); projectNameOrID != "" {
+		project, err := findProjectWithDomain(ctx, identityClient, projectNameOrID, flagValue(opts, "project-domain"))
+		if err != nil {
+			return nil, err
+		}
+		values["project_id"] = project.ID
+	}
+	extra, err := parseExtraProperties(flagValues(opts, "extra-property"))
+	if err != nil {
+		return nil, err
+	}
+	for key, value := range extra {
+		values[key] = value
+	}
+	return values, nil
+}
+
+func networkQoSPolicyDelete(ctx context.Context, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("network qos policy delete requires <qos-policy> [<qos-policy> ...]")
+	}
+	failures := 0
+	for _, policyArg := range args {
+		item, err := findNetworkQoSPolicy(ctx, client, policyArg)
+		if err != nil {
+			failures++
+			continue
+		}
+		if err := qospolicies.Delete(ctx, client, item.ID).ExtractErr(); err != nil {
+			failures++
+		}
+	}
+	if failures > 0 {
+		return fmt.Errorf("%d of %d QoS policies failed to delete.", failures, len(args))
+	}
+	return nil
+}
+
+func networkQoSPolicySet(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("network qos policy set requires <qos-policy>")
+	}
+	if boolFlag(opts, "share") && boolFlag(opts, "no-share") {
+		return fmt.Errorf("argument --no-share: not allowed with argument --share")
+	}
+	if boolFlag(opts, "default") && boolFlag(opts, "no-default") {
+		return fmt.Errorf("argument --no-default: not allowed with argument --default")
+	}
+	item, err := findNetworkQoSPolicy(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	values, err := networkQoSPolicySetValues(opts)
+	if err != nil {
+		return err
+	}
+	if len(values) == 0 {
+		return nil
+	}
+	_, err = qospolicies.Update(ctx, client, item.ID, networkQoSPolicyUpdateOpts{Values: values}).Extract()
+	return err
+}
+
+func networkQoSPolicySetValues(opts *Options) (map[string]any, error) {
+	values := map[string]any{}
+	if flagChanged(opts, "name") {
+		values["name"] = flagValue(opts, "name")
+	}
+	if flagChanged(opts, "description") {
+		values["description"] = flagValue(opts, "description")
+	}
+	if boolFlag(opts, "share") {
+		values["shared"] = true
+	}
+	if boolFlag(opts, "no-share") {
+		values["shared"] = false
+	}
+	if boolFlag(opts, "default") {
+		values["is_default"] = true
+	}
+	if boolFlag(opts, "no-default") {
+		values["is_default"] = false
+	}
+	extra, err := parseExtraProperties(flagValues(opts, "extra-property"))
+	if err != nil {
+		return nil, err
+	}
+	for key, value := range extra {
+		values[key] = value
+	}
+	return values, nil
+}
+
 func networkQoSPolicyShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
 	if len(args) < 1 {
 		return fmt.Errorf("network qos policy show requires <qos-policy>")
@@ -5290,7 +5463,70 @@ func networkQoSPolicyShow(ctx context.Context, stdout io.Writer, opts *Options, 
 	if err != nil {
 		return err
 	}
-	return renderShowOutput(stdout, opts, []outputField{
+	return renderShowOutput(stdout, opts, networkQoSPolicyFields(item))
+}
+
+func networkQoSPolicyRawFromBody(body any) (map[string]any, bool) {
+	var wrapper struct {
+		Policy map[string]any `json:"policy"`
+	}
+	encoded, err := json.Marshal(body)
+	if err != nil {
+		return nil, false
+	}
+	if err := json.Unmarshal(encoded, &wrapper); err != nil {
+		return nil, false
+	}
+	if wrapper.Policy == nil {
+		return nil, false
+	}
+	return wrapper.Policy, true
+}
+
+func networkQoSPolicyRawFields(raw map[string]any) []outputField {
+	known := map[string]bool{
+		"created_at":      true,
+		"description":     true,
+		"id":              true,
+		"is_default":      true,
+		"location":        true,
+		"name":            true,
+		"project_id":      true,
+		"revision_number": true,
+		"rules":           true,
+		"shared":          true,
+		"tags":            true,
+		"tenant_id":       true,
+		"updated_at":      true,
+	}
+	fields := []outputField{
+		{"created_at", raw["created_at"]},
+		{"description", raw["description"]},
+		{"id", raw["id"]},
+		{"is_default", raw["is_default"]},
+		{"name", raw["name"]},
+		{"project_id", firstPresent(raw, "project_id", "tenant_id")},
+		{"revision_number", rawNumber(raw["revision_number"])},
+		{"rules", raw["rules"]},
+		{"shared", raw["shared"]},
+		{"tags", raw["tags"]},
+		{"updated_at", raw["updated_at"]},
+	}
+	var extras []string
+	for key := range raw {
+		if !known[key] {
+			extras = append(extras, key)
+		}
+	}
+	sort.Strings(extras)
+	for _, key := range extras {
+		fields = append(fields, outputField{key, raw[key]})
+	}
+	return fields
+}
+
+func networkQoSPolicyFields(item *qospolicies.Policy) []outputField {
+	return []outputField{
 		{"created_at", oscTime(item.CreatedAt)},
 		{"description", item.Description},
 		{"id", item.ID},
@@ -5302,7 +5538,7 @@ func networkQoSPolicyShow(ctx context.Context, stdout io.Writer, opts *Options, 
 		{"shared", item.Shared},
 		{"tags", item.Tags},
 		{"updated_at", oscTime(item.UpdatedAt)},
-	})
+	}
 }
 
 func networkQoSRuleTypeList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {

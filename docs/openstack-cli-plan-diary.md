@@ -1011,3 +1011,17 @@ Sources consulted:
 * Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/network/v2/router.py`, used only as the pinned local oracle implementation source.
 * Local OpenStackSDK source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/network/v2/router.py`, used to confirm the Neutron action endpoint names.
 * Gophercloud package docs for [Neutron routers](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/routers).
+
+## 2026-05-04: QoS Policy Lifecycle Commands
+
+Work done: added `network qos policy create`, `network qos policy delete`, and `network qos policy set`, and changed QoS policy show/create rendering to preserve raw extension fields when available.
+
+Implementation note: QoS policy create/update/delete uses Gophercloud's QoS policy package. Create and update use custom request builders so explicit `shared=false`, `is_default=false`, and Python OSC `--extra-property` values are retained in the Neutron `policy` body.
+
+Live observations on `cloud6`: the Go CLI attempted a disposable QoS policy create with a unique `golang-osc-test-qos-*` name, but Neutron returned `404` for `POST /v2.0/qos/policies`. Python OSC also returns `NotFoundException: 404` for `GET /v2.0/qos/policies` on the same cloud, and the Go CLI returns the same endpoint-level 404 for list. No disposable QoS policy was created. The commands remain implemented but not cloud-verified until a test cloud exposes the QoS policy endpoint.
+
+Sources consulted:
+
+* Local OSC oracle snapshots in `compat/osc/9.0.0/help/network/qos/policy/create.txt`, `compat/osc/9.0.0/help/network/qos/policy/delete.txt`, and `compat/osc/9.0.0/help/network/qos/policy/set.txt`.
+* Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/network/v2/network_qos_policy.py`, used only as the pinned local oracle implementation source.
+* Gophercloud package docs for [Neutron QoS policies](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/qos/policies).
