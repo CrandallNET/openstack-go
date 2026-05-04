@@ -880,24 +880,28 @@ commands:
     group: "openstack.object_store.v1"
     service: "object-store"
     api: "v1"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/containers"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "container delete"
     group: "openstack.object_store.v1"
     service: "object-store"
     api: "v1"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/containers; recursive object deletion via github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/objects"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "container list"
     group: "openstack.object_store.v1"
     service: "object-store"
@@ -926,13 +930,15 @@ commands:
     group: "openstack.object_store.v1"
     service: "object-store"
     api: "v1"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/containers"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "container show"
     group: "openstack.object_store.v1"
     service: "object-store"
@@ -950,13 +956,15 @@ commands:
     group: "openstack.object_store.v1"
     service: "object-store"
     api: "v1"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/containers"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "credential create"
     group: "openstack.identity.v3"
     service: "identity"

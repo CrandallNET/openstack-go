@@ -775,3 +775,17 @@ Sources consulted:
 * Local OSC oracle snapshots in `compat/osc/9.0.0/help/server/group/create.txt` and `compat/osc/9.0.0/help/server/group/delete.txt`.
 * Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/compute/v2/server_group.py`, used only as the pinned local oracle implementation source.
 * Gophercloud package docs for [Compute server groups](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servergroups).
+
+## 2026-05-03: Container Lifecycle Commands
+
+Work done: added `container create`, `container delete`, `container set`, and `container unset`, and aligned `container show` with the Python-observed output shape.
+
+Implementation note: the Go CLI uses Gophercloud's Object Storage v1 container helpers for create, delete, and metadata update. `container create --public` sets the Swift read ACL used for public listing and reads, and `--storage-policy` maps to `X-Storage-Policy`. `container delete --recursive` lists objects in the target container and deletes them before deleting the container. `container set/unset` map OSC properties to Swift container metadata headers. `container show` now reports Python-compatible `account`, string-valued `bytes_used` and `object_count`, `container`, optional `properties`, and `storage_policy`, rather than raw Swift transport headers.
+
+Live observations: `cloud6` currently does not expose a usable public object-store endpoint, so the lifecycle smoke ran on `flex-sjc`. Python OSC created and deleted disposable container `gocli-test-container-python-20260503`. The Go CLI created, set metadata on, unset metadata from, showed, and deleted disposable containers `gocli-test-container-go-20260503` and `gocli-test-container-go3-20260503`. Python/Go prefix-filtered container lists both returned empty after cleanup.
+
+Sources consulted:
+
+* Local OSC oracle snapshots in `compat/osc/9.0.0/help/container/create.txt`, `compat/osc/9.0.0/help/container/delete.txt`, `compat/osc/9.0.0/help/container/set.txt`, and `compat/osc/9.0.0/help/container/unset.txt`.
+* Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/object/v1/container.py`, used only as the pinned local oracle implementation source.
+* Gophercloud package docs for [Object Storage containers](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/containers) and [Object Storage objects](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/objects).

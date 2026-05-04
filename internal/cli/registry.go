@@ -70,7 +70,7 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"compute service list",
 		"console connection show",
 		"console log show", "console url show",
-		"container list", "container show",
+		"container create", "container delete", "container list", "container set", "container show", "container unset",
 		"extension list", "extension show",
 		"flavor list", "flavor show",
 		"floating ip list", "floating ip pool list", "floating ip show",
@@ -305,6 +305,15 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().String("end-marker", "", "pagination end marker")
 		cmd.Flags().Bool("long", false, "list additional fields")
 		cmd.Flags().Bool("all", false, "list all containers")
+	case "container create":
+		cmd.Flags().Bool("public", false, "make container public")
+		cmd.Flags().String("storage-policy", "", "storage policy")
+	case "container delete":
+		cmd.Flags().BoolP("recursive", "r", false, "recursively delete objects and container")
+	case "container set":
+		cmd.Flags().StringArray("property", nil, "container property key=value")
+	case "container unset":
+		cmd.Flags().StringArray("property", nil, "container property key")
 	case "object list":
 		cmd.Flags().String("prefix", "", "filter by prefix")
 		cmd.Flags().String("delimiter", "", "roll up objects by delimiter")
@@ -834,7 +843,7 @@ func isCoreReadCommand(path string) bool {
 		"compute service list",
 		"console connection show",
 		"console log show", "console url show",
-		"container list", "container show",
+		"container create", "container delete", "container list", "container set", "container show", "container unset",
 		"extension list", "extension show",
 		"flavor list", "flavor show",
 		"floating ip list", "floating ip pool list", "floating ip show",

@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/url"
+	"strings"
 
 	"github.com/gophercloud/gophercloud/v2"
 	"github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/accounts"
@@ -45,6 +47,66 @@ func containerList(ctx context.Context, stdout io.Writer, opts *Options, client 
 	return renderListOutput(stdout, opts, columns, rows)
 }
 
+func containerCreate(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("container create requires <container-name>")
+	}
+	createOpts := containers.CreateOpts{
+		StoragePolicy: flagValue(opts, "storage-policy"),
+	}
+	if boolFlag(opts, "public") {
+		createOpts.ContainerRead = ".r:*,.rlistings"
+	}
+	rows := make([]outputRow, 0, len(args))
+	account := objectStorageAccountName(client)
+	for _, name := range args {
+		result := containers.Create(ctx, client, name, createOpts)
+		if result.Err != nil {
+			return result.Err
+		}
+		rows = append(rows, outputRow{
+			"account":    account,
+			"container":  name,
+			"x-trans-id": result.Header.Get("X-Trans-Id"),
+		})
+	}
+	return renderListOutput(stdout, opts, []string{"account", "container", "x-trans-id"}, rows)
+}
+
+func containerDelete(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("container delete requires <container>")
+	}
+	for _, container := range args {
+		if boolFlag(opts, "recursive") {
+			if err := deleteContainerObjects(ctx, client, container); err != nil {
+				return err
+			}
+		}
+		if result := containers.Delete(ctx, client, container); result.Err != nil {
+			return result.Err
+		}
+	}
+	return nil
+}
+
+func containerSet(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("container set requires <container>")
+	}
+	properties, err := containerProperties(opts)
+	if err != nil {
+		return err
+	}
+	if len(properties) == 0 {
+		return fmt.Errorf("container set requires --property")
+	}
+	if result := containers.Update(ctx, client, args[0], containers.UpdateOpts{Metadata: properties}); result.Err != nil {
+		return result.Err
+	}
+	return nil
+}
+
 func containerShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
 	if len(args) < 1 {
 		return fmt.Errorf("container show requires <container>")
@@ -58,18 +120,82 @@ func containerShow(ctx context.Context, stdout io.Writer, opts *Options, client 
 	if err != nil {
 		return err
 	}
-	return renderShowOutput(stdout, opts, []outputField{
+	fields := []outputField{
+		{"account", objectStorageAccountName(client)},
+		{"bytes_used", fmt.Sprintf("%d", item.BytesUsed)},
 		{"container", args[0]},
-		{"bytes_used", item.BytesUsed},
-		{"object_count", item.ObjectCount},
-		{"content_type", item.ContentType},
-		{"read_acl", compactStrings(item.Read)},
-		{"write_acl", compactStrings(item.Write)},
-		{"storage_policy", item.StoragePolicy},
-		{"versions_location", item.VersionsLocation},
-		{"history_location", item.HistoryLocation},
-		{"metadata", metadata},
-	})
+		{"object_count", fmt.Sprintf("%d", item.ObjectCount)},
+	}
+	if len(metadata) > 0 {
+		fields = append(fields, outputField{"properties", metadata})
+	}
+	if item.StoragePolicy != "" {
+		fields = append(fields, outputField{"storage_policy", item.StoragePolicy})
+	}
+	return renderShowOutput(stdout, opts, fields)
+}
+
+func containerUnset(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("container unset requires <container>")
+	}
+	properties := flagValues(opts, "property")
+	if len(properties) == 0 {
+		return fmt.Errorf("container unset requires --property")
+	}
+	if result := containers.Update(ctx, client, args[0], containers.UpdateOpts{RemoveMetadata: properties}); result.Err != nil {
+		return result.Err
+	}
+	return nil
+}
+
+func deleteContainerObjects(ctx context.Context, client *gophercloud.ServiceClient, container string) error {
+	page, err := objects.List(client, container, objects.ListOpts{}).AllPages(ctx)
+	if err != nil {
+		return err
+	}
+	items, err := objects.ExtractInfo(page)
+	if err != nil {
+		return err
+	}
+	for _, item := range items {
+		name := item.Name
+		if name == "" {
+			name = item.Subdir
+		}
+		if name == "" {
+			continue
+		}
+		if result := objects.Delete(ctx, client, container, name, nil); result.Err != nil {
+			return result.Err
+		}
+	}
+	return nil
+}
+
+func containerProperties(opts *Options) (map[string]string, error) {
+	properties := map[string]string{}
+	for _, property := range flagValues(opts, "property") {
+		key, value, ok := strings.Cut(property, "=")
+		if !ok || key == "" {
+			return nil, fmt.Errorf("invalid property %q, expected <key=value>", property)
+		}
+		properties[key] = value
+	}
+	return properties, nil
+}
+
+func objectStorageAccountName(client *gophercloud.ServiceClient) string {
+	parsed, err := url.Parse(client.Endpoint)
+	if err != nil {
+		return ""
+	}
+	path := strings.Trim(parsed.Path, "/")
+	if path == "" {
+		return ""
+	}
+	parts := strings.Split(path, "/")
+	return parts[len(parts)-1]
 }
 
 func objectList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {

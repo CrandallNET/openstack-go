@@ -227,12 +227,36 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return containerList(cmd.Context(), stdout, opts, client)
+		case "container create":
+			client, err := clients.objectStorageV1()
+			if err != nil {
+				return err
+			}
+			return containerCreate(cmd.Context(), stdout, opts, client, args)
+		case "container delete":
+			client, err := clients.objectStorageV1()
+			if err != nil {
+				return err
+			}
+			return containerDelete(cmd.Context(), opts, client, args)
+		case "container set":
+			client, err := clients.objectStorageV1()
+			if err != nil {
+				return err
+			}
+			return containerSet(cmd.Context(), opts, client, args)
 		case "container show":
 			client, err := clients.objectStorageV1()
 			if err != nil {
 				return err
 			}
 			return containerShow(cmd.Context(), stdout, opts, client, args)
+		case "container unset":
+			client, err := clients.objectStorageV1()
+			if err != nil {
+				return err
+			}
+			return containerUnset(cmd.Context(), opts, client, args)
 		case "floating ip list":
 			client, err := clients.networkV2()
 			if err != nil {
