@@ -1356,6 +1356,8 @@ Implementation note: the local `bubble-table` v0.17.2 source exposes row styling
 
 Work done: corrected Fancy width fitting so the renderer counts bubble-table padding, left and right borders, and internal column dividers before assigning column widths. Fancy output now allows compact one-character columns when needed to stay inside narrow terminals, while preserving a 12-character minimum for ID-like columns when the terminal has enough room so UUIDs can wrap at hyphen boundaries without splitting the final UUID group.
 
+Work done: adjusted wrapped image `N/A (...)` values so the `N/A` token keeps the explicit no-image color, but the explanatory continuation stays neutral gray instead of falling back to image brown after wrapping.
+
 Sources consulted:
 
 * Upstream `bubble-table` README at https://github.com/Evertras/bubble-table/tree/main.

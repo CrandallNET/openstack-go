@@ -859,6 +859,26 @@ func TestPrettyImageNAIsColored(t *testing.T) {
 	}
 }
 
+func TestPrettyWrappedImageNAContinuationStaysNeutral(t *testing.T) {
+	rows := prettyWrapRows(
+		[]table.Row{{"N/A (booted from volume)"}},
+		[]table.Column{{Title: "Image", Width: 8}},
+		prettyListCellColorizer([]string{"Image"}),
+		prettyListCellContext([]string{"Image"}),
+	)
+	if len(rows) != 4 {
+		t.Fatalf("expected wrapped N/A image value rows, got %#v", rows)
+	}
+	if !strings.Contains(rows[0][0], prettyNAStyle.Render("N/A")) {
+		t.Fatalf("expected first wrapped image row to color N/A, got %#v", rows)
+	}
+	for index, row := range rows[1:] {
+		if containsANSI(row[0]) {
+			t.Fatalf("expected wrapped N/A explanation continuation row %d to stay neutral, got %#v", index+1, rows)
+		}
+	}
+}
+
 func TestPrettyPaletteColorsDomainValues(t *testing.T) {
 	cases := []struct {
 		name  string

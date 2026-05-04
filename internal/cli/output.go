@@ -969,20 +969,24 @@ func prettyContextualLabelName(parentName string, labelName string) string {
 func prettyColorizeWrappedCellLines(rowIndex int, columnIndex int, lines []string, colorizer prettyCellColorizer, contextName string) []string {
 	colored := make([]string, len(lines))
 	pendingLabel := ""
+	pendingNeutralValue := false
 	for index, line := range lines {
 		if line == "" {
 			pendingLabel = ""
+			pendingNeutralValue = false
 			colored[index] = line
 			continue
 		}
 		if prettyLineIsListMarker(line) {
 			pendingLabel = ""
+			pendingNeutralValue = false
 			colored[index] = colorizer(rowIndex, columnIndex, line)
 			continue
 		}
 		_, label, _, ok := prettySplitLabelPrefix(line)
 		if ok {
 			pendingLabel = strings.TrimSuffix(strings.TrimSpace(label), ":")
+			pendingNeutralValue = false
 			colored[index] = colorizer(rowIndex, columnIndex, line)
 			continue
 		}
@@ -990,9 +994,27 @@ func prettyColorizeWrappedCellLines(rowIndex int, columnIndex int, lines []strin
 			colored[index] = prettyColorizeContinuationValue(contextName, pendingLabel, line)
 			continue
 		}
+		if pendingNeutralValue {
+			colored[index] = prettyColorizeTokens(line)
+			if prettyNeutralContinuationEnds(line) {
+				pendingNeutralValue = false
+			}
+			continue
+		}
 		colored[index] = colorizer(rowIndex, columnIndex, line)
+		if prettyStartsNeutralContinuation(contextName, line) {
+			pendingNeutralValue = true
+		}
 	}
 	return colored
+}
+
+func prettyStartsNeutralContinuation(contextName string, text string) bool {
+	return prettyIsImageField(contextName) && strings.Contains(text, "N/A")
+}
+
+func prettyNeutralContinuationEnds(text string) bool {
+	return strings.Contains(text, ")")
 }
 
 func prettyColorizeContinuationValue(parentName string, label string, text string) string {
