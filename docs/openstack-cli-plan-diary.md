@@ -1264,18 +1264,18 @@ Current palette:
 | Success status | `82` | Healthy, active, available, in-use, running, up. |
 | Warning status | `220` | Build, create, delete, attach, detach, migrate, resize, restore, upload, and similar transitional states. |
 | Error status | `203` | Error, failed, down, disabled, deleted, shutoff, suspended, and related error states. |
-| Volume | `93` | Volume IDs, volume names, and volume references. |
+| Volume | `93` | Volume names and non-ID volume references. |
 | Device | `81` | Device paths such as `/dev/vda`. |
-| Image | `130` | Image names and image IDs. `N/A` remains the explicit no-image color. |
-| Flavor | `223` | Flavor names and flavor references. |
+| Image | `130` | Image names and non-ID image references. `N/A` remains the explicit no-image color. |
+| Flavor | `223` | Flavor names and non-ID flavor references. |
 | Timestamp | `117` | ISO-like created, updated, attached, heartbeat, and guaranteed-until timestamps. |
 | Address | `114` | IP addresses and hostnames. |
-| UUID | `75` | Generic UUIDs when no more specific resource role applies; UUID hyphens remain uncolored. |
-| Label | `15` | `label:` prefixes inside structured pretty values. |
+| UUID | `75` | ID, UUID, and GUID fields across resources, including volume, server, subnet, image, flavor, and attachment IDs. UUID hyphens remain uncolored. |
+| Label | `15` | `label:` prefixes inside structured pretty values. This is the only value-level style that keeps bold/bright emphasis. |
 
-Implementation notes: volume, image, and flavor colors take precedence over generic UUID coloring. Status matching normalizes hyphens and spaces to underscores, so Cinder statuses such as `in-use` are colored through the same status buckets as compute statuses.
+Implementation notes: ID-like fields take precedence over resource colors so IDs use the same UUID/GUID formatting across commands. Resource colors still apply to non-ID names and references. Status matching normalizes hyphens and spaces to underscores, so Cinder statuses such as `in-use` are colored through the same status buckets as compute statuses. Pretty value styles keep their colors but avoid bold SGR; inline `label:` prefixes remain bright white and bold so nested structured output stays scannable.
 
-Follow-up: device paths now use the device color, and nested `id:` fields inside volume attachment output are treated as volume UUIDs. The top-level `volume list` `ID` column uses the generic UUID/GUID style, while volume names and explicit `volume_id` references retain the volume color. Full UUIDs and UUID fragments continue to color only the UUID/GUID segments, leaving hyphen separators uncolored.
+Follow-up: device paths now use the device color, and nested `id:` fields inside volume attachment output use the generic UUID/GUID style. The top-level `volume list` `ID` column uses the generic UUID/GUID style, and the top-level `volume list` `Name` column uses the same generic name color as `server list`. Full UUIDs and UUID fragments continue to color only the UUID/GUID segments, leaving hyphen separators uncolored.
 
 Sources consulted:
 

@@ -733,7 +733,12 @@ func TestPrettyPaletteColorsDomainValues(t *testing.T) {
 		value string
 		want  string
 	}{
-		{name: "Volume ID", value: "52c4cf8d-4ef3-4479-b7b9-ffb814f9dd5b", want: prettyColorizeTextWithUUIDStyle("52c4cf8d-4ef3-4479-b7b9-ffb814f9dd5b", prettyVolumeStyle)},
+		{name: "Volume ID", value: "52c4cf8d-4ef3-4479-b7b9-ffb814f9dd5b", want: prettyColorizeUUID("52c4cf8d-4ef3-4479-b7b9-ffb814f9dd5b")},
+		{name: "Server ID", value: "1c77f920-e72d-45d0-8198-5a4a11722214", want: prettyColorizeUUID("1c77f920-e72d-45d0-8198-5a4a11722214")},
+		{name: "Subnet ID", value: "f44a40a0-f159-4923-8d79-55d101533f67", want: prettyColorizeUUID("f44a40a0-f159-4923-8d79-55d101533f67")},
+		{name: "Network ID", value: "6f911ff3-5259-4dbe-a29d-684a11bfd828", want: prettyColorizeUUID("6f911ff3-5259-4dbe-a29d-684a11bfd828")},
+		{name: "Image ID", value: "da8beb8e-7301-49a3-b952-ebde206f9a0b", want: prettyColorizeUUID("da8beb8e-7301-49a3-b952-ebde206f9a0b")},
+		{name: "Flavor ID", value: "56e015e0-79f4-4962-82f0-8f8a1b2c771f", want: prettyColorizeUUID("56e015e0-79f4-4962-82f0-8f8a1b2c771f")},
 		{name: "Image", value: "rocky9", want: prettyImageStyle.Render("rocky9")},
 		{name: "Flavor", value: "m1.small", want: prettyFlavorStyle.Render("m1.small")},
 		{name: "device", value: "/dev/vda", want: prettyDeviceStyle.Render("/dev/vda")},
@@ -747,12 +752,41 @@ func TestPrettyPaletteColorsDomainValues(t *testing.T) {
 	}
 }
 
-func TestPrettyVolumeSemanticRoleColorsGenericID(t *testing.T) {
+func TestPrettyValueStylesAreNotBoldExceptLabels(t *testing.T) {
+	values := []string{
+		prettyBooleanFalseStyle.Render("False"),
+		prettyBooleanTrueStyle.Render("True"),
+		prettyDeviceStyle.Render("/dev/vda"),
+		prettyErrorStyle.Render("ERROR"),
+		prettyFieldStyle.Render("id"),
+		prettyFlavorStyle.Render("m1.small"),
+		prettyImageStyle.Render("rocky9"),
+		prettyIPStyle.Render("172.16.86.56"),
+		prettyNAStyle.Render("N/A"),
+		prettyNameStyle.Render("rocky"),
+		prettyNumberStyle.Render("2048"),
+		prettyTimestampStyle.Render("2026-05-04T19:10:59.000000"),
+		prettyUUIDStyle.Render("52c4cf8d"),
+		prettyVolumeStyle.Render("Rocky10-Boot"),
+		prettyWarningStyle.Render("BUILD"),
+	}
+	for _, value := range values {
+		if containsANSIBold(value) {
+			t.Fatalf("expected pretty value style to avoid bold/bright SGR, got %q", value)
+		}
+	}
+	label := prettyLabelStyle.Render("id:")
+	if !containsANSIBold(label) {
+		t.Fatalf("expected pretty label style to keep bold/bright SGR, got %q", label)
+	}
+}
+
+func TestPrettyVolumeSemanticRoleStillColorsIDsAsGenericUUID(t *testing.T) {
 	colorizer := prettyListCellColorizer([]string{"ID"}, [][]string{{"volume"}})
 	uuid := "52c4cf8d-4ef3-4479-b7b9-ffb814f9dd5b"
-	want := prettyColorizeTextWithUUIDStyle(uuid, prettyVolumeStyle)
+	want := prettyColorizeUUID(uuid)
 	if got := colorizer(0, 0, uuid); got != want {
-		t.Fatalf("expected volume role to color generic ID as volume, got %q want %q", got, want)
+		t.Fatalf("expected volume role to color ID as generic UUID, got %q want %q", got, want)
 	}
 }
 
@@ -762,8 +796,8 @@ func TestPrettyVolumeListIDUsesGenericUUIDRole(t *testing.T) {
 	if role := prettySemanticRole(row["ID"]); role != "" {
 		t.Fatalf("expected volume list ID to use generic UUID styling, got semantic role %q", role)
 	}
-	if role := prettySemanticRole(row["Name"]); role != "volume" {
-		t.Fatalf("expected volume list name to keep volume styling, got semantic role %q", role)
+	if role := prettySemanticRole(row["Name"]); role != "" {
+		t.Fatalf("expected volume list name to use generic name styling, got semantic role %q", role)
 	}
 	colorizer := prettyListCellColorizer([]string{"ID"})
 	want := prettyColorizeUUID(uuid)
@@ -786,6 +820,14 @@ func TestPrettyVolumeListIDUsesGenericUUIDRole(t *testing.T) {
 	}
 }
 
+func TestPrettyVolumeListNameUsesGenericNameColor(t *testing.T) {
+	colorizer := prettyListCellColorizer([]string{"Name"})
+	want := prettyNameStyle.Render("Rocky10-Boot")
+	if got := colorizer(0, 0, "Rocky10-Boot"); got != want {
+		t.Fatalf("expected volume list name to use the generic name color, got %q want %q", got, want)
+	}
+}
+
 func TestPrettyVolumeUUIDFragmentsKeepHyphensPlain(t *testing.T) {
 	colored := prettyColorizeVolume("52c4cf8d-4ef3-4479-")
 	parts := strings.Split(colored, "-")
@@ -802,6 +844,10 @@ func TestPrettyVolumeUUIDFragmentsKeepHyphensPlain(t *testing.T) {
 func TestPrettyVolumeUUIDLeavesHyphensPlain(t *testing.T) {
 	uuid := "52c4cf8d-4ef3-4479-b7b9-ffb814f9dd5b"
 	colored := prettyColorizeByName("Volume ID", uuid)
+	want := prettyColorizeUUID(uuid)
+	if colored != want {
+		t.Fatalf("expected volume ID to use generic UUID style, got %q want %q", colored, want)
+	}
 	parts := strings.Split(colored, "-")
 	if len(parts) != 5 {
 		t.Fatalf("expected colored volume UUID to keep four plain hyphens, got %q", colored)
@@ -813,16 +859,16 @@ func TestPrettyVolumeUUIDLeavesHyphensPlain(t *testing.T) {
 	}
 }
 
-func TestPrettyAttachedToIDUsesVolumeUUIDStyle(t *testing.T) {
+func TestPrettyAttachedToIDUsesGenericUUIDStyle(t *testing.T) {
 	uuid := "52c4cf8d-4ef3-4479-b7b9-ffb814f9dd5b"
 	colored := prettyColorizeByName("Attached to", "id: "+uuid)
-	want := prettyLabelStyle.Render("id:") + prettyColorizeTextWithUUIDStyle(" "+uuid, prettyVolumeStyle)
+	want := prettyLabelStyle.Render("id:") + prettyColorizeID(" "+uuid)
 	if colored != want {
-		t.Fatalf("expected attached-to id label to use volume UUID style, got %q want %q", colored, want)
+		t.Fatalf("expected attached-to id label to use generic UUID style, got %q want %q", colored, want)
 	}
 }
 
-func TestPrettyWrappedAttachedToIDUsesVolumeUUIDStyle(t *testing.T) {
+func TestPrettyWrappedAttachedToIDUsesGenericUUIDStyle(t *testing.T) {
 	rows := prettyWrapRows(
 		[]table.Row{{"  id: 52c4cf8d"}},
 		[]table.Column{{Title: "Attached to", Width: 8}},
@@ -836,9 +882,9 @@ func TestPrettyWrappedAttachedToIDUsesVolumeUUIDStyle(t *testing.T) {
 	if rows[0][0] != wantLabel {
 		t.Fatalf("expected wrapped id label row to be bright, got %q want %q", rows[0][0], wantLabel)
 	}
-	wantValue := prettyVolumeStyle.Render("52c4cf8d")
+	wantValue := prettyUUIDStyle.Render("52c4cf8d")
 	if rows[1][0] != wantValue {
-		t.Fatalf("expected wrapped attached-to id value to use volume color, got %q want %q", rows[1][0], wantValue)
+		t.Fatalf("expected wrapped attached-to id value to use generic UUID color, got %q want %q", rows[1][0], wantValue)
 	}
 }
 
@@ -1286,6 +1332,22 @@ func maxOutputLineLength(output string) int {
 
 func containsANSI(output string) bool {
 	return strings.Contains(output, "\x1b[") || strings.Contains(output, "\x1b]")
+}
+
+func containsANSIBold(output string) bool {
+	parts := strings.Split(output, "\x1b[")
+	for _, part := range parts[1:] {
+		end := strings.IndexByte(part, 'm')
+		if end < 0 {
+			continue
+		}
+		for _, code := range strings.Split(part[:end], ";") {
+			if code == "1" {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func mustJSON(value any) string {

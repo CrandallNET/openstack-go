@@ -8630,7 +8630,7 @@ func volumeList(ctx context.Context, stdout io.Writer, opts *Options, client *go
 func volumeListRow(item volumes.Volume) outputRow {
 	return outputRow{
 		"ID":          item.ID,
-		"Name":        prettyVolumeValue(item.Name),
+		"Name":        item.Name,
 		"Status":      item.Status,
 		"Size":        item.Size,
 		"Attached to": volumeAttachments(item.Attachments),
@@ -8646,7 +8646,7 @@ func volumeShow(ctx context.Context, stdout io.Writer, opts *Options, client *go
 		return err
 	}
 	return renderShowOutput(stdout, opts, []outputField{
-		{"id", prettyVolumeValue(item.ID)},
+		{"id", item.ID},
 		{"name", prettyVolumeValue(item.Name)},
 		{"status", item.Status},
 		{"size", item.Size},

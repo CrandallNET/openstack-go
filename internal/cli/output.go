@@ -82,22 +82,22 @@ var (
 	prettyIPCandidatePattern  = regexp.MustCompile(`(?i)(?:\b(?:\d{1,3}\.){3}\d{1,3}(?:/\d{1,3})?\b|\b[0-9a-f]*:[0-9a-f:.]*(?:/\d{1,3})?\b|::(?:/\d{1,3})?)`)
 	prettyTimestampPattern    = regexp.MustCompile(`\b\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?\b`)
 
-	prettyBooleanFalseStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorBooleanFalse)).Bold(true)
-	prettyBooleanTrueStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorBooleanTrue)).Bold(true)
-	prettyDeviceStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorDevice)).Bold(true)
-	prettyErrorStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorError)).Bold(true)
-	prettyFieldStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorField)).Bold(true)
-	prettyFlavorStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorFlavor)).Bold(true)
-	prettyImageStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorImage)).Bold(true)
-	prettyIPStyle           = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorIP)).Bold(true)
+	prettyBooleanFalseStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorBooleanFalse))
+	prettyBooleanTrueStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorBooleanTrue))
+	prettyDeviceStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorDevice))
+	prettyErrorStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorError))
+	prettyFieldStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorField))
+	prettyFlavorStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorFlavor))
+	prettyImageStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorImage))
+	prettyIPStyle           = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorIP))
 	prettyLabelStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorLabel)).Bold(true)
-	prettyNAStyle           = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorNA)).Bold(true)
-	prettyNameStyle         = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorName)).Bold(true)
-	prettyNumberStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorNumber)).Bold(true)
+	prettyNAStyle           = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorNA))
+	prettyNameStyle         = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorName))
+	prettyNumberStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorNumber))
 	prettyTimestampStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorTimestamp))
-	prettyUUIDStyle         = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorUUID)).Bold(true)
-	prettyVolumeStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorVolume)).Bold(true)
-	prettyWarningStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorWarning)).Bold(true)
+	prettyUUIDStyle         = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorUUID))
+	prettyVolumeStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorVolume))
+	prettyWarningStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorWarning))
 )
 
 func (object orderedJSONObject) MarshalJSON() ([]byte, error) {
@@ -548,6 +548,9 @@ func prettyColorizeByNormalizedName(normalized string, text string) string {
 	if strings.TrimSpace(text) == "" {
 		return text
 	}
+	if prettyIsIDLikeName(normalized) {
+		return prettyColorizeID(text)
+	}
 	if prettyContainsTimestampToken(text) {
 		return prettyColorizeTokens(text)
 	}
@@ -568,8 +571,6 @@ func prettyColorizeByNormalizedName(normalized string, text string) string {
 		return prettyColorizeStatus(text)
 	case prettyIsBooleanText(text):
 		return prettyColorizeBoolean(text)
-	case prettyIsIDLikeName(normalized):
-		return prettyColorizeID(text)
 	case prettyContainsAddressToken(text):
 		return prettyColorizeTokens(text)
 	case prettyIsNameField(normalized):
@@ -769,17 +770,27 @@ func prettyColorizeWrappedCellLines(rowIndex int, columnIndex int, lines []strin
 
 func prettyColorizeContinuationValue(parentName string, label string, text string) string {
 	normalized := prettyContextualLabelName(parentName, normalizeColumnName(label))
-	if prettyIsVolumeField(normalized) {
-		return prettyColorizeUUIDFragmentWithStyle(text, prettyVolumeStyle)
-	}
 	if prettyIsIDLikeName(normalized) {
 		return prettyColorizeUUIDFragment(text)
+	}
+	if prettyIsVolumeField(normalized) {
+		return prettyColorizeVolume(text)
 	}
 	return prettyColorizeByNormalizedName(normalized, text)
 }
 
 func prettyIsIDLikeName(normalized string) bool {
-	return normalized == "id" || strings.HasSuffix(normalized, "id")
+	switch normalized {
+	case "id", "ids", "uuid", "uuids", "guid", "guids":
+		return true
+	default:
+		return strings.HasSuffix(normalized, "_id") ||
+			strings.HasSuffix(normalized, "_ids") ||
+			strings.HasSuffix(normalized, "_uuid") ||
+			strings.HasSuffix(normalized, "_uuids") ||
+			strings.HasSuffix(normalized, "_guid") ||
+			strings.HasSuffix(normalized, "_guids")
+	}
 }
 
 func prettyColorizeUUIDFragment(text string) string {
@@ -831,7 +842,7 @@ func prettyColorizeImage(text string) string {
 	if strings.Contains(text, "N/A") {
 		return strings.ReplaceAll(prettyColorizeTokens(text), "N/A", prettyNAStyle.Render("N/A"))
 	}
-	return prettyColorizeTextWithUUIDStyle(text, prettyImageStyle)
+	return prettyColorizeResourceText(text, prettyImageStyle)
 }
 
 func prettyColorizeUUID(uuid string) string {
@@ -847,14 +858,14 @@ func prettyColorizeUUIDWithStyle(uuid string, style lipgloss.Style) string {
 }
 
 func prettyColorizeVolume(text string) string {
-	return prettyColorizeTextWithUUIDStyle(text, prettyVolumeStyle)
+	return prettyColorizeResourceText(text, prettyVolumeStyle)
 }
 
-func prettyColorizeTextWithUUIDStyle(text string, style lipgloss.Style) string {
+func prettyColorizeResourceText(text string, style lipgloss.Style) string {
 	indexes := prettyUUIDPattern.FindAllStringIndex(text, -1)
 	if len(indexes) == 0 {
 		if prettyLooksLikeUUIDFragment(text) {
-			return prettyColorizeUUIDFragmentWithStyle(text, style)
+			return prettyColorizeUUIDFragment(text)
 		}
 		return style.Render(text)
 	}
@@ -864,7 +875,7 @@ func prettyColorizeTextWithUUIDStyle(text string, style lipgloss.Style) string {
 		if index[0] > last {
 			builder.WriteString(style.Render(text[last:index[0]]))
 		}
-		builder.WriteString(prettyColorizeUUIDWithStyle(text[index[0]:index[1]], style))
+		builder.WriteString(prettyColorizeUUID(text[index[0]:index[1]]))
 		last = index[1]
 	}
 	if last < len(text) {
