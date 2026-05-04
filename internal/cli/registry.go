@@ -120,7 +120,7 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"resource provider usage show",
 		"router list", "router show",
 		"security group create", "security group delete", "security group list", "security group set", "security group show", "security group unset",
-		"security group rule list", "security group rule show",
+		"security group rule create", "security group rule delete", "security group rule list", "security group rule show",
 		"server event list", "server event show",
 		"server list", "server show",
 		"server group create", "server group delete", "server group list", "server group show",
@@ -672,6 +672,23 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 	case "security group unset":
 		cmd.Flags().StringArray("tag", nil, "security group tag")
 		cmd.Flags().Bool("all-tag", false, "clear all tags")
+	case "security group rule create":
+		cmd.Flags().StringArray("extra-property", nil, "additional property type=<type>,name=<name>,value=<value>")
+		cmd.Flags().String("remote-ip", "", "remote IP address block")
+		cmd.Flags().String("remote-group", "", "remote security group")
+		cmd.Flags().String("remote-address-group", "", "remote address group")
+		cmd.Flags().String("dst-port", "", "destination port or port range")
+		cmd.Flags().String("protocol", "", "IP protocol")
+		cmd.Flags().String("proto", "", "IP protocol")
+		_ = cmd.Flags().MarkHidden("proto")
+		cmd.Flags().String("description", "", "security group rule description")
+		cmd.Flags().Int("icmp-type", 0, "ICMP type")
+		cmd.Flags().Int("icmp-code", 0, "ICMP code")
+		cmd.Flags().Bool("ingress", false, "ingress rule")
+		cmd.Flags().Bool("egress", false, "egress rule")
+		cmd.Flags().String("ethertype", "", "ethertype")
+		cmd.Flags().String("project", "", "owner project")
+		cmd.Flags().String("project-domain", "", "project domain")
 	case "security group rule list":
 		cmd.Flags().String("protocol", "", "filter by IP protocol")
 		cmd.Flags().String("ethertype", "", "filter by ethertype")
@@ -921,7 +938,7 @@ func isCoreReadCommand(path string) bool {
 		"resource provider usage show",
 		"router list", "router show",
 		"security group create", "security group delete", "security group list", "security group set", "security group show", "security group unset",
-		"security group rule list", "security group rule show",
+		"security group rule create", "security group rule delete", "security group rule list", "security group rule show",
 		"server event list", "server event show",
 		"server list", "server show",
 		"server group create", "server group delete", "server group list", "server group show",

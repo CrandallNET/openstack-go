@@ -834,3 +834,19 @@ Sources consulted:
 * Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/network/v2/security_group.py`, used only as the pinned local oracle implementation source.
 * Local osc-lib tag helper source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/osc_lib/utils/tags.py`, used to mirror set and unset tag behavior.
 * Gophercloud package docs for [Neutron security groups](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/security/groups).
+
+## 2026-05-04: Security Group Rule Create And Delete
+
+Work done: added `security group rule create` and `security group rule delete`, and tightened `security group rule show` output.
+
+Implementation note: `security group rule create` uses Gophercloud's Neutron security group rule create helper, resolves the parent security group and optional remote security group or address group by name or ID, supports project ownership lookup, accepts OSC-style extra properties, implements OSC's default ingress direction, `any` protocol handling, derived ethertype, default remote CIDR, TCP/UDP destination port parsing, and ICMP type/code validation. Create and show output render the raw Neutron rule body with Python-compatible field names, including `ether_type`, `belongs_to_default_sg`, and `normalized_cidr` where Neutron returns them. `security group rule delete` deletes by rule ID and reports partial failures across multiple IDs.
+
+Live observations on `cloud6`: the Go CLI created disposable groups `gocli-test-sgrule-go-20260504` and `gocli-test-sgrule-go2-20260504`, added disposable TCP/443 ingress rules, compared the rule create JSON shape against Python OSC's `gocli-test-sgrule-python-20260504` rule output, deleted the Go-created rule by ID, deleted the groups, and verified only preexisting default security groups remained.
+
+Sources consulted:
+
+* Local OSC oracle snapshots in `compat/osc/9.0.0/help/security/group/rule/create.txt` and `compat/osc/9.0.0/help/security/group/rule/delete.txt`.
+* Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/network/v2/security_group_rule.py`, used only as the pinned local oracle implementation source.
+* Local Python OSC network utility source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/network/utils.py`, used for protocol, ethertype, port-range, and remote-prefix behavior.
+* Local osc-lib parser action source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/osc_lib/cli/parseractions.py`, used for `--dst-port` range parsing behavior.
+* Gophercloud package docs for [Neutron security group rules](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/security/rules).

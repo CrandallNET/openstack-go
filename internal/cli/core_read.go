@@ -854,6 +854,22 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return securityGroupUnset(cmd.Context(), opts, client, args)
+		case "security group rule create":
+			networkClient, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			identityClient, err := clients.identityV3()
+			if err != nil {
+				return err
+			}
+			return securityGroupRuleCreate(cmd.Context(), stdout, opts, networkClient, identityClient, args)
+		case "security group rule delete":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return securityGroupRuleDelete(cmd.Context(), client, args)
 		case "security group rule list":
 			client, err := clients.networkV2()
 			if err != nil {
@@ -4695,6 +4711,323 @@ func stringSlicesEqual(left []string, right []string) bool {
 	return true
 }
 
+type securityGroupRuleCreateOpts struct {
+	secgrouprules.CreateOpts
+	Extra map[string]any
+}
+
+func (opts securityGroupRuleCreateOpts) ToSecGroupRuleCreateMap() (map[string]any, error) {
+	body, err := opts.CreateOpts.ToSecGroupRuleCreateMap()
+	if err != nil {
+		return nil, err
+	}
+	rule, ok := body["security_group_rule"].(map[string]any)
+	if !ok {
+		return nil, fmt.Errorf("invalid security group rule create request body")
+	}
+	for key, value := range opts.Extra {
+		rule[key] = value
+	}
+	return body, nil
+}
+
+func securityGroupRuleCreate(ctx context.Context, stdout io.Writer, opts *Options, networkClient *gophercloud.ServiceClient, identityClient *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("security group rule create requires <group>")
+	}
+	if err := validateSecurityGroupRuleCreateFlags(opts); err != nil {
+		return err
+	}
+	group, err := findSecurityGroup(ctx, networkClient, args[0])
+	if err != nil {
+		return err
+	}
+	protocol := securityGroupRuleCreateProtocol(opts)
+	ethertype := securityGroupRuleCreateEthertype(opts, protocol)
+	extra, err := parseExtraProperties(flagValues(opts, "extra-property"))
+	if err != nil {
+		return err
+	}
+	createOpts := securityGroupRuleCreateOpts{
+		CreateOpts: secgrouprules.CreateOpts{
+			Direction:  secgrouprules.DirIngress,
+			EtherType:  secgrouprules.RuleEtherType(ethertype),
+			SecGroupID: group.ID,
+			Protocol:   secgrouprules.RuleProtocol(protocol),
+		},
+		Extra: extra,
+	}
+	if boolFlag(opts, "egress") {
+		createOpts.Direction = secgrouprules.DirEgress
+	}
+	if flagChanged(opts, "description") {
+		createOpts.Description = flagValue(opts, "description")
+	}
+	if portMin, portMax, ok, err := securityGroupRulePortRange(opts); err != nil {
+		return err
+	} else if ok && !isICMPProtocol(protocol) {
+		createOpts.PortRangeMin = portMin
+		createOpts.PortRangeMax = portMax
+	}
+	if flagChanged(opts, "icmp-type") {
+		createOpts.PortRangeMin = intFlag(opts, "icmp-type")
+	}
+	if flagChanged(opts, "icmp-code") {
+		createOpts.PortRangeMax = intFlag(opts, "icmp-code")
+	}
+	if remoteGroup := flagValue(opts, "remote-group"); remoteGroup != "" {
+		remote, err := findSecurityGroup(ctx, networkClient, remoteGroup)
+		if err != nil {
+			return err
+		}
+		createOpts.RemoteGroupID = remote.ID
+	} else if remoteAddressGroup := flagValue(opts, "remote-address-group"); remoteAddressGroup != "" {
+		remote, err := findAddressGroup(ctx, networkClient, remoteAddressGroup)
+		if err != nil {
+			return err
+		}
+		createOpts.RemoteAddressGroupID = remote.ID
+	} else if remoteIP := flagValue(opts, "remote-ip"); remoteIP != "" {
+		createOpts.RemoteIPPrefix = remoteIP
+	} else if ethertype == "IPv6" {
+		createOpts.RemoteIPPrefix = "::/0"
+	} else {
+		createOpts.RemoteIPPrefix = "0.0.0.0/0"
+	}
+	if projectNameOrID := flagValue(opts, "project"); projectNameOrID != "" {
+		project, err := findProjectWithDomain(ctx, identityClient, projectNameOrID, flagValue(opts, "project-domain"))
+		if err != nil {
+			return err
+		}
+		createOpts.ProjectID = project.ID
+	}
+	result := secgrouprules.Create(ctx, networkClient, createOpts)
+	item, err := result.Extract()
+	if err != nil {
+		return err
+	}
+	if raw, ok := securityGroupRuleRawFromBody(result.Body); ok {
+		return renderShowOutput(stdout, opts, securityGroupRuleRawFields(raw))
+	}
+	return renderShowOutput(stdout, opts, securityGroupRuleFields(item))
+}
+
+func securityGroupRuleDelete(ctx context.Context, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("security group rule delete requires <rule> [<rule> ...]")
+	}
+	failures := 0
+	for _, ruleID := range args {
+		if err := secgrouprules.Delete(ctx, client, ruleID).ExtractErr(); err != nil {
+			failures++
+		}
+	}
+	if failures > 0 {
+		return fmt.Errorf("%d of %d security group rules failed to delete.", failures, len(args))
+	}
+	return nil
+}
+
+func validateSecurityGroupRuleCreateFlags(opts *Options) error {
+	remoteSelectors := 0
+	for _, name := range []string{"remote-ip", "remote-group", "remote-address-group"} {
+		if flagChanged(opts, name) {
+			remoteSelectors++
+		}
+	}
+	if remoteSelectors > 1 {
+		return fmt.Errorf("argument --remote-address-group: not allowed with argument --remote-ip or --remote-group")
+	}
+	if flagChanged(opts, "ingress") && flagChanged(opts, "egress") {
+		return fmt.Errorf("argument --egress: not allowed with argument --ingress")
+	}
+	if flagChanged(opts, "dst-port") && (flagChanged(opts, "icmp-type") || flagChanged(opts, "icmp-code")) {
+		return fmt.Errorf("Argument --dst-port not allowed with arguments --icmp-type and --icmp-code")
+	}
+	if !flagChanged(opts, "icmp-type") && flagChanged(opts, "icmp-code") {
+		return fmt.Errorf("Argument --icmp-type required with argument --icmp-code")
+	}
+	protocol := securityGroupRuleCreateProtocol(opts)
+	if !isICMPProtocol(protocol) && (flagChanged(opts, "icmp-type") || flagChanged(opts, "icmp-code")) {
+		return fmt.Errorf("ICMP IP protocol required with arguments --icmp-type and --icmp-code")
+	}
+	return nil
+}
+
+func securityGroupRuleCreateProtocol(opts *Options) string {
+	value := strings.ToLower(firstFlag(opts, "protocol", "proto"))
+	if value == "" || value == "any" {
+		return ""
+	}
+	return value
+}
+
+func securityGroupRuleCreateEthertype(opts *Options, protocol string) string {
+	if value := flagValue(opts, "ethertype"); value != "" {
+		if strings.EqualFold(value, "ipv6") {
+			return "IPv6"
+		}
+		return "IPv4"
+	}
+	if isIPv6Protocol(protocol) {
+		return "IPv6"
+	}
+	return "IPv4"
+}
+
+func securityGroupRulePortRange(opts *Options) (int, int, bool, error) {
+	value := flagValue(opts, "dst-port")
+	if value == "" {
+		return 0, 0, false, nil
+	}
+	parts := strings.Split(value, ":")
+	if len(parts) > 2 {
+		return 0, 0, false, fmt.Errorf("invalid range %q, too many values", value)
+	}
+	min, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return 0, 0, false, fmt.Errorf("invalid range %q", value)
+	}
+	max := min
+	if len(parts) == 2 {
+		max, err = strconv.Atoi(parts[1])
+		if err != nil {
+			return 0, 0, false, fmt.Errorf("invalid range %q", value)
+		}
+		if min > max {
+			return 0, 0, false, fmt.Errorf("invalid range %q, minimum is greater than maximum", value)
+		}
+	}
+	return min, max, true, nil
+}
+
+func isICMPProtocol(protocol string) bool {
+	switch protocol {
+	case "icmp", "icmpv6", "ipv6-icmp", "1", "58":
+		return true
+	default:
+		return false
+	}
+}
+
+func isIPv6Protocol(protocol string) bool {
+	if strings.HasPrefix(protocol, "ipv6-") {
+		return true
+	}
+	switch protocol {
+	case "icmpv6", "41", "43", "44", "58", "59", "60":
+		return true
+	default:
+		return false
+	}
+}
+
+func neutronSecurityGroupRuleRaw(ctx context.Context, client *gophercloud.ServiceClient, id string) (map[string]any, error) {
+	var body struct {
+		SecurityGroupRule map[string]any `json:"security_group_rule"`
+	}
+	resp, err := client.Get(ctx, client.ServiceURL("security-group-rules", url.PathEscape(id)), &body, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return nil, err
+	}
+	return body.SecurityGroupRule, nil
+}
+
+func securityGroupRuleRawFromBody(body any) (map[string]any, bool) {
+	var wrapper struct {
+		SecurityGroupRule map[string]any `json:"security_group_rule"`
+	}
+	encoded, err := json.Marshal(body)
+	if err != nil {
+		return nil, false
+	}
+	if err := json.Unmarshal(encoded, &wrapper); err != nil {
+		return nil, false
+	}
+	if wrapper.SecurityGroupRule == nil {
+		return nil, false
+	}
+	return wrapper.SecurityGroupRule, true
+}
+
+func securityGroupRuleRawFields(raw map[string]any) []outputField {
+	known := map[string]bool{
+		"belongs_to_default_sg":   true,
+		"created_at":              true,
+		"description":             true,
+		"direction":               true,
+		"ether_type":              true,
+		"ethertype":               true,
+		"id":                      true,
+		"location":                true,
+		"name":                    true,
+		"normalized_cidr":         true,
+		"port_range_max":          true,
+		"port_range_min":          true,
+		"project_id":              true,
+		"protocol":                true,
+		"remote_address_group_id": true,
+		"remote_group_id":         true,
+		"remote_ip_prefix":        true,
+		"revision_number":         true,
+		"security_group_id":       true,
+		"tags":                    true,
+		"tenant_id":               true,
+		"updated_at":              true,
+	}
+	fields := []outputField{
+		{"belongs_to_default_sg", raw["belongs_to_default_sg"]},
+		{"created_at", raw["created_at"]},
+		{"description", raw["description"]},
+		{"direction", raw["direction"]},
+		{"ether_type", firstPresent(raw, "ether_type", "ethertype")},
+		{"id", raw["id"]},
+		{"normalized_cidr", raw["normalized_cidr"]},
+		{"port_range_max", raw["port_range_max"]},
+		{"port_range_min", raw["port_range_min"]},
+		{"project_id", raw["project_id"]},
+		{"protocol", raw["protocol"]},
+		{"remote_address_group_id", raw["remote_address_group_id"]},
+		{"remote_group_id", raw["remote_group_id"]},
+		{"remote_ip_prefix", raw["remote_ip_prefix"]},
+		{"revision_number", raw["revision_number"]},
+		{"security_group_id", raw["security_group_id"]},
+		{"updated_at", raw["updated_at"]},
+	}
+	var extras []string
+	for key := range raw {
+		if !known[key] {
+			extras = append(extras, key)
+		}
+	}
+	sort.Strings(extras)
+	for _, key := range extras {
+		fields = append(fields, outputField{key, raw[key]})
+	}
+	return fields
+}
+
+func securityGroupRuleFields(item *secgrouprules.SecGroupRule) []outputField {
+	return []outputField{
+		{"created_at", oscTime(item.CreatedAt)},
+		{"description", item.Description},
+		{"direction", item.Direction},
+		{"ether_type", item.EtherType},
+		{"id", item.ID},
+		{"port_range_max", zeroNil(item.PortRangeMax)},
+		{"port_range_min", zeroNil(item.PortRangeMin)},
+		{"project_id", item.ProjectID},
+		{"protocol", nilIfEmpty(item.Protocol)},
+		{"remote_address_group_id", nilIfEmpty(item.RemoteAddressGroupID)},
+		{"remote_group_id", nilIfEmpty(item.RemoteGroupID)},
+		{"remote_ip_prefix", remoteIPPrefix(*item)},
+		{"revision_number", item.RevisionNumber},
+		{"security_group_id", item.SecGroupID},
+		{"updated_at", oscTime(item.UpdatedAt)},
+	}
+}
+
 func securityGroupRuleDetails(items []secgrouprules.SecGroupRule) []map[string]any {
 	rows := make([]map[string]any, 0, len(items))
 	for _, item := range items {
@@ -4773,27 +5106,14 @@ func securityGroupRuleShow(ctx context.Context, stdout io.Writer, opts *Options,
 	if len(args) < 1 {
 		return fmt.Errorf("security group rule show requires <rule>")
 	}
+	if raw, err := neutronSecurityGroupRuleRaw(ctx, client, args[0]); err == nil {
+		return renderShowOutput(stdout, opts, securityGroupRuleRawFields(raw))
+	}
 	item, err := secgrouprules.Get(ctx, client, args[0]).Extract()
 	if err != nil {
 		return err
 	}
-	return renderShowOutput(stdout, opts, []outputField{
-		{"created_at", oscTime(item.CreatedAt)},
-		{"description", item.Description},
-		{"direction", item.Direction},
-		{"ether_type", item.EtherType},
-		{"id", item.ID},
-		{"port_range_max", zeroNil(item.PortRangeMax)},
-		{"port_range_min", zeroNil(item.PortRangeMin)},
-		{"project_id", item.ProjectID},
-		{"protocol", nilIfEmpty(item.Protocol)},
-		{"remote_address_group_id", nilIfEmpty(item.RemoteAddressGroupID)},
-		{"remote_group_id", nilIfEmpty(item.RemoteGroupID)},
-		{"remote_ip_prefix", remoteIPPrefix(*item)},
-		{"revision_number", item.RevisionNumber},
-		{"security_group_id", item.SecGroupID},
-		{"updated_at", oscTime(item.UpdatedAt)},
-	})
+	return renderShowOutput(stdout, opts, securityGroupRuleFields(item))
 }
 
 func protocolFilter(opts *Options) string {
