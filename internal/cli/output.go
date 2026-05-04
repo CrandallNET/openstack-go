@@ -28,6 +28,10 @@ type outputField struct {
 	Value any
 }
 
+type prettyValueFormatter interface {
+	PrettyString() string
+}
+
 type orderedJSONObject struct {
 	keys   []string
 	values map[string]any
@@ -363,6 +367,9 @@ func prettyCellValue(value any) string {
 }
 
 func prettyValueString(value any) string {
+	if formatter, ok := value.(prettyValueFormatter); ok {
+		return formatter.PrettyString()
+	}
 	if text, ok := prettyStructuredString(value); ok {
 		return text
 	}
@@ -551,6 +558,10 @@ func indentString(width int) string {
 		return ""
 	}
 	return strings.Repeat(" ", width)
+}
+
+func prettyOutput(opts *Options) bool {
+	return opts != nil && opts.Format == "pretty"
 }
 
 func selectColumns(columns []string, requested []string) []string {

@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/gophercloud/gophercloud/v2"
+	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/ports"
 )
 
 func executeForTest(args ...string) (string, string, error) {
@@ -404,6 +405,123 @@ func TestPrettyShowWrapsLongValuesInsteadOfTruncating(t *testing.T) {
 	}
 	if strings.Count(output, "\n") < 3 {
 		t.Fatalf("expected wrapped pretty output to span multiple rows, got:\n%s", output)
+	}
+}
+
+func TestPrettyListFormatsServerNetworksVertically(t *testing.T) {
+	var stdout bytes.Buffer
+	err := renderListOutput(&stdout, &Options{Format: "pretty"}, []string{"Name", "Networks"}, []outputRow{
+		{
+			"Name":     "server-1",
+			"Networks": prettyNetworkAddresses{"testNet": {"172.16.86.110", "172.17.36.42"}},
+		},
+	})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	output := stdout.String()
+	for _, want := range []string{"testNet:", "172.16.86.110", "172.17.36.42"} {
+		if !strings.Contains(output, want) {
+			t.Fatalf("pretty server network output missing %q:\n%s", want, output)
+		}
+	}
+	if strings.Contains(output, "testNet=172.16.86.110, 172.17.36.42") {
+		t.Fatalf("expected pretty server networks to avoid comma-delimited summary, got:\n%s", output)
+	}
+}
+
+func TestPrettyListFormatsPortFixedIPsVertically(t *testing.T) {
+	var stdout bytes.Buffer
+	err := renderListOutput(&stdout, &Options{Format: "pretty"}, []string{"Fixed IP Addresses"}, []outputRow{
+		{
+			"Fixed IP Addresses": prettyPortFixedIPAddresses{
+				ports.IP{IPAddress: "172.16.86.117", SubnetID: "d8da6273-ec5f-47da-b269-c276b3e734b0"},
+				ports.IP{IPAddress: "172.17.36.42", SubnetID: "e1c1eb6b-d245-411f-af36-9480e8ac83e2"},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	output := stdout.String()
+	for _, want := range []string{
+		"172.16.86.117",
+		"172.17.36.42",
+	} {
+		if !strings.Contains(output, want) {
+			t.Fatalf("pretty fixed IP output missing %q:\n%s", want, output)
+		}
+	}
+	if strings.Contains(output, ", subnet_id=") || strings.Contains(output, "subnet:") {
+		t.Fatalf("expected pretty list fixed IPs to stay focused on IP addresses, got:\n%s", output)
+	}
+}
+
+func TestPrettyShowFormatsNetworkIPFieldsVertically(t *testing.T) {
+	opts := &Options{Format: "pretty"}
+	var stdout bytes.Buffer
+	err := renderShowOutput(&stdout, opts, prettyNetworkIPOutputFields(opts, []outputField{
+		{
+			Name: "fixed_ips",
+			Value: []map[string]any{
+				{"ip_address": "172.16.86.117", "subnet_id": "d8da6273-ec5f-47da-b269-c276b3e734b0"},
+				{"ip_address": "172.17.36.42", "subnet_id": "e1c1eb6b-d245-411f-af36-9480e8ac83e2"},
+			},
+		},
+	}))
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	output := stdout.String()
+	for _, want := range []string{
+		"fixed_ips",
+		"172.16.86.117",
+		"subnet: d8da6273-ec5f-47da-b269-c276b3e734b0",
+		"172.17.36.42",
+		"subnet: e1c1eb6b-d245-411f-af36-9480e8ac83e2",
+	} {
+		if !strings.Contains(output, want) {
+			t.Fatalf("pretty show fixed IP output missing %q:\n%s", want, output)
+		}
+	}
+	if strings.Contains(output, "ip_address:") || strings.Contains(output, "subnet_id:") {
+		t.Fatalf("expected pretty show fixed IPs to use human-readable labels, got:\n%s", output)
+	}
+}
+
+func TestPrettyShowFormatsRouterGatewayFixedIPsVertically(t *testing.T) {
+	opts := &Options{Format: "pretty"}
+	var stdout bytes.Buffer
+	err := renderShowOutput(&stdout, opts, prettyNetworkIPOutputFields(opts, []outputField{
+		{
+			Name: "external_gateway_info",
+			Value: map[string]any{
+				"enable_snat": true,
+				"external_fixed_ips": []map[string]any{
+					{"ip_address": "172.16.86.32", "subnet_id": "d8da6273-ec5f-47da-b269-c276b3e734b0"},
+				},
+				"network_id": "cb696f01-32be-4dc3-b562-14ab121bda16",
+			},
+		},
+	}))
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	output := stdout.String()
+	for _, want := range []string{
+		"external_gateway_info",
+		"enable snat: True",
+		"external fixed IPs:",
+		"172.16.86.32",
+		"subnet: d8da6273-ec5f-47da-b269-c276b3e734b0",
+		"network: cb696f01-32be-4dc3-b562-14ab121bda16",
+	} {
+		if !strings.Contains(output, want) {
+			t.Fatalf("pretty router gateway output missing %q:\n%s", want, output)
+		}
+	}
+	if strings.Contains(output, "ip_address:") || strings.Contains(output, "subnet_id:") || strings.Contains(output, "network_id:") {
+		t.Fatalf("expected pretty router gateway output to use human-readable labels, got:\n%s", output)
 	}
 }
 

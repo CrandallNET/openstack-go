@@ -1145,3 +1145,18 @@ Sources consulted:
 * Local implementation file `internal/cli/output.go`.
 * Local Gophercloud hypervisor type definition in `/Users/ken/Dev/openstack-go/.cache/gomod/github.com/gophercloud/gophercloud/v2@v2.12.0/openstack/compute/v2/hypervisors/results.go`.
 * Local pretty-output tests in `internal/cli/root_test.go`.
+
+## 2026-05-04: Pretty IP Address Display
+
+Work done: changed pretty-only address rendering for server, port, address group, and router output. Server list and show now group IP addresses by network name. Port list now shows a vertical list of fixed IP addresses without subnet UUID clutter, while port show keeps subnet detail under each IP address. Router show now formats external gateway fixed IPs and router interface IPs with readable labels instead of raw `ip_address` and `subnet_id` keys.
+
+Implementation note: default output still uses the existing Python-compatible renderer and command values. The new formatters are passed only when `--pretty`, `--format=pretty`, or the existing `OS_PRETTY=1` default selects the pretty renderer.
+
+Live observations on `cloud6`: `server list --pretty` showed `testNet` addresses as a vertical list, `server show rocky --pretty` showed `os6-lan` with its fixed IP on the following line, `port list --pretty` showed one fixed IP per row without subnet wrapping, `port show 23555be5-4030-4a3c-a80c-5c0e7ed7791f --pretty` kept `subnet` detail below `172.16.86.56`, and `router show testRouter --pretty` rendered `external fixed IPs` and `interfaces_info` as nested address blocks.
+
+Sources consulted:
+
+* Local implementation files `internal/cli/core_read.go` and `internal/cli/output.go`.
+* Local pretty-output tests in `internal/cli/root_test.go`.
+* Gophercloud local type definitions for ports in `/Users/ken/Dev/openstack-go/.cache/gomod/github.com/gophercloud/gophercloud/v2@v2.12.0/openstack/networking/v2/ports/results.go`.
+* Gophercloud local type definitions for router gateway fixed IPs in `/Users/ken/Dev/openstack-go/.cache/gomod/github.com/gophercloud/gophercloud/v2@v2.12.0/openstack/networking/v2/extensions/layer3/routers/results.go`.

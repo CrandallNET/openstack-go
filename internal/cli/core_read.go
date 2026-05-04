@@ -1607,11 +1607,15 @@ func computeServerList(ctx context.Context, stdout io.Writer, opts *Options, cli
 	imageNames := imageNameMap(ctx, imageClient)
 	rows := make([]outputRow, 0, len(items))
 	for _, item := range items {
+		networks := any(serverNetworksSummary(item.Addresses))
+		if prettyOutput(opts) {
+			networks = prettyNetworkAddresses(serverNetworks(item.Addresses))
+		}
 		rows = append(rows, outputRow{
 			"ID":       item.ID,
 			"Name":     item.Name,
 			"Status":   item.Status,
-			"Networks": serverNetworksSummary(item.Addresses),
+			"Networks": networks,
 			"Image":    serverImage(item.Image, imageNames),
 			"Flavor":   serverFlavor(item.Flavor, flavorNames),
 		})
@@ -1627,6 +1631,10 @@ func computeServerShow(ctx context.Context, stdout io.Writer, opts *Options, cli
 	if err != nil {
 		return err
 	}
+	addresses := any(serverNetworksSummary(item.Addresses))
+	if prettyOutput(opts) {
+		addresses = prettyNetworkAddresses(serverNetworks(item.Addresses))
+	}
 	return renderShowOutput(stdout, opts, []outputField{
 		{"id", item.ID},
 		{"name", item.Name},
@@ -1637,7 +1645,7 @@ func computeServerShow(ctx context.Context, stdout io.Writer, opts *Options, cli
 		{"updated", item.Updated},
 		{"image", serverImage(item.Image, nil)},
 		{"flavor", serverFlavor(item.Flavor, nil)},
-		{"addresses", serverNetworksSummary(item.Addresses)},
+		{"addresses", addresses},
 		{"metadata", item.Metadata},
 		{"key_name", nilIfEmpty(item.KeyName)},
 	})
@@ -4777,12 +4785,16 @@ func addressGroupList(ctx context.Context, stdout io.Writer, opts *Options, clie
 	}
 	rows := make([]outputRow, 0, len(items))
 	for _, item := range items {
+		addresses := any(item.Addresses)
+		if prettyOutput(opts) {
+			addresses = prettyAddressList(item.Addresses)
+		}
 		rows = append(rows, outputRow{
 			"ID":          item.ID,
 			"Name":        item.Name,
 			"Description": item.Description,
 			"Project":     item.ProjectID,
-			"Addresses":   item.Addresses,
+			"Addresses":   addresses,
 		})
 	}
 	return renderListOutput(stdout, opts, []string{"ID", "Name", "Description", "Project", "Addresses"}, rows)
@@ -4797,9 +4809,9 @@ func addressGroupShow(ctx context.Context, stdout io.Writer, opts *Options, clie
 		return err
 	}
 	if raw, err := neutronAddressGroupRaw(ctx, client, item.ID); err == nil {
-		return renderShowOutput(stdout, opts, addressGroupRawFields(raw))
+		return renderShowOutput(stdout, opts, prettyNetworkIPOutputFields(opts, addressGroupRawFields(raw)))
 	}
-	return renderShowOutput(stdout, opts, addressGroupFields(item))
+	return renderShowOutput(stdout, opts, prettyNetworkIPOutputFields(opts, addressGroupFields(item)))
 }
 
 func neutronAddressGroupRaw(ctx context.Context, client *gophercloud.ServiceClient, id string) (map[string]any, error) {
@@ -7542,9 +7554,9 @@ func routerShow(ctx context.Context, stdout io.Writer, opts *Options, client *go
 	}
 	interfaces := routerInterfacesInfo(ctx, client, item.ID)
 	if raw, err := neutronRouterRaw(ctx, client, item.ID); err == nil {
-		return renderShowOutput(stdout, opts, routerRawFields(raw, interfaces))
+		return renderShowOutput(stdout, opts, prettyNetworkIPOutputFields(opts, routerRawFields(raw, interfaces)))
 	}
-	return renderShowOutput(stdout, opts, routerFields(item, interfaces))
+	return renderShowOutput(stdout, opts, prettyNetworkIPOutputFields(opts, routerFields(item, interfaces)))
 }
 
 func neutronRouterRaw(ctx context.Context, client *gophercloud.ServiceClient, id string) (map[string]any, error) {
@@ -11594,11 +11606,15 @@ func portList(ctx context.Context, stdout io.Writer, opts *Options, client *goph
 	}
 	rows := make([]outputRow, 0, len(items))
 	for _, item := range items {
+		fixedIPs := any(portFixedIPs(item.FixedIPs))
+		if prettyOutput(opts) {
+			fixedIPs = prettyPortFixedIPAddresses(item.FixedIPs)
+		}
 		row := outputRow{
 			"ID":                 item.ID,
 			"Name":               item.Name,
 			"MAC Address":        item.MACAddress,
-			"Fixed IP Addresses": portFixedIPs(item.FixedIPs),
+			"Fixed IP Addresses": fixedIPs,
 			"Status":             item.Status,
 		}
 		if boolFlag(opts, "long") {
@@ -11626,9 +11642,9 @@ func portShow(ctx context.Context, stdout io.Writer, opts *Options, client *goph
 		return err
 	}
 	if raw, err := neutronPortRaw(ctx, client, item.ID); err == nil {
-		return renderShowOutput(stdout, opts, portRawFields(raw))
+		return renderShowOutput(stdout, opts, prettyNetworkIPOutputFields(opts, portRawFields(raw)))
 	}
-	return renderShowOutput(stdout, opts, portFields(item))
+	return renderShowOutput(stdout, opts, prettyNetworkIPOutputFields(opts, portFields(item)))
 }
 
 type floatingIPCreateOpts struct {
@@ -13566,6 +13582,46 @@ func serverNetworksSummary(addresses map[string]any) string {
 	return strings.Join(parts, "; ")
 }
 
+type prettyNetworkAddresses map[string][]string
+
+func (addresses prettyNetworkAddresses) PrettyString() string {
+	names := sortedKeysFromStringSlices(addresses)
+	if len(names) == 0 {
+		return "None"
+	}
+	lines := make([]string, 0, len(addresses))
+	for _, name := range names {
+		values := append([]string(nil), addresses[name]...)
+		sort.Strings(values)
+		if len(values) == 0 {
+			lines = append(lines, name+": None")
+			continue
+		}
+		lines = append(lines, name+":")
+		for _, value := range values {
+			lines = append(lines, "  "+value)
+		}
+	}
+	return strings.Join(lines, "\n")
+}
+
+type prettyAddressList []string
+
+func (addresses prettyAddressList) PrettyString() string {
+	values := make([]string, 0, len(addresses))
+	for _, value := range addresses {
+		value = strings.TrimSpace(value)
+		if value != "" {
+			values = append(values, value)
+		}
+	}
+	if len(values) == 0 {
+		return "None"
+	}
+	sort.Strings(values)
+	return strings.Join(values, "\n")
+}
+
 func sortedKeysFromStringSlices(values map[string][]string) []string {
 	keys := make([]string, 0, len(values))
 	for key := range values {
@@ -13573,6 +13629,407 @@ func sortedKeysFromStringSlices(values map[string][]string) []string {
 	}
 	sort.Strings(keys)
 	return keys
+}
+
+type prettyPortFixedIPAddresses []ports.IP
+
+func (fixedIPs prettyPortFixedIPAddresses) PrettyString() string {
+	values := make([]string, 0, len(fixedIPs))
+	for _, fixedIP := range fixedIPs {
+		switch {
+		case strings.TrimSpace(fixedIP.IPAddress) != "":
+			values = append(values, strings.TrimSpace(fixedIP.IPAddress))
+		case strings.TrimSpace(fixedIP.SubnetID) != "":
+			values = append(values, "subnet: "+strings.TrimSpace(fixedIP.SubnetID))
+		}
+	}
+	if len(values) == 0 {
+		return "None"
+	}
+	sort.Strings(values)
+	return strings.Join(values, "\n")
+}
+
+type prettyIPMapList struct {
+	items       []map[string]string
+	primaryKeys []string
+}
+
+func (list prettyIPMapList) PrettyString() string {
+	lines := prettyIPMapLines(list.items, list.primaryKeys...)
+	if len(lines) == 0 {
+		return "None"
+	}
+	return strings.Join(lines, "\n")
+}
+
+func prettyNetworkIPOutputFields(opts *Options, fields []outputField) []outputField {
+	if !prettyOutput(opts) {
+		return fields
+	}
+	formatted := append([]outputField(nil), fields...)
+	for index := range formatted {
+		formatted[index].Value = prettyNetworkIPFieldValue(formatted[index].Name, formatted[index].Value)
+	}
+	return formatted
+}
+
+func prettyNetworkIPFieldValue(name string, value any) any {
+	switch name {
+	case "addresses":
+		if values, ok := stringSliceFromAny(value); ok {
+			return prettyAddressList(values)
+		}
+	case "allowed_address_pairs", "fixed_ips", "interfaces_info":
+		if values, ok := prettyIPMapsFromAny(value); ok {
+			return prettyIPMapList{
+				items:       values,
+				primaryKeys: []string{"ip_address", "fixed_ip_address", "floating_ip_address"},
+			}
+		}
+	case "external_gateway_info":
+		if gateway, ok := prettyRouterGatewayInfoFromAny(value); ok {
+			return gateway
+		}
+	}
+	return value
+}
+
+type prettyRouterGatewayInfo map[string]any
+
+func (gateway prettyRouterGatewayInfo) PrettyString() string {
+	if len(gateway) == 0 {
+		return "{}"
+	}
+
+	seen := map[string]bool{}
+	lines := []string{}
+	for _, key := range []string{"network_id", "enable_snat", "external_fixed_ips", "qos_policy_id"} {
+		if value, ok := gateway[key]; ok {
+			lines = appendPrettyRouterGatewayEntry(lines, key, value)
+			seen[key] = true
+		}
+	}
+	var extraKeys []string
+	for key := range gateway {
+		if !seen[key] {
+			extraKeys = append(extraKeys, key)
+		}
+	}
+	sort.Strings(extraKeys)
+	for _, key := range extraKeys {
+		lines = appendPrettyRouterGatewayEntry(lines, key, gateway[key])
+	}
+	if len(lines) == 0 {
+		return "{}"
+	}
+	return strings.Join(lines, "\n")
+}
+
+func appendPrettyRouterGatewayEntry(lines []string, key string, value any) []string {
+	if key == "external_fixed_ips" {
+		if values, ok := prettyIPMapsFromAny(value); ok {
+			lines = append(lines, "external fixed IPs:")
+			childLines := prettyIPMapLines(values, "ip_address")
+			if len(childLines) == 0 {
+				return append(lines, "  None")
+			}
+			for _, line := range childLines {
+				lines = append(lines, "  "+line)
+			}
+			return lines
+		}
+	}
+	if childLines, ok := prettyStructuredLines(value, 2); ok {
+		if len(childLines) == 1 && strings.TrimSpace(childLines[0]) == "{}" {
+			return append(lines, prettyNetworkIPLabel(key)+": {}")
+		}
+		if len(childLines) == 1 && strings.TrimSpace(childLines[0]) == "[]" {
+			return append(lines, prettyNetworkIPLabel(key)+": []")
+		}
+		lines = append(lines, prettyNetworkIPLabel(key)+":")
+		return append(lines, childLines...)
+	}
+	return append(lines, prettyNetworkIPLabel(key)+": "+prettyScalarString(value))
+}
+
+func prettyRouterGatewayInfoFromAny(value any) (prettyRouterGatewayInfo, bool) {
+	if value == nil {
+		return nil, false
+	}
+	switch typed := value.(type) {
+	case map[string]any:
+		return prettyRouterGatewayInfo(typed), true
+	case map[string]string:
+		values := map[string]any{}
+		for key, item := range typed {
+			values[key] = item
+		}
+		return prettyRouterGatewayInfo(values), true
+	case routers.GatewayInfo:
+		encoded, err := json.Marshal(typed)
+		if err != nil {
+			return nil, false
+		}
+		var values map[string]any
+		if err := json.Unmarshal(encoded, &values); err != nil {
+			return nil, false
+		}
+		if values == nil {
+			return nil, false
+		}
+		return prettyRouterGatewayInfo(values), true
+	default:
+		encoded, err := json.Marshal(value)
+		if err != nil {
+			return nil, false
+		}
+		var values map[string]any
+		if err := json.Unmarshal(encoded, &values); err != nil {
+			return nil, false
+		}
+		if values == nil {
+			return nil, false
+		}
+		return prettyRouterGatewayInfo(values), true
+	}
+}
+
+func prettyIPMapLines(items []map[string]string, primaryKeys ...string) []string {
+	sorted := sortedPrettyIPMaps(items)
+	lines := make([]string, 0, len(sorted)*2)
+	for _, item := range sorted {
+		lines = append(lines, prettyIPMapEntryLines(item, primaryKeys...)...)
+	}
+	return lines
+}
+
+func prettyIPMapEntryLines(item map[string]string, primaryKeys ...string) []string {
+	primaryKey := ""
+	for _, key := range primaryKeys {
+		if strings.TrimSpace(item[key]) != "" {
+			primaryKey = key
+			break
+		}
+	}
+
+	lines := []string{}
+	if primaryKey != "" {
+		lines = append(lines, strings.TrimSpace(item[primaryKey]))
+	}
+	for _, key := range sortedKeys(item) {
+		if key == primaryKey {
+			continue
+		}
+		value := strings.TrimSpace(item[key])
+		if value == "" {
+			continue
+		}
+		prefix := ""
+		if len(lines) > 0 {
+			prefix = "  "
+		}
+		lines = append(lines, prefix+prettyNetworkIPLabel(key)+": "+value)
+	}
+	return lines
+}
+
+func sortedPrettyIPMaps(items []map[string]string) []map[string]string {
+	values := make([]map[string]string, 0, len(items))
+	for _, item := range items {
+		copied := map[string]string{}
+		for key, value := range item {
+			value = strings.TrimSpace(value)
+			if value != "" && value != "None" {
+				copied[key] = value
+			}
+		}
+		if len(copied) > 0 {
+			values = append(values, copied)
+		}
+	}
+	sort.SliceStable(values, func(left int, right int) bool {
+		return prettyIPMapSortKey(values[left]) < prettyIPMapSortKey(values[right])
+	})
+	return values
+}
+
+func prettyIPMapSortKey(item map[string]string) string {
+	parts := make([]string, 0, len(item))
+	for _, key := range sortedKeys(item) {
+		parts = append(parts, key+"="+item[key])
+	}
+	return strings.Join(parts, "\x00")
+}
+
+func prettyNetworkIPLabel(key string) string {
+	switch key {
+	case "fixed_ip_address":
+		return "fixed ip"
+	case "floating_ip_address":
+		return "floating ip"
+	case "ip_address":
+		return "ip"
+	case "mac_address":
+		return "mac"
+	case "network_id":
+		return "network"
+	case "port_id":
+		return "port"
+	case "subnet_id":
+		return "subnet"
+	default:
+		return strings.ReplaceAll(key, "_", " ")
+	}
+}
+
+func prettyIPMapsFromAny(value any) ([]map[string]string, bool) {
+	switch typed := value.(type) {
+	case []ports.IP:
+		return portFixedIPMapsFromTyped(typed), true
+	case []ports.AddressPair:
+		return portAllowedAddressMapsFromTyped(typed), true
+	case []routers.ExternalFixedIP:
+		values := make([]map[string]string, 0, len(typed))
+		for _, item := range typed {
+			entry := map[string]string{}
+			if item.IPAddress != "" {
+				entry["ip_address"] = item.IPAddress
+			}
+			if item.SubnetID != "" {
+				entry["subnet_id"] = item.SubnetID
+			}
+			if len(entry) > 0 {
+				values = append(values, entry)
+			}
+		}
+		return values, true
+	case []map[string]string:
+		return cloneStringMaps(typed), true
+	case []map[string]any:
+		return stringMapsFromAnyMaps(typed), true
+	case []any:
+		return stringMapsFromAnySlice(typed)
+	default:
+		encoded, err := json.Marshal(value)
+		if err != nil {
+			return nil, false
+		}
+		var maps []map[string]any
+		if err := json.Unmarshal(encoded, &maps); err != nil {
+			return nil, false
+		}
+		return stringMapsFromAnyMaps(maps), true
+	}
+}
+
+func cloneStringMaps(values []map[string]string) []map[string]string {
+	cloned := make([]map[string]string, 0, len(values))
+	for _, value := range values {
+		item := map[string]string{}
+		for key, raw := range value {
+			if strings.TrimSpace(raw) != "" {
+				item[key] = raw
+			}
+		}
+		if len(item) > 0 {
+			cloned = append(cloned, item)
+		}
+	}
+	return cloned
+}
+
+func stringMapsFromAnySlice(values []any) ([]map[string]string, bool) {
+	items := make([]map[string]string, 0, len(values))
+	for _, value := range values {
+		item, ok := stringMapFromAny(value)
+		if !ok {
+			return nil, false
+		}
+		if len(item) > 0 {
+			items = append(items, item)
+		}
+	}
+	return items, true
+}
+
+func stringMapsFromAnyMaps(values []map[string]any) []map[string]string {
+	items := make([]map[string]string, 0, len(values))
+	for _, value := range values {
+		item := stringMapFromAnyMap(value)
+		if len(item) > 0 {
+			items = append(items, item)
+		}
+	}
+	return items
+}
+
+func stringMapFromAny(value any) (map[string]string, bool) {
+	switch typed := value.(type) {
+	case map[string]string:
+		return cloneStringMap(typed), true
+	case map[string]any:
+		return stringMapFromAnyMap(typed), true
+	default:
+		encoded, err := json.Marshal(value)
+		if err != nil {
+			return nil, false
+		}
+		var item map[string]any
+		if err := json.Unmarshal(encoded, &item); err != nil {
+			return nil, false
+		}
+		return stringMapFromAnyMap(item), true
+	}
+}
+
+func cloneStringMap(value map[string]string) map[string]string {
+	item := map[string]string{}
+	for key, raw := range value {
+		raw = strings.TrimSpace(raw)
+		if raw != "" {
+			item[key] = raw
+		}
+	}
+	return item
+}
+
+func stringMapFromAnyMap(value map[string]any) map[string]string {
+	item := map[string]string{}
+	for key, raw := range value {
+		text := strings.TrimSpace(valueString(raw))
+		if text != "" && text != "None" {
+			item[key] = text
+		}
+	}
+	return item
+}
+
+func stringSliceFromAny(value any) ([]string, bool) {
+	switch typed := value.(type) {
+	case []string:
+		return append([]string(nil), typed...), true
+	case []any:
+		values := make([]string, 0, len(typed))
+		for _, item := range typed {
+			text, ok := item.(string)
+			if !ok {
+				return nil, false
+			}
+			values = append(values, text)
+		}
+		return values, true
+	default:
+		encoded, err := json.Marshal(value)
+		if err != nil {
+			return nil, false
+		}
+		var values []string
+		if err := json.Unmarshal(encoded, &values); err != nil {
+			return nil, false
+		}
+		return values, true
+	}
 }
 
 func anySlice(value any) []any {
