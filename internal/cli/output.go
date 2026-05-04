@@ -6,11 +6,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
+	"os"
 	"sort"
 	"strings"
 	"time"
 	"unicode"
 
+	"charm.land/bubbles/v2/progress"
+	"charm.land/bubbles/v2/table"
+	"charm.land/lipgloss/v2"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -86,7 +91,7 @@ func renderListOutput(stdout io.Writer, opts *Options, columns []string, rows []
 		}
 		return nil
 	case "pretty":
-		return renderPrettyList(stdout, columns, rows)
+		return renderPrettyList(stdout, opts, columns, rows)
 	default:
 		tableRows := make([][]string, 0, len(rows))
 		for _, row := range rows {
@@ -124,12 +129,7 @@ func renderShowOutput(stdout io.Writer, opts *Options, fields []outputField) err
 		}
 		return nil
 	case "pretty":
-		for _, field := range fields {
-			if _, err := fmt.Fprintf(stdout, "%s: %s\n", field.Name, valueString(field.Value)); err != nil {
-				return err
-			}
-		}
-		return nil
+		return renderPrettyShow(stdout, opts, fields)
 	default:
 		rows := make([][]string, 0, len(fields))
 		for _, field := range fields {
@@ -139,20 +139,200 @@ func renderShowOutput(stdout io.Writer, opts *Options, fields []outputField) err
 	}
 }
 
-func renderPrettyList(stdout io.Writer, columns []string, rows []outputRow) error {
-	for i, row := range rows {
-		if i > 0 {
-			if _, err := fmt.Fprintln(stdout); err != nil {
-				return err
-			}
-		}
+func renderPrettyList(stdout io.Writer, opts *Options, columns []string, rows []outputRow) error {
+	tableRows := make([]table.Row, 0, len(rows))
+	for _, row := range rows {
+		tableRow := make(table.Row, 0, len(columns))
 		for _, column := range columns {
-			if _, err := fmt.Fprintf(stdout, "%s: %s\n", column, valueString(row[column])); err != nil {
-				return err
+			tableRow = append(tableRow, prettyCellValue(row[column]))
+		}
+		tableRows = append(tableRows, tableRow)
+	}
+	return renderPrettyTable(stdout, opts, columns, tableRows)
+}
+
+func renderPrettyShow(stdout io.Writer, opts *Options, fields []outputField) error {
+	rows := make([]table.Row, 0, len(fields))
+	for _, field := range fields {
+		rows = append(rows, table.Row{field.Name, prettyCellValue(field.Value)})
+	}
+	return renderPrettyTable(stdout, opts, []string{"Field", "Value"}, rows)
+}
+
+func renderPrettyTable(stdout io.Writer, opts *Options, headers []string, rows []table.Row) error {
+	if len(rows) == 0 {
+		return renderPrettyEmpty(stdout)
+	}
+
+	color := prettyColorEnabled(stdout)
+	termWidth := prettyOutputWidth(stdout, opts, color)
+	columns := prettyTableColumns(headers, rows, termWidth, color)
+	model := table.New(
+		table.WithColumns(columns),
+		table.WithRows(rows),
+		table.WithWidth(prettyTableViewWidth(columns)),
+		table.WithHeight(len(rows)+1),
+		table.WithFocused(false),
+		table.WithStyles(prettyTableStyles(color)),
+	)
+
+	view := strings.TrimRight(model.View(), "\n")
+	if color {
+		view = lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("63")).
+			Render(view)
+	}
+	_, err := fmt.Fprintln(stdout, view)
+	return err
+}
+
+func renderPrettyEmpty(stdout io.Writer) error {
+	color := prettyColorEnabled(stdout)
+	if color {
+		_, err := fmt.Fprintln(stdout, lipgloss.NewStyle().Foreground(lipgloss.Color("244")).Render("No rows"))
+		return err
+	}
+	_, err := fmt.Fprintln(stdout, "No rows")
+	return err
+}
+
+func renderPrettyProgress(stdout io.Writer, opts *Options, label string, percent float64) error {
+	color := prettyColorEnabled(stdout)
+	width := min(max(prettyOutputWidth(stdout, opts, color)-displayWidth(label)-4, 20), 80)
+	percent = math.Max(0, math.Min(1, percent))
+
+	options := []progress.Option{progress.WithWidth(width)}
+	if color {
+		options = append(options, progress.WithDefaultBlend())
+	} else {
+		options = append(options,
+			progress.WithFillCharacters('=', '-'),
+		)
+	}
+
+	model := progress.New(options...)
+	if !color {
+		model.FullColor = lipgloss.NoColor{}
+		model.EmptyColor = lipgloss.NoColor{}
+	}
+	if label != "" {
+		label += " "
+	}
+	_, err := fmt.Fprintf(stdout, "%s%s\n", label, model.ViewAs(percent))
+	return err
+}
+
+func prettyTableColumns(headers []string, rows []table.Row, termWidth int, color bool) []table.Column {
+	widths := prettyNaturalWidths(headers, rows)
+	paddingWidth := 2 * len(widths)
+	borderWidth := 0
+	if color {
+		borderWidth = 2
+	}
+	usableWidth := max(len(widths)*4, termWidth-paddingWidth-borderWidth)
+	widths = prettyFitWidths(widths, prettyMinimumWidths(headers), usableWidth)
+
+	columns := make([]table.Column, 0, len(headers))
+	for i, header := range headers {
+		columns = append(columns, table.Column{Title: header, Width: widths[i]})
+	}
+	return columns
+}
+
+func prettyTableViewWidth(columns []table.Column) int {
+	width := 0
+	for _, column := range columns {
+		width += column.Width + 2
+	}
+	return width
+}
+
+func prettyNaturalWidths(headers []string, rows []table.Row) []int {
+	widths := make([]int, len(headers))
+	for i, header := range headers {
+		widths[i] = min(max(displayWidth(header), 4), 64)
+	}
+	for _, row := range rows {
+		for i := range headers {
+			if i >= len(row) {
+				continue
 			}
+			widths[i] = min(max(widths[i], displayWidth(row[i])), 64)
 		}
 	}
-	return nil
+	return widths
+}
+
+func prettyMinimumWidths(headers []string) []int {
+	widths := make([]int, len(headers))
+	for i, header := range headers {
+		widths[i] = min(max(displayWidth(header), 4), 12)
+	}
+	return widths
+}
+
+func prettyFitWidths(widths []int, minimums []int, usableWidth int) []int {
+	fitted := append([]int(nil), widths...)
+	for sumInts(fitted) > usableWidth {
+		index := -1
+		shrinkable := 0
+		for i, width := range fitted {
+			available := width - minimums[i]
+			if available > shrinkable {
+				index = i
+				shrinkable = available
+			}
+		}
+		if index == -1 {
+			break
+		}
+		fitted[index]--
+	}
+	return fitted
+}
+
+func prettyTableStyles(color bool) table.Styles {
+	cell := lipgloss.NewStyle().Padding(0, 1)
+	if !color {
+		return table.Styles{
+			Header:   cell.Copy(),
+			Cell:     cell.Copy(),
+			Selected: cell.Copy(),
+		}
+	}
+	header := cell.Copy().Bold(true).Foreground(lipgloss.Color("39"))
+	selected := cell.Copy()
+	return table.Styles{
+		Header:   header,
+		Cell:     cell.Foreground(lipgloss.Color("252")),
+		Selected: selected.Foreground(lipgloss.Color("252")),
+	}
+}
+
+func prettyOutputWidth(stdout io.Writer, opts *Options, color bool) int {
+	if opts != nil && opts.MaxWidth > 0 {
+		return opts.MaxWidth
+	}
+	if (opts != nil && opts.FitWidth) || color {
+		if width, ok := tableTerminalWidth(stdout); ok && width > 0 {
+			return width
+		}
+	}
+	return 100
+}
+
+func prettyColorEnabled(stdout io.Writer) bool {
+	return os.Getenv("NO_COLOR") == "" && os.Getenv("CLICOLOR") != "0" && tableWriterIsTerminal(stdout)
+}
+
+func prettyCellValue(value any) string {
+	text := valueString(value)
+	text = strings.ReplaceAll(strings.ReplaceAll(text, "\r\n", "\n"), "\r", "\n")
+	text = strings.Join(strings.FieldsFunc(text, func(r rune) bool {
+		return r == '\n' || r == '\t'
+	}), " ")
+	return strings.TrimSpace(text)
 }
 
 func selectColumns(columns []string, requested []string) []string {

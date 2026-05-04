@@ -210,8 +210,12 @@ func renderTokenIssue(stdout io.Writer, opts *Options, row tokenIssueRow) error 
 		_, err := fmt.Fprintf(stdout, "%s\n%s\n%s\n%s\n", row.Expires, row.ID, row.ProjectID, row.UserID)
 		return err
 	case "pretty":
-		_, err := fmt.Fprintf(stdout, "Token\n  Expires: %s\n  ID: %s\n  Project: %s\n  User: %s\n", row.Expires, row.ID, row.ProjectID, row.UserID)
-		return err
+		return renderPrettyShow(stdout, opts, []outputField{
+			{Name: "Expires", Value: row.Expires},
+			{Name: "ID", Value: row.ID},
+			{Name: "Project", Value: row.ProjectID},
+			{Name: "User", Value: row.UserID},
+		})
 	default:
 		return renderFieldValueTable(stdout, opts, map[string]string{
 			"expires":    row.Expires,

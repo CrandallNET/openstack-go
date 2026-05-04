@@ -227,6 +227,104 @@ func TestPrettyFlagParses(t *testing.T) {
 	}
 }
 
+func TestPrettyListUsesTabularOutputWithoutANSIForNonTTY(t *testing.T) {
+	var stdout bytes.Buffer
+	err := renderListOutput(&stdout, &Options{Format: "pretty"}, []string{"ID", "Name", "Status"}, []outputRow{
+		{"ID": "server-1", "Name": "alpha", "Status": "ACTIVE"},
+		{"ID": "server-2", "Name": "beta", "Status": "SHUTOFF"},
+	})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	output := stdout.String()
+	for _, want := range []string{"ID", "Name", "Status", "server-1", "alpha", "SHUTOFF"} {
+		if !strings.Contains(output, want) {
+			t.Fatalf("pretty output missing %q:\n%s", want, output)
+		}
+	}
+	if strings.Contains(output, "ID: server-1") {
+		t.Fatalf("expected pretty list output to be tabular, got old key/value output:\n%s", output)
+	}
+	if containsANSI(output) {
+		t.Fatalf("expected non-TTY pretty output without ANSI escapes, got:\n%q", output)
+	}
+}
+
+func TestPrettyShowUsesTabularOutputWithoutANSIForNonTTY(t *testing.T) {
+	var stdout bytes.Buffer
+	err := renderShowOutput(&stdout, &Options{Format: "pretty"}, []outputField{
+		{Name: "id", Value: "server-1"},
+		{Name: "status", Value: "ACTIVE"},
+	})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	output := stdout.String()
+	for _, want := range []string{"Field", "Value", "id", "server-1", "status", "ACTIVE"} {
+		if !strings.Contains(output, want) {
+			t.Fatalf("pretty show output missing %q:\n%s", want, output)
+		}
+	}
+	if containsANSI(output) {
+		t.Fatalf("expected non-TTY pretty show output without ANSI escapes, got:\n%q", output)
+	}
+}
+
+func TestPrettyProgressUsesBubblesProgressWithoutANSIForNonTTY(t *testing.T) {
+	var stdout bytes.Buffer
+	if err := renderPrettyProgress(&stdout, &Options{}, "waiting", 0.5); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	output := stdout.String()
+	for _, want := range []string{"waiting", "50%"} {
+		if !strings.Contains(output, want) {
+			t.Fatalf("pretty progress output missing %q:\n%s", want, output)
+		}
+	}
+	if containsANSI(output) {
+		t.Fatalf("expected non-TTY pretty progress output without ANSI escapes, got:\n%q", output)
+	}
+}
+
+func TestPrettyColorHonorsNoColor(t *testing.T) {
+	t.Setenv("NO_COLOR", "1")
+	previousTTY := tableWriterIsTerminal
+	tableWriterIsTerminal = func(stdout io.Writer) bool {
+		return true
+	}
+	defer func() {
+		tableWriterIsTerminal = previousTTY
+	}()
+
+	var stdout bytes.Buffer
+	err := renderListOutput(&stdout, &Options{Format: "pretty"}, []string{"ID", "Name"}, []outputRow{
+		{"ID": "server-1", "Name": "alpha"},
+	})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if containsANSI(stdout.String()) {
+		t.Fatalf("expected NO_COLOR pretty output without ANSI escapes, got:\n%q", stdout.String())
+	}
+}
+
+func TestDefaultOutputStillUsesOSCCompatibleTableRenderer(t *testing.T) {
+	var stdout bytes.Buffer
+	err := renderListOutput(&stdout, &Options{Format: defaultOutputFormat}, []string{"ID", "Name"}, []outputRow{
+		{"ID": "server-1", "Name": "alpha"},
+	})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	output := stdout.String()
+	if !strings.HasPrefix(output, "+") || !strings.Contains(output, "| ID       | Name  |") {
+		t.Fatalf("expected default output to keep OSC-compatible table rendering, got:\n%s", output)
+	}
+	if containsANSI(output) {
+		t.Fatalf("expected default table output without ANSI escapes, got:\n%q", output)
+	}
+}
+
 func TestJSONOutputDoesNotEscapeHTML(t *testing.T) {
 	var stdout bytes.Buffer
 	err := renderListOutput(&stdout, &Options{Format: "json"}, []string{"Properties"}, []outputRow{
@@ -558,6 +656,10 @@ func maxOutputLineLength(output string) int {
 		longest = max(longest, len([]rune(line)))
 	}
 	return longest
+}
+
+func containsANSI(output string) bool {
+	return strings.Contains(output, "\x1b[") || strings.Contains(output, "\x1b]")
 }
 
 func mustJSON(value any) string {

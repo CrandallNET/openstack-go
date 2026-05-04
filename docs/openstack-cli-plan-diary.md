@@ -1083,3 +1083,17 @@ Sources consulted:
 * Local OSC oracle snapshots in `compat/osc/9.0.0/help/network/trunk/create.txt`, `compat/osc/9.0.0/help/network/trunk/delete.txt`, `compat/osc/9.0.0/help/network/trunk/set.txt`, `compat/osc/9.0.0/help/network/trunk/unset.txt`, and `compat/osc/9.0.0/help/network/subport/list.txt`.
 * Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/network/v2/network_trunk.py`, used only as the pinned local oracle implementation source.
 * Gophercloud package docs for [Neutron trunks](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/trunks).
+
+## 2026-05-04: Pretty Renderer With Charm Bubbles
+
+Work done: replaced the ad hoc `--pretty` key/value list renderer with a Charm Bubbles table renderer for structured list and show output. Default `table` output still uses the local OSC-compatible renderer, so this dependency is only on the Go-only `--format=pretty` and `--pretty` path.
+
+Decision: use Charm's v2 module paths, `charm.land/bubbles/v2/table`, `charm.land/bubbles/v2/progress`, and `charm.land/lipgloss/v2`, for pretty tabular output, reusable wait/progress rendering, and optional TTY styling. Color is enabled only when stdout is a terminal and `NO_COLOR` is not set. Non-TTY output remains ANSI-free plain text.
+
+Implementation note: the new progress helper is available for command wait loops, but existing `--wait` command behavior still needs command-level lifecycle integration before live progress can appear during long-running server, image, volume, or delete operations.
+
+Sources consulted:
+
+* [Charm Bubbles](https://github.com/charmbracelet/bubbles), whose README describes table and progress components for Bubble Tea applications.
+* [Charm Bubbles tags](https://github.com/charmbracelet/bubbles/tags), which show `v2.1.0` as the current v2 tag used by this implementation.
+* [Charm Lip Gloss](https://github.com/charmbracelet/lipgloss), used for terminal styling.
