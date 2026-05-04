@@ -57,7 +57,7 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 	}
 	for _, path := range []string{
 		"address group create", "address group delete", "address group list", "address group set", "address group show", "address group unset",
-		"address scope list", "address scope show",
+		"address scope create", "address scope delete", "address scope list", "address scope set", "address scope show",
 		"aggregate list", "aggregate show",
 		"allocation candidate list",
 		"availability zone list",
@@ -265,6 +265,18 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().String("project-domain", "", "project domain")
 		cmd.Flags().Bool("share", false, "list shared resources")
 		cmd.Flags().Bool("no-share", false, "list non-shared resources")
+	case "address scope create":
+		cmd.Flags().StringArray("extra-property", nil, "additional property type=<type>,name=<name>,value=<value>")
+		cmd.Flags().Int("ip-version", 4, "IP version")
+		cmd.Flags().String("project", "", "owner project")
+		cmd.Flags().String("project-domain", "", "project domain")
+		cmd.Flags().Bool("share", false, "share resource")
+		cmd.Flags().Bool("no-share", false, "do not share resource")
+	case "address scope set":
+		cmd.Flags().StringArray("extra-property", nil, "additional property type=<type>,name=<name>,value=<value>")
+		cmd.Flags().String("name", "", "new address scope name")
+		cmd.Flags().Bool("share", false, "share resource")
+		cmd.Flags().Bool("no-share", false, "do not share resource")
 	case "configuration show":
 		cmd.Flags().Bool("mask", true, "mask passwords")
 		cmd.Flags().Bool("unmask", false, "show passwords")
@@ -888,7 +900,7 @@ func isIdentityReadCommand(path string) bool {
 func isCoreReadCommand(path string) bool {
 	switch path {
 	case "address group create", "address group delete", "address group list", "address group set", "address group show", "address group unset",
-		"address scope list", "address scope show",
+		"address scope create", "address scope delete", "address scope list", "address scope set", "address scope show",
 		"aggregate list", "aggregate show",
 		"allocation candidate list",
 		"availability zone list",

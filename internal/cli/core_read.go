@@ -148,12 +148,34 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return addressGroupUnset(cmd.Context(), opts, client, args)
+		case "address scope create":
+			networkClient, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			identityClient, err := clients.identityV3()
+			if err != nil {
+				return err
+			}
+			return addressScopeCreate(cmd.Context(), stdout, opts, networkClient, identityClient, args)
+		case "address scope delete":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return addressScopeDelete(cmd.Context(), client, args)
 		case "address scope list":
 			client, err := clients.networkV2()
 			if err != nil {
 				return err
 			}
 			return addressScopeList(cmd.Context(), stdout, opts, client)
+		case "address scope set":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return addressScopeSet(cmd.Context(), opts, client, args)
 		case "address scope show":
 			client, err := clients.networkV2()
 			if err != nil {
@@ -4062,19 +4084,177 @@ func addressGroupFields(item *addressgroups.AddressGroup) []outputField {
 	}
 }
 
+type addressScopeCreateOpts struct {
+	Name      string
+	ProjectID string
+	IPVersion int
+	Shared    *bool
+	Extra     map[string]any
+}
+
+func (opts addressScopeCreateOpts) ToAddressScopeCreateMap() (map[string]any, error) {
+	scope := map[string]any{
+		"name":       opts.Name,
+		"ip_version": opts.IPVersion,
+	}
+	if opts.ProjectID != "" {
+		scope["project_id"] = opts.ProjectID
+	}
+	if opts.Shared != nil {
+		scope["shared"] = *opts.Shared
+	}
+	for key, value := range opts.Extra {
+		scope[key] = value
+	}
+	return map[string]any{"address_scope": scope}, nil
+}
+
+type addressScopeUpdateOpts struct {
+	addressscopes.UpdateOpts
+	Extra map[string]any
+}
+
+func (opts addressScopeUpdateOpts) ToAddressScopeUpdateMap() (map[string]any, error) {
+	body, err := opts.UpdateOpts.ToAddressScopeUpdateMap()
+	if err != nil {
+		return nil, err
+	}
+	scope, ok := body["address_scope"].(map[string]any)
+	if !ok {
+		return nil, fmt.Errorf("invalid address scope update request body")
+	}
+	for key, value := range opts.Extra {
+		scope[key] = value
+	}
+	return body, nil
+}
+
+func addressScopeCreate(ctx context.Context, stdout io.Writer, opts *Options, networkClient *gophercloud.ServiceClient, identityClient *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("address scope create requires <name>")
+	}
+	ipVersion := intFlag(opts, "ip-version")
+	if ipVersion == 0 {
+		ipVersion = 4
+	}
+	if ipVersion != 4 && ipVersion != 6 {
+		return fmt.Errorf("argument --ip-version: invalid choice: %d (choose from 4, 6)", ipVersion)
+	}
+	shared, err := addressScopeSharedFlag(opts)
+	if err != nil {
+		return err
+	}
+	extra, err := parseExtraProperties(flagValues(opts, "extra-property"))
+	if err != nil {
+		return err
+	}
+	createOpts := addressScopeCreateOpts{
+		Name:      args[0],
+		IPVersion: ipVersion,
+		Shared:    shared,
+		Extra:     extra,
+	}
+	if projectNameOrID := flagValue(opts, "project"); projectNameOrID != "" {
+		project, err := findProjectWithDomain(ctx, identityClient, projectNameOrID, flagValue(opts, "project-domain"))
+		if err != nil {
+			return err
+		}
+		createOpts.ProjectID = project.ID
+	}
+	result := addressscopes.Create(ctx, networkClient, createOpts)
+	item, err := result.Extract()
+	if err != nil {
+		return err
+	}
+	if raw, ok := addressScopeRawFromBody(result.Body); ok {
+		return renderShowOutput(stdout, opts, addressScopeRawFields(raw))
+	}
+	return renderShowOutput(stdout, opts, addressScopeFields(item))
+}
+
+func addressScopeDelete(ctx context.Context, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("address scope delete requires <address-scope> [<address-scope> ...]")
+	}
+	failures := 0
+	for _, scopeArg := range args {
+		item, err := findAddressScope(ctx, client, scopeArg)
+		if err != nil {
+			failures++
+			continue
+		}
+		if err := addressscopes.Delete(ctx, client, item.ID).ExtractErr(); err != nil {
+			failures++
+		}
+	}
+	if failures > 0 {
+		return fmt.Errorf("%d of %d address scopes failed to delete.", failures, len(args))
+	}
+	return nil
+}
+
+func addressScopeSet(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("address scope set requires <address-scope>")
+	}
+	item, err := findAddressScope(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	shared, err := addressScopeSharedFlag(opts)
+	if err != nil {
+		return err
+	}
+	extra, err := parseExtraProperties(flagValues(opts, "extra-property"))
+	if err != nil {
+		return err
+	}
+	updateOpts := addressScopeUpdateOpts{Extra: extra}
+	hasUpdate := len(extra) > 0
+	if flagChanged(opts, "name") {
+		name := flagValue(opts, "name")
+		updateOpts.Name = &name
+		hasUpdate = true
+	}
+	if shared != nil {
+		updateOpts.Shared = shared
+		hasUpdate = true
+	}
+	if hasUpdate {
+		if _, err := addressscopes.Update(ctx, client, item.ID, updateOpts).Extract(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func addressScopeSharedFlag(opts *Options) (*bool, error) {
+	if boolFlag(opts, "share") && boolFlag(opts, "no-share") {
+		return nil, fmt.Errorf("argument --no-share: not allowed with argument --share")
+	}
+	if boolFlag(opts, "share") {
+		shared := true
+		return &shared, nil
+	}
+	if boolFlag(opts, "no-share") {
+		shared := false
+		return &shared, nil
+	}
+	return nil, nil
+}
+
 func addressScopeList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
 	listOpts := addressscopes.ListOpts{
 		Name:      flagValue(opts, "name"),
 		ProjectID: flagValue(opts, "project"),
 		IPVersion: intFlag(opts, "ip-version"),
 	}
-	if boolFlag(opts, "share") {
-		shared := true
-		listOpts.Shared = &shared
+	shared, err := addressScopeSharedFlag(opts)
+	if err != nil {
+		return err
 	}
-	if boolFlag(opts, "no-share") {
-		shared := false
-		listOpts.Shared = &shared
+	if shared != nil {
+		listOpts.Shared = shared
 	}
 	page, err := addressscopes.List(client, listOpts).AllPages(ctx)
 	if err != nil {
@@ -4105,13 +4285,79 @@ func addressScopeShow(ctx context.Context, stdout io.Writer, opts *Options, clie
 	if err != nil {
 		return err
 	}
-	return renderShowOutput(stdout, opts, []outputField{
+	if raw, err := neutronAddressScopeRaw(ctx, client, item.ID); err == nil {
+		return renderShowOutput(stdout, opts, addressScopeRawFields(raw))
+	}
+	return renderShowOutput(stdout, opts, addressScopeFields(item))
+}
+
+func neutronAddressScopeRaw(ctx context.Context, client *gophercloud.ServiceClient, id string) (map[string]any, error) {
+	var body struct {
+		AddressScope map[string]any `json:"address_scope"`
+	}
+	resp, err := client.Get(ctx, client.ServiceURL("address-scopes", url.PathEscape(id)), &body, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return nil, err
+	}
+	return body.AddressScope, nil
+}
+
+func addressScopeRawFromBody(body any) (map[string]any, bool) {
+	var wrapper struct {
+		AddressScope map[string]any `json:"address_scope"`
+	}
+	encoded, err := json.Marshal(body)
+	if err != nil {
+		return nil, false
+	}
+	if err := json.Unmarshal(encoded, &wrapper); err != nil {
+		return nil, false
+	}
+	if wrapper.AddressScope == nil {
+		return nil, false
+	}
+	return wrapper.AddressScope, true
+}
+
+func addressScopeRawFields(raw map[string]any) []outputField {
+	known := map[string]bool{
+		"id":         true,
+		"ip_version": true,
+		"location":   true,
+		"name":       true,
+		"project_id": true,
+		"shared":     true,
+		"tenant_id":  true,
+	}
+	fields := []outputField{
+		{"id", raw["id"]},
+		{"ip_version", raw["ip_version"]},
+		{"name", raw["name"]},
+		{"project_id", firstPresent(raw, "project_id", "tenant_id")},
+		{"shared", raw["shared"]},
+	}
+	var extras []string
+	for key := range raw {
+		if !known[key] {
+			extras = append(extras, key)
+		}
+	}
+	sort.Strings(extras)
+	for _, key := range extras {
+		fields = append(fields, outputField{key, raw[key]})
+	}
+	return fields
+}
+
+func addressScopeFields(item *addressscopes.AddressScope) []outputField {
+	return []outputField{
 		{"id", item.ID},
 		{"ip_version", item.IPVersion},
 		{"name", item.Name},
 		{"project_id", firstNonEmpty(item.ProjectID, item.TenantID)},
 		{"shared", item.Shared},
-	})
+	}
 }
 
 func networkAgentList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {

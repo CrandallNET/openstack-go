@@ -865,3 +865,17 @@ Sources consulted:
 * Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/network/v2/address_group.py`, used only as the pinned local oracle implementation source.
 * Gophercloud package docs for [Neutron address groups](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/security/addressgroups).
 * Go package docs for [net/netip](https://pkg.go.dev/net/netip), used for address and CIDR normalization.
+
+## 2026-05-04: Address Scope Lifecycle Commands
+
+Work done: added `address scope create`, `address scope delete`, and `address scope set`, and tightened `address scope show` output.
+
+Implementation note: address scope create/update/delete uses Gophercloud's Neutron address scope helpers. Create uses a narrow custom request builder so `--no-share` can be sent explicitly when requested, and so OSC-style `--extra-property` values can be carried in the `address_scope` body. Create and show output render the raw Neutron address scope body when available, preserving the Python OSC field order observed for `id`, `ip_version`, `name`, `project_id`, and `shared`.
+
+Live observations on `cloud6`: Python OSC created, showed, listed, and deleted disposable scope `gocli-test-address-scope-python-probe-20260504` to confirm JSON field shape. The Go CLI created shared scope `gocli-test-address-scope-go-20260504`, showed and listed it, then deleted it. Neutron rejected an attempted shared-to-private update with `AddressScopeUpdateError`, so the allowed mutation path was verified separately by creating private IPv6 scope `gocli-test-address-scope-go-private-20260504`, renaming it to `gocli-test-address-scope-go-renamed-20260504`, sharing it, showing the updated state, deleting it, and verifying all disposable scope names returned empty lists after cleanup.
+
+Sources consulted:
+
+* Local OSC oracle snapshots in `compat/osc/9.0.0/help/address/scope/create.txt`, `compat/osc/9.0.0/help/address/scope/delete.txt`, and `compat/osc/9.0.0/help/address/scope/set.txt`.
+* Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/network/v2/address_scope.py`, used only as the pinned local oracle implementation source.
+* Gophercloud package docs for [Neutron address scopes](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/addressscopes).
