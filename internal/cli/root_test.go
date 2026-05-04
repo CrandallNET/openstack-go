@@ -248,6 +248,9 @@ func TestPrettyListUsesTabularOutputWithoutANSIForNonTTY(t *testing.T) {
 	if containsANSI(output) {
 		t.Fatalf("expected non-TTY pretty output without ANSI escapes, got:\n%q", output)
 	}
+	if strings.Contains(output, "\n  server-1") {
+		t.Fatalf("expected first pretty row not to be shifted by selected-row padding, got:\n%s", output)
+	}
 }
 
 func TestPrettyShowUsesTabularOutputWithoutANSIForNonTTY(t *testing.T) {
@@ -267,6 +270,27 @@ func TestPrettyShowUsesTabularOutputWithoutANSIForNonTTY(t *testing.T) {
 	}
 	if containsANSI(output) {
 		t.Fatalf("expected non-TTY pretty show output without ANSI escapes, got:\n%q", output)
+	}
+	if strings.Contains(output, "\n  id") {
+		t.Fatalf("expected first pretty show row not to be shifted by selected-row padding, got:\n%s", output)
+	}
+}
+
+func TestCommandListPrettyUsesPrettyRenderer(t *testing.T) {
+	stdout, stderr, err := executeForTest("--pretty", "command", "list", "--group", "openstack.cli")
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if stderr != "" {
+		t.Fatalf("expected empty stderr, got %q", stderr)
+	}
+	for _, want := range []string{"Command Group", "openstack.cli", "command list", "module list"} {
+		if !strings.Contains(stdout, want) {
+			t.Fatalf("pretty command list output missing %q:\n%s", want, stdout)
+		}
+	}
+	if strings.Contains(stdout, "+---") {
+		t.Fatalf("expected command list --pretty to avoid default table borders, got:\n%s", stdout)
 	}
 }
 

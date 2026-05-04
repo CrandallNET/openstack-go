@@ -300,11 +300,11 @@ func prettyTableStyles(color bool) table.Styles {
 		return table.Styles{
 			Header:   cell.Copy(),
 			Cell:     cell.Copy(),
-			Selected: cell.Copy(),
+			Selected: lipgloss.NewStyle(),
 		}
 	}
 	header := cell.Copy().Bold(true).Foreground(lipgloss.Color("39"))
-	selected := cell.Copy()
+	selected := lipgloss.NewStyle()
 	return table.Styles{
 		Header:   header,
 		Cell:     cell.Foreground(lipgloss.Color("252")),
