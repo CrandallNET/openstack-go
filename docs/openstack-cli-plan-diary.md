@@ -1265,6 +1265,7 @@ Current palette:
 | Warning status | `220` | Build, create, delete, attach, detach, migrate, resize, restore, upload, and similar transitional states. |
 | Error status | `203` | Error, failed, down, disabled, deleted, shutoff, suspended, and related error states. |
 | Volume | `93` | Volume IDs, volume names, and volume references. |
+| Device | `81` | Device paths such as `/dev/vda`. |
 | Image | `130` | Image names and image IDs. `N/A` remains the explicit no-image color. |
 | Flavor | `223` | Flavor names and flavor references. |
 | Timestamp | `117` | ISO-like created, updated, attached, heartbeat, and guaranteed-until timestamps. |
@@ -1273,6 +1274,8 @@ Current palette:
 | Label | `15` | `label:` prefixes inside structured pretty values. |
 
 Implementation notes: volume, image, and flavor colors take precedence over generic UUID coloring. Status matching normalizes hyphens and spaces to underscores, so Cinder statuses such as `in-use` are colored through the same status buckets as compute statuses.
+
+Follow-up: device paths now use the device color, and nested `id:` fields inside volume attachment output are treated as volume UUIDs. Full UUIDs and UUID fragments continue to color only the UUID/GUID segments, leaving hyphen separators uncolored.
 
 Sources consulted:
 

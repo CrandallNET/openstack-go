@@ -87,5 +87,6 @@ func renderCommandListPretty(stdout io.Writer, opts *Options, rows []osc.Command
 			tableRows = append(tableRows, table.Row{group, command})
 		}
 	}
-	return renderPrettyTable(stdout, opts, []string{"Command Group", "Commands"}, tableRows, prettyListCellColorizer([]string{"Command Group", "Commands"}))
+	columns := []string{"Command Group", "Commands"}
+	return renderPrettyTable(stdout, opts, columns, tableRows, prettyListCellColorizer(columns), prettyListCellContext(columns))
 }

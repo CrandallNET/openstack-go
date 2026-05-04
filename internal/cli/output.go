@@ -39,6 +39,7 @@ type prettySemanticValue interface {
 }
 
 type prettyCellColorizer func(rowIndex int, columnIndex int, text string) string
+type prettyCellContext func(rowIndex int, columnIndex int) string
 
 type prettyVolumeValue string
 
@@ -58,6 +59,7 @@ type orderedJSONObject struct {
 const (
 	prettyColorBooleanFalse = "214"
 	prettyColorBooleanTrue  = "82"
+	prettyColorDevice       = "81"
 	prettyColorError        = "203"
 	prettyColorField        = "111"
 	prettyColorFlavor       = "223"
@@ -82,6 +84,7 @@ var (
 
 	prettyBooleanFalseStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorBooleanFalse)).Bold(true)
 	prettyBooleanTrueStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorBooleanTrue)).Bold(true)
+	prettyDeviceStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorDevice)).Bold(true)
 	prettyErrorStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorError)).Bold(true)
 	prettyFieldStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorField)).Bold(true)
 	prettyFlavorStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorFlavor)).Bold(true)
@@ -219,7 +222,7 @@ func renderPrettyList(stdout io.Writer, opts *Options, columns []string, rows []
 		tableRows = append(tableRows, tableRow)
 		roles = append(roles, roleRow)
 	}
-	return renderPrettyTable(stdout, opts, columns, tableRows, prettyListCellColorizer(columns, roles))
+	return renderPrettyTable(stdout, opts, columns, tableRows, prettyListCellColorizer(columns, roles), prettyListCellContext(columns, roles))
 }
 
 func renderPrettyShow(stdout io.Writer, opts *Options, fields []outputField) error {
@@ -229,7 +232,7 @@ func renderPrettyShow(stdout io.Writer, opts *Options, fields []outputField) err
 		rows = append(rows, table.Row{field.Name, prettyCellValue(field.Value)})
 		roles = append(roles, prettySemanticRole(field.Value))
 	}
-	return renderPrettyTable(stdout, opts, []string{"Field", "Value"}, rows, prettyShowCellColorizer(fields, roles))
+	return renderPrettyTable(stdout, opts, []string{"Field", "Value"}, rows, prettyShowCellColorizer(fields, roles), prettyShowCellContext(fields, roles))
 }
 
 func prettySemanticRole(value any) string {
@@ -240,7 +243,7 @@ func prettySemanticRole(value any) string {
 	return semantic.PrettySemanticRole()
 }
 
-func renderPrettyTable(stdout io.Writer, opts *Options, headers []string, rows []table.Row, colorizer prettyCellColorizer) error {
+func renderPrettyTable(stdout io.Writer, opts *Options, headers []string, rows []table.Row, colorizer prettyCellColorizer, context prettyCellContext) error {
 	if len(rows) == 0 {
 		return renderPrettyEmpty(stdout)
 	}
@@ -250,8 +253,9 @@ func renderPrettyTable(stdout io.Writer, opts *Options, headers []string, rows [
 	columns := prettyTableColumns(headers, rows, termWidth, color)
 	if !color {
 		colorizer = nil
+		context = nil
 	}
-	wrappedRows := prettyWrapRows(rows, columns, colorizer)
+	wrappedRows := prettyWrapRows(rows, columns, colorizer, context)
 	model := table.New(
 		table.WithColumns(columns),
 		table.WithRows(wrappedRows),
@@ -357,7 +361,7 @@ func prettyNaturalWidths(headers []string, rows []table.Row) []int {
 	return widths
 }
 
-func prettyWrapRows(rows []table.Row, columns []table.Column, colorizer prettyCellColorizer) []table.Row {
+func prettyWrapRows(rows []table.Row, columns []table.Column, colorizer prettyCellColorizer, context prettyCellContext) []table.Row {
 	wrappedRows := make([]table.Row, 0, len(rows)*2)
 	for rowIndex, row := range rows {
 		cellLines := make([][]string, len(columns))
@@ -369,7 +373,11 @@ func prettyWrapRows(rows []table.Row, columns []table.Column, colorizer prettyCe
 			}
 			cellLines[i] = wrapTableCell(value, column.Width)
 			if colorizer != nil {
-				cellLines[i] = prettyColorizeWrappedCellLines(rowIndex, i, cellLines[i], colorizer)
+				contextName := ""
+				if context != nil {
+					contextName = context(rowIndex, i)
+				}
+				cellLines[i] = prettyColorizeWrappedCellLines(rowIndex, i, cellLines[i], colorizer, contextName)
 			}
 			height = max(height, len(cellLines[i]))
 		}
@@ -467,6 +475,22 @@ func prettyListCellColorizer(columns []string, roles ...[][]string) prettyCellCo
 	}
 }
 
+func prettyListCellContext(columns []string, roles ...[][]string) prettyCellContext {
+	var roleRows [][]string
+	if len(roles) > 0 {
+		roleRows = roles[0]
+	}
+	return func(rowIndex int, columnIndex int) string {
+		if role := prettyCellRole(roleRows, rowIndex, columnIndex); role != "" {
+			return normalizeColumnName(role)
+		}
+		if columnIndex >= len(columns) {
+			return ""
+		}
+		return normalizeColumnName(columns[columnIndex])
+	}
+}
+
 func prettyShowCellColorizer(fields []outputField, roles ...[]string) prettyCellColorizer {
 	var fieldRoles []string
 	if len(roles) > 0 {
@@ -486,6 +510,25 @@ func prettyShowCellColorizer(fields []outputField, roles ...[]string) prettyCell
 	}
 }
 
+func prettyShowCellContext(fields []outputField, roles ...[]string) prettyCellContext {
+	var fieldRoles []string
+	if len(roles) > 0 {
+		fieldRoles = roles[0]
+	}
+	return func(rowIndex int, columnIndex int) string {
+		if columnIndex != 1 {
+			return ""
+		}
+		if rowIndex < len(fieldRoles) && fieldRoles[rowIndex] != "" {
+			return normalizeColumnName(fieldRoles[rowIndex])
+		}
+		if rowIndex < len(fields) {
+			return normalizeColumnName(fields[rowIndex].Name)
+		}
+		return ""
+	}
+}
+
 func prettyCellRole(roles [][]string, rowIndex int, columnIndex int) string {
 	if rowIndex >= len(roles) || columnIndex >= len(roles[rowIndex]) {
 		return ""
@@ -498,9 +541,7 @@ func prettyColorizeByName(name string, text string) string {
 		return text
 	}
 	normalized := normalizeColumnName(name)
-	return prettyColorizeLabeledText(text, func(value string) string {
-		return prettyColorizeByNormalizedName(normalized, value)
-	})
+	return prettyColorizeLabeledTextWithContext(text, normalized)
 }
 
 func prettyColorizeByNormalizedName(normalized string, text string) string {
@@ -513,6 +554,8 @@ func prettyColorizeByNormalizedName(normalized string, text string) string {
 	switch {
 	case prettyIsVolumeField(normalized):
 		return prettyColorizeVolume(text)
+	case prettyIsDeviceField(normalized):
+		return prettyDeviceStyle.Render(text)
 	case prettyIsFlavorField(normalized):
 		return prettyFlavorStyle.Render(text)
 	case prettyIsImageField(normalized):
@@ -564,6 +607,10 @@ func prettyIsVolumeField(name string) bool {
 	default:
 		return false
 	}
+}
+
+func prettyIsDeviceField(name string) bool {
+	return name == "device"
 }
 
 func prettyIsFlavorComponentField(name string) bool {
@@ -669,7 +716,24 @@ func prettyColorizeLabeledText(text string, colorizeValue func(string) string) s
 	return prefix + prettyLabelStyle.Render(label) + prettyColorizeByNormalizedName(normalizeColumnName(labelName), value)
 }
 
-func prettyColorizeWrappedCellLines(rowIndex int, columnIndex int, lines []string, colorizer prettyCellColorizer) []string {
+func prettyColorizeLabeledTextWithContext(text string, parentName string) string {
+	prefix, label, value, ok := prettySplitLabelPrefix(text)
+	if !ok {
+		return prettyColorizeByNormalizedName(parentName, text)
+	}
+	labelName := strings.TrimSuffix(strings.TrimSpace(label), ":")
+	normalizedLabel := prettyContextualLabelName(parentName, normalizeColumnName(labelName))
+	return prefix + prettyLabelStyle.Render(label) + prettyColorizeByNormalizedName(normalizedLabel, value)
+}
+
+func prettyContextualLabelName(parentName string, labelName string) string {
+	if labelName == "id" && (parentName == "attached_to" || parentName == "attachments") {
+		return "volume_id"
+	}
+	return labelName
+}
+
+func prettyColorizeWrappedCellLines(rowIndex int, columnIndex int, lines []string, colorizer prettyCellColorizer, contextName string) []string {
 	colored := make([]string, len(lines))
 	pendingLabel := ""
 	for index, line := range lines {
@@ -693,7 +757,7 @@ func prettyColorizeWrappedCellLines(rowIndex int, columnIndex int, lines []strin
 			continue
 		}
 		if pendingLabel != "" {
-			colored[index] = prettyColorizeContinuationValue(pendingLabel, colorizer(rowIndex, columnIndex, line))
+			colored[index] = prettyColorizeContinuationValue(contextName, pendingLabel, line)
 			continue
 		}
 		colored[index] = colorizer(rowIndex, columnIndex, line)
@@ -701,18 +765,18 @@ func prettyColorizeWrappedCellLines(rowIndex int, columnIndex int, lines []strin
 	return colored
 }
 
-func prettyColorizeContinuationValue(label string, text string) string {
-	if prettyIsVolumeField(normalizeColumnName(label)) {
+func prettyColorizeContinuationValue(parentName string, label string, text string) string {
+	normalized := prettyContextualLabelName(parentName, normalizeColumnName(label))
+	if prettyIsVolumeField(normalized) {
 		return prettyColorizeUUIDFragmentWithStyle(text, prettyVolumeStyle)
 	}
-	if prettyIsIDLikeLabel(label) {
+	if prettyIsIDLikeName(normalized) {
 		return prettyColorizeUUIDFragment(text)
 	}
-	return text
+	return prettyColorizeByNormalizedName(normalized, text)
 }
 
-func prettyIsIDLikeLabel(label string) bool {
-	normalized := normalizeColumnName(label)
+func prettyIsIDLikeName(normalized string) bool {
 	return normalized == "id" || strings.HasSuffix(normalized, "id")
 }
 

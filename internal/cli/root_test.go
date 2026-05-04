@@ -436,6 +436,7 @@ func TestPrettyWrapRowsAddsSpacerBetweenEntries(t *testing.T) {
 		[]table.Row{{"server-1", "alpha"}, {"server-2", "beta"}},
 		[]table.Column{{Title: "ID", Width: 8}, {Title: "Name", Width: 8}},
 		nil,
+		nil,
 	)
 	if len(rows) != 3 {
 		t.Fatalf("expected spacer row between pretty entries, got %#v", rows)
@@ -734,6 +735,7 @@ func TestPrettyPaletteColorsDomainValues(t *testing.T) {
 		{name: "Volume ID", value: "52c4cf8d-4ef3-4479-b7b9-ffb814f9dd5b", want: prettyColorizeTextWithUUIDStyle("52c4cf8d-4ef3-4479-b7b9-ffb814f9dd5b", prettyVolumeStyle)},
 		{name: "Image", value: "rocky9", want: prettyImageStyle.Render("rocky9")},
 		{name: "Flavor", value: "m1.small", want: prettyFlavorStyle.Render("m1.small")},
+		{name: "device", value: "/dev/vda", want: prettyDeviceStyle.Render("/dev/vda")},
 		{name: "created_at", value: "2026-05-04T19:10:59.000000", want: prettyTimestampStyle.Render("2026-05-04T19:10:59.000000")},
 		{name: "Status", value: "in-use", want: prettyBooleanTrueStyle.Render("in-use")},
 	}
@@ -766,6 +768,57 @@ func TestPrettyVolumeUUIDFragmentsKeepHyphensPlain(t *testing.T) {
 	}
 }
 
+func TestPrettyVolumeUUIDLeavesHyphensPlain(t *testing.T) {
+	uuid := "52c4cf8d-4ef3-4479-b7b9-ffb814f9dd5b"
+	colored := prettyColorizeByName("Volume ID", uuid)
+	parts := strings.Split(colored, "-")
+	if len(parts) != 5 {
+		t.Fatalf("expected colored volume UUID to keep four plain hyphens, got %q", colored)
+	}
+	for index, part := range parts {
+		if !containsANSI(part) {
+			t.Fatalf("expected volume UUID segment %d to be colored, got %q from %q", index, part, colored)
+		}
+	}
+}
+
+func TestPrettyAttachedToIDUsesVolumeUUIDStyle(t *testing.T) {
+	uuid := "52c4cf8d-4ef3-4479-b7b9-ffb814f9dd5b"
+	colored := prettyColorizeByName("Attached to", "id: "+uuid)
+	want := prettyLabelStyle.Render("id:") + prettyColorizeTextWithUUIDStyle(" "+uuid, prettyVolumeStyle)
+	if colored != want {
+		t.Fatalf("expected attached-to id label to use volume UUID style, got %q want %q", colored, want)
+	}
+}
+
+func TestPrettyWrappedAttachedToIDUsesVolumeUUIDStyle(t *testing.T) {
+	rows := prettyWrapRows(
+		[]table.Row{{"  id: 52c4cf8d"}},
+		[]table.Column{{Title: "Attached to", Width: 8}},
+		prettyListCellColorizer([]string{"Attached to"}),
+		prettyListCellContext([]string{"Attached to"}),
+	)
+	if len(rows) != 2 {
+		t.Fatalf("expected wrapped label and value rows, got %#v", rows)
+	}
+	wantLabel := "  " + prettyLabelStyle.Render("id:")
+	if rows[0][0] != wantLabel {
+		t.Fatalf("expected wrapped id label row to be bright, got %q want %q", rows[0][0], wantLabel)
+	}
+	wantValue := prettyVolumeStyle.Render("52c4cf8d")
+	if rows[1][0] != wantValue {
+		t.Fatalf("expected wrapped attached-to id value to use volume color, got %q want %q", rows[1][0], wantValue)
+	}
+}
+
+func TestPrettyDeviceLabelUsesDeviceColor(t *testing.T) {
+	colored := prettyColorizeByName("Attached to", "device: /dev/vda")
+	want := prettyLabelStyle.Render("device:") + prettyDeviceStyle.Render(" /dev/vda")
+	if colored != want {
+		t.Fatalf("expected device label value to use device color, got %q want %q", colored, want)
+	}
+}
+
 func TestPrettyHostnamesUseIPColor(t *testing.T) {
 	colored := prettyColorizeByName("host_name", "dell6.crandall.haus")
 	want := prettyIPStyle.Render("dell6.crandall.haus")
@@ -791,6 +844,7 @@ func TestPrettyWrappedLabelContinuationValueKeepsSemanticColor(t *testing.T) {
 		[]table.Row{{"  attachment_id: 1f7222ef"}},
 		[]table.Column{{Title: "Attached to", Width: 16}},
 		prettyListCellColorizer([]string{"Attached to"}),
+		prettyListCellContext([]string{"Attached to"}),
 	)
 	if len(rows) != 2 {
 		t.Fatalf("expected wrapped label and value rows, got %#v", rows)
