@@ -127,7 +127,7 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"server migration list",
 		"server volume list",
 		"subnet list", "subnet show",
-		"subnet pool list", "subnet pool show",
+		"subnet pool create", "subnet pool delete", "subnet pool list", "subnet pool set", "subnet pool show", "subnet pool unset",
 		"trait list", "trait show",
 		"usage list", "usage show",
 		"versions show",
@@ -424,6 +424,41 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().String("name", "", "filter by name")
 		cmd.Flags().String("address-scope", "", "filter by address scope")
 		addTagFilterFlags(cmd)
+	case "subnet pool create":
+		cmd.Flags().StringArray("extra-property", nil, "additional property type=<type>,name=<name>,value=<value>")
+		cmd.Flags().StringArray("pool-prefix", nil, "subnet pool prefix")
+		cmd.Flags().Int("default-prefix-length", 0, "default prefix length")
+		cmd.Flags().Int("min-prefix-length", 0, "minimum prefix length")
+		cmd.Flags().Int("max-prefix-length", 0, "maximum prefix length")
+		cmd.Flags().String("project", "", "owner project")
+		cmd.Flags().String("project-domain", "", "project domain")
+		cmd.Flags().String("address-scope", "", "address scope")
+		cmd.Flags().Bool("default", false, "set as default")
+		cmd.Flags().Bool("no-default", false, "set as non-default")
+		cmd.Flags().Bool("share", false, "share resource")
+		cmd.Flags().Bool("no-share", false, "do not share resource")
+		cmd.Flags().String("description", "", "subnet pool description")
+		cmd.Flags().Int("default-quota", 0, "default quota")
+		cmd.Flags().StringArray("tag", nil, "subnet pool tag")
+		cmd.Flags().Bool("no-tag", false, "create without tags")
+	case "subnet pool set":
+		cmd.Flags().StringArray("extra-property", nil, "additional property type=<type>,name=<name>,value=<value>")
+		cmd.Flags().String("name", "", "new subnet pool name")
+		cmd.Flags().StringArray("pool-prefix", nil, "subnet pool prefix")
+		cmd.Flags().Int("default-prefix-length", 0, "default prefix length")
+		cmd.Flags().Int("min-prefix-length", 0, "minimum prefix length")
+		cmd.Flags().Int("max-prefix-length", 0, "maximum prefix length")
+		cmd.Flags().String("address-scope", "", "address scope")
+		cmd.Flags().Bool("no-address-scope", false, "remove address scope")
+		cmd.Flags().Bool("default", false, "set as default")
+		cmd.Flags().Bool("no-default", false, "set as non-default")
+		cmd.Flags().String("description", "", "subnet pool description")
+		cmd.Flags().Int("default-quota", 0, "default quota")
+		cmd.Flags().StringArray("tag", nil, "subnet pool tag")
+		cmd.Flags().Bool("no-tag", false, "clear tags before applying tags")
+	case "subnet pool unset":
+		cmd.Flags().StringArray("tag", nil, "subnet pool tag")
+		cmd.Flags().Bool("all-tag", false, "clear all tags")
 	case "port list":
 		cmd.Flags().String("device-owner", "", "filter by device owner")
 		cmd.Flags().String("host", "", "filter by host")
@@ -970,7 +1005,7 @@ func isCoreReadCommand(path string) bool {
 		"server migration list",
 		"server volume list",
 		"subnet list", "subnet show",
-		"subnet pool list", "subnet pool show",
+		"subnet pool create", "subnet pool delete", "subnet pool list", "subnet pool set", "subnet pool show", "subnet pool unset",
 		"trait list", "trait show",
 		"usage list", "usage show",
 		"versions show",

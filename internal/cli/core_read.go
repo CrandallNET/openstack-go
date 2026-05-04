@@ -1016,18 +1016,46 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return subnetList(cmd.Context(), stdout, opts, client)
+		case "subnet pool create":
+			networkClient, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			identityClient, err := clients.identityV3()
+			if err != nil {
+				return err
+			}
+			return subnetPoolCreate(cmd.Context(), stdout, opts, networkClient, identityClient, args)
+		case "subnet pool delete":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return subnetPoolDelete(cmd.Context(), client, args)
 		case "subnet pool list":
 			client, err := clients.networkV2()
 			if err != nil {
 				return err
 			}
 			return subnetPoolList(cmd.Context(), stdout, opts, client)
+		case "subnet pool set":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return subnetPoolSet(cmd.Context(), opts, client, args)
 		case "subnet pool show":
 			client, err := clients.networkV2()
 			if err != nil {
 				return err
 			}
 			return subnetPoolShow(cmd.Context(), stdout, opts, client, args)
+		case "subnet pool unset":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return subnetPoolUnset(cmd.Context(), opts, client, args)
 		case "subnet show":
 			client, err := clients.networkV2()
 			if err != nil {
@@ -6865,21 +6893,19 @@ func subnetPoolList(ctx context.Context, stdout io.Writer, opts *Options, client
 		NotTags:    firstFlag(opts, "not-tags"),
 		NotTagsAny: firstFlag(opts, "not-any-tags", "not-tags-any"),
 	}
-	if boolFlag(opts, "share") {
-		shared := true
-		listOpts.Shared = &shared
+	shared, err := subnetPoolBoolFlag(opts, "share", "no-share")
+	if err != nil {
+		return err
 	}
-	if boolFlag(opts, "no-share") {
-		shared := false
-		listOpts.Shared = &shared
+	if shared != nil {
+		listOpts.Shared = shared
 	}
-	if boolFlag(opts, "default") {
-		isDefault := true
-		listOpts.IsDefault = &isDefault
+	isDefault, err := subnetPoolBoolFlag(opts, "default", "no-default")
+	if err != nil {
+		return err
 	}
-	if boolFlag(opts, "no-default") {
-		isDefault := false
-		listOpts.IsDefault = &isDefault
+	if isDefault != nil {
+		listOpts.IsDefault = isDefault
 	}
 	if addressScope := flagValue(opts, "address-scope"); addressScope != "" {
 		listOpts.AddressScopeID = resolveAddressScopeID(ctx, client, addressScope)
@@ -6916,6 +6942,247 @@ func subnetPoolList(ctx context.Context, stdout io.Writer, opts *Options, client
 	return renderListOutput(stdout, opts, columns, rows)
 }
 
+type subnetPoolCreateOpts struct {
+	Values map[string]any
+}
+
+func (opts subnetPoolCreateOpts) ToSubnetPoolCreateMap() (map[string]any, error) {
+	return map[string]any{"subnetpool": opts.Values}, nil
+}
+
+type subnetPoolUpdateOpts struct {
+	Values map[string]any
+}
+
+func (opts subnetPoolUpdateOpts) ToSubnetPoolUpdateMap() (map[string]any, error) {
+	return map[string]any{"subnetpool": opts.Values}, nil
+}
+
+func subnetPoolCreate(ctx context.Context, stdout io.Writer, opts *Options, networkClient *gophercloud.ServiceClient, identityClient *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("subnet pool create requires <name>")
+	}
+	if boolFlag(opts, "no-tag") && len(flagValues(opts, "tag")) > 0 {
+		return fmt.Errorf("argument --no-tag: not allowed with argument --tag")
+	}
+	values, err := subnetPoolCreateValues(ctx, opts, networkClient, identityClient, args[0])
+	if err != nil {
+		return err
+	}
+	result := subnetpools.Create(ctx, networkClient, subnetPoolCreateOpts{Values: values})
+	item, err := result.Extract()
+	if err != nil {
+		return err
+	}
+	tags := flagValues(opts, "tag")
+	if len(tags) > 0 {
+		target, err := setNeutronResourceTags(ctx, networkClient, "subnetpools", item.ID, item.Tags, tags, boolFlag(opts, "no-tag"))
+		if err != nil {
+			return err
+		}
+		item.Tags = target
+	}
+	if raw, ok := subnetPoolRawFromBody(result.Body); ok {
+		if len(tags) > 0 {
+			raw["tags"] = item.Tags
+		}
+		return renderShowOutput(stdout, opts, subnetPoolRawFields(raw))
+	}
+	return renderShowOutput(stdout, opts, subnetPoolFields(item))
+}
+
+func subnetPoolCreateValues(ctx context.Context, opts *Options, networkClient *gophercloud.ServiceClient, identityClient *gophercloud.ServiceClient, name string) (map[string]any, error) {
+	prefixes := flagValues(opts, "pool-prefix")
+	if len(prefixes) == 0 {
+		return nil, fmt.Errorf("argument --pool-prefix is required")
+	}
+	values := map[string]any{
+		"name":     name,
+		"prefixes": prefixes,
+	}
+	if err := subnetPoolAddPrefixLengthValues(opts, values); err != nil {
+		return nil, err
+	}
+	if projectNameOrID := flagValue(opts, "project"); projectNameOrID != "" {
+		project, err := findProjectWithDomain(ctx, identityClient, projectNameOrID, flagValue(opts, "project-domain"))
+		if err != nil {
+			return nil, err
+		}
+		values["project_id"] = project.ID
+	}
+	if addressScope := flagValue(opts, "address-scope"); addressScope != "" {
+		values["address_scope_id"] = resolveAddressScopeID(ctx, networkClient, addressScope)
+	}
+	isDefault, err := subnetPoolBoolFlag(opts, "default", "no-default")
+	if err != nil {
+		return nil, err
+	}
+	if isDefault != nil {
+		values["is_default"] = *isDefault
+	}
+	shared, err := subnetPoolBoolFlag(opts, "share", "no-share")
+	if err != nil {
+		return nil, err
+	}
+	if shared != nil {
+		values["shared"] = *shared
+	}
+	if flagChanged(opts, "description") {
+		values["description"] = flagValue(opts, "description")
+	}
+	if flagChanged(opts, "default-quota") {
+		values["default_quota"] = intFlag(opts, "default-quota")
+	}
+	extra, err := parseExtraProperties(flagValues(opts, "extra-property"))
+	if err != nil {
+		return nil, err
+	}
+	for key, value := range extra {
+		values[key] = value
+	}
+	return values, nil
+}
+
+func subnetPoolDelete(ctx context.Context, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("subnet pool delete requires <subnet-pool> [<subnet-pool> ...]")
+	}
+	failures := 0
+	for _, poolArg := range args {
+		item, err := findSubnetPool(ctx, client, poolArg)
+		if err != nil {
+			failures++
+			continue
+		}
+		if err := subnetpools.Delete(ctx, client, item.ID).ExtractErr(); err != nil {
+			failures++
+		}
+	}
+	if failures > 0 {
+		return fmt.Errorf("%d of %d subnet pools failed to delete.", failures, len(args))
+	}
+	return nil
+}
+
+func subnetPoolSet(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("subnet pool set requires <subnet-pool>")
+	}
+	item, err := findSubnetPool(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	values, err := subnetPoolSetValues(ctx, opts, client, item)
+	if err != nil {
+		return err
+	}
+	if len(values) > 0 {
+		if _, err := subnetpools.Update(ctx, client, item.ID, subnetPoolUpdateOpts{Values: values}).Extract(); err != nil {
+			return err
+		}
+	}
+	if boolFlag(opts, "no-tag") || len(flagValues(opts, "tag")) > 0 {
+		_, err := setNeutronResourceTags(ctx, client, "subnetpools", item.ID, item.Tags, flagValues(opts, "tag"), boolFlag(opts, "no-tag"))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func subnetPoolSetValues(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, item *subnetpools.SubnetPool) (map[string]any, error) {
+	values := map[string]any{}
+	if flagChanged(opts, "name") {
+		values["name"] = flagValue(opts, "name")
+	}
+	if prefixes := flagValues(opts, "pool-prefix"); len(prefixes) > 0 {
+		merged := append([]string{}, prefixes...)
+		merged = append(merged, item.Prefixes...)
+		values["prefixes"] = merged
+	}
+	if err := subnetPoolAddPrefixLengthValues(opts, values); err != nil {
+		return nil, err
+	}
+	if flagChanged(opts, "address-scope") && boolFlag(opts, "no-address-scope") {
+		return nil, fmt.Errorf("argument --no-address-scope: not allowed with argument --address-scope")
+	}
+	if addressScope := flagValue(opts, "address-scope"); addressScope != "" {
+		values["address_scope_id"] = resolveAddressScopeID(ctx, client, addressScope)
+	}
+	if boolFlag(opts, "no-address-scope") {
+		values["address_scope_id"] = nil
+	}
+	isDefault, err := subnetPoolBoolFlag(opts, "default", "no-default")
+	if err != nil {
+		return nil, err
+	}
+	if isDefault != nil {
+		values["is_default"] = *isDefault
+	}
+	if flagChanged(opts, "description") {
+		values["description"] = flagValue(opts, "description")
+	}
+	if flagChanged(opts, "default-quota") {
+		values["default_quota"] = intFlag(opts, "default-quota")
+	}
+	extra, err := parseExtraProperties(flagValues(opts, "extra-property"))
+	if err != nil {
+		return nil, err
+	}
+	for key, value := range extra {
+		values[key] = value
+	}
+	return values, nil
+}
+
+func subnetPoolUnset(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("subnet pool unset requires <subnet-pool>")
+	}
+	if len(flagValues(opts, "tag")) > 0 && boolFlag(opts, "all-tag") {
+		return fmt.Errorf("argument --all-tag: not allowed with argument --tag")
+	}
+	item, err := findSubnetPool(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	_, err = unsetNeutronResourceTags(ctx, client, "subnetpools", item.ID, item.Tags, flagValues(opts, "tag"), boolFlag(opts, "all-tag"))
+	return err
+}
+
+func subnetPoolAddPrefixLengthValues(opts *Options, values map[string]any) error {
+	for flagName, fieldName := range map[string]string{
+		"default-prefix-length": "default_prefixlen",
+		"min-prefix-length":     "min_prefixlen",
+		"max-prefix-length":     "max_prefixlen",
+	} {
+		if !flagChanged(opts, flagName) {
+			continue
+		}
+		value := intFlag(opts, flagName)
+		if value < 0 {
+			return fmt.Errorf("argument --%s: invalid non-negative int value: %d", flagName, value)
+		}
+		values[fieldName] = value
+	}
+	return nil
+}
+
+func subnetPoolBoolFlag(opts *Options, trueFlag string, falseFlag string) (*bool, error) {
+	if boolFlag(opts, trueFlag) && boolFlag(opts, falseFlag) {
+		return nil, fmt.Errorf("argument --%s: not allowed with argument --%s", falseFlag, trueFlag)
+	}
+	if boolFlag(opts, trueFlag) {
+		value := true
+		return &value, nil
+	}
+	if boolFlag(opts, falseFlag) {
+		value := false
+		return &value, nil
+	}
+	return nil, nil
+}
+
 func subnetPoolShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
 	if len(args) < 1 {
 		return fmt.Errorf("subnet pool show requires <subnet-pool>")
@@ -6924,7 +7191,109 @@ func subnetPoolShow(ctx context.Context, stdout io.Writer, opts *Options, client
 	if err != nil {
 		return err
 	}
-	return renderShowOutput(stdout, opts, []outputField{
+	if raw, err := neutronSubnetPoolRaw(ctx, client, item.ID); err == nil {
+		return renderShowOutput(stdout, opts, subnetPoolRawFields(raw))
+	}
+	return renderShowOutput(stdout, opts, subnetPoolFields(item))
+}
+
+func neutronSubnetPoolRaw(ctx context.Context, client *gophercloud.ServiceClient, id string) (map[string]any, error) {
+	var body struct {
+		SubnetPool map[string]any `json:"subnetpool"`
+	}
+	resp, err := client.Get(ctx, client.ServiceURL("subnetpools", url.PathEscape(id)), &body, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return nil, err
+	}
+	return body.SubnetPool, nil
+}
+
+func subnetPoolRawFromBody(body any) (map[string]any, bool) {
+	var wrapper struct {
+		SubnetPool map[string]any `json:"subnetpool"`
+	}
+	encoded, err := json.Marshal(body)
+	if err != nil {
+		return nil, false
+	}
+	if err := json.Unmarshal(encoded, &wrapper); err != nil {
+		return nil, false
+	}
+	if wrapper.SubnetPool == nil {
+		return nil, false
+	}
+	return wrapper.SubnetPool, true
+}
+
+func subnetPoolRawFields(raw map[string]any) []outputField {
+	known := map[string]bool{
+		"address_scope_id":  true,
+		"created_at":        true,
+		"default_prefixlen": true,
+		"default_quota":     true,
+		"description":       true,
+		"id":                true,
+		"ip_version":        true,
+		"is_default":        true,
+		"location":          true,
+		"max_prefixlen":     true,
+		"min_prefixlen":     true,
+		"name":              true,
+		"prefixes":          true,
+		"project_id":        true,
+		"revision_number":   true,
+		"shared":            true,
+		"tags":              true,
+		"tenant_id":         true,
+		"updated_at":        true,
+	}
+	fields := []outputField{
+		{"address_scope_id", raw["address_scope_id"]},
+		{"created_at", raw["created_at"]},
+		{"default_prefixlen", subnetPoolRawNumber(raw["default_prefixlen"])},
+		{"default_quota", subnetPoolRawNumber(raw["default_quota"])},
+		{"description", raw["description"]},
+		{"id", raw["id"]},
+		{"ip_version", subnetPoolRawNumber(raw["ip_version"])},
+		{"is_default", raw["is_default"]},
+		{"max_prefixlen", subnetPoolRawNumber(raw["max_prefixlen"])},
+		{"min_prefixlen", subnetPoolRawNumber(raw["min_prefixlen"])},
+		{"name", raw["name"]},
+		{"prefixes", raw["prefixes"]},
+		{"project_id", firstPresent(raw, "project_id", "tenant_id")},
+		{"revision_number", subnetPoolRawNumber(raw["revision_number"])},
+		{"shared", raw["shared"]},
+		{"tags", raw["tags"]},
+		{"updated_at", raw["updated_at"]},
+	}
+	var extras []string
+	for key := range raw {
+		if !known[key] {
+			extras = append(extras, key)
+		}
+	}
+	sort.Strings(extras)
+	for _, key := range extras {
+		fields = append(fields, outputField{key, raw[key]})
+	}
+	return fields
+}
+
+func subnetPoolRawNumber(value any) any {
+	text, ok := value.(string)
+	if !ok {
+		return value
+	}
+	parsed, err := strconv.Atoi(text)
+	if err != nil {
+		return value
+	}
+	return parsed
+}
+
+func subnetPoolFields(item *subnetpools.SubnetPool) []outputField {
+	return []outputField{
 		{"address_scope_id", nilIfEmpty(item.AddressScopeID)},
 		{"created_at", oscTime(item.CreatedAt)},
 		{"default_prefixlen", item.DefaultPrefixLen},
@@ -6942,7 +7311,7 @@ func subnetPoolShow(ctx context.Context, stdout io.Writer, opts *Options, client
 		{"shared", item.Shared},
 		{"tags", item.Tags},
 		{"updated_at", oscTime(item.UpdatedAt)},
-	})
+	}
 }
 
 func portList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, computeClient *gophercloud.ServiceClient) error {

@@ -879,3 +879,17 @@ Sources consulted:
 * Local OSC oracle snapshots in `compat/osc/9.0.0/help/address/scope/create.txt`, `compat/osc/9.0.0/help/address/scope/delete.txt`, and `compat/osc/9.0.0/help/address/scope/set.txt`.
 * Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/network/v2/address_scope.py`, used only as the pinned local oracle implementation source.
 * Gophercloud package docs for [Neutron address scopes](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/addressscopes).
+
+## 2026-05-04: Subnet Pool Lifecycle Commands
+
+Work done: added `subnet pool create`, `subnet pool delete`, `subnet pool set`, and `subnet pool unset`, and tightened `subnet pool show` output.
+
+Implementation note: subnet pool create/update/delete uses Gophercloud's Neutron subnet pool helpers with custom request builders for fields where Python OSC can send false, null, and extra-property values. `subnet pool set --pool-prefix` mirrors Python OSC by extending the existing prefix list rather than replacing it, while Neutron may still merge adjacent prefixes in the returned resource. Tags are handled through the standard Neutron tag subresource, including Python's `--no-tag --tag ...` overwrite behavior on `set`. Raw show output normalizes Neutron's string-form prefix lengths back to numeric JSON fields, matching Python OSC's SDK-normalized output.
+
+Live observations on `cloud6`: Python OSC created, showed, listed, and deleted `gocli-test-subnet-pool-python-probe-20260504` to confirm output field order and default-quota null behavior. The Go CLI created disposable address scope `gocli-test-subnet-pool-scope-20260504`, created subnet pool `gocli-test-subnet-pool-go-20260504` with an address-scope association and tag, renamed it, added a second prefix, removed the address-scope association, replaced tags with `--no-tag --tag second`, removed that tag with `subnet pool unset`, deleted the pool, deleted the scope, and verified all disposable names returned empty lists after cleanup. A second short Go create/delete check with `gocli-test-subnet-pool-go-normalize-20260504` verified numeric JSON output for prefix lengths after raw-response normalization.
+
+Sources consulted:
+
+* Local OSC oracle snapshots in `compat/osc/9.0.0/help/subnet/pool/create.txt`, `compat/osc/9.0.0/help/subnet/pool/delete.txt`, `compat/osc/9.0.0/help/subnet/pool/set.txt`, and `compat/osc/9.0.0/help/subnet/pool/unset.txt`.
+* Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/network/v2/subnet_pool.py`, used only as the pinned local oracle implementation source.
+* Gophercloud package docs for [Neutron subnet pools](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/subnetpools).
