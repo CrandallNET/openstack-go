@@ -138,24 +138,28 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/addressscopes"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "address scope delete"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/addressscopes"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "address scope list"
     group: "openstack.network.v2"
     service: "network"
@@ -173,25 +177,28 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
-    sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
-  - command: "address scope show"
-    group: "openstack.network.v2"
-    service: "network"
-    api: "v2"
-    status: "implemented"
+    status: "cloud-verified"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/addressscopes"
     shim: false
     plugin_scope: false
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion. Live fixture still needed before this row can be marked cloud-verified."
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+  - command: "address scope show"
+    group: "openstack.network.v2"
+    service: "network"
+    api: "v2"
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/addressscopes"
+    shim: false
+    plugin_scope: false
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
   - command: "aggregate add host"
     group: "openstack.compute.v2"
     service: "compute"
@@ -2821,24 +2828,28 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/networks; standard tags via gophercloud.ServiceClient"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "network delete"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/networks"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "network flavor add profile"
     group: "openstack.network.v2"
     service: "network"
@@ -3451,13 +3462,15 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/networks; standard tags via gophercloud.ServiceClient"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "network show"
     group: "openstack.network.v2"
     service: "network"
@@ -3554,13 +3567,15 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/networks; standard tags via gophercloud.ServiceClient"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "object create"
     group: "openstack.object_store.v1"
     service: "object-store"
@@ -4491,13 +4506,15 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/routers"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "router add route"
     group: "openstack.network.v2"
     service: "network"
@@ -4513,35 +4530,41 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/routers"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "router create"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/routers; standard tags via gophercloud.ServiceClient"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "router delete"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/routers"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "router list"
     group: "openstack.network.v2"
     service: "network"
@@ -4625,13 +4648,15 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/routers"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "router remove route"
     group: "openstack.network.v2"
     service: "network"
@@ -4647,24 +4672,28 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/routers"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "router set"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/routers; standard tags via gophercloud.ServiceClient"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "router show"
     group: "openstack.network.v2"
     service: "network"
@@ -4682,13 +4711,15 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/routers; standard tags via gophercloud.ServiceClient"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "security group create"
     group: "openstack.network.v2"
     service: "network"
@@ -5610,24 +5641,28 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/subnets; standard tags via gophercloud.ServiceClient"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "subnet delete"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/subnets"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "subnet list"
     group: "openstack.network.v2"
     service: "network"
@@ -5645,24 +5680,28 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/subnetpools; standard tags via gophercloud.ServiceClient"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "subnet pool delete"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/subnetpools"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "subnet pool list"
     group: "openstack.network.v2"
     service: "network"
@@ -5680,47 +5719,54 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/subnetpools; standard tags via gophercloud.ServiceClient"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "subnet pool show"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "implemented"
+    status: "cloud-verified"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/subnetpools"
     shim: false
     plugin_scope: false
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion. Live fixture still needed before this row can be marked cloud-verified."
+      - "live: configured cloud read smoke"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
   - command: "subnet pool unset"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/subnetpools; standard tags via gophercloud.ServiceClient"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "subnet set"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/subnets; standard tags via gophercloud.ServiceClient"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "subnet show"
     group: "openstack.network.v2"
     service: "network"
@@ -5738,13 +5784,15 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
-    sdk_package: ""
+    status: "cloud-verified"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/subnets; standard tags via gophercloud.ServiceClient"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "tap flow create"
     group: "openstack.network.v2"
     service: "network"

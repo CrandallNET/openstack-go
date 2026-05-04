@@ -936,3 +936,19 @@ Sources consulted:
 * Local OSC oracle snapshots in `compat/osc/9.0.0/help/router/create.txt`, `compat/osc/9.0.0/help/router/delete.txt`, `compat/osc/9.0.0/help/router/set.txt`, and `compat/osc/9.0.0/help/router/unset.txt`.
 * Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/network/v2/router.py`, used only as the pinned local oracle implementation source.
 * Gophercloud package docs for [Neutron routers](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/routers).
+
+## 2026-05-04: Router Interface Commands
+
+Work done: added `router add port`, `router add subnet`, `router remove port`, and `router remove subnet`.
+
+Implementation note: the four commands follow Python OSC's positional-only interface command shape. The Go CLI resolves the router and port or subnet by name or ID, then calls Gophercloud's Neutron router `AddInterface` and `RemoveInterface` helpers. The commands intentionally print no structured output on success, matching the Python command classes.
+
+Live observations on `cloud6`: the Go CLI created disposable network, subnet, and router resources, added the subnet to the router, confirmed `router show -f json` included the router interface, removed that interface by port ID, added the subnet again, removed it by subnet name, and deleted all disposable resources. A second live check created a disposable Neutron port with Python OSC as a test fixture, then used the Go CLI to add and remove that port as a router interface, followed by cleanup and empty-list verification for the disposable router, network, subnet, and port prefixes.
+
+Tooling update: `tools/compat-matrix` now records the recently verified Neutron lifecycle write commands, including router interface commands, network lifecycle commands, subnet lifecycle commands, subnet pool lifecycle commands, and address scope lifecycle commands, so regenerated `compat/matrix.yaml` no longer shows those rows as `unknown`.
+
+Sources consulted:
+
+* Local OSC oracle snapshots in `compat/osc/9.0.0/help/router/add/port.txt`, `compat/osc/9.0.0/help/router/add/subnet.txt`, `compat/osc/9.0.0/help/router/remove/port.txt`, and `compat/osc/9.0.0/help/router/remove/subnet.txt`.
+* Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/network/v2/router.py`, used only as the pinned local oracle implementation source.
+* Gophercloud package docs for [Neutron routers](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/routers).

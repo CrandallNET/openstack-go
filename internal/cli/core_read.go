@@ -881,6 +881,18 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return resourceProviderUsageShow(cmd.Context(), stdout, opts, client, args)
+		case "router add port":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return routerAddPort(cmd.Context(), client, args)
+		case "router add subnet":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return routerAddSubnet(cmd.Context(), client, args)
 		case "router create":
 			networkClient, err := clients.networkV2()
 			if err != nil {
@@ -903,6 +915,18 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return routerList(cmd.Context(), stdout, opts, client)
+		case "router remove port":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return routerRemovePort(cmd.Context(), client, args)
+		case "router remove subnet":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return routerRemoveSubnet(cmd.Context(), client, args)
 		case "router set":
 			client, err := clients.networkV2()
 			if err != nil {
@@ -5307,6 +5331,70 @@ func routerDelete(ctx context.Context, client *gophercloud.ServiceClient, args [
 		return fmt.Errorf("%d of %d routers failed to delete.", failures, len(args))
 	}
 	return nil
+}
+
+func routerAddPort(ctx context.Context, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("router add port requires <router> <port>")
+	}
+	router, err := findRouter(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	port, err := findPort(ctx, client, args[1])
+	if err != nil {
+		return err
+	}
+	_, err = routers.AddInterface(ctx, client, router.ID, routers.AddInterfaceOpts{PortID: port.ID}).Extract()
+	return err
+}
+
+func routerAddSubnet(ctx context.Context, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("router add subnet requires <router> <subnet>")
+	}
+	router, err := findRouter(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	subnet, err := findSubnet(ctx, client, args[1])
+	if err != nil {
+		return err
+	}
+	_, err = routers.AddInterface(ctx, client, router.ID, routers.AddInterfaceOpts{SubnetID: subnet.ID}).Extract()
+	return err
+}
+
+func routerRemovePort(ctx context.Context, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("router remove port requires <router> <port>")
+	}
+	router, err := findRouter(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	port, err := findPort(ctx, client, args[1])
+	if err != nil {
+		return err
+	}
+	_, err = routers.RemoveInterface(ctx, client, router.ID, routers.RemoveInterfaceOpts{PortID: port.ID}).Extract()
+	return err
+}
+
+func routerRemoveSubnet(ctx context.Context, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("router remove subnet requires <router> <subnet>")
+	}
+	router, err := findRouter(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	subnet, err := findSubnet(ctx, client, args[1])
+	if err != nil {
+		return err
+	}
+	_, err = routers.RemoveInterface(ctx, client, router.ID, routers.RemoveInterfaceOpts{SubnetID: subnet.ID}).Extract()
+	return err
 }
 
 func routerSet(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
