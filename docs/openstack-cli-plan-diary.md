@@ -1097,3 +1097,17 @@ Sources consulted:
 * [Charm Bubbles](https://github.com/charmbracelet/bubbles), whose README describes table and progress components for Bubble Tea applications.
 * [Charm Bubbles tags](https://github.com/charmbracelet/bubbles/tags), which show `v2.1.0` as the current v2 tag used by this implementation.
 * [Charm Lip Gloss](https://github.com/charmbracelet/lipgloss), used for terminal styling.
+
+## 2026-05-04: Default List and Show Output Parity Check
+
+Work done: compared default `table` output from the local Python OSC oracle and the Go CLI against `cloud6` for representative `list` and `show` commands. Fixed shared renderer parity gaps for Python-style `None`, empty slice and map display, numeric list-column right alignment, typed empty maps from Gophercloud resources, and server network summaries. Also fixed field order and field inclusion for `role show` and `region show`, sorted `image list` by name to match the oracle on `cloud6`, and changed `router list` state display from boolean values to `UP` and `DOWN`.
+
+Live observations on `cloud6`: the final default-output spot check matched byte-for-byte for `project list`, `project show admin`, `user list`, `user show admin`, `service list`, `service show nova`, `domain list`, `domain show default`, `region list`, `region show RegionOne`, `role list`, `role show admin`, `flavor list`, `image list`, `network list`, `router list`, `server list`, `security group list`, `floating ip list`, and `volume type list`.
+
+Known remaining default-output mismatches from the same read-only pass are command-specific rather than shared table rendering: `flavor show m1.tiny`, `image show cirros`, `network show os6-lan`, `subnet show os6-subnet`, `router show testRouter`, `server show rocky`, `security group show 92e5d908-af34-4360-9dbc-a91c538fc44e`, `floating ip show 06376810-3b16-4160-b1d7-6135571d2efd`, `volume list`, and `volume show b95c61ef-5d8e-4530-91a1-2175aa378c54`. These need per-command field and formatter work, especially OpenStackSDK-style show field surfaces and command-specific list formatters.
+
+Sources consulted:
+
+* Local Python OSC oracle `/Users/ken/.local/bin/openstack`, which reports `openstack 9.0.0`.
+* Local Go command `./bin/openstack`, built from this repository during the check.
+* Local implementation files `internal/cli/output.go`, `internal/cli/table.go`, `internal/cli/identity_read.go`, and `internal/cli/core_read.go`.

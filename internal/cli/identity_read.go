@@ -549,11 +549,10 @@ func identityRoleShow(ctx context.Context, stdout io.Writer, opts *Options, clie
 		return err
 	}
 	return renderShowOutput(stdout, opts, []outputField{
-		{"domain_id", nilIfEmpty(item.DomainID)},
 		{"id", item.ID},
 		{"name", item.Name},
-		{"description", item.Description},
-		{"options", item.Options},
+		{"domain_id", nilIfEmpty(item.DomainID)},
+		{"description", nilIfEmpty(item.Description)},
 	})
 }
 
@@ -1250,8 +1249,8 @@ func identityRegionShow(ctx context.Context, stdout io.Writer, opts *Options, cl
 	}
 	return renderShowOutput(stdout, opts, []outputField{
 		{"region", item.ID},
-		{"parent_region", nilIfEmpty(item.ParentRegionID)},
 		{"description", item.Description},
+		{"parent_region", nilIfEmpty(item.ParentRegionID)},
 	})
 }
 

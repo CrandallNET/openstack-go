@@ -8,7 +8,9 @@ import (
 	"io"
 	"math"
 	"os"
+	"reflect"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 	"unicode"
@@ -97,7 +99,7 @@ func renderListOutput(stdout io.Writer, opts *Options, columns []string, rows []
 		for _, row := range rows {
 			tableRows = append(tableRows, rowStrings(columns, row))
 		}
-		return renderTable(stdout, opts, columns, tableRows, 8, opts.PrintEmpty)
+		return renderTableAligned(stdout, opts, columns, tableRows, listTableAlignments(columns, rows), 8, opts.PrintEmpty)
 	}
 }
 
@@ -406,6 +408,46 @@ func rowStrings(columns []string, row outputRow) []string {
 	return values
 }
 
+func listTableAlignments(columns []string, rows []outputRow) []tableAlignment {
+	alignments := make([]tableAlignment, len(columns))
+	for i, column := range columns {
+		if numericListColumn(column, rows) {
+			alignments[i] = tableAlignRight
+		}
+	}
+	return alignments
+}
+
+func numericListColumn(column string, rows []outputRow) bool {
+	if strings.EqualFold(column, "id") {
+		return false
+	}
+	found := false
+	for _, row := range rows {
+		value := row[column]
+		if value == nil {
+			continue
+		}
+		if !isNumericValue(value) {
+			return false
+		}
+		found = true
+	}
+	return found
+}
+
+func isNumericValue(value any) bool {
+	switch value.(type) {
+	case int, int8, int16, int32, int64,
+		uint, uint8, uint16, uint32, uint64, uintptr,
+		float32, float64:
+		return true
+	default:
+		kind := reflect.ValueOf(value).Kind()
+		return kind >= reflect.Int && kind <= reflect.Float64
+	}
+}
+
 func writeJSONRows(stdout io.Writer, columns []string, rows []outputRow, noIndent bool) error {
 	if noIndent {
 		if _, err := fmt.Fprint(stdout, "["); err != nil {
@@ -559,7 +601,7 @@ func oscTime(value time.Time) any {
 func valueString(value any) string {
 	switch typed := value.(type) {
 	case nil:
-		return ""
+		return "None"
 	case string:
 		return typed
 	case bool:
@@ -568,8 +610,14 @@ func valueString(value any) string {
 		}
 		return "False"
 	case []string:
+		if len(typed) == 0 {
+			return "[]"
+		}
 		return strings.Join(typed, ", ")
 	case []any:
+		if len(typed) == 0 {
+			return "[]"
+		}
 		parts := make([]string, len(typed))
 		for i, part := range typed {
 			parts[i] = valueString(part)
@@ -601,13 +649,40 @@ func valueString(value any) string {
 		return string(bytes)
 	case time.Time:
 		if typed.IsZero() {
-			return ""
+			return "None"
 		}
 		return typed.UTC().Format(time.RFC3339)
 	default:
+		reflected := reflect.ValueOf(value)
+		switch reflected.Kind() {
+		case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Pointer, reflect.Slice:
+			if reflected.IsNil() {
+				return "None"
+			}
+		}
+		switch reflected.Kind() {
+		case reflect.Map:
+			if reflected.Len() == 0 {
+				return "{}"
+			}
+		case reflect.Array, reflect.Slice:
+			if reflected.Len() == 0 {
+				return "[]"
+			}
+		}
 		bytes, err := json.Marshal(typed)
-		if err == nil && string(bytes) != "{}" {
-			return strings.Trim(string(bytes), "\"")
+		if err == nil {
+			encoded := string(bytes)
+			switch encoded {
+			case "null":
+				return "None"
+			case "{}", "[]":
+				return encoded
+			}
+			if unquoted, err := strconv.Unquote(encoded); err == nil {
+				return unquoted
+			}
+			return encoded
 		}
 		return fmt.Sprint(typed)
 	}

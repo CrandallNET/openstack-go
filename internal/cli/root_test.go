@@ -325,6 +325,50 @@ func TestDefaultOutputStillUsesOSCCompatibleTableRenderer(t *testing.T) {
 	}
 }
 
+func TestDefaultListRightAlignsNumericColumns(t *testing.T) {
+	var stdout bytes.Buffer
+	err := renderListOutput(&stdout, &Options{Format: defaultOutputFormat}, []string{"ID", "Name", "RAM", "Disk"}, []outputRow{
+		{"ID": "0", "Name": "m1.tiny", "RAM": 512, "Disk": 10},
+		{"ID": "1", "Name": "m1.small", "RAM": 1024, "Disk": 10},
+	})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	output := stdout.String()
+	for _, want := range []string{
+		"| ID | Name     |  RAM | Disk |",
+		"| 0  | m1.tiny  |  512 |   10 |",
+		"| 1  | m1.small | 1024 |   10 |",
+	} {
+		if !strings.Contains(output, want) {
+			t.Fatalf("default list output missing numeric alignment %q:\n%s", want, output)
+		}
+	}
+}
+
+func TestDefaultShowFormatsOSCEmptyAndNoneValues(t *testing.T) {
+	type projectOption string
+	var stdout bytes.Buffer
+	err := renderShowOutput(&stdout, &Options{Format: defaultOutputFormat}, []outputField{
+		{Name: "nil_value", Value: nil},
+		{Name: "empty_slice", Value: []string{}},
+		{Name: "empty_typed_map", Value: map[projectOption]any{}},
+	})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	output := stdout.String()
+	for _, want := range []string{
+		"| nil_value       | None  |",
+		"| empty_slice     | []    |",
+		"| empty_typed_map | {}    |",
+	} {
+		if !strings.Contains(output, want) {
+			t.Fatalf("default show output missing %q:\n%s", want, output)
+		}
+	}
+}
+
 func TestJSONOutputDoesNotEscapeHTML(t *testing.T) {
 	var stdout bytes.Buffer
 	err := renderListOutput(&stdout, &Options{Format: "json"}, []string{"Properties"}, []outputRow{

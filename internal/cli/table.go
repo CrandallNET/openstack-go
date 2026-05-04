@@ -11,6 +11,13 @@ import (
 	"golang.org/x/term"
 )
 
+type tableAlignment int
+
+const (
+	tableAlignLeft tableAlignment = iota
+	tableAlignRight
+)
+
 var tableTerminalWidth = detectTableTerminalWidth
 var tableWriterIsTerminal = detectTableWriterIsTerminal
 var tableRuntimeGOOS = runtime.GOOS
@@ -24,6 +31,10 @@ func renderFieldValueTable(stdout io.Writer, opts *Options, fields map[string]st
 }
 
 func renderTable(stdout io.Writer, opts *Options, headers []string, rows [][]string, minWidth int, printEmpty bool) error {
+	return renderTableAligned(stdout, opts, headers, rows, nil, minWidth, printEmpty)
+}
+
+func renderTableAligned(stdout io.Writer, opts *Options, headers []string, rows [][]string, alignments []tableAlignment, minWidth int, printEmpty bool) error {
 	if len(rows) == 0 && !printEmpty {
 		return nil
 	}
@@ -33,7 +44,7 @@ func renderTable(stdout io.Writer, opts *Options, headers []string, rows [][]str
 		widths = assignCliffStyleMaxWidths(widths, target, minWidth)
 	}
 
-	return writeTable(stdout, headers, rows, widths)
+	return writeTable(stdout, headers, rows, widths, alignments)
 }
 
 func naturalTableWidths(headers []string, rows [][]string) []int {
@@ -144,18 +155,18 @@ func tableDisplayWidth(widths []int) int {
 	return 1 + 3*len(widths) + sumInts(widths)
 }
 
-func writeTable(stdout io.Writer, headers []string, rows [][]string, widths []int) error {
+func writeTable(stdout io.Writer, headers []string, rows [][]string, widths []int, alignments []tableAlignment) error {
 	if err := writeTableBorder(stdout, widths); err != nil {
 		return err
 	}
-	if err := writeTableRow(stdout, headers, widths); err != nil {
+	if err := writeTableRow(stdout, headers, widths, alignments); err != nil {
 		return err
 	}
 	if err := writeTableBorder(stdout, widths); err != nil {
 		return err
 	}
 	for _, row := range rows {
-		if err := writeTableRow(stdout, row, widths); err != nil {
+		if err := writeTableRow(stdout, row, widths, alignments); err != nil {
 			return err
 		}
 	}
@@ -175,7 +186,7 @@ func writeTableBorder(stdout io.Writer, widths []int) error {
 	return err
 }
 
-func writeTableRow(stdout io.Writer, row []string, widths []int) error {
+func writeTableRow(stdout io.Writer, row []string, widths []int, alignments []tableAlignment) error {
 	wrapped := make([][]string, len(widths))
 	height := 1
 	for i, width := range widths {
@@ -196,7 +207,8 @@ func writeTableRow(stdout io.Writer, row []string, widths []int) error {
 			if line < len(wrapped[i]) {
 				value = wrapped[i][line]
 			}
-			if _, err := fmt.Fprintf(stdout, " %s |", padRight(value, width)); err != nil {
+			value = alignTableCell(value, width, alignmentAt(alignments, i))
+			if _, err := fmt.Fprintf(stdout, " %s |", value); err != nil {
 				return err
 			}
 		}
@@ -205,6 +217,20 @@ func writeTableRow(stdout io.Writer, row []string, widths []int) error {
 		}
 	}
 	return nil
+}
+
+func alignmentAt(alignments []tableAlignment, index int) tableAlignment {
+	if index < len(alignments) {
+		return alignments[index]
+	}
+	return tableAlignLeft
+}
+
+func alignTableCell(value string, width int, alignment tableAlignment) string {
+	if alignment == tableAlignRight {
+		return padLeft(value, width)
+	}
+	return padRight(value, width)
 }
 
 func wrapTableCell(value string, width int) []string {
@@ -273,6 +299,14 @@ func padRight(value string, width int) string {
 		return value
 	}
 	return value + strings.Repeat(" ", padding)
+}
+
+func padLeft(value string, width int) string {
+	padding := width - displayWidth(value)
+	if padding <= 0 {
+		return value
+	}
+	return strings.Repeat(" ", padding) + value
 }
 
 func maxLineWidth(value string) int {

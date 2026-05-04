@@ -1611,7 +1611,7 @@ func computeServerList(ctx context.Context, stdout io.Writer, opts *Options, cli
 			"ID":       item.ID,
 			"Name":     item.Name,
 			"Status":   item.Status,
-			"Networks": serverNetworks(item.Addresses),
+			"Networks": serverNetworksSummary(item.Addresses),
 			"Image":    serverImage(item.Image, imageNames),
 			"Flavor":   serverFlavor(item.Flavor, flavorNames),
 		})
@@ -1637,7 +1637,7 @@ func computeServerShow(ctx context.Context, stdout io.Writer, opts *Options, cli
 		{"updated", item.Updated},
 		{"image", serverImage(item.Image, nil)},
 		{"flavor", serverFlavor(item.Flavor, nil)},
-		{"addresses", serverNetworks(item.Addresses)},
+		{"addresses", serverNetworksSummary(item.Addresses)},
 		{"metadata", item.Metadata},
 		{"key_name", nilIfEmpty(item.KeyName)},
 	})
@@ -2380,6 +2380,9 @@ func imageList(ctx context.Context, stdout io.Writer, opts *Options, client *gop
 	if err != nil {
 		return err
 	}
+	sort.SliceStable(items, func(i int, j int) bool {
+		return strings.ToLower(items[i].Name) < strings.ToLower(items[j].Name)
+	})
 	rows := make([]outputRow, 0, len(items))
 	for _, item := range items {
 		rows = append(rows, outputRow{"ID": item.ID, "Name": item.Name, "Status": string(item.Status)})
@@ -7510,7 +7513,7 @@ func routerList(ctx context.Context, stdout io.Writer, opts *Options, client *go
 			"ID":          item.ID,
 			"Name":        item.Name,
 			"Status":      item.Status,
-			"State":       item.AdminStateUp,
+			"State":       adminStateLabel(item.AdminStateUp),
 			"Project":     item.ProjectID,
 			"Distributed": item.Distributed,
 			"HA":          false,
@@ -13551,6 +13554,25 @@ func serverNetworks(addresses map[string]any) map[string][]string {
 		sort.Strings(values)
 	}
 	return networks
+}
+
+func serverNetworksSummary(addresses map[string]any) string {
+	networks := serverNetworks(addresses)
+	names := sortedKeysFromStringSlices(networks)
+	parts := make([]string, 0, len(names))
+	for _, name := range names {
+		parts = append(parts, fmt.Sprintf("%s=%s", name, strings.Join(networks[name], ", ")))
+	}
+	return strings.Join(parts, "; ")
+}
+
+func sortedKeysFromStringSlices(values map[string][]string) []string {
+	keys := make([]string, 0, len(values))
+	for key := range values {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
 }
 
 func anySlice(value any) []any {
