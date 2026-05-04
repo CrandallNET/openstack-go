@@ -1350,13 +1350,17 @@ Work done: added `github.com/evertras/bubble-table v0.17.2` and routed only colo
 
 Observation: `bubble-table` provides native rounded table borders, header separators, and internal column dividers. It uses the pre-v2 `github.com/charmbracelet/lipgloss` module, while the rest of the CLI uses `charm.land/lipgloss/v2`; the implementation keeps those style types isolated to avoid crossing incompatible style APIs.
 
-Work done: refined the bubble-table experiment so color-enabled Fancy tables use symmetric one-space padding around headers and cells, keep the blank spacer between the heading and content, and use rounded-border horizontal rules between logical items. UUID-like values now prefer hyphen split points during Fancy wrapping, and wrapped inline `label: value` output carries the label context forward so UUID fragments and timestamps keep their semantic color on continuation lines.
+Work done: refined the bubble-table experiment so color-enabled Fancy tables use symmetric one-space padding around headers and cells and use rounded-border horizontal rules between logical items. UUID-like values now prefer hyphen split points during Fancy wrapping, and wrapped inline `label: value` output carries the label context forward so UUID fragments and timestamps keep their semantic color on continuation lines.
 
 Implementation note: the local `bubble-table` v0.17.2 source exposes row styling but not a per-row separator API. The CLI therefore marks separator rows before rendering, lets `bubble-table` render the table, and replaces only those marked body rows with generated rounded-border separators. The non-color pretty path and the OSC-compatible default table renderer are left unchanged.
 
 Work done: corrected Fancy width fitting so the renderer counts bubble-table padding, left and right borders, and internal column dividers before assigning column widths. Fancy output now allows compact one-character columns when needed to stay inside narrow terminals, while preserving a 12-character minimum for ID-like columns when the terminal has enough room so UUIDs can wrap at hyphen boundaries without splitting the final UUID group.
 
 Work done: adjusted wrapped image `N/A (...)` values so the `N/A` token keeps the explicit no-image color, but the explanatory continuation stays neutral gray instead of falling back to image brown after wrapping.
+
+Work done: changed Fancy `show` output so the left `Field` column uses the same bright white label style as inline `label:` prefixes. Field names now visually match nested labels while values keep their semantic colors.
+
+Work done: removed the color-enabled Fancy top spacer row so the first body row starts directly under the header separator. Inter-item horizontal rules remain in place between logical rows.
 
 Sources consulted:
 

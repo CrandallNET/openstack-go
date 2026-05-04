@@ -510,24 +510,22 @@ func TestPrettyApplyBubbleTableSeparatorsReplacesMarkedRows(t *testing.T) {
 		"╭────╮",
 		"│ ID │",
 		"├────┤",
-		"│    │",
 		"│ a  │",
 		"│    │",
 		"│ b  │",
 		"╰────╯",
 	}, "\n")
 	got := prettyApplyBubbleTableSeparators(view, []table.Column{{Title: "ID", Width: 2}}, []prettyTableRowKind{
-		prettyTableRowSpacer,
 		prettyTableRowContent,
 		prettyTableRowSeparator,
 		prettyTableRowContent,
 	})
 	lines := strings.Split(got, "\n")
-	if lines[3] != "│    │" {
-		t.Fatalf("expected heading spacer to stay blank, got %q in:\n%s", lines[3], got)
+	if lines[3] != "│ a  │" {
+		t.Fatalf("expected first body row to stay directly under heading, got %q in:\n%s", lines[3], got)
 	}
-	if want := "├────┤"; !strings.Contains(lines[5], want) {
-		t.Fatalf("expected marked spacer to become separator %q, got %q in:\n%s", want, lines[5], got)
+	if want := "├────┤"; !strings.Contains(lines[4], want) {
+		t.Fatalf("expected marked spacer to become separator %q, got %q in:\n%s", want, lines[4], got)
 	}
 }
 
@@ -565,6 +563,35 @@ func TestPrettyTTYOutputFitsDetectedTerminalWidth(t *testing.T) {
 	}
 	if got := maxVisibleOutputLineLength(stdout.String()); got > 80 {
 		t.Fatalf("expected Fancy output to fit detected 80-column terminal, longest visible line was %d:\n%s", got, stdout.String())
+	}
+}
+
+func TestPrettyTTYOutputDoesNotInsertTopBlankRow(t *testing.T) {
+	t.Setenv("NO_COLOR", "")
+	t.Setenv("CLICOLOR", "1")
+	previousWidth := tableTerminalWidth
+	previousTTY := tableWriterIsTerminal
+	tableTerminalWidth = func(stdout io.Writer) (int, bool) {
+		return 80, true
+	}
+	tableWriterIsTerminal = func(stdout io.Writer) bool {
+		return true
+	}
+	defer func() {
+		tableTerminalWidth = previousWidth
+		tableWriterIsTerminal = previousTTY
+	}()
+
+	var stdout bytes.Buffer
+	err := renderListOutput(&stdout, &Options{Format: "pretty"}, []string{"ID", "Name"}, []outputRow{
+		{"ID": "7dbf33e2-6d96-43b1-961b-ae58925a382c", "Name": "rocky"},
+	})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	lines := strings.Split(strings.TrimRight(stripANSI(stdout.String()), "\n"), "\n")
+	if len(lines) < 4 || !strings.Contains(lines[3], "7dbf33e2") {
+		t.Fatalf("expected first body row directly under header separator, got:\n%s", stdout.String())
 	}
 }
 
@@ -910,7 +937,6 @@ func TestPrettyValueStylesAreNotBoldExceptLabels(t *testing.T) {
 		prettyBooleanTrueStyle.Render("True"),
 		prettyDeviceStyle.Render("/dev/vda"),
 		prettyErrorStyle.Render("ERROR"),
-		prettyFieldStyle.Render("id"),
 		prettyFlavorStyle.Render("m1.small"),
 		prettyImageStyle.Render("rocky9"),
 		prettyIPStyle.Render("172.16.86.56"),
@@ -930,6 +956,14 @@ func TestPrettyValueStylesAreNotBoldExceptLabels(t *testing.T) {
 	label := prettyLabelStyle.Render("id:")
 	if !containsANSIBold(label) {
 		t.Fatalf("expected pretty label style to keep bold/bright SGR, got %q", label)
+	}
+}
+
+func TestPrettyShowFieldColumnUsesLabelStyle(t *testing.T) {
+	colorizer := prettyShowCellColorizer([]outputField{{Name: "id", Value: "server-1"}})
+	want := prettyLabelStyle.Render("id")
+	if got := colorizer(0, 0, "id"); got != want {
+		t.Fatalf("expected pretty show field column to use label style, got %q want %q", got, want)
 	}
 }
 

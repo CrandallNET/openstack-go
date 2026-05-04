@@ -71,7 +71,6 @@ const (
 	prettyColorBooleanTrue  = "82"
 	prettyColorDevice       = "81"
 	prettyColorError        = "203"
-	prettyColorField        = "111"
 	prettyColorFlavor       = "223"
 	prettyColorImage        = "130"
 	prettyColorIP           = "114"
@@ -96,7 +95,6 @@ var (
 	prettyBooleanTrueStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorBooleanTrue))
 	prettyDeviceStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorDevice))
 	prettyErrorStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorError))
-	prettyFieldStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorField))
 	prettyFlavorStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorFlavor))
 	prettyImageStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorImage))
 	prettyIPStyle           = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorIP))
@@ -265,7 +263,6 @@ func renderPrettyTable(stdout io.Writer, opts *Options, headers []string, rows [
 		return renderPrettyBubblesTable(stdout, columns, rows, nil, nil, color)
 	}
 	wrappedRows, rowKinds := prettyWrapRowsWithKinds(rows, columns, colorizer, context, true)
-	wrappedRows, rowKinds = prettyPrependSpacerRow(wrappedRows, rowKinds, len(columns))
 	model := bubbletable.New(prettyBubbleTableColumns(columns)).
 		WithRows(prettyBubbleTableRows(wrappedRows, len(columns))).
 		WithBaseStyle(bubblelipgloss.NewStyle().
@@ -381,13 +378,6 @@ func prettyBubbleTableBorderStyle() bubblelipgloss.Style {
 
 func prettyBubbleTableColumnKey(index int) string {
 	return fmt.Sprintf("column_%d", index)
-}
-
-func prettyPrependSpacerRow(rows []table.Row, rowKinds []prettyTableRowKind, columnCount int) ([]table.Row, []prettyTableRowKind) {
-	spacer := make(table.Row, columnCount)
-	rows = append([]table.Row{spacer}, rows...)
-	rowKinds = append([]prettyTableRowKind{prettyTableRowSpacer}, rowKinds...)
-	return rows, rowKinds
 }
 
 func prettyAddHeaderSpacer(view string) string {
@@ -728,7 +718,7 @@ func prettyShowCellColorizer(fields []outputField, roles ...[]string) prettyCell
 	}
 	return func(rowIndex int, columnIndex int, text string) string {
 		if columnIndex == 0 {
-			return prettyFieldStyle.Render(text)
+			return prettyLabelStyle.Render(text)
 		}
 		if columnIndex == 1 && rowIndex < len(fieldRoles) && fieldRoles[rowIndex] != "" {
 			return prettyColorizeByName(fieldRoles[rowIndex], text)
