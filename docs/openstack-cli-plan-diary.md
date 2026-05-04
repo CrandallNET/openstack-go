@@ -40,11 +40,11 @@ Verification: `go test ./...`, `go build -o bin/openstack ./cmd/openstack`, `./b
 
 ## 2026-05-02: Structured Compatibility And Test Matrices
 
-Work done: added `tools/compat-matrix`, which generates `compat/matrix.yaml`, `compat/test-matrix.yaml`, and `compat/test-clouds.yaml`.
+Work done: added `tools/matrix`, which generates `compat/matrix.yaml`, `compat/test-matrix.yaml`, and `compat/test-clouds.yaml`.
 
 Result: the command matrix has one row for each of the 594 OSC commands, including service/API mapping, initial status, plugin-scope markers for Placement and Tap commands, and an implemented row for `command list`. The test matrix records static, mocked, read, write-cleanup, destructive, and admin-write suites. The cloud config records non-secret policy for `cloud6`, `flex-sjc`, `flex-dfw`, and `flex-iad`, including resource prefixes and cleanup rules.
 
-Verification: `go test ./...`, `go build -o bin/openstack ./cmd/openstack`, and `go run ./tools/compat-matrix` passed with workspace-local Go caches.
+Verification: `go test ./...`, `go build -o bin/openstack ./cmd/openstack`, and `go run ./tools/matrix` passed with workspace-local Go caches.
 
 ## 2026-05-02: Caddy Plugin Registry Prototype
 
@@ -114,7 +114,7 @@ Compatibility note: Nova and Cinder availability zones, extensions, and limits u
 
 Sources consulted: Gophercloud package docs and local module sources for [Compute availability zones](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/compute/v2/availabilityzones), [Block Storage availability zones](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/availabilityzones), [common extensions](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/common/extensions), [Compute limits](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/compute/v2/limits), and [Block Storage limits](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/limits).
 
-Verification: `go test ./...`, `go build -o bin/openstack ./cmd/openstack`, `go run ./tools/compat-matrix`, and live `cloud6` JSON smoke checks passed for `availability zone list`, `availability zone list --long`, `extension list --network`, `extension show router`, `limits show --absolute`, and `limits show --rate`.
+Verification: `go test ./...`, `go build -o bin/openstack ./cmd/openstack`, `go run ./tools/matrix`, and live `cloud6` JSON smoke checks passed for `availability zone list`, `availability zone list --long`, `extension list --network`, `extension show router`, `limits show --absolute`, and `limits show --rate`.
 
 ## 2026-05-02: Common Quota Read Expansion
 
@@ -192,7 +192,7 @@ Sources consulted:
 * [OpenStack Block Storage API v3](https://docs.openstack.org/api-ref/block-storage/v3/), which documents attachments as new in microversion 3.27 and volume summary as available since 3.12, with `metadata` new in 3.36.
 * Local Python OSC source files `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/volume/v3/volume_attachment.py`, `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/volume/v2/qos_specs.py`, and `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/volume/v3/volume.py`, used only as the pinned local oracle implementation source.
 
-Verification: `go test ./...`, `go build -o bin/openstack ./cmd/openstack`, and `go run ./tools/compat-matrix` passed. Live `cloud6` checks matched Python OSC for `volume attachment list -f json`, `volume attachment show <existing-attachment> -f json`, `volume qos list --print-empty`, and `volume summary -f json`. A temporary QoS spec named `golang-osc-test-64fb7c64-bee7-47ed-8dba-65b585469eb5` was created with Python OSC to provide a show fixture; Python and Go matched for `volume qos show -f json` and `volume qos list -f json`, and the temporary QoS spec was deleted successfully.
+Verification: `go test ./...`, `go build -o bin/openstack ./cmd/openstack`, and `go run ./tools/matrix` passed. Live `cloud6` checks matched Python OSC for `volume attachment list -f json`, `volume attachment show <existing-attachment> -f json`, `volume qos list --print-empty`, and `volume summary -f json`. A temporary QoS spec named `golang-osc-test-64fb7c64-bee7-47ed-8dba-65b585469eb5` was created with Python OSC to provide a show fixture; Python and Go matched for `volume qos show -f json` and `volume qos list -f json`, and the temporary QoS spec was deleted successfully.
 
 ## 2026-05-03: Compute Events, Attachments, And Usage Read Expansion
 
@@ -208,7 +208,7 @@ Sources consulted:
 * [Gophercloud OpenStack utils](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/utils), for supported Compute microversion discovery.
 * Local Python OSC source files `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/compute/v2/server_event.py`, `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/compute/v2/server_volume.py`, and `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/compute/v2/usage.py`, used only as the pinned local oracle implementation source.
 
-Verification: `go test ./...`, `go build -o bin/openstack ./cmd/openstack`, and `go run ./tools/compat-matrix` passed with workspace-local Go caches. Live `cloud6` JSON checks matched Python OSC for `server event list`, `server event list --long`, `server event show`, `server volume list`, `usage list --start 2026-05-01 --end 2026-05-03`, and `usage show --start 2026-05-01 --end 2026-05-02`; `usage show` has dynamic `uptime` values, so only stable structure and non-time-varying fields should be used for golden tests.
+Verification: `go test ./...`, `go build -o bin/openstack ./cmd/openstack`, and `go run ./tools/matrix` passed with workspace-local Go caches. Live `cloud6` JSON checks matched Python OSC for `server event list`, `server event list --long`, `server event show`, `server volume list`, `usage list --start 2026-05-01 --end 2026-05-03`, and `usage show --start 2026-05-01 --end 2026-05-02`; `usage show` has dynamic `uptime` values, so only stable structure and non-time-varying fields should be used for golden tests.
 
 ## 2026-05-03: Compute Console Read Expansion
 
@@ -222,7 +222,7 @@ Sources consulted:
 * [Gophercloud Compute remote consoles](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/compute/v2/remoteconsoles), for remote console URL creation.
 * Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/compute/v2/console.py`, used only as the pinned local oracle implementation source.
 
-Verification: `go test ./...`, `go build -o bin/openstack ./cmd/openstack`, and `go run ./tools/compat-matrix` passed with workspace-local Go caches. Live `cloud6` checks matched Python OSC for `console log show --lines 5 rocky` and the stable JSON fields of `console url show rocky -f json`; the URL token itself is expected to differ between calls.
+Verification: `go test ./...`, `go build -o bin/openstack ./cmd/openstack`, and `go run ./tools/matrix` passed with workspace-local Go caches. Live `cloud6` checks matched Python OSC for `console log show --lines 5 rocky` and the stable JSON fields of `console url show rocky -f json`; the URL token itself is expected to differ between calls.
 
 ## 2026-05-02: Pre-Implementation Question Register
 
@@ -945,7 +945,7 @@ Implementation note: the four commands follow Python OSC's positional-only inter
 
 Live observations on `cloud6`: the Go CLI created disposable network, subnet, and router resources, added the subnet to the router, confirmed `router show -f json` included the router interface, removed that interface by port ID, added the subnet again, removed it by subnet name, and deleted all disposable resources. A second live check created a disposable Neutron port with Python OSC as a test fixture, then used the Go CLI to add and remove that port as a router interface, followed by cleanup and empty-list verification for the disposable router, network, subnet, and port prefixes.
 
-Tooling update: `tools/compat-matrix` now records the recently verified Neutron lifecycle write commands, including router interface commands, network lifecycle commands, subnet lifecycle commands, subnet pool lifecycle commands, and address scope lifecycle commands, so regenerated `compat/matrix.yaml` no longer shows those rows as `unknown`.
+Tooling update: `tools/matrix` now records the recently verified Neutron lifecycle write commands, including router interface commands, network lifecycle commands, subnet lifecycle commands, subnet pool lifecycle commands, and address scope lifecycle commands, so regenerated `compat/matrix.yaml` no longer shows those rows as `unknown`.
 
 Sources consulted:
 
@@ -1284,9 +1284,21 @@ Sources consulted:
 
 Decision: the repository now has a top-level `Makefile` as the standard entry point for local build, test, smoke, and compatibility-generation commands. The targets keep the underlying Go commands visible and use workspace-local `GOCACHE` and `GOMODCACHE` defaults so constrained environments do not write to user-level Go cache directories unless the caller explicitly overrides them.
 
-Work done: added `help`, `build`, `test`, `fmt`, `check`, `smoke`, `compat-catalog`, `compat-matrix`, `compat`, and `clean` targets. The `help` target is self-documenting and lists every public target with its description.
+Work done: added `help`, `build`, `test`, `fmt`, `check`, `smoke`, `compat-catalog`, `matrix`, `compat`, and `clean` targets. The `help` target is self-documenting and lists every public target with its description.
 
 Sources consulted:
 
 * Local README build instructions in `README.md`.
 * Local project commands in `cmd/openstack` and `tools/`.
+
+## 2026-05-04: Matrix Generator Rename
+
+Decision: rename the compatibility matrix generator from `compat-matrix` to `matrix`. The shorter name matches the artifact name, keeps the Make target simple, and avoids implying that the test cloud configuration is secondary to command compatibility data.
+
+Work done: moved the generator to `tools/matrix`, renamed the Make target to `matrix`, updated documentation references, and updated generated file headers to name `tools/matrix`. The generator writes `compat/matrix.yaml`, `compat/test-matrix.yaml`, and `compat/test-clouds.yaml` by default; callers can override those destinations with `--matrix`, `--test-matrix`, and `--test-clouds`.
+
+Sources consulted:
+
+* Local generator implementation in `tools/matrix/main.go`.
+* Local Make targets in `Makefile`.
+* Local compatibility artifacts under `compat/`.

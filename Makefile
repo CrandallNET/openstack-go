@@ -40,12 +40,12 @@ smoke: build ## Run basic local CLI smoke checks that do not require cloud acces
 compat-catalog: ## Regenerate Python OSC compatibility catalog artifacts.
 	$(GO) run ./tools/osc-catalog
 
-.PHONY: compat-matrix
-compat-matrix: ## Regenerate compatibility and test matrix artifacts.
-	$(GO) run ./tools/compat-matrix
+.PHONY: matrix
+matrix: ## Regenerate compatibility and test matrix artifacts.
+	$(GO) run ./tools/matrix
 
 .PHONY: compat
-compat: compat-catalog compat-matrix ## Regenerate all compatibility artifacts.
+compat: compat-catalog matrix ## Regenerate all compatibility artifacts.
 
 .PHONY: clean
 clean: ## Remove local build outputs and workspace-local Go caches.

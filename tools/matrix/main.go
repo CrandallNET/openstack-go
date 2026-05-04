@@ -55,20 +55,20 @@ func main() {
 
 	groups, err := readGroups(commandsPath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "compat-matrix: %v\n", err)
+		fmt.Fprintf(os.Stderr, "matrix: %v\n", err)
 		os.Exit(1)
 	}
 
 	if err := writeFile(matrixPath, renderCommandMatrix(groups)); err != nil {
-		fmt.Fprintf(os.Stderr, "compat-matrix: %v\n", err)
+		fmt.Fprintf(os.Stderr, "matrix: %v\n", err)
 		os.Exit(1)
 	}
 	if err := writeFile(testMatrixPath, renderTestMatrix()); err != nil {
-		fmt.Fprintf(os.Stderr, "compat-matrix: %v\n", err)
+		fmt.Fprintf(os.Stderr, "matrix: %v\n", err)
 		os.Exit(1)
 	}
 	if err := writeFile(testCloudsPath, renderTestClouds()); err != nil {
-		fmt.Fprintf(os.Stderr, "compat-matrix: %v\n", err)
+		fmt.Fprintf(os.Stderr, "matrix: %v\n", err)
 		os.Exit(1)
 	}
 }
@@ -104,7 +104,7 @@ func renderCommandMatrix(groups []commandGroup) string {
 	})
 
 	var b strings.Builder
-	b.WriteString("# Generated from compat/osc/9.0.0/commands.json by tools/compat-matrix.\n")
+	b.WriteString("# Generated from compat/osc/9.0.0/commands.json by tools/matrix.\n")
 	b.WriteString("compatibility_target: \"9.0.0\"\n")
 	b.WriteString("status_values:\n")
 	for _, status := range []string{"unknown", "sdk-covered", "shim-needed", "implemented", "golden-matched", "cloud-verified", "blocked"} {

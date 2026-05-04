@@ -1,4 +1,4 @@
-# Generated from compat/osc/9.0.0/commands.json by tools/compat-matrix.
+# Generated from compat/osc/9.0.0/commands.json by tools/matrix.
 compatibility_target: "9.0.0"
 status_values:
   - "unknown"
