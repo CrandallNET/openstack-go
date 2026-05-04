@@ -109,7 +109,8 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"network qos rule type list", "network qos rule type show",
 		"network rbac create", "network rbac delete", "network rbac list", "network rbac set", "network rbac show",
 		"network segment create", "network segment delete", "network segment list", "network segment set", "network segment show",
-		"network trunk list", "network trunk show",
+		"network subport list",
+		"network trunk create", "network trunk delete", "network trunk list", "network trunk set", "network trunk show", "network trunk unset",
 		"object create", "object delete", "object list", "object save", "object set", "object show", "object unset",
 		"object store account show",
 		"port create", "port delete", "port list", "port set", "port show", "port unset",
@@ -555,8 +556,26 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().StringArray("extra-property", nil, "additional property type=<type>,name=<name>,value=<value>")
 		cmd.Flags().String("description", "", "segment description")
 		cmd.Flags().String("name", "", "segment name")
+	case "network subport list":
+		cmd.Flags().String("trunk", "", "parent trunk")
+	case "network trunk create":
+		cmd.Flags().String("description", "", "trunk description")
+		cmd.Flags().String("parent-port", "", "parent port")
+		cmd.Flags().StringArray("subport", nil, "subport port=<port>,segmentation-type=<type>,segmentation-id=<id>")
+		cmd.Flags().Bool("enable", false, "enable trunk")
+		cmd.Flags().Bool("disable", false, "disable trunk")
+		cmd.Flags().String("project", "", "owner project")
+		cmd.Flags().String("project-domain", "", "project domain")
 	case "network trunk list":
 		cmd.Flags().Bool("long", false, "list additional fields")
+	case "network trunk set":
+		cmd.Flags().String("name", "", "trunk name")
+		cmd.Flags().String("description", "", "trunk description")
+		cmd.Flags().StringArray("subport", nil, "subport port=<port>,segmentation-type=<type>,segmentation-id=<id>")
+		cmd.Flags().Bool("enable", false, "enable trunk")
+		cmd.Flags().Bool("disable", false, "disable trunk")
+	case "network trunk unset":
+		cmd.Flags().StringArray("subport", nil, "subport port name or ID")
 	case "network create":
 		cmd.Flags().StringArray("extra-property", nil, "additional property type=<type>,name=<name>,value=<value>")
 		cmd.Flags().Bool("share", false, "share resource")
@@ -1370,7 +1389,8 @@ func isCoreReadCommand(path string) bool {
 		"network qos rule type list", "network qos rule type show",
 		"network rbac create", "network rbac delete", "network rbac list", "network rbac set", "network rbac show",
 		"network segment create", "network segment delete", "network segment list", "network segment set", "network segment show",
-		"network trunk list", "network trunk show",
+		"network subport list",
+		"network trunk create", "network trunk delete", "network trunk list", "network trunk set", "network trunk show", "network trunk unset",
 		"object create", "object delete", "object list", "object save", "object set", "object show", "object unset",
 		"object store account show",
 		"port create", "port delete", "port list", "port set", "port show", "port unset",

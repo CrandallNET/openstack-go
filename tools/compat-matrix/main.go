@@ -228,6 +228,10 @@ func newCommandEntry(group string, command string) commandEntry {
 			entry.Tests = []string{"unit: command registry"}
 			entry.Notes = "Implemented with Gophercloud segment calls and custom request builders where extension fields are needed. cloud6 returns Neutron 404 for the segment collection in both Python OSC and the Go CLI, so a cloud exposing this extension is still needed for live lifecycle verification."
 		}
+		if strings.HasPrefix(command, "network trunk ") || command == "network subport list" {
+			entry.Tests = []string{"unit: command registry", "unit: trunk subport parsing"}
+			entry.Notes = "Implemented with Gophercloud trunk calls and custom request builders where partial subport dictionaries must match Python OSC. cloud6 returns Neutron 404 for the trunk collection in both Python OSC and the Go CLI, so a cloud exposing this extension is still needed for live lifecycle verification."
+		}
 	}
 	return entry
 }
@@ -443,7 +447,12 @@ func coreReadPackages() map[string]string {
 		"network segment list":               "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/segments",
 		"network segment set":                "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/segments; extension fields via custom request builders",
 		"network segment show":               "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/segments",
+		"network subport list":               "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/trunks",
+		"network trunk create":               "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/trunks; subport request shape via custom request builders",
+		"network trunk delete":               "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/trunks",
 		"network show":                       "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/networks",
+		"network trunk set":                  "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/trunks; subport request shape via custom request builders",
+		"network trunk unset":                "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/trunks; subport request shape via custom request builders",
 		"network trunk list":                 "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/trunks",
 		"network trunk show":                 "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/trunks",
 		"network unset":                      "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/networks; standard tags via gophercloud.ServiceClient",
@@ -900,6 +909,10 @@ func coreWriteCommands() map[string]bool {
 		"network segment delete":             true,
 		"network segment set":                true,
 		"network set":                        true,
+		"network trunk create":               true,
+		"network trunk delete":               true,
+		"network trunk set":                  true,
+		"network trunk unset":                true,
 		"network unset":                      true,
 		"port create":                        true,
 		"port delete":                        true,

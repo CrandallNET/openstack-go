@@ -1069,3 +1069,17 @@ Sources consulted:
 * Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/network/v2/network_segment.py`, used only as the pinned local oracle implementation source.
 * Local OpenStackSDK resource file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/network/v2/segment.py`, used to confirm resource keys and field names.
 * Gophercloud package docs for [Neutron segments](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/segments).
+
+## 2026-05-04: Network Trunk and Subport Commands
+
+Work done: added `network trunk create`, `network trunk delete`, `network trunk set`, `network trunk unset`, and `network subport list`, and adjusted trunk list/show output to match the Python OSC default column surface more closely.
+
+Implementation note: trunk create/update/delete and subport actions use Gophercloud's trunk package. Create, update, and add/remove subports use custom request builders so Python OSC's partial subport dictionaries are preserved instead of being coerced through Gophercloud's fixed `Subport` struct. Create defaults `admin_state_up` to true unless `--disable` is provided, resolves parent and subports through port lookup, resolves `--project` through Identity v3, and maps show output to Python OSC's `is_admin_state_up` field name.
+
+Live observations on `cloud6`: no disposable trunk lifecycle was attempted because the trunk collection returns Neutron `404` on `cloud6` for both Python OSC and the Go CLI. The Go CLI and Python OSC both returned endpoint-level `404` for `network trunk list -f json`. The commands remain implemented but not cloud-verified until a test cloud exposes the trunk extension.
+
+Sources consulted:
+
+* Local OSC oracle snapshots in `compat/osc/9.0.0/help/network/trunk/create.txt`, `compat/osc/9.0.0/help/network/trunk/delete.txt`, `compat/osc/9.0.0/help/network/trunk/set.txt`, `compat/osc/9.0.0/help/network/trunk/unset.txt`, and `compat/osc/9.0.0/help/network/subport/list.txt`.
+* Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/network/v2/network_trunk.py`, used only as the pinned local oracle implementation source.
+* Gophercloud package docs for [Neutron trunks](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/trunks).

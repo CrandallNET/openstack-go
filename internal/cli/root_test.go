@@ -488,6 +488,42 @@ func TestNetworkSegmentTypeValidation(t *testing.T) {
 	}
 }
 
+func TestNetworkTrunkSubportMap(t *testing.T) {
+	subport, err := networkTrunkSubportMap(map[string]string{
+		"segmentation-id":   "42",
+		"segmentation-type": "vlan",
+	}, "port-id")
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	want := map[string]any{"port_id": "port-id", "segmentation_id": 42, "segmentation_type": "vlan"}
+	if encoded, _ := json.Marshal(subport); string(encoded) != mustJSON(want) {
+		t.Fatalf("subport mismatch: got %s want %s", encoded, mustJSON(want))
+	}
+	if _, err := networkTrunkSubportMap(map[string]string{"segmentation-id": "not-int"}, "port-id"); err == nil || err.Error() != "Segmentation-id \"not-int\" is not an integer" {
+		t.Fatalf("error mismatch: got %v", err)
+	}
+}
+
+func TestNetworkTrunkSetValues(t *testing.T) {
+	values, err := networkTrunkSetValues(&Options{CommandFlags: map[string]string{
+		"name":        "trunk-name",
+		"description": "updated",
+		"disable":     "true",
+	}})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	want := map[string]any{"name": "trunk-name", "description": "updated", "admin_state_up": false}
+	if encoded, _ := json.Marshal(values); string(encoded) != mustJSON(want) {
+		t.Fatalf("values mismatch: got %s want %s", encoded, mustJSON(want))
+	}
+	_, err = networkTrunkSetValues(&Options{CommandFlags: map[string]string{"enable": "true", "disable": "true"}})
+	if err == nil || err.Error() != "argument --disable: not allowed with argument --enable" {
+		t.Fatalf("error mismatch: got %v", err)
+	}
+}
+
 func TestTokenIssueUsesInjectedIssuer(t *testing.T) {
 	previous := issueToken
 	issueToken = func(ctx context.Context, opts *Options) (tokenIssueRow, error) {

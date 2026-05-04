@@ -852,18 +852,52 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return networkUnset(cmd.Context(), opts, client, args)
+		case "network subport list":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return networkSubportList(cmd.Context(), stdout, opts, client)
+		case "network trunk create":
+			networkClient, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			identityClient, err := clients.identityV3()
+			if err != nil {
+				return err
+			}
+			return networkTrunkCreate(cmd.Context(), stdout, opts, networkClient, identityClient, args)
+		case "network trunk delete":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return networkTrunkDelete(cmd.Context(), client, args)
 		case "network trunk list":
 			client, err := clients.networkV2()
 			if err != nil {
 				return err
 			}
 			return networkTrunkList(cmd.Context(), stdout, opts, client)
+		case "network trunk set":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return networkTrunkSet(cmd.Context(), opts, client, args)
 		case "network trunk show":
 			client, err := clients.networkV2()
 			if err != nil {
 				return err
 			}
 			return networkTrunkShow(cmd.Context(), stdout, opts, client, args)
+		case "network trunk unset":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return networkTrunkUnset(cmd.Context(), opts, client, args)
 		case "object list":
 			client, err := clients.objectStorageV1()
 			if err != nil {
@@ -5731,6 +5765,249 @@ func networkSegmentFields(item *segments.Segment) []outputField {
 	}
 }
 
+type networkTrunkCreateOpts struct {
+	Values map[string]any
+}
+
+func (opts networkTrunkCreateOpts) ToTrunkCreateMap() (map[string]any, error) {
+	return map[string]any{"trunk": opts.Values}, nil
+}
+
+type networkTrunkUpdateOpts struct {
+	Values map[string]any
+}
+
+func (opts networkTrunkUpdateOpts) ToTrunkUpdateMap() (map[string]any, error) {
+	return map[string]any{"trunk": opts.Values}, nil
+}
+
+type networkTrunkSubportsOpts struct {
+	Subports []map[string]any
+}
+
+func (opts networkTrunkSubportsOpts) ToTrunkAddSubportsMap() (map[string]any, error) {
+	return map[string]any{"sub_ports": opts.Subports}, nil
+}
+
+func (opts networkTrunkSubportsOpts) ToTrunkRemoveSubportsMap() (map[string]any, error) {
+	return map[string]any{"sub_ports": opts.Subports}, nil
+}
+
+func networkTrunkCreate(ctx context.Context, stdout io.Writer, opts *Options, networkClient *gophercloud.ServiceClient, identityClient *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("network trunk create requires <name>")
+	}
+	values, err := networkTrunkCreateValues(ctx, opts, networkClient, identityClient, args[0])
+	if err != nil {
+		return err
+	}
+	result := trunks.Create(ctx, networkClient, networkTrunkCreateOpts{Values: values})
+	item, err := result.Extract()
+	if err != nil {
+		return err
+	}
+	if raw, ok := networkTrunkRawFromBody(result.Body); ok {
+		return renderShowOutput(stdout, opts, networkTrunkRawFields(raw))
+	}
+	return renderShowOutput(stdout, opts, networkTrunkFields(item))
+}
+
+func networkTrunkCreateValues(ctx context.Context, opts *Options, networkClient *gophercloud.ServiceClient, identityClient *gophercloud.ServiceClient, name string) (map[string]any, error) {
+	if !flagChanged(opts, "parent-port") || flagValue(opts, "parent-port") == "" {
+		return nil, fmt.Errorf("the following arguments are required: --parent-port")
+	}
+	if boolFlag(opts, "enable") && boolFlag(opts, "disable") {
+		return nil, fmt.Errorf("argument --disable: not allowed with argument --enable")
+	}
+	parentPort, err := findPort(ctx, networkClient, flagValue(opts, "parent-port"))
+	if err != nil {
+		return nil, err
+	}
+	values := map[string]any{
+		"name":           name,
+		"port_id":        parentPort.ID,
+		"admin_state_up": true,
+	}
+	if flagChanged(opts, "description") {
+		values["description"] = flagValue(opts, "description")
+	}
+	if boolFlag(opts, "disable") {
+		values["admin_state_up"] = false
+	}
+	if subports, err := networkTrunkParseSubports(ctx, networkClient, flagValues(opts, "subport")); err != nil {
+		return nil, err
+	} else if len(subports) > 0 {
+		values["sub_ports"] = subports
+	}
+	if projectNameOrID := flagValue(opts, "project"); projectNameOrID != "" {
+		project, err := findProjectWithDomain(ctx, identityClient, projectNameOrID, flagValue(opts, "project-domain"))
+		if err != nil {
+			return nil, err
+		}
+		values["tenant_id"] = project.ID
+	}
+	return values, nil
+}
+
+func networkTrunkDelete(ctx context.Context, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("network trunk delete requires <trunk> [<trunk> ...]")
+	}
+	failures := 0
+	for _, trunkArg := range args {
+		item, err := findNetworkTrunk(ctx, client, trunkArg)
+		if err != nil {
+			failures++
+			continue
+		}
+		if err := trunks.Delete(ctx, client, item.ID).ExtractErr(); err != nil {
+			failures++
+		}
+	}
+	if failures > 0 {
+		return fmt.Errorf("%d of %d trunks failed to delete.", failures, len(args))
+	}
+	return nil
+}
+
+func networkTrunkSet(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("network trunk set requires <trunk>")
+	}
+	item, err := findNetworkTrunk(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	values, err := networkTrunkSetValues(opts)
+	if err != nil {
+		return err
+	}
+	if len(values) > 0 {
+		if _, err := trunks.Update(ctx, client, item.ID, networkTrunkUpdateOpts{Values: values}).Extract(); err != nil {
+			return fmt.Errorf("Failed to set trunk %q: %w", args[0], err)
+		}
+	}
+	subports, err := networkTrunkParseSubports(ctx, client, flagValues(opts, "subport"))
+	if err != nil {
+		return err
+	}
+	if len(subports) > 0 {
+		if _, err := trunks.AddSubports(ctx, client, item.ID, networkTrunkSubportsOpts{Subports: subports}).Extract(); err != nil {
+			return fmt.Errorf("Failed to add subports to trunk %q: %w", args[0], err)
+		}
+	}
+	return nil
+}
+
+func networkTrunkSetValues(opts *Options) (map[string]any, error) {
+	if boolFlag(opts, "enable") && boolFlag(opts, "disable") {
+		return nil, fmt.Errorf("argument --disable: not allowed with argument --enable")
+	}
+	values := map[string]any{}
+	if flagChanged(opts, "name") {
+		values["name"] = flagValue(opts, "name")
+	}
+	if flagChanged(opts, "description") {
+		values["description"] = flagValue(opts, "description")
+	}
+	if boolFlag(opts, "enable") {
+		values["admin_state_up"] = true
+	}
+	if boolFlag(opts, "disable") {
+		values["admin_state_up"] = false
+	}
+	return values, nil
+}
+
+func networkTrunkUnset(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("network trunk unset requires <trunk>")
+	}
+	if len(flagValues(opts, "subport")) == 0 {
+		return fmt.Errorf("the following arguments are required: --subport")
+	}
+	item, err := findNetworkTrunk(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	subports, err := networkTrunkParseRemoveSubports(ctx, client, flagValues(opts, "subport"))
+	if err != nil {
+		return err
+	}
+	_, err = trunks.RemoveSubports(ctx, client, item.ID, networkTrunkSubportsOpts{Subports: subports}).Extract()
+	return err
+}
+
+func networkSubportList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	if !flagChanged(opts, "trunk") || flagValue(opts, "trunk") == "" {
+		return fmt.Errorf("the following arguments are required: --trunk")
+	}
+	item, err := findNetworkTrunk(ctx, client, flagValue(opts, "trunk"))
+	if err != nil {
+		return err
+	}
+	subports, err := trunks.GetSubports(ctx, client, item.ID).Extract()
+	if err != nil {
+		return err
+	}
+	rows := make([]outputRow, 0, len(subports))
+	for _, subport := range subports {
+		rows = append(rows, outputRow{
+			"Port":              subport.PortID,
+			"Segmentation Type": subport.SegmentationType,
+			"Segmentation ID":   subport.SegmentationID,
+		})
+	}
+	return renderListOutput(stdout, opts, []string{"Port", "Segmentation Type", "Segmentation ID"}, rows)
+}
+
+func networkTrunkParseSubports(ctx context.Context, client *gophercloud.ServiceClient, values []string) ([]map[string]any, error) {
+	entries, err := parseKeyValueEntries(values, "subport", "port")
+	if err != nil {
+		return nil, err
+	}
+	subports := make([]map[string]any, 0, len(entries))
+	for _, entry := range entries {
+		port, err := findPort(ctx, client, entry["port"])
+		if err != nil {
+			return nil, err
+		}
+		subport, err := networkTrunkSubportMap(entry, port.ID)
+		if err != nil {
+			return nil, err
+		}
+		subports = append(subports, subport)
+	}
+	return subports, nil
+}
+
+func networkTrunkSubportMap(entry map[string]string, portID string) (map[string]any, error) {
+	subport := map[string]any{"port_id": portID}
+	if raw := entry["segmentation-id"]; raw != "" {
+		parsed, err := strconv.Atoi(raw)
+		if err != nil {
+			return nil, fmt.Errorf("Segmentation-id %q is not an integer", raw)
+		}
+		subport["segmentation_id"] = parsed
+	}
+	if raw := entry["segmentation-type"]; raw != "" {
+		subport["segmentation_type"] = raw
+	}
+	return subport, nil
+}
+
+func networkTrunkParseRemoveSubports(ctx context.Context, client *gophercloud.ServiceClient, values []string) ([]map[string]any, error) {
+	subports := make([]map[string]any, 0, len(values))
+	for _, value := range values {
+		port, err := findPort(ctx, client, value)
+		if err != nil {
+			return nil, err
+		}
+		subports = append(subports, map[string]any{"port_id": port.ID})
+	}
+	return subports, nil
+}
+
 func networkTrunkList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
 	page, err := trunks.List(client, trunks.ListOpts{}).AllPages(ctx)
 	if err != nil {
@@ -5747,18 +6024,18 @@ func networkTrunkList(ctx context.Context, stdout io.Writer, opts *Options, clie
 			"Name":        item.Name,
 			"Parent Port": item.PortID,
 			"Description": item.Description,
-			"Project":     firstNonEmpty(item.ProjectID, item.TenantID),
-			"State":       item.Status,
 		}
 		if boolFlag(opts, "long") {
-			row["Subports"] = trunkSubports(item.Subports)
-			row["Tags"] = item.Tags
+			row["Status"] = item.Status
+			row["State"] = adminStateLabel(item.AdminStateUp)
+			row["Created At"] = oscTime(item.CreatedAt)
+			row["Updated At"] = oscTime(item.UpdatedAt)
 		}
 		rows = append(rows, row)
 	}
-	columns := []string{"ID", "Name", "Parent Port", "Description", "Project", "State"}
+	columns := []string{"ID", "Name", "Parent Port", "Description"}
 	if boolFlag(opts, "long") {
-		columns = append(columns, "Subports", "Tags")
+		columns = append(columns, "Status", "State", "Created At", "Updated At")
 	}
 	return renderListOutput(stdout, opts, columns, rows)
 }
@@ -5771,11 +6048,97 @@ func networkTrunkShow(ctx context.Context, stdout io.Writer, opts *Options, clie
 	if err != nil {
 		return err
 	}
-	return renderShowOutput(stdout, opts, []outputField{
-		{"admin_state_up", item.AdminStateUp},
+	if raw, err := neutronTrunkRaw(ctx, client, item.ID); err == nil {
+		return renderShowOutput(stdout, opts, networkTrunkRawFields(raw))
+	}
+	return renderShowOutput(stdout, opts, networkTrunkFields(item))
+}
+
+func neutronTrunkRaw(ctx context.Context, client *gophercloud.ServiceClient, id string) (map[string]any, error) {
+	var body struct {
+		Trunk map[string]any `json:"trunk"`
+	}
+	resp, err := client.Get(ctx, client.ServiceURL("trunks", id), &body, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return nil, err
+	}
+	return body.Trunk, nil
+}
+
+func networkTrunkRawFromBody(body any) (map[string]any, bool) {
+	var wrapper struct {
+		Trunk map[string]any `json:"trunk"`
+	}
+	encoded, err := json.Marshal(body)
+	if err != nil {
+		return nil, false
+	}
+	if err := json.Unmarshal(encoded, &wrapper); err != nil {
+		return nil, false
+	}
+	if wrapper.Trunk == nil {
+		return nil, false
+	}
+	return wrapper.Trunk, true
+}
+
+func networkTrunkRawFields(raw map[string]any) []outputField {
+	hidden := map[string]bool{
+		"admin_state_up": true,
+		"location":       true,
+		"tenant_id":      true,
+	}
+	namesByKey := map[string]bool{
+		"created_at":        true,
+		"description":       true,
+		"id":                true,
+		"is_admin_state_up": true,
+		"name":              true,
+		"port_id":           true,
+		"project_id":        true,
+		"revision_number":   true,
+		"status":            true,
+		"sub_ports":         true,
+		"tags":              true,
+		"updated_at":        true,
+	}
+	for name := range raw {
+		if !hidden[name] {
+			namesByKey[name] = true
+		}
+	}
+	names := make([]string, 0, len(namesByKey))
+	for name := range namesByKey {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	fields := make([]outputField, 0, len(names))
+	for _, name := range names {
+		fields = append(fields, outputField{name, networkTrunkRawValue(raw, name)})
+	}
+	return fields
+}
+
+func networkTrunkRawValue(raw map[string]any, name string) any {
+	switch name {
+	case "is_admin_state_up":
+		return firstPresent(raw, "is_admin_state_up", "admin_state_up")
+	case "project_id":
+		return firstPresent(raw, "project_id", "tenant_id")
+	case "revision_number":
+		return rawNumber(raw[name])
+	default:
+		return raw[name]
+	}
+}
+
+func networkTrunkFields(item *trunks.Trunk) []outputField {
+	return []outputField{
 		{"created_at", oscTime(item.CreatedAt)},
 		{"description", item.Description},
 		{"id", item.ID},
+		{"is_admin_state_up", item.AdminStateUp},
 		{"name", item.Name},
 		{"port_id", item.PortID},
 		{"project_id", firstNonEmpty(item.ProjectID, item.TenantID)},
@@ -5784,7 +6147,14 @@ func networkTrunkShow(ctx context.Context, stdout io.Writer, opts *Options, clie
 		{"sub_ports", trunkSubports(item.Subports)},
 		{"tags", item.Tags},
 		{"updated_at", oscTime(item.UpdatedAt)},
-	})
+	}
+}
+
+func adminStateLabel(value bool) string {
+	if value {
+		return "UP"
+	}
+	return "DOWN"
 }
 
 func networkQoSPolicyList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
