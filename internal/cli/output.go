@@ -960,16 +960,19 @@ func prettyColorizeWrappedCellLines(rowIndex int, columnIndex int, lines []strin
 	colored := make([]string, len(lines))
 	pendingLabel := ""
 	pendingNeutralValue := false
+	pendingImageColor := ""
 	for index, line := range lines {
 		if line == "" {
 			pendingLabel = ""
 			pendingNeutralValue = false
+			pendingImageColor = ""
 			colored[index] = line
 			continue
 		}
 		if prettyLineIsListMarker(line) {
 			pendingLabel = ""
 			pendingNeutralValue = false
+			pendingImageColor = ""
 			colored[index] = colorizer(rowIndex, columnIndex, line)
 			continue
 		}
@@ -977,6 +980,7 @@ func prettyColorizeWrappedCellLines(rowIndex int, columnIndex int, lines []strin
 		if ok {
 			pendingLabel = strings.TrimSuffix(strings.TrimSpace(label), ":")
 			pendingNeutralValue = false
+			pendingImageColor = ""
 			colored[index] = colorizer(rowIndex, columnIndex, line)
 			continue
 		}
@@ -991,9 +995,21 @@ func prettyColorizeWrappedCellLines(rowIndex int, columnIndex int, lines []strin
 			}
 			continue
 		}
+		if prettyIsImageField(contextName) {
+			if color, ok := prettyOSImageColorForText(line); ok {
+				pendingImageColor = color
+				colored[index] = colorizer(rowIndex, columnIndex, line)
+				continue
+			}
+			if pendingImageColor != "" {
+				colored[index] = prettyColorizeResourceText(line, prettyStyleForColor(pendingImageColor))
+				continue
+			}
+		}
 		colored[index] = colorizer(rowIndex, columnIndex, line)
 		if prettyStartsNeutralContinuation(contextName, line) {
 			pendingNeutralValue = true
+			pendingImageColor = ""
 		}
 	}
 	return colored
@@ -1080,6 +1096,9 @@ func prettySplitLabelPrefix(text string) (string, string, string, bool) {
 func prettyColorizeImage(text string) string {
 	if strings.Contains(text, "N/A") {
 		return strings.ReplaceAll(prettyColorizeTokens(text), "N/A", prettyNAStyle.Render("N/A"))
+	}
+	if style, ok := prettyOSImageStyleForText(text); ok {
+		return prettyColorizeResourceText(text, style)
 	}
 	return prettyColorizeResourceText(text, prettyImageStyle)
 }

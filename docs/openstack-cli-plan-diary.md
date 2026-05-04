@@ -1266,7 +1266,7 @@ Current palette:
 | Error status | `203` | Error, failed, down, disabled, deleted, shutoff, suspended, and related error states. |
 | Volume | `93` | Volume names and non-ID volume references. |
 | Device | `81` | Device paths such as `/dev/vda`. |
-| Image | `130` | Image names and non-ID image references. `N/A` remains the explicit no-image color. |
+| Image | `130` fallback, plus OS brand colors | Image names and non-ID image references. Recognized operating-system images use OS-specific brand colors. `N/A` remains the explicit no-image color. |
 | Flavor | `223` | Flavor names and non-ID flavor references. |
 | Timestamp | `117` | ISO-like created, updated, attached, heartbeat, and guaranteed-until timestamps. |
 | Address | `114` | IP addresses and hostnames. |
@@ -1277,11 +1277,25 @@ Implementation notes: ID-like fields take precedence over resource colors so IDs
 
 Follow-up: device paths now use the device color, and nested `id:` fields inside volume attachment output use the generic UUID/GUID style. The top-level `volume list` `ID` column uses the generic UUID/GUID style, and the top-level `volume list` `Name` column uses the same generic name color as `server list`. Full UUIDs and UUID fragments continue to color only the UUID/GUID segments, leaving hyphen separators uncolored.
 
+Follow-up: image values now use OS-specific colors when their name or image-related text contains a supported operating-system marker. The first supported palette is Ubuntu `#E95420`, Debian `#CE0056`, Rocky Linux `#10B981`, Red Hat/RHEL `#EE0000`, Fedora `#3C6EB4`, CentOS `#262577`, openSUSE `#73BA25`, SUSE `#30BA78`, Alpine Linux `#0D597F`, Arch Linux `#1793D1`, and Windows `#0078D7`. Unknown image names still use the generic image color `130`, and `N/A` image values keep the no-image color.
+
+Work done: added `make os-test`, backed by `tools/os-test`, to render the supported OS image color palette with the same Fancy table path used by CLI output. The command is meant as a quick visual consistency check for the supported image color rules.
+
 Sources consulted:
 
 * Local implementation file `internal/cli/output.go`.
 * Local volume command implementation in `internal/cli/core_read.go`.
 * Local pretty-output tests in `internal/cli/root_test.go`.
+* Ubuntu brand color palette, which lists Ubuntu orange as `#E95420`: https://design.ubuntu.com/brand/colour-palette.
+* Debian logo page, which lists current red equivalents `#CE0056` and `#CE0058`; this implementation uses `#CE0056`: https://www.debian.org/logos/.
+* Rocky Linux official brand assets repository, plus the Simple Icons entry that records Rocky Linux `#10B981`: https://github.com/rocky-linux/brand-kit and https://simple-icons.github.io/simple-icons-website/.
+* Red Hat brand standards, which list Red Hat red as `#ee0000`: https://www.redhat.com/en/about/brand/standards/color.
+* Fedora Project logo usage guidelines, which list Fedora blue as `#3C6EB4`: https://fedoraproject.org/wiki/Logo/UsageGuidelines.
+* CentOS archived brand logo page, which lists logo colors including dark blue `#262577`: https://wiki.centos.org/ArtWork%282f%29Brand%282f%29Logo.html.
+* openSUSE artwork brand page, which lists openSUSE green as `#73ba25`: https://en.opensuse.org/openSUSE%3AArtwork_brand.
+* SUSE/Rancher brand page, which lists SUSE brand colors including Jungle Green `#30BA78`: https://ranchercomprd.eks-prod.suse.com/brand-guidelines.
+* Simple Icons color data, used for Alpine Linux `#0D597F` and Arch Linux `#1793D1` after checking project/logo sources: https://pub.dev/documentation/simple_icons/latest/simple_icons/SimpleIconColors-class.html.
+* Microsoft Windows unattend `WindowColor` documentation, which lists the default Windows accent as `0xff0078d7`: https://learn.microsoft.com/en-us/windows-hardware/customize/desktop/unattend/microsoft-windows-shell-setup-themes-windowcolor.
 
 ## 2026-05-04: Top-Level Makefile
 

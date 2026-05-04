@@ -48,6 +48,10 @@ matrix: ## Regenerate compatibility and test matrix artifacts.
 report: ## Print README-ready command compatibility Markdown table.
 	$(GO) run ./tools/matrix --report command-status --report-format readme
 
+.PHONY: os-test
+os-test: ## Display supported Fancy operating-system image colors.
+	$(GO) run ./tools/os-test
+
 .PHONY: compat
 compat: catalog matrix ## Regenerate all compatibility artifacts.
 

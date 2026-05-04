@@ -2393,7 +2393,7 @@ func imageList(ctx context.Context, stdout io.Writer, opts *Options, client *gop
 	})
 	rows := make([]outputRow, 0, len(items))
 	for _, item := range items {
-		rows = append(rows, outputRow{"ID": item.ID, "Name": item.Name, "Status": string(item.Status)})
+		rows = append(rows, outputRow{"ID": item.ID, "Name": prettyImageValue(item.Name), "Status": string(item.Status)})
 	}
 	return renderListOutput(stdout, opts, []string{"ID", "Name", "Status"}, rows)
 }
@@ -3169,7 +3169,7 @@ func imageCreateFields(item *images.Image) []outputField {
 	add("id", item.ID, item.ID != "")
 	add("min_disk", item.MinDiskGigabytes, true)
 	add("min_ram", item.MinRAMMegabytes, true)
-	add("name", item.Name, item.Name != "")
+	add("name", prettyImageValue(item.Name), item.Name != "")
 	add("owner", item.Owner, item.Owner != "")
 	if len(properties) > 0 {
 		add("properties", properties, true)
@@ -3200,7 +3200,7 @@ func imageCreateVolumeFields(item volumes.VolumeImage) []outputField {
 		{"display_description", nilIfEmpty(item.Description)},
 		{"id", item.VolumeID},
 		{"image_id", item.ImageID},
-		{"image_name", item.ImageName},
+		{"image_name", prettyImageValue(item.ImageName)},
 		{"protected", item.Protected},
 		{"size", item.Size},
 		{"status", item.Status},
@@ -3241,7 +3241,7 @@ func imageShow(ctx context.Context, stdout io.Writer, opts *Options, client *gop
 	}
 	return renderShowOutput(stdout, opts, []outputField{
 		{"id", item.ID},
-		{"name", item.Name},
+		{"name", prettyImageValue(item.Name)},
 		{"status", string(item.Status)},
 		{"visibility", string(item.Visibility)},
 		{"protected", item.Protected},

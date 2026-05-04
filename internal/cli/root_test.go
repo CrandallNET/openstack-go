@@ -886,6 +886,74 @@ func TestPrettyImageNAIsColored(t *testing.T) {
 	}
 }
 
+func TestPrettyOSImageColorsKnownOperatingSystems(t *testing.T) {
+	for _, definition := range prettyOSImageColorDefinitions {
+		color, ok := prettyOSImageColorForText(definition.Sample)
+		if !ok {
+			t.Fatalf("expected OS image sample %q to match a color", definition.Sample)
+		}
+		if color != definition.Hex {
+			t.Fatalf("expected OS image sample %q to use %s, got %s", definition.Sample, definition.Hex, color)
+		}
+		colored := prettyColorizeByName("Image", definition.Sample)
+		want := prettyStyleForColor(definition.Hex).Render(definition.Sample)
+		if colored != want {
+			t.Fatalf("expected OS image sample %q to be colored with %s, got %q want %q", definition.Sample, definition.Hex, colored, want)
+		}
+	}
+}
+
+func TestPrettyImageSemanticRoleColorsImageNames(t *testing.T) {
+	colorizer := prettyListCellColorizer([]string{"Name"}, [][]string{{"image"}})
+	want := prettyStyleForColor(prettyColorOSUbuntu).Render("Ubuntu 24.04")
+	if got := colorizer(0, 0, "Ubuntu 24.04"); got != want {
+		t.Fatalf("expected image semantic role to use OS image color, got %q want %q", got, want)
+	}
+	want = prettyStyleForColor(prettyColorOSRedHat).Render("rhel9")
+	if got := colorizer(0, 0, "rhel9"); got != want {
+		t.Fatalf("expected compact RHEL image names to use OS image color, got %q want %q", got, want)
+	}
+}
+
+func TestPrettyWrappedOSImageContinuationKeepsOSColor(t *testing.T) {
+	rows := prettyWrapRows(
+		[]table.Row{{"Ubuntu 24.04 LTS"}},
+		[]table.Column{{Title: "Image", Width: 8}},
+		prettyListCellColorizer([]string{"Image"}),
+		prettyListCellContext([]string{"Image"}),
+	)
+	if len(rows) < 3 {
+		t.Fatalf("expected wrapped OS image rows, got %#v", rows)
+	}
+	for index, want := range []string{"Ubuntu", "24.04", "LTS"} {
+		if index >= len(rows) {
+			t.Fatalf("expected wrapped OS image row %d, got %#v", index, rows)
+		}
+		colored := prettyStyleForColor(prettyColorOSUbuntu).Render(want)
+		if rows[index][0] != colored {
+			t.Fatalf("expected wrapped OS image row %d to keep Ubuntu color, got %#v want %q", index, rows[index], colored)
+		}
+	}
+}
+
+func TestPrettyWrappedShortOSImageNameKeepsOSColor(t *testing.T) {
+	rows := prettyWrapRows(
+		[]table.Row{{"Arch Linux"}},
+		[]table.Column{{Title: "Image", Width: 5}},
+		prettyListCellColorizer([]string{"Image"}),
+		prettyListCellContext([]string{"Image"}),
+	)
+	if len(rows) < 2 {
+		t.Fatalf("expected wrapped Arch image rows, got %#v", rows)
+	}
+	for index, want := range []string{"Arch", "Linux"} {
+		colored := prettyStyleForColor(prettyColorOSArch).Render(want)
+		if rows[index][0] != colored {
+			t.Fatalf("expected wrapped Arch image row %d to keep Arch color, got %#v want %q", index, rows[index], colored)
+		}
+	}
+}
+
 func TestPrettyWrappedImageNAContinuationStaysNeutral(t *testing.T) {
 	rows := prettyWrapRows(
 		[]table.Row{{"N/A (booted from volume)"}},
@@ -918,7 +986,7 @@ func TestPrettyPaletteColorsDomainValues(t *testing.T) {
 		{name: "Network ID", value: "6f911ff3-5259-4dbe-a29d-684a11bfd828", want: prettyColorizeUUID("6f911ff3-5259-4dbe-a29d-684a11bfd828")},
 		{name: "Image ID", value: "da8beb8e-7301-49a3-b952-ebde206f9a0b", want: prettyColorizeUUID("da8beb8e-7301-49a3-b952-ebde206f9a0b")},
 		{name: "Flavor ID", value: "56e015e0-79f4-4962-82f0-8f8a1b2c771f", want: prettyColorizeUUID("56e015e0-79f4-4962-82f0-8f8a1b2c771f")},
-		{name: "Image", value: "rocky9", want: prettyImageStyle.Render("rocky9")},
+		{name: "Image", value: "rocky9", want: prettyStyleForColor(prettyColorOSRocky).Render("rocky9")},
 		{name: "Flavor", value: "m1.small", want: prettyFlavorStyle.Render("m1.small")},
 		{name: "device", value: "/dev/vda", want: prettyDeviceStyle.Render("/dev/vda")},
 		{name: "created_at", value: "2026-05-04T19:10:59.000000", want: prettyTimestampStyle.Render("2026-05-04T19:10:59.000000")},
@@ -938,7 +1006,7 @@ func TestPrettyValueStylesAreNotBoldExceptLabels(t *testing.T) {
 		prettyDeviceStyle.Render("/dev/vda"),
 		prettyErrorStyle.Render("ERROR"),
 		prettyFlavorStyle.Render("m1.small"),
-		prettyImageStyle.Render("rocky9"),
+		prettyStyleForColor(prettyColorOSRocky).Render("rocky9"),
 		prettyIPStyle.Render("172.16.86.56"),
 		prettyNAStyle.Render("N/A"),
 		prettyNameStyle.Render("rocky"),

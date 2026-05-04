@@ -37,6 +37,7 @@ make help
 make test
 make build
 make smoke
+make os-test
 ```
 
 The `Makefile` defaults to workspace-local Go caches so builds and tests do not write into user-level cache directories from constrained environments:
@@ -87,6 +88,12 @@ go run ./tools/matrix --report command-status --report-format readme
 The command-status report uses these conservative statuses: `compatible`, `partially compatible`, `implemented`, and `partially implemented`. It also marks each command source as `built-in` or `plugin`.
 
 Use `--report-output <path>` to write the selected report to a file instead of stdout.
+
+Display the supported Fancy operating-system image colors:
+
+```sh
+make os-test
+```
 
 ## Compatibility Artifacts
 
