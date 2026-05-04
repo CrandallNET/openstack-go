@@ -13597,9 +13597,8 @@ func (addresses prettyNetworkAddresses) PrettyString() string {
 			lines = append(lines, name+": None")
 			continue
 		}
-		lines = append(lines, name+":")
 		for _, value := range values {
-			lines = append(lines, "  "+value)
+			lines = append(lines, name+": "+value)
 		}
 	}
 	return strings.Join(lines, "\n")

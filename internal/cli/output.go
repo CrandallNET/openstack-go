@@ -51,6 +51,7 @@ var (
 	prettyFieldStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("111")).Bold(true)
 	prettyFlavorStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color("215")).Bold(true)
 	prettyIPStyle           = lipgloss.NewStyle().Foreground(lipgloss.Color("114")).Bold(true)
+	prettyNAStyle           = lipgloss.NewStyle().Foreground(lipgloss.Color("220")).Bold(true)
 	prettyNameStyle         = lipgloss.NewStyle().Foreground(lipgloss.Color("213")).Bold(true)
 	prettyNumberStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color("141")).Bold(true)
 	prettyUUIDStyle         = lipgloss.NewStyle().Foreground(lipgloss.Color("75")).Bold(true)
@@ -419,6 +420,8 @@ func prettyColorizeByName(name string, text string) string {
 		return prettyNameStyle.Render(text)
 	case prettyIsFlavorField(normalized):
 		return prettyFlavorStyle.Render(text)
+	case prettyIsImageField(normalized):
+		return prettyColorizeImage(text)
 	case prettyIsFlavorComponentField(normalized):
 		return prettyNumberStyle.Render(prettyColorizeTokens(text))
 	case prettyIsStatusField(normalized):
@@ -444,6 +447,13 @@ func prettyIsFlavorField(name string) bool {
 		name == "flavor_id" ||
 		name == "flavor_name" ||
 		strings.Contains(name, "flavor")
+}
+
+func prettyIsImageField(name string) bool {
+	return name == "image" ||
+		name == "image_id" ||
+		name == "image_name" ||
+		strings.Contains(name, "image")
 }
 
 func prettyIsFlavorComponentField(name string) bool {
@@ -502,9 +512,21 @@ func prettyColorizeTokens(text string) string {
 		return prettyIPStyle.Render(candidate)
 	})
 	text = prettyUUIDPattern.ReplaceAllStringFunc(text, func(candidate string) string {
-		return prettyUUIDStyle.Render(candidate)
+		return prettyColorizeUUID(candidate)
 	})
 	return text
+}
+
+func prettyColorizeImage(text string) string {
+	return strings.ReplaceAll(prettyColorizeTokens(text), "N/A", prettyNAStyle.Render("N/A"))
+}
+
+func prettyColorizeUUID(uuid string) string {
+	parts := strings.Split(uuid, "-")
+	for index, part := range parts {
+		parts[index] = prettyUUIDStyle.Render(part)
+	}
+	return strings.Join(parts, "-")
 }
 
 func prettyContainsAddressToken(text string) bool {

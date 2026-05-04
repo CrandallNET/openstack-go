@@ -425,6 +425,9 @@ func TestPrettyListFormatsServerNetworksVertically(t *testing.T) {
 			t.Fatalf("pretty server network output missing %q:\n%s", want, output)
 		}
 	}
+	if got, want := strings.Count(output, "testNet:"), 2; got != want {
+		t.Fatalf("expected pretty server networks to repeat the network name for each IP, got %d occurrences:\n%s", got, output)
+	}
 	if strings.Contains(output, "testNet=172.16.86.110, 172.17.36.42") {
 		t.Fatalf("expected pretty server networks to avoid comma-delimited summary, got:\n%s", output)
 	}
@@ -614,7 +617,7 @@ func TestPrettySemanticColorUsesANSIForTTY(t *testing.T) {
 	if !containsANSI(output) {
 		t.Fatalf("expected TTY pretty output to contain ANSI color, got:\n%s", output)
 	}
-	for _, want := range []string{"7dbf33e2-6d96-43b1-961b-ae58925a382c", "rocky", "172.16.86.56", "m1.small", "2048", "ACTIVE"} {
+	for _, want := range []string{"7dbf33e2", "ae58925a382c", "rocky", "172.16.86.56", "m1.small", "2048", "ACTIVE"} {
 		if !strings.Contains(output, want) {
 			t.Fatalf("colored pretty output missing raw text %q:\n%s", want, output)
 		}
@@ -630,6 +633,7 @@ func TestPrettySemanticColorizersStyleKnownValues(t *testing.T) {
 		{name: "Name", value: "rocky"},
 		{name: "Networks", value: "172.16.86.56"},
 		{name: "Flavor", value: "m1.small"},
+		{name: "Image", value: "N/A (booted from volume)"},
 		{name: "RAM", value: "2048"},
 		{name: "Status", value: "ACTIVE"},
 	}
@@ -638,9 +642,47 @@ func TestPrettySemanticColorizersStyleKnownValues(t *testing.T) {
 		if !containsANSI(colored) {
 			t.Fatalf("expected %s value %q to be colorized, got %q", tc.name, tc.value, colored)
 		}
+		if tc.name == "ID" {
+			for _, segment := range strings.Split(tc.value, "-") {
+				if !strings.Contains(colored, segment) {
+					t.Fatalf("expected colorized UUID to preserve segment %q, got %q", segment, colored)
+				}
+			}
+			continue
+		}
+		if tc.name == "Image" {
+			for _, want := range []string{"N/A", "(booted from volume)"} {
+				if !strings.Contains(colored, want) {
+					t.Fatalf("expected colorized image value to preserve %q, got %q", want, colored)
+				}
+			}
+			continue
+		}
 		if !strings.Contains(colored, tc.value) {
 			t.Fatalf("expected colorized value to preserve %q, got %q", tc.value, colored)
 		}
+	}
+}
+
+func TestPrettyUUIDColorLeavesHyphensPlain(t *testing.T) {
+	uuid := "7dbf33e2-6d96-43b1-961b-ae58925a382c"
+	colored := prettyColorizeByName("ID", uuid)
+	parts := strings.Split(colored, "-")
+	if len(parts) != 5 {
+		t.Fatalf("expected colored UUID to keep four plain hyphens, got %q", colored)
+	}
+	for index, part := range parts {
+		if !containsANSI(part) {
+			t.Fatalf("expected UUID segment %d to be colored, got %q from %q", index, part, colored)
+		}
+	}
+}
+
+func TestPrettyImageNAIsColored(t *testing.T) {
+	colored := prettyColorizeByName("Image", "N/A (booted from volume)")
+	want := prettyNAStyle.Render("N/A") + " (booted from volume)"
+	if colored != want {
+		t.Fatalf("expected only image N/A token to be colored, got %q want %q", colored, want)
 	}
 }
 

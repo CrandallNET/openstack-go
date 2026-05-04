@@ -1173,3 +1173,23 @@ Sources consulted:
 * Local pretty-output tests in `internal/cli/root_test.go`.
 * Local Charm Bubbles table implementation in `/Users/ken/Dev/openstack-go/.cache/gomod/charm.land/bubbles/v2@v2.1.0/table/table.go`, used to confirm table rendering truncates ANSI-aware cell strings.
 * Local Lip Gloss v2 implementation in `/Users/ken/Dev/openstack-go/.cache/gomod/charm.land/lipgloss/v2@v2.0.3`, used for semantic terminal styles.
+
+## 2026-05-04: Pretty Color Refinements
+
+Work done: refined UUID and image semantic color. UUID hex groups remain colored, but UUID hyphen separators are now left plain. Image values now color the `N/A` token, including values such as `N/A (booted from volume)`, without coloring the explanatory suffix.
+
+Sources consulted:
+
+* Local implementation file `internal/cli/output.go`.
+* Local pretty-output tests in `internal/cli/root_test.go`.
+
+## 2026-05-04: Pretty Server Network Labels
+
+Work done: changed pretty server address rendering so the network name repeats on every IP address line. This fixes rows with multiple IP addresses where only the first address visually carried the network name.
+
+Live observations on `cloud6`: `server list --pretty` now renders multi-address rows as `testNet: 172.16.86.110` and `testNet: 172.17.36.42` on separate lines instead of showing `testNet:` once followed by unlabeled IP lines.
+
+Sources consulted:
+
+* Local implementation file `internal/cli/core_read.go`.
+* Local pretty-output tests in `internal/cli/root_test.go`.
