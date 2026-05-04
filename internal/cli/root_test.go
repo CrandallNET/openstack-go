@@ -713,8 +713,28 @@ func TestPrettyLabelPrefixIsBrightWhite(t *testing.T) {
 	if !strings.HasPrefix(colored, wantPrefix) {
 		t.Fatalf("expected pretty label prefix to be bright white, got %q want prefix %q", colored, wantPrefix)
 	}
-	if !strings.Contains(colored, "172.16.86.56") {
-		t.Fatalf("expected pretty label coloring to preserve value, got %q", colored)
+	wantValue := prettyLabelValueStyle.Render(" 172.16.86.56")
+	if !strings.Contains(colored, wantValue) {
+		t.Fatalf("expected pretty label value to be non-bright, got %q want value %q", colored, wantValue)
+	}
+}
+
+func TestPrettyWrappedLabelContinuationValueIsNonBright(t *testing.T) {
+	rows := prettyWrapRows(
+		[]table.Row{{"  attachment_id: value"}},
+		[]table.Column{{Title: "Attached to", Width: 16}},
+		prettyListCellColorizer([]string{"Attached to"}),
+	)
+	if len(rows) != 2 {
+		t.Fatalf("expected wrapped label and value rows, got %#v", rows)
+	}
+	wantLabel := "  " + prettyLabelStyle.Render("attachment_id:")
+	if rows[0][0] != wantLabel {
+		t.Fatalf("expected wrapped label row to be bright, got %q want %q", rows[0][0], wantLabel)
+	}
+	wantValue := prettyLabelValueStyle.Render("value")
+	if rows[1][0] != wantValue {
+		t.Fatalf("expected wrapped label value row to be non-bright, got %q want %q", rows[1][0], wantValue)
 	}
 }
 

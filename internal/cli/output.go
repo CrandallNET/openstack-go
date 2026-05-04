@@ -51,7 +51,8 @@ var (
 	prettyFieldStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("111")).Bold(true)
 	prettyFlavorStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color("215")).Bold(true)
 	prettyIPStyle           = lipgloss.NewStyle().Foreground(lipgloss.Color("114")).Bold(true)
-	prettyLabelStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("255")).Bold(true)
+	prettyLabelStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("15")).Bold(true)
+	prettyLabelValueStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("245"))
 	prettyNAStyle           = lipgloss.NewStyle().Foreground(lipgloss.Color("220")).Bold(true)
 	prettyNameStyle         = lipgloss.NewStyle().Foreground(lipgloss.Color("213")).Bold(true)
 	prettyNumberStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color("141")).Bold(true)
@@ -315,6 +316,9 @@ func prettyWrapRows(rows []table.Row, columns []table.Column, colorizer prettyCe
 				value = row[i]
 			}
 			cellLines[i] = wrapTableCell(value, column.Width)
+			if colorizer != nil {
+				cellLines[i] = prettyColorizeWrappedCellLines(rowIndex, i, cellLines[i], colorizer)
+			}
 			height = max(height, len(cellLines[i]))
 		}
 		for line := 0; line < height; line++ {
@@ -322,9 +326,6 @@ func prettyWrapRows(rows []table.Row, columns []table.Column, colorizer prettyCe
 			for column := range columns {
 				if line < len(cellLines[column]) {
 					wrappedRow[column] = cellLines[column][line]
-				}
-				if colorizer != nil && wrappedRow[column] != "" {
-					wrappedRow[column] = colorizer(rowIndex, column, wrappedRow[column])
 				}
 			}
 			wrappedRows = append(wrappedRows, wrappedRow)
@@ -550,7 +551,47 @@ func prettyColorizeLabeledText(text string, colorizeValue func(string) string) s
 	if !ok {
 		return colorizeValue(text)
 	}
-	return prefix + prettyLabelStyle.Render(label) + colorizeValue(value)
+	return prefix + prettyLabelStyle.Render(label) + prettyColorizeLabelValue(value)
+}
+
+func prettyColorizeWrappedCellLines(rowIndex int, columnIndex int, lines []string, colorizer prettyCellColorizer) []string {
+	colored := make([]string, len(lines))
+	pendingLabelValue := false
+	for index, line := range lines {
+		if line == "" {
+			pendingLabelValue = false
+			colored[index] = line
+			continue
+		}
+		if prettyLineIsListMarker(line) {
+			pendingLabelValue = false
+			colored[index] = colorizer(rowIndex, columnIndex, line)
+			continue
+		}
+		_, _, value, ok := prettySplitLabelPrefix(line)
+		if ok {
+			pendingLabelValue = strings.TrimSpace(value) == ""
+			colored[index] = colorizer(rowIndex, columnIndex, line)
+			continue
+		}
+		if pendingLabelValue {
+			colored[index] = prettyColorizeLabelValue(line)
+			continue
+		}
+		colored[index] = colorizer(rowIndex, columnIndex, line)
+	}
+	return colored
+}
+
+func prettyColorizeLabelValue(text string) string {
+	if text == "" {
+		return text
+	}
+	return prettyLabelValueStyle.Render(text)
+}
+
+func prettyLineIsListMarker(text string) bool {
+	return strings.TrimSpace(text) == "-"
 }
 
 func prettySplitLabelPrefix(text string) (string, string, string, bool) {

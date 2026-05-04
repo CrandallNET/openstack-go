@@ -1228,3 +1228,14 @@ Sources consulted:
 
 * Local implementation file `internal/cli/output.go`.
 * Local pretty-output tests in `internal/cli/root_test.go`.
+
+## 2026-05-04: Pretty Label Value Contrast
+
+Work done: changed labeled pretty output so the `label:` prefix and the value render with intentionally different styles. Labels now use bright white, while inline values and wrapped continuation values use a non-bright value style. This fixes structured columns such as `volume list` `Attached to`, where `attachment_id:` and similar labels can wrap onto a separate line from their value.
+
+Implementation note: the wrapped-cell color pass now remembers when a line is a label with no inline value and applies the non-bright value style to following continuation lines until the next label, list marker, or blank line.
+
+Sources consulted:
+
+* Local implementation file `internal/cli/output.go`.
+* Local pretty-output tests in `internal/cli/root_test.go`.
