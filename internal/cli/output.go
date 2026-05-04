@@ -296,7 +296,7 @@ func prettyNaturalWidths(headers []string, rows []table.Row) []int {
 }
 
 func prettyWrapRows(rows []table.Row, columns []table.Column, colorizer prettyCellColorizer) []table.Row {
-	wrappedRows := make([]table.Row, 0, len(rows))
+	wrappedRows := make([]table.Row, 0, len(rows)*2)
 	for rowIndex, row := range rows {
 		cellLines := make([][]string, len(columns))
 		height := 1
@@ -319,6 +319,9 @@ func prettyWrapRows(rows []table.Row, columns []table.Column, colorizer prettyCe
 				}
 			}
 			wrappedRows = append(wrappedRows, wrappedRow)
+		}
+		if rowIndex < len(rows)-1 {
+			wrappedRows = append(wrappedRows, make(table.Row, len(columns)))
 		}
 	}
 	return wrappedRows

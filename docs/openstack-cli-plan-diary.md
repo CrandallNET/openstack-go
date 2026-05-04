@@ -1193,3 +1193,14 @@ Sources consulted:
 
 * Local implementation file `internal/cli/core_read.go`.
 * Local pretty-output tests in `internal/cli/root_test.go`.
+
+## 2026-05-04: Pretty Entry Spacing
+
+Work done: added a blank spacer line between logical pretty output entries. Wrapped lines for a single entry stay grouped together, and the spacer is inserted before the next entry.
+
+Live observations on `cloud6`: `server list --pretty` now shows a blank line between server entries while keeping each server's wrapped ID, image, and network-address lines grouped together.
+
+Sources consulted:
+
+* Local implementation file `internal/cli/output.go`.
+* Local pretty-output tests in `internal/cli/root_test.go`.
