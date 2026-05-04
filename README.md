@@ -30,7 +30,16 @@ Plugin-scope commands and service-scoped extras plugins use [Caddy's module syst
 
 ## Build And Test
 
-Use workspace-local Go caches so builds and tests do not write into user-level cache directories from constrained environments:
+Use the top-level `Makefile` for the common build and test workflow:
+
+```sh
+make help
+make test
+make build
+make smoke
+```
+
+The `Makefile` defaults to workspace-local Go caches so builds and tests do not write into user-level cache directories from constrained environments:
 
 ```sh
 export GOCACHE="$PWD/.cache/go-build"

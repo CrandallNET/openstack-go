@@ -1279,3 +1279,14 @@ Sources consulted:
 * Local implementation file `internal/cli/output.go`.
 * Local volume command implementation in `internal/cli/core_read.go`.
 * Local pretty-output tests in `internal/cli/root_test.go`.
+
+## 2026-05-04: Top-Level Makefile
+
+Decision: the repository now has a top-level `Makefile` as the standard entry point for local build, test, smoke, and compatibility-generation commands. The targets keep the underlying Go commands visible and use workspace-local `GOCACHE` and `GOMODCACHE` defaults so constrained environments do not write to user-level Go cache directories unless the caller explicitly overrides them.
+
+Work done: added `help`, `build`, `test`, `fmt`, `check`, `smoke`, `compat-catalog`, `compat-matrix`, `compat`, and `clean` targets. The `help` target is self-documenting and lists every public target with its description.
+
+Sources consulted:
+
+* Local README build instructions in `README.md`.
+* Local project commands in `cmd/openstack` and `tools/`.
