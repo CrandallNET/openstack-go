@@ -741,6 +741,32 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return networkRBACList(cmd.Context(), stdout, opts, client)
+		case "network rbac create":
+			networkClient, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			identityClient, err := clients.identityV3()
+			if err != nil {
+				return err
+			}
+			return networkRBACCreate(cmd.Context(), stdout, opts, networkClient, identityClient, args)
+		case "network rbac delete":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return networkRBACDelete(cmd.Context(), client, args)
+		case "network rbac set":
+			networkClient, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			identityClient, err := clients.identityV3()
+			if err != nil {
+				return err
+			}
+			return networkRBACSet(cmd.Context(), opts, networkClient, identityClient, args)
 		case "network rbac show":
 			client, err := clients.networkV2()
 			if err != nil {
@@ -5142,6 +5168,129 @@ func networkRBACList(ctx context.Context, stdout io.Writer, opts *Options, clien
 	return renderListOutput(stdout, opts, columns, rows)
 }
 
+type networkRBACCreateOpts struct {
+	Values map[string]any
+}
+
+func (opts networkRBACCreateOpts) ToRBACPolicyCreateMap() (map[string]any, error) {
+	return map[string]any{"rbac_policy": opts.Values}, nil
+}
+
+type networkRBACUpdateOpts struct {
+	Values map[string]any
+}
+
+func (opts networkRBACUpdateOpts) ToRBACPolicyUpdateMap() (map[string]any, error) {
+	return map[string]any{"rbac_policy": opts.Values}, nil
+}
+
+func networkRBACCreate(ctx context.Context, stdout io.Writer, opts *Options, networkClient *gophercloud.ServiceClient, identityClient *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("network rbac create requires <rbac-object>")
+	}
+	values, err := networkRBACCreateValues(ctx, opts, networkClient, identityClient, args[0])
+	if err != nil {
+		return err
+	}
+	result := rbacpolicies.Create(ctx, networkClient, networkRBACCreateOpts{Values: values})
+	item, err := result.Extract()
+	if err != nil {
+		return err
+	}
+	if raw, ok := networkRBACRawFromBody(result.Body); ok {
+		return renderShowOutput(stdout, opts, networkRBACRawFields(raw))
+	}
+	return renderShowOutput(stdout, opts, networkRBACFields(item))
+}
+
+func networkRBACCreateValues(ctx context.Context, opts *Options, networkClient *gophercloud.ServiceClient, identityClient *gophercloud.ServiceClient, objectNameOrID string) (map[string]any, error) {
+	objectType := flagValue(opts, "type")
+	action := flagValue(opts, "action")
+	if objectType == "" {
+		return nil, fmt.Errorf("argument --type is required")
+	}
+	if action == "" {
+		return nil, fmt.Errorf("argument --action is required")
+	}
+	if flagChanged(opts, "target-project") == boolFlag(opts, "target-all-projects") {
+		return nil, fmt.Errorf("one of the arguments --target-project --target-all-projects is required")
+	}
+	objectID, err := networkRBACObjectID(ctx, networkClient, objectType, objectNameOrID)
+	if err != nil {
+		return nil, err
+	}
+	values := map[string]any{
+		"object_type":   objectType,
+		"action":        action,
+		"object_id":     objectID,
+		"target_tenant": "*",
+	}
+	if targetProject := flagValue(opts, "target-project"); targetProject != "" {
+		project, err := findProjectWithDomain(ctx, identityClient, targetProject, flagValue(opts, "target-project-domain"))
+		if err != nil {
+			return nil, err
+		}
+		values["target_tenant"] = project.ID
+	}
+	if projectNameOrID := flagValue(opts, "project"); projectNameOrID != "" {
+		project, err := findProjectWithDomain(ctx, identityClient, projectNameOrID, flagValue(opts, "project-domain"))
+		if err != nil {
+			return nil, err
+		}
+		values["project_id"] = project.ID
+	}
+	extra, err := parseExtraProperties(flagValues(opts, "extra-property"))
+	if err != nil {
+		return nil, err
+	}
+	for key, value := range extra {
+		values[key] = value
+	}
+	return values, nil
+}
+
+func networkRBACDelete(ctx context.Context, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("network rbac delete requires <rbac-policy> [<rbac-policy> ...]")
+	}
+	failures := 0
+	for _, policyID := range args {
+		if err := rbacpolicies.Delete(ctx, client, policyID).ExtractErr(); err != nil {
+			failures++
+		}
+	}
+	if failures > 0 {
+		return fmt.Errorf("%d of %d RBAC policies failed to delete.", failures, len(args))
+	}
+	return nil
+}
+
+func networkRBACSet(ctx context.Context, opts *Options, networkClient *gophercloud.ServiceClient, identityClient *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("network rbac set requires <rbac-policy>")
+	}
+	values := map[string]any{}
+	if targetProject := flagValue(opts, "target-project"); targetProject != "" {
+		project, err := findProjectWithDomain(ctx, identityClient, targetProject, flagValue(opts, "target-project-domain"))
+		if err != nil {
+			return err
+		}
+		values["target_tenant"] = project.ID
+	}
+	extra, err := parseExtraProperties(flagValues(opts, "extra-property"))
+	if err != nil {
+		return err
+	}
+	for key, value := range extra {
+		values[key] = value
+	}
+	if len(values) == 0 {
+		return nil
+	}
+	_, err = rbacpolicies.Update(ctx, networkClient, args[0], networkRBACUpdateOpts{Values: values}).Extract()
+	return err
+}
+
 func networkRBACShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
 	if len(args) < 1 {
 		return fmt.Errorf("network rbac show requires <rbac-policy>")
@@ -5150,14 +5299,112 @@ func networkRBACShow(ctx context.Context, stdout io.Writer, opts *Options, clien
 	if err != nil {
 		return err
 	}
-	return renderShowOutput(stdout, opts, []outputField{
+	return renderShowOutput(stdout, opts, networkRBACFields(item))
+}
+
+func networkRBACObjectID(ctx context.Context, client *gophercloud.ServiceClient, objectType string, value string) (string, error) {
+	switch objectType {
+	case "network":
+		item, err := findNetwork(ctx, client, value)
+		if err != nil {
+			return "", err
+		}
+		return item.ID, nil
+	case "qos_policy":
+		item, err := findNetworkQoSPolicy(ctx, client, value)
+		if err != nil {
+			return "", err
+		}
+		return item.ID, nil
+	case "security_group":
+		item, err := findSecurityGroup(ctx, client, value)
+		if err != nil {
+			return "", err
+		}
+		return item.ID, nil
+	case "address_scope":
+		item, err := findAddressScope(ctx, client, value)
+		if err != nil {
+			return "", err
+		}
+		return item.ID, nil
+	case "subnetpool":
+		item, err := findSubnetPool(ctx, client, value)
+		if err != nil {
+			return "", err
+		}
+		return item.ID, nil
+	case "address_group":
+		item, err := findAddressGroup(ctx, client, value)
+		if err != nil {
+			return "", err
+		}
+		return item.ID, nil
+	default:
+		return "", fmt.Errorf("invalid RBAC object type %q", objectType)
+	}
+}
+
+func networkRBACRawFromBody(body any) (map[string]any, bool) {
+	var wrapper struct {
+		RBACPolicy map[string]any `json:"rbac_policy"`
+	}
+	encoded, err := json.Marshal(body)
+	if err != nil {
+		return nil, false
+	}
+	if err := json.Unmarshal(encoded, &wrapper); err != nil {
+		return nil, false
+	}
+	if wrapper.RBACPolicy == nil {
+		return nil, false
+	}
+	return wrapper.RBACPolicy, true
+}
+
+func networkRBACRawFields(raw map[string]any) []outputField {
+	known := map[string]bool{
+		"action":            true,
+		"id":                true,
+		"location":          true,
+		"name":              true,
+		"object_id":         true,
+		"object_type":       true,
+		"project_id":        true,
+		"target_project_id": true,
+		"target_tenant":     true,
+		"tenant_id":         true,
+	}
+	fields := []outputField{
+		{"action", raw["action"]},
+		{"id", raw["id"]},
+		{"object_id", raw["object_id"]},
+		{"object_type", raw["object_type"]},
+		{"project_id", firstPresent(raw, "project_id", "tenant_id")},
+		{"target_project_id", firstPresent(raw, "target_project_id", "target_tenant")},
+	}
+	var extras []string
+	for key := range raw {
+		if !known[key] {
+			extras = append(extras, key)
+		}
+	}
+	sort.Strings(extras)
+	for _, key := range extras {
+		fields = append(fields, outputField{key, raw[key]})
+	}
+	return fields
+}
+
+func networkRBACFields(item *rbacpolicies.RBACPolicy) []outputField {
+	return []outputField{
 		{"action", item.Action},
 		{"id", item.ID},
 		{"object_id", item.ObjectID},
 		{"object_type", item.ObjectType},
 		{"project_id", firstNonEmpty(item.ProjectID, item.TenantID)},
 		{"target_project_id", item.TargetTenant},
-	})
+	}
 }
 
 func networkSegmentList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {

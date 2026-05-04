@@ -106,7 +106,7 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"network service provider list",
 		"network qos policy create", "network qos policy delete", "network qos policy list", "network qos policy set", "network qos policy show",
 		"network qos rule type list", "network qos rule type show",
-		"network rbac list", "network rbac show",
+		"network rbac create", "network rbac delete", "network rbac list", "network rbac set", "network rbac show",
 		"network segment list", "network segment show",
 		"network trunk list", "network trunk show",
 		"object create", "object delete", "object list", "object save", "object set", "object show", "object unset",
@@ -506,6 +506,19 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().String("action", "", "filter by action")
 		cmd.Flags().String("target-project", "", "filter by target project")
 		cmd.Flags().Bool("long", false, "list additional fields")
+	case "network rbac create":
+		cmd.Flags().StringArray("extra-property", nil, "additional property type=<type>,name=<name>,value=<value>")
+		cmd.Flags().String("type", "", "object type")
+		cmd.Flags().String("action", "", "RBAC action")
+		cmd.Flags().String("target-project", "", "target project")
+		cmd.Flags().Bool("target-all-projects", false, "target all projects")
+		cmd.Flags().String("target-project-domain", "", "target project domain")
+		cmd.Flags().String("project", "", "owner project")
+		cmd.Flags().String("project-domain", "", "project domain")
+	case "network rbac set":
+		cmd.Flags().StringArray("extra-property", nil, "additional property type=<type>,name=<name>,value=<value>")
+		cmd.Flags().String("target-project", "", "target project")
+		cmd.Flags().String("target-project-domain", "", "target project domain")
 	case "network segment list":
 		cmd.Flags().Bool("long", false, "list additional fields")
 		cmd.Flags().String("network", "", "filter by network")
@@ -1321,7 +1334,7 @@ func isCoreReadCommand(path string) bool {
 		"network service provider list",
 		"network qos policy create", "network qos policy delete", "network qos policy list", "network qos policy set", "network qos policy show",
 		"network qos rule type list", "network qos rule type show",
-		"network rbac list", "network rbac show",
+		"network rbac create", "network rbac delete", "network rbac list", "network rbac set", "network rbac show",
 		"network segment list", "network segment show",
 		"network trunk list", "network trunk show",
 		"object create", "object delete", "object list", "object save", "object set", "object show", "object unset",

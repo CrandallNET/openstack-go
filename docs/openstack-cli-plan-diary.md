@@ -1025,3 +1025,17 @@ Sources consulted:
 * Local OSC oracle snapshots in `compat/osc/9.0.0/help/network/qos/policy/create.txt`, `compat/osc/9.0.0/help/network/qos/policy/delete.txt`, and `compat/osc/9.0.0/help/network/qos/policy/set.txt`.
 * Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/network/v2/network_qos_policy.py`, used only as the pinned local oracle implementation source.
 * Gophercloud package docs for [Neutron QoS policies](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/qos/policies).
+
+## 2026-05-04: Network RBAC Lifecycle Commands
+
+Work done: added `network rbac create`, `network rbac delete`, and `network rbac set`, and changed RBAC show/create rendering to preserve raw extension fields when available.
+
+Implementation note: Network RBAC create/update/delete uses Gophercloud's RBAC policy package with custom request builders for owner project passthrough and Python OSC `--extra-property` values. Create resolves RBAC object names by object type across networks, QoS policies, security groups, address scopes, subnet pools, and address groups, and resolves target and owner projects through Identity v3.
+
+Live observations on `cloud6`: the Go CLI created disposable network `golang-osc-test-rbac-*`, created an `access_as_shared` RBAC policy targeting all projects, verified show and long-list output, updated the RBAC policy to target the current token project, deleted the RBAC policy, deleted the network, and verified cleanup through the command success path.
+
+Sources consulted:
+
+* Local OSC oracle snapshots in `compat/osc/9.0.0/help/network/rbac/create.txt`, `compat/osc/9.0.0/help/network/rbac/delete.txt`, and `compat/osc/9.0.0/help/network/rbac/set.txt`.
+* Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/network/v2/network_rbac.py`, used only as the pinned local oracle implementation source.
+* Gophercloud package docs for [Neutron RBAC policies](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/rbacpolicies).
