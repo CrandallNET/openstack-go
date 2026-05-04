@@ -881,18 +881,46 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return resourceProviderUsageShow(cmd.Context(), stdout, opts, client, args)
+		case "router create":
+			networkClient, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			identityClient, err := clients.identityV3()
+			if err != nil {
+				return err
+			}
+			return routerCreate(cmd.Context(), stdout, opts, networkClient, identityClient, args)
+		case "router delete":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return routerDelete(cmd.Context(), client, args)
 		case "router list":
 			client, err := clients.networkV2()
 			if err != nil {
 				return err
 			}
 			return routerList(cmd.Context(), stdout, opts, client)
+		case "router set":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return routerSet(cmd.Context(), opts, client, args)
 		case "router show":
 			client, err := clients.networkV2()
 			if err != nil {
 				return err
 			}
 			return routerShow(cmd.Context(), stdout, opts, client, args)
+		case "router unset":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return routerUnset(cmd.Context(), opts, client, args)
 		case "security group list":
 			client, err := clients.networkV2()
 			if err != nil {
@@ -5180,6 +5208,328 @@ func networkQoSRuleTypeShow(ctx context.Context, stdout io.Writer, opts *Options
 	})
 }
 
+type routerCreateOpts struct {
+	Values map[string]any
+}
+
+func (opts routerCreateOpts) ToRouterCreateMap() (map[string]any, error) {
+	return map[string]any{"router": opts.Values}, nil
+}
+
+type routerUpdateOpts struct {
+	Values map[string]any
+}
+
+func (opts routerUpdateOpts) ToRouterUpdateMap() (map[string]any, error) {
+	return map[string]any{"router": opts.Values}, nil
+}
+
+func routerCreate(ctx context.Context, stdout io.Writer, opts *Options, networkClient *gophercloud.ServiceClient, identityClient *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("router create requires <name>")
+	}
+	if boolFlag(opts, "no-tag") && len(flagValues(opts, "tag")) > 0 {
+		return fmt.Errorf("argument --no-tag: not allowed with argument --tag")
+	}
+	values, err := routerCreateValues(ctx, opts, networkClient, identityClient, args[0])
+	if err != nil {
+		return err
+	}
+	result := routers.Create(ctx, networkClient, routerCreateOpts{Values: values})
+	item, err := result.Extract()
+	if err != nil {
+		return err
+	}
+	tags := flagValues(opts, "tag")
+	if len(tags) > 0 {
+		target, err := setNeutronResourceTags(ctx, networkClient, "routers", item.ID, item.Tags, tags, boolFlag(opts, "no-tag"))
+		if err != nil {
+			return err
+		}
+		item.Tags = target
+	}
+	if raw, ok := routerRawFromBody(result.Body); ok {
+		if len(tags) > 0 {
+			raw["tags"] = item.Tags
+		}
+		return renderShowOutput(stdout, opts, routerRawFields(raw, nil))
+	}
+	return renderShowOutput(stdout, opts, routerFields(item, nil))
+}
+
+func routerCreateValues(ctx context.Context, opts *Options, networkClient *gophercloud.ServiceClient, identityClient *gophercloud.ServiceClient, name string) (map[string]any, error) {
+	values := map[string]any{"name": name, "admin_state_up": true}
+	if flagChanged(opts, "enable") && flagChanged(opts, "disable") {
+		return nil, fmt.Errorf("argument --disable: not allowed with argument --enable")
+	}
+	if boolFlag(opts, "disable") {
+		values["admin_state_up"] = false
+	}
+	if projectNameOrID := flagValue(opts, "project"); projectNameOrID != "" {
+		project, err := findProjectWithDomain(ctx, identityClient, projectNameOrID, flagValue(opts, "project-domain"))
+		if err != nil {
+			return nil, err
+		}
+		values["project_id"] = project.ID
+	}
+	if err := routerApplyMutableValues(ctx, opts, networkClient, values, true, nil); err != nil {
+		return nil, err
+	}
+	if flavor := flagValue(opts, "flavor"); flavor != "" {
+		values["flavor_id"] = flavor
+	}
+	extra, err := parseExtraProperties(flagValues(opts, "extra-property"))
+	if err != nil {
+		return nil, err
+	}
+	for key, value := range extra {
+		values[key] = value
+	}
+	return values, nil
+}
+
+func routerDelete(ctx context.Context, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("router delete requires <router> [<router> ...]")
+	}
+	failures := 0
+	for _, routerArg := range args {
+		item, err := findRouter(ctx, client, routerArg)
+		if err != nil {
+			failures++
+			continue
+		}
+		if err := routers.Delete(ctx, client, item.ID).ExtractErr(); err != nil {
+			failures++
+		}
+	}
+	if failures > 0 {
+		return fmt.Errorf("%d of %d routers failed to delete.", failures, len(args))
+	}
+	return nil
+}
+
+func routerSet(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("router set requires <router>")
+	}
+	item, err := findRouter(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	values := map[string]any{}
+	if flagChanged(opts, "name") {
+		values["name"] = flagValue(opts, "name")
+	}
+	if err := routerApplyMutableValues(ctx, opts, client, values, false, item); err != nil {
+		return err
+	}
+	extra, err := parseExtraProperties(flagValues(opts, "extra-property"))
+	if err != nil {
+		return err
+	}
+	for key, value := range extra {
+		values[key] = value
+	}
+	if len(values) > 0 {
+		if _, err := routers.Update(ctx, client, item.ID, routerUpdateOpts{Values: values}).Extract(); err != nil {
+			return err
+		}
+	}
+	if boolFlag(opts, "no-tag") || len(flagValues(opts, "tag")) > 0 {
+		_, err := setNeutronResourceTags(ctx, client, "routers", item.ID, item.Tags, flagValues(opts, "tag"), boolFlag(opts, "no-tag"))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func routerUnset(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("router unset requires <router>")
+	}
+	if len(flagValues(opts, "tag")) > 0 && boolFlag(opts, "all-tag") {
+		return fmt.Errorf("argument --all-tag: not allowed with argument --tag")
+	}
+	item, err := findRouter(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	values := map[string]any{}
+	if boolFlag(opts, "external-gateway") {
+		values["external_gateway_info"] = nil
+	}
+	if boolFlag(opts, "qos-policy") {
+		values["external_gateway_info"] = map[string]any{"qos_policy_id": nil}
+	}
+	routes, err := parseRouterRoutes(flagValues(opts, "route"))
+	if err != nil {
+		return err
+	}
+	if len(routes) > 0 {
+		remaining, err := removeMapValues(routerRouteMaps(item.Routes), routes, "route")
+		if err != nil {
+			return err
+		}
+		values["routes"] = remaining
+	}
+	extra, err := parseUnsetExtraProperties(flagValues(opts, "extra-property"))
+	if err != nil {
+		return err
+	}
+	for key, value := range extra {
+		values[key] = value
+	}
+	if len(values) > 0 {
+		if _, err := routers.Update(ctx, client, item.ID, routerUpdateOpts{Values: values}).Extract(); err != nil {
+			return err
+		}
+	}
+	_, err = unsetNeutronResourceTags(ctx, client, "routers", item.ID, item.Tags, flagValues(opts, "tag"), boolFlag(opts, "all-tag"))
+	return err
+}
+
+func routerApplyMutableValues(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, values map[string]any, create bool, existing *routers.Router) error {
+	if flagChanged(opts, "description") {
+		values["description"] = flagValue(opts, "description")
+	}
+	if adminState, err := networkBoolFlag(opts, "enable", "disable"); err != nil {
+		return err
+	} else if adminState != nil {
+		values["admin_state_up"] = *adminState
+	}
+	if distributed, err := networkBoolFlag(opts, "distributed", "centralized"); err != nil {
+		return err
+	} else if distributed != nil {
+		values["distributed"] = *distributed
+	}
+	if ha, err := networkBoolFlag(opts, "ha", "no-ha"); err != nil {
+		return err
+	} else if ha != nil {
+		values["ha"] = *ha
+	}
+	if hints := flagValues(opts, "availability-zone-hint"); len(hints) > 0 {
+		values["availability_zone_hints"] = hints
+	}
+	if err := routerApplyGatewayValues(ctx, opts, client, values); err != nil {
+		return err
+	}
+	if ndp, err := networkBoolFlag(opts, "enable-ndp-proxy", "disable-ndp-proxy"); err != nil {
+		return err
+	} else if ndp != nil {
+		values["enable_ndp_proxy"] = *ndp
+	}
+	if bfd, err := networkBoolFlag(opts, "enable-default-route-bfd", "disable-default-route-bfd"); err != nil {
+		return err
+	} else if bfd != nil {
+		values["enable_default_route_bfd"] = *bfd
+	}
+	if ecmp, err := networkBoolFlag(opts, "enable-default-route-ecmp", "disable-default-route-ecmp"); err != nil {
+		return err
+	} else if ecmp != nil {
+		values["enable_default_route_ecmp"] = *ecmp
+	}
+	routes, err := parseRouterRoutes(flagValues(opts, "route"))
+	if err != nil {
+		return err
+	}
+	if len(routes) > 0 {
+		merged := append([]map[string]string{}, routes...)
+		if !create && !boolFlag(opts, "no-route") && existing != nil {
+			merged = append(merged, routerRouteMaps(existing.Routes)...)
+		}
+		values["routes"] = merged
+	} else if !create && boolFlag(opts, "no-route") {
+		values["routes"] = []map[string]string{}
+	}
+	return nil
+}
+
+func routerApplyGatewayValues(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, values map[string]any) error {
+	gateways := flagValues(opts, "external-gateway")
+	if len(gateways) == 0 {
+		if boolFlag(opts, "enable-snat") || boolFlag(opts, "disable-snat") || len(flagValues(opts, "fixed-ip")) > 0 || flagValue(opts, "qos-policy") != "" || boolFlag(opts, "no-qos-policy") {
+			values["external_gateway_info"] = map[string]any{}
+		}
+	} else {
+		gatewayInfo := map[string]any{"network_id": resolveNetworkID(ctx, client, gateways[0])}
+		values["external_gateway_info"] = gatewayInfo
+	}
+	gatewayInfo, _ := values["external_gateway_info"].(map[string]any)
+	if gatewayInfo == nil {
+		return nil
+	}
+	if snat, err := networkBoolFlag(opts, "enable-snat", "disable-snat"); err != nil {
+		return err
+	} else if snat != nil {
+		gatewayInfo["enable_snat"] = *snat
+	}
+	fixedIPs, err := routerFixedIPs(ctx, client, flagValues(opts, "fixed-ip"))
+	if err != nil {
+		return err
+	}
+	if len(fixedIPs) > 0 {
+		gatewayInfo["external_fixed_ips"] = fixedIPs
+	}
+	if qosPolicy := flagValue(opts, "qos-policy"); qosPolicy != "" {
+		policy, err := findNetworkQoSPolicy(ctx, client, qosPolicy)
+		if err != nil {
+			return err
+		}
+		gatewayInfo["qos_policy_id"] = policy.ID
+	}
+	if boolFlag(opts, "no-qos-policy") {
+		if flagChanged(opts, "qos-policy") {
+			return fmt.Errorf("argument --no-qos-policy: not allowed with argument --qos-policy")
+		}
+		gatewayInfo["qos_policy_id"] = nil
+	}
+	return nil
+}
+
+func routerFixedIPs(ctx context.Context, client *gophercloud.ServiceClient, values []string) ([]map[string]string, error) {
+	entries, err := parseKeyValueEntries(values, "fixed-ip")
+	if err != nil {
+		return nil, err
+	}
+	for _, entry := range entries {
+		if subnetNameOrID := entry["subnet"]; subnetNameOrID != "" {
+			subnet, err := findSubnet(ctx, client, subnetNameOrID)
+			if err != nil {
+				return nil, err
+			}
+			entry["subnet_id"] = subnet.ID
+			delete(entry, "subnet")
+		}
+		if ipAddress := entry["ip-address"]; ipAddress != "" {
+			entry["ip_address"] = ipAddress
+			delete(entry, "ip-address")
+		}
+	}
+	return entries, nil
+}
+
+func parseRouterRoutes(values []string) ([]map[string]string, error) {
+	entries, err := parseKeyValueEntries(values, "route", "destination", "gateway")
+	if err != nil {
+		return nil, err
+	}
+	for _, entry := range entries {
+		entry["nexthop"] = entry["gateway"]
+		delete(entry, "gateway")
+	}
+	return entries, nil
+}
+
+func routerRouteMaps(values []routers.Route) []map[string]string {
+	items := make([]map[string]string, 0, len(values))
+	for _, value := range values {
+		items = append(items, map[string]string{"destination": value.DestinationCIDR, "nexthop": value.NextHop})
+	}
+	return items
+}
+
 func routerList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
 	listOpts := routers.ListOpts{
 		Name:       flagValue(opts, "name"),
@@ -5238,24 +5588,98 @@ func routerShow(ctx context.Context, stdout io.Writer, opts *Options, client *go
 	if err != nil {
 		return err
 	}
-	return renderShowOutput(stdout, opts, []outputField{
+	interfaces := routerInterfacesInfo(ctx, client, item.ID)
+	if raw, err := neutronRouterRaw(ctx, client, item.ID); err == nil {
+		return renderShowOutput(stdout, opts, routerRawFields(raw, interfaces))
+	}
+	return renderShowOutput(stdout, opts, routerFields(item, interfaces))
+}
+
+func neutronRouterRaw(ctx context.Context, client *gophercloud.ServiceClient, id string) (map[string]any, error) {
+	var body struct {
+		Router map[string]any `json:"router"`
+	}
+	resp, err := client.Get(ctx, client.ServiceURL("routers", url.PathEscape(id)), &body, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return nil, err
+	}
+	return body.Router, nil
+}
+
+func routerRawFromBody(body any) (map[string]any, bool) {
+	var wrapper struct {
+		Router map[string]any `json:"router"`
+	}
+	encoded, err := json.Marshal(body)
+	if err != nil {
+		return nil, false
+	}
+	if err := json.Unmarshal(encoded, &wrapper); err != nil {
+		return nil, false
+	}
+	if wrapper.Router == nil {
+		return nil, false
+	}
+	return wrapper.Router, true
+}
+
+func routerRawFields(raw map[string]any, interfaces []map[string]string) []outputField {
+	fields := []outputField{
+		{"admin_state_up", raw["admin_state_up"]},
+		{"availability_zone_hints", raw["availability_zone_hints"]},
+		{"availability_zones", raw["availability_zones"]},
+		{"created_at", raw["created_at"]},
+		{"description", raw["description"]},
+		{"distributed", raw["distributed"]},
+		{"enable_ndp_proxy", raw["enable_ndp_proxy"]},
+		{"external_gateway_info", raw["external_gateway_info"]},
+		{"flavor_id", raw["flavor_id"]},
+		{"ha", raw["ha"]},
+		{"id", raw["id"]},
+	}
+	if interfaces != nil {
+		fields = append(fields, outputField{"interfaces_info", interfaces})
+	}
+	fields = append(fields,
+		outputField{"name", raw["name"]},
+		outputField{"project_id", firstPresent(raw, "project_id", "tenant_id")},
+		outputField{"revision_number", rawNumber(raw["revision_number"])},
+		outputField{"routes", raw["routes"]},
+		outputField{"status", raw["status"]},
+		outputField{"tags", raw["tags"]},
+		outputField{"updated_at", raw["updated_at"]},
+	)
+	return fields
+}
+
+func routerFields(item *routers.Router, interfaces []map[string]string) []outputField {
+	fields := []outputField{
 		{"admin_state_up", item.AdminStateUp},
 		{"availability_zone_hints", item.AvailabilityZoneHints},
+		{"availability_zones", nil},
 		{"created_at", oscTime(item.CreatedAt)},
 		{"description", item.Description},
 		{"distributed", item.Distributed},
+		{"enable_ndp_proxy", nil},
 		{"external_gateway_info", item.GatewayInfo},
-		{"ha", false},
+		{"flavor_id", nil},
+		{"ha", nil},
 		{"id", item.ID},
-		{"interfaces_info", routerInterfacesInfo(ctx, client, item.ID)},
-		{"name", item.Name},
-		{"project_id", item.ProjectID},
-		{"revision_number", item.RevisionNumber},
-		{"routes", item.Routes},
-		{"status", item.Status},
-		{"tags", item.Tags},
-		{"updated_at", oscTime(item.UpdatedAt)},
-	})
+	}
+	if interfaces != nil {
+		fields = append(fields, outputField{"interfaces_info", interfaces})
+	}
+	fields = append(fields,
+		outputField{"name", item.Name},
+		outputField{"project_id", firstNonEmpty(item.ProjectID, item.TenantID)},
+		outputField{"revision_number", item.RevisionNumber},
+		outputField{"routes", routerRouteMaps(item.Routes)},
+		outputField{"status", item.Status},
+		outputField{"tags", item.Tags},
+		outputField{"updated_at", oscTime(item.UpdatedAt)},
+	)
+	return fields
 }
 
 func routerInterfacesInfo(ctx context.Context, client *gophercloud.ServiceClient, routerID string) []map[string]string {
@@ -5267,7 +5691,7 @@ func routerInterfacesInfo(ctx context.Context, client *gophercloud.ServiceClient
 	if err != nil {
 		return nil
 	}
-	var rows []map[string]string
+	rows := []map[string]string{}
 	for _, port := range items {
 		if port.DeviceOwner == "network:router_gateway" {
 			continue

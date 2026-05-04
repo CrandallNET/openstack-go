@@ -922,3 +922,17 @@ Sources consulted:
 * Local OSC oracle snapshots in `compat/osc/9.0.0/help/subnet/create.txt`, `compat/osc/9.0.0/help/subnet/delete.txt`, `compat/osc/9.0.0/help/subnet/set.txt`, and `compat/osc/9.0.0/help/subnet/unset.txt`.
 * Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/network/v2/subnet.py`, used only as the pinned local oracle implementation source.
 * Gophercloud package docs for [Neutron subnets](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/subnets).
+
+## 2026-05-04: Router Lifecycle Commands
+
+Work done: added `router create`, `router delete`, `router set`, and `router unset`, and tightened `router show` output.
+
+Implementation note: router create/update/delete uses Gophercloud's Neutron router helpers with custom request builders for OSC extension fields. The implementation covers admin state, distributed and HA flags, description, project ownership, availability-zone hints, tags, route mutation, external gateway body fields, SNAT, NDP proxy, QoS policy references, default-route BFD/ECMP flags, flavor ID passthrough, and extra properties. Raw show output follows Python OSC field order and adds `interfaces_info` for show output, including an empty list when no router interfaces exist.
+
+Live observations on `cloud6`: Python OSC created, showed, and deleted `gocli-test-router-python-probe-20260504` to confirm output field order. The Go CLI created router `gocli-test-router-go-20260504` with `--disable`, description, and tag, showed it, renamed it to `gocli-test-router-go-renamed-20260504`, enabled it, updated the description, overwrote then removed its tag, deleted it, and verified both disposable names returned empty lists after cleanup. A second short Go create/show/delete check with `gocli-test-router-interfaces-20260504` verified that `router show -f json` emits `interfaces_info: []` for routers without interfaces.
+
+Sources consulted:
+
+* Local OSC oracle snapshots in `compat/osc/9.0.0/help/router/create.txt`, `compat/osc/9.0.0/help/router/delete.txt`, `compat/osc/9.0.0/help/router/set.txt`, and `compat/osc/9.0.0/help/router/unset.txt`.
+* Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/network/v2/router.py`, used only as the pinned local oracle implementation source.
+* Gophercloud package docs for [Neutron routers](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/routers).

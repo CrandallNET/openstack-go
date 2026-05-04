@@ -118,7 +118,7 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"resource provider list", "resource provider show",
 		"resource provider trait list",
 		"resource provider usage show",
-		"router list", "router show",
+		"router create", "router delete", "router list", "router set", "router show", "router unset",
 		"security group create", "security group delete", "security group list", "security group set", "security group show", "security group unset",
 		"security group rule create", "security group rule delete", "security group rule list", "security group rule show",
 		"server event list", "server event show",
@@ -815,6 +815,65 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().String("project-domain", "", "project domain")
 		cmd.Flags().String("agent", "", "filter by agent")
 		addTagFilterFlags(cmd)
+	case "router create":
+		cmd.Flags().StringArray("extra-property", nil, "additional property type=<type>,name=<name>,value=<value>")
+		cmd.Flags().Bool("enable", true, "enable router")
+		cmd.Flags().Bool("disable", false, "disable router")
+		cmd.Flags().Bool("distributed", false, "distributed router")
+		cmd.Flags().Bool("centralized", false, "centralized router")
+		cmd.Flags().Bool("ha", false, "high availability router")
+		cmd.Flags().Bool("no-ha", false, "legacy router")
+		cmd.Flags().String("description", "", "router description")
+		cmd.Flags().String("project", "", "owner project")
+		cmd.Flags().String("project-domain", "", "project domain")
+		cmd.Flags().StringArray("availability-zone-hint", nil, "availability zone hint")
+		cmd.Flags().StringArray("tag", nil, "router tag")
+		cmd.Flags().Bool("no-tag", false, "create without tags")
+		cmd.Flags().StringArray("external-gateway", nil, "external gateway network")
+		cmd.Flags().StringArray("fixed-ip", nil, "gateway fixed IP")
+		cmd.Flags().Bool("enable-snat", false, "enable SNAT")
+		cmd.Flags().Bool("disable-snat", false, "disable SNAT")
+		cmd.Flags().Bool("enable-ndp-proxy", false, "enable NDP proxy")
+		cmd.Flags().Bool("disable-ndp-proxy", false, "disable NDP proxy")
+		cmd.Flags().String("flavor", "", "router flavor")
+		cmd.Flags().Bool("enable-default-route-bfd", false, "enable default route BFD")
+		cmd.Flags().Bool("disable-default-route-bfd", false, "disable default route BFD")
+		cmd.Flags().Bool("enable-default-route-ecmp", false, "enable default route ECMP")
+		cmd.Flags().Bool("disable-default-route-ecmp", false, "disable default route ECMP")
+		cmd.Flags().String("qos-policy", "", "QoS policy")
+	case "router set":
+		cmd.Flags().StringArray("extra-property", nil, "additional property type=<type>,name=<name>,value=<value>")
+		cmd.Flags().String("name", "", "new router name")
+		cmd.Flags().String("description", "", "router description")
+		cmd.Flags().Bool("enable", false, "enable router")
+		cmd.Flags().Bool("disable", false, "disable router")
+		cmd.Flags().Bool("distributed", false, "distributed router")
+		cmd.Flags().Bool("centralized", false, "centralized router")
+		cmd.Flags().StringArray("route", nil, "route destination=<cidr>,gateway=<ip>")
+		cmd.Flags().Bool("no-route", false, "clear routes")
+		cmd.Flags().Bool("ha", false, "high availability router")
+		cmd.Flags().Bool("no-ha", false, "legacy router")
+		cmd.Flags().StringArray("external-gateway", nil, "external gateway network")
+		cmd.Flags().StringArray("fixed-ip", nil, "gateway fixed IP")
+		cmd.Flags().Bool("enable-snat", false, "enable SNAT")
+		cmd.Flags().Bool("disable-snat", false, "disable SNAT")
+		cmd.Flags().Bool("enable-ndp-proxy", false, "enable NDP proxy")
+		cmd.Flags().Bool("disable-ndp-proxy", false, "disable NDP proxy")
+		cmd.Flags().String("qos-policy", "", "QoS policy")
+		cmd.Flags().Bool("no-qos-policy", false, "remove QoS policy")
+		cmd.Flags().StringArray("tag", nil, "router tag")
+		cmd.Flags().Bool("no-tag", false, "clear tags before applying tags")
+		cmd.Flags().Bool("enable-default-route-bfd", false, "enable default route BFD")
+		cmd.Flags().Bool("disable-default-route-bfd", false, "disable default route BFD")
+		cmd.Flags().Bool("enable-default-route-ecmp", false, "enable default route ECMP")
+		cmd.Flags().Bool("disable-default-route-ecmp", false, "disable default route ECMP")
+	case "router unset":
+		cmd.Flags().StringArray("extra-property", nil, "additional property type=<type>,name=<name>,value=<value>")
+		cmd.Flags().StringArray("route", nil, "route destination=<cidr>,gateway=<ip>")
+		cmd.Flags().Bool("external-gateway", false, "remove external gateway")
+		cmd.Flags().Bool("qos-policy", false, "remove QoS policy")
+		cmd.Flags().StringArray("tag", nil, "router tag")
+		cmd.Flags().Bool("all-tag", false, "clear all tags")
 	case "security group create":
 		cmd.Flags().StringArray("extra-property", nil, "additional property type=<type>,name=<name>,value=<value>")
 		cmd.Flags().String("description", "", "security group description")
@@ -1105,7 +1164,7 @@ func isCoreReadCommand(path string) bool {
 		"resource provider list", "resource provider show",
 		"resource provider trait list",
 		"resource provider usage show",
-		"router list", "router show",
+		"router create", "router delete", "router list", "router set", "router show", "router unset",
 		"security group create", "security group delete", "security group list", "security group set", "security group show", "security group unset",
 		"security group rule create", "security group rule delete", "security group rule list", "security group rule show",
 		"server event list", "server event show",
