@@ -382,6 +382,81 @@ func TestFloatingIPPortForwardingPortRangeValidation(t *testing.T) {
 	}
 }
 
+func TestNetworkQoSRuleParameterValidation(t *testing.T) {
+	cases := []struct {
+		name    string
+		flags   map[string]string
+		want    map[string]any
+		wantErr string
+	}{
+		{
+			name:  "bandwidth limit",
+			flags: map[string]string{"type": "bandwidth-limit", "max-kbps": "1000", "max-burst-kbits": "80", "egress": "true"},
+			want:  map[string]any{"max_kbps": 1000, "max_burst_kbps": 80, "direction": "egress"},
+		},
+		{
+			name:    "minimum bandwidth requires direction",
+			flags:   map[string]string{"type": "minimum-bandwidth", "min-kbps": "1000"},
+			wantErr: "\"Create\" rule command for type \"minimum-bandwidth\" requires arguments: direction, min_kbps",
+		},
+		{
+			name:  "minimum packet allows any direction",
+			flags: map[string]string{"type": "minimum-packet-rate", "min-kpps": "25", "any": "true"},
+			want:  map[string]any{"min_kpps": 25, "direction": "any"},
+		},
+		{
+			name:    "any direction is minimum packet only",
+			flags:   map[string]string{"type": "bandwidth-limit", "max-kbps": "1000", "any": "true"},
+			wantErr: "Direction \"any\" can only be used with minimum-packet-rate rule type",
+		},
+		{
+			name:    "reject other rule mandatory parameter",
+			flags:   map[string]string{"type": "dscp-marking", "dscp-mark": "8", "max-kbps": "1000"},
+			wantErr: "Rule type \"dscp-marking\" only requires arguments: dscp_mark",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			opts := &Options{CommandFlags: tc.flags}
+			ruleType, values, err := networkQoSRuleCreateValues(opts)
+			if tc.wantErr != "" {
+				if err == nil || err.Error() != tc.wantErr {
+					t.Fatalf("error mismatch: got %v want %q", err, tc.wantErr)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("expected no error, got %v", err)
+			}
+			if ruleType != tc.flags["type"] {
+				t.Fatalf("rule type mismatch: got %q want %q", ruleType, tc.flags["type"])
+			}
+			if encoded, _ := json.Marshal(values); string(encoded) != mustJSON(tc.want) {
+				t.Fatalf("values mismatch: got %s want %s", encoded, mustJSON(tc.want))
+			}
+		})
+	}
+}
+
+func TestNetworkQoSRuleRawFieldsMatchOSCOrder(t *testing.T) {
+	fields := networkQoSRuleRawFields(map[string]any{
+		"id":             "rule-id",
+		"max_kbps":       float64(1000),
+		"custom":         "value",
+		"qos_policy_id":  "policy-id",
+		"max_burst_kbps": nil,
+	}, networkQoSRuleBandwidthLimit)
+	var names []string
+	for _, field := range fields {
+		names = append(names, field.Name)
+	}
+	want := []string{"custom", "direction", "id", "max_burst_kbps", "max_kbps"}
+	if strings.Join(names, "|") != strings.Join(want, "|") {
+		t.Fatalf("field order mismatch: got %#v want %#v", names, want)
+	}
+}
+
 func TestTokenIssueUsesInjectedIssuer(t *testing.T) {
 	previous := issueToken
 	issueToken = func(ctx context.Context, opts *Options) (tokenIssueRow, error) {

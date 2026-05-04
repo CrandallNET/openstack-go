@@ -53,6 +53,7 @@ import (
 	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/routers"
 	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/networkipavailabilities"
 	qospolicies "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/qos/policies"
+	qosrules "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/qos/rules"
 	qosruletypes "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/qos/ruletypes"
 	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/rbacpolicies"
 	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/security/addressgroups"
@@ -723,6 +724,36 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return networkQoSPolicyShow(cmd.Context(), stdout, opts, client, args)
+		case "network qos rule create":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return networkQoSRuleCreate(cmd.Context(), stdout, opts, client, args)
+		case "network qos rule delete":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return networkQoSRuleDelete(cmd.Context(), client, args)
+		case "network qos rule list":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return networkQoSRuleList(cmd.Context(), stdout, opts, client, args)
+		case "network qos rule set":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return networkQoSRuleSet(cmd.Context(), opts, client, args)
+		case "network qos rule show":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return networkQoSRuleShow(cmd.Context(), stdout, opts, client, args)
 		case "network qos rule type list":
 			client, err := clients.networkV2()
 			if err != nil {
@@ -5786,6 +5817,511 @@ func networkQoSPolicyFields(item *qospolicies.Policy) []outputField {
 		{"tags", item.Tags},
 		{"updated_at", oscTime(item.UpdatedAt)},
 	}
+}
+
+const (
+	networkQoSRuleBandwidthLimit      = "bandwidth-limit"
+	networkQoSRuleDSCPMarking         = "dscp-marking"
+	networkQoSRuleMinimumBandwidth    = "minimum-bandwidth"
+	networkQoSRuleMinimumPacketRate   = "minimum-packet-rate"
+	networkQoSRuleBandwidthLimitKey   = "bandwidth_limit_rule"
+	networkQoSRuleDSCPMarkingKey      = "dscp_marking_rule"
+	networkQoSRuleMinimumBandwidthKey = "minimum_bandwidth_rule"
+	networkQoSRuleMinimumPacketKey    = "minimum_packet_rate_rule"
+)
+
+type networkQoSRuleOpts struct {
+	Values map[string]any
+}
+
+func (opts networkQoSRuleOpts) ToBandwidthLimitRuleCreateMap() (map[string]any, error) {
+	return map[string]any{networkQoSRuleBandwidthLimitKey: opts.Values}, nil
+}
+
+func (opts networkQoSRuleOpts) ToBandwidthLimitRuleUpdateMap() (map[string]any, error) {
+	return map[string]any{networkQoSRuleBandwidthLimitKey: opts.Values}, nil
+}
+
+func (opts networkQoSRuleOpts) ToDSCPMarkingRuleCreateMap() (map[string]any, error) {
+	return map[string]any{networkQoSRuleDSCPMarkingKey: opts.Values}, nil
+}
+
+func (opts networkQoSRuleOpts) ToDSCPMarkingRuleUpdateMap() (map[string]any, error) {
+	return map[string]any{networkQoSRuleDSCPMarkingKey: opts.Values}, nil
+}
+
+func (opts networkQoSRuleOpts) ToMinimumBandwidthRuleCreateMap() (map[string]any, error) {
+	return map[string]any{networkQoSRuleMinimumBandwidthKey: opts.Values}, nil
+}
+
+func (opts networkQoSRuleOpts) ToMinimumBandwidthRuleUpdateMap() (map[string]any, error) {
+	return map[string]any{networkQoSRuleMinimumBandwidthKey: opts.Values}, nil
+}
+
+func networkQoSRuleCreate(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("network qos rule create requires <qos-policy>")
+	}
+	ruleType, values, err := networkQoSRuleCreateValues(opts)
+	if err != nil {
+		return err
+	}
+	policy, err := findNetworkQoSPolicy(ctx, client, args[0])
+	if err != nil {
+		return fmt.Errorf("Failed to create Network QoS rule: %w", err)
+	}
+	raw, err := networkQoSRuleCreateRaw(ctx, client, policy.ID, ruleType, values)
+	if err != nil {
+		return fmt.Errorf("Failed to create Network QoS rule: %w", err)
+	}
+	return renderShowOutput(stdout, opts, networkQoSRuleRawFields(raw, ruleType))
+}
+
+func networkQoSRuleDelete(ctx context.Context, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("network qos rule delete requires <qos-policy> <rule-id>")
+	}
+	policy, err := findNetworkQoSPolicy(ctx, client, args[0])
+	if err != nil {
+		return fmt.Errorf("Failed to delete Network QoS rule ID %q: %w", args[1], err)
+	}
+	ruleType, err := networkQoSRuleTypeFromPolicy(policy, args[1])
+	if err != nil {
+		return fmt.Errorf("Failed to delete Network QoS rule ID %q: %w", args[1], err)
+	}
+	if err := networkQoSRuleDeleteRaw(ctx, client, policy.ID, args[1], ruleType); err != nil {
+		return fmt.Errorf("Failed to delete Network QoS rule ID %q: %w", args[1], err)
+	}
+	return nil
+}
+
+func networkQoSRuleList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("network qos rule list requires <qos-policy>")
+	}
+	policy, err := findNetworkQoSPolicy(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	rows := make([]outputRow, 0, len(policy.Rules))
+	for _, item := range policy.Rules {
+		rows = append(rows, outputRow{
+			"ID":              item["id"],
+			"QoS Policy ID":   policy.ID,
+			"Type":            item["type"],
+			"Max Kbps":        rawNumber(item["max_kbps"]),
+			"Max Burst Kbits": rawNumber(item["max_burst_kbps"]),
+			"Min Kbps":        rawNumber(item["min_kbps"]),
+			"Min Kpps":        rawNumber(item["min_kpps"]),
+			"DSCP mark":       rawNumber(item["dscp_mark"]),
+			"Direction":       item["direction"],
+		})
+	}
+	return renderListOutput(stdout, opts, []string{"ID", "QoS Policy ID", "Type", "Max Kbps", "Max Burst Kbits", "Min Kbps", "Min Kpps", "DSCP mark", "Direction"}, rows)
+}
+
+func networkQoSRuleSet(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("network qos rule set requires <qos-policy> <rule-id>")
+	}
+	policy, err := findNetworkQoSPolicy(ctx, client, args[0])
+	if err != nil {
+		return fmt.Errorf("Failed to set Network QoS rule ID %q: %w", args[1], err)
+	}
+	ruleType, err := networkQoSRuleTypeFromPolicy(policy, args[1])
+	if err != nil {
+		return fmt.Errorf("Failed to set Network QoS rule ID %q: %w", args[1], err)
+	}
+	values, err := networkQoSRuleValues(opts, ruleType, false)
+	if err != nil {
+		return fmt.Errorf("Failed to set Network QoS rule ID %q: %w", args[1], err)
+	}
+	if len(values) == 0 {
+		return nil
+	}
+	if _, err := networkQoSRuleUpdateRaw(ctx, client, policy.ID, args[1], ruleType, values); err != nil {
+		return fmt.Errorf("Failed to set Network QoS rule ID %q: %w", args[1], err)
+	}
+	return nil
+}
+
+func networkQoSRuleShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("network qos rule show requires <qos-policy> <rule-id>")
+	}
+	policy, err := findNetworkQoSPolicy(ctx, client, args[0])
+	if err != nil {
+		return fmt.Errorf("Failed to show Network QoS rule ID %q: %w", args[1], err)
+	}
+	ruleType, err := networkQoSRuleTypeFromPolicy(policy, args[1])
+	if err != nil {
+		return fmt.Errorf("Failed to show Network QoS rule ID %q: %w", args[1], err)
+	}
+	raw, err := networkQoSRuleGetRaw(ctx, client, policy.ID, args[1], ruleType)
+	if err != nil {
+		return fmt.Errorf("Failed to show Network QoS rule ID %q: %w", args[1], err)
+	}
+	return renderShowOutput(stdout, opts, networkQoSRuleRawFields(raw, ruleType))
+}
+
+func networkQoSRuleCreateValues(opts *Options) (string, map[string]any, error) {
+	if !flagChanged(opts, "type") || strings.TrimSpace(flagValue(opts, "type")) == "" {
+		return "", nil, fmt.Errorf("the following arguments are required: --type")
+	}
+	ruleType := strings.TrimSpace(flagValue(opts, "type"))
+	if !networkQoSRuleTypeValid(ruleType) {
+		return "", nil, fmt.Errorf("invalid choice: %q (choose from 'minimum-bandwidth', 'minimum-packet-rate', 'dscp-marking', 'bandwidth-limit')", ruleType)
+	}
+	values, err := networkQoSRuleValues(opts, ruleType, true)
+	return ruleType, values, err
+}
+
+func networkQoSRuleValues(opts *Options, ruleType string, isCreate bool) (map[string]any, error) {
+	if err := validateNetworkQoSRuleDirection(opts, ruleType); err != nil {
+		return nil, err
+	}
+	values := map[string]any{}
+	if flagChanged(opts, "max-kbps") {
+		values["max_kbps"] = intFlag(opts, "max-kbps")
+	}
+	if flagChanged(opts, "max-burst-kbits") {
+		values["max_burst_kbps"] = intFlag(opts, "max-burst-kbits")
+	}
+	if flagChanged(opts, "dscp-mark") {
+		values["dscp_mark"] = intFlag(opts, "dscp-mark")
+	}
+	if flagChanged(opts, "min-kbps") {
+		values["min_kbps"] = intFlag(opts, "min-kbps")
+	}
+	if flagChanged(opts, "min-kpps") {
+		values["min_kpps"] = intFlag(opts, "min-kpps")
+	}
+	if boolFlag(opts, "ingress") {
+		values["direction"] = "ingress"
+	}
+	if boolFlag(opts, "egress") {
+		values["direction"] = "egress"
+	}
+	if boolFlag(opts, "any") {
+		values["direction"] = "any"
+	}
+	if err := checkNetworkQoSRuleTypeParameters(values, ruleType, isCreate); err != nil {
+		return nil, err
+	}
+	extra, err := parseExtraProperties(flagValues(opts, "extra-property"))
+	if err != nil {
+		return nil, err
+	}
+	for key, value := range extra {
+		values[key] = value
+	}
+	return values, nil
+}
+
+func validateNetworkQoSRuleDirection(opts *Options, ruleType string) error {
+	var directions []string
+	for _, name := range []string{"ingress", "egress", "any"} {
+		if boolFlag(opts, name) {
+			directions = append(directions, name)
+		}
+	}
+	if len(directions) > 1 {
+		return fmt.Errorf("argument --%s: not allowed with argument --%s", directions[1], directions[0])
+	}
+	if boolFlag(opts, "any") && ruleType != networkQoSRuleMinimumPacketRate {
+		return fmt.Errorf("Direction \"any\" can only be used with %s rule type", networkQoSRuleMinimumPacketRate)
+	}
+	return nil
+}
+
+func checkNetworkQoSRuleTypeParameters(values map[string]any, ruleType string, isCreate bool) error {
+	required := networkQoSRuleMandatoryParameters(ruleType)
+	if isCreate {
+		var missing []string
+		for _, name := range required {
+			if _, ok := values[name]; !ok {
+				missing = append(missing, name)
+			}
+		}
+		if len(missing) > 0 {
+			sort.Strings(required)
+			return fmt.Errorf("\"Create\" rule command for type %q requires arguments: %s", ruleType, strings.Join(required, ", "))
+		}
+	}
+	typeParams := map[string]bool{}
+	for _, name := range append(networkQoSRuleMandatoryParameters(ruleType), networkQoSRuleOptionalParameters(ruleType)...) {
+		typeParams[name] = true
+	}
+	for _, otherType := range []string{networkQoSRuleMinimumBandwidth, networkQoSRuleMinimumPacketRate, networkQoSRuleDSCPMarking, networkQoSRuleBandwidthLimit} {
+		if otherType == ruleType {
+			continue
+		}
+		for _, name := range networkQoSRuleMandatoryParameters(otherType) {
+			if typeParams[name] {
+				continue
+			}
+			if _, ok := values[name]; ok {
+				allowed := make([]string, 0, len(typeParams))
+				for allowedName := range typeParams {
+					allowed = append(allowed, allowedName)
+				}
+				sort.Strings(allowed)
+				return fmt.Errorf("Rule type %q only requires arguments: %s", ruleType, strings.Join(allowed, ", "))
+			}
+		}
+	}
+	return nil
+}
+
+func networkQoSRuleMandatoryParameters(ruleType string) []string {
+	switch ruleType {
+	case networkQoSRuleMinimumBandwidth:
+		return []string{"min_kbps", "direction"}
+	case networkQoSRuleMinimumPacketRate:
+		return []string{"min_kpps", "direction"}
+	case networkQoSRuleDSCPMarking:
+		return []string{"dscp_mark"}
+	case networkQoSRuleBandwidthLimit:
+		return []string{"max_kbps"}
+	default:
+		return nil
+	}
+}
+
+func networkQoSRuleOptionalParameters(ruleType string) []string {
+	switch ruleType {
+	case networkQoSRuleBandwidthLimit:
+		return []string{"direction", "max_burst_kbps"}
+	default:
+		return nil
+	}
+}
+
+func networkQoSRuleTypeValid(ruleType string) bool {
+	switch ruleType {
+	case networkQoSRuleMinimumBandwidth, networkQoSRuleMinimumPacketRate, networkQoSRuleDSCPMarking, networkQoSRuleBandwidthLimit:
+		return true
+	default:
+		return false
+	}
+}
+
+func networkQoSRuleTypeFromPolicy(policy *qospolicies.Policy, ruleID string) (string, error) {
+	for _, rule := range policy.Rules {
+		if fmt.Sprint(rule["id"]) != ruleID {
+			continue
+		}
+		ruleType := strings.ReplaceAll(fmt.Sprint(rule["type"]), "_", "-")
+		if !networkQoSRuleTypeValid(ruleType) {
+			return "", fmt.Errorf("unsupported QoS rule type %q", rule["type"])
+		}
+		return ruleType, nil
+	}
+	return "", fmt.Errorf("Rule ID %s not found", ruleID)
+}
+
+func networkQoSRuleCreateRaw(ctx context.Context, client *gophercloud.ServiceClient, policyID string, ruleType string, values map[string]any) (map[string]any, error) {
+	opts := networkQoSRuleOpts{Values: values}
+	switch ruleType {
+	case networkQoSRuleBandwidthLimit:
+		result := qosrules.CreateBandwidthLimitRule(ctx, client, policyID, opts)
+		if result.Err != nil {
+			return nil, result.Err
+		}
+		return networkQoSRuleRawFromBody(result.Body, networkQoSRuleBandwidthLimitKey)
+	case networkQoSRuleDSCPMarking:
+		result := qosrules.CreateDSCPMarkingRule(ctx, client, policyID, opts)
+		if result.Err != nil {
+			return nil, result.Err
+		}
+		return networkQoSRuleRawFromBody(result.Body, networkQoSRuleDSCPMarkingKey)
+	case networkQoSRuleMinimumBandwidth:
+		result := qosrules.CreateMinimumBandwidthRule(ctx, client, policyID, opts)
+		if result.Err != nil {
+			return nil, result.Err
+		}
+		return networkQoSRuleRawFromBody(result.Body, networkQoSRuleMinimumBandwidthKey)
+	case networkQoSRuleMinimumPacketRate:
+		return networkQoSRuleRESTMutate(ctx, client, http.MethodPost, policyID, "", ruleType, values, 201)
+	default:
+		return nil, fmt.Errorf("unsupported QoS rule type %q", ruleType)
+	}
+}
+
+func networkQoSRuleGetRaw(ctx context.Context, client *gophercloud.ServiceClient, policyID string, ruleID string, ruleType string) (map[string]any, error) {
+	resourceKey, _, ok := networkQoSRuleResourceKeys(ruleType)
+	if !ok {
+		return nil, fmt.Errorf("unsupported QoS rule type %q", ruleType)
+	}
+	var body map[string]any
+	resp, err := client.Get(ctx, networkQoSRuleURL(client, policyID, ruleID, ruleType), &body, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return nil, err
+	}
+	return networkQoSRuleRawFromBody(body, resourceKey)
+}
+
+func networkQoSRuleUpdateRaw(ctx context.Context, client *gophercloud.ServiceClient, policyID string, ruleID string, ruleType string, values map[string]any) (map[string]any, error) {
+	opts := networkQoSRuleOpts{Values: values}
+	switch ruleType {
+	case networkQoSRuleBandwidthLimit:
+		result := qosrules.UpdateBandwidthLimitRule(ctx, client, policyID, ruleID, opts)
+		if result.Err != nil {
+			return nil, result.Err
+		}
+		return networkQoSRuleRawFromBody(result.Body, networkQoSRuleBandwidthLimitKey)
+	case networkQoSRuleDSCPMarking:
+		result := qosrules.UpdateDSCPMarkingRule(ctx, client, policyID, ruleID, opts)
+		if result.Err != nil {
+			return nil, result.Err
+		}
+		return networkQoSRuleRawFromBody(result.Body, networkQoSRuleDSCPMarkingKey)
+	case networkQoSRuleMinimumBandwidth:
+		result := qosrules.UpdateMinimumBandwidthRule(ctx, client, policyID, ruleID, opts)
+		if result.Err != nil {
+			return nil, result.Err
+		}
+		return networkQoSRuleRawFromBody(result.Body, networkQoSRuleMinimumBandwidthKey)
+	case networkQoSRuleMinimumPacketRate:
+		return networkQoSRuleRESTMutate(ctx, client, http.MethodPut, policyID, ruleID, ruleType, values, 200)
+	default:
+		return nil, fmt.Errorf("unsupported QoS rule type %q", ruleType)
+	}
+}
+
+func networkQoSRuleDeleteRaw(ctx context.Context, client *gophercloud.ServiceClient, policyID string, ruleID string, ruleType string) error {
+	switch ruleType {
+	case networkQoSRuleBandwidthLimit:
+		return qosrules.DeleteBandwidthLimitRule(ctx, client, policyID, ruleID).ExtractErr()
+	case networkQoSRuleDSCPMarking:
+		return qosrules.DeleteDSCPMarkingRule(ctx, client, policyID, ruleID).ExtractErr()
+	case networkQoSRuleMinimumBandwidth:
+		return qosrules.DeleteMinimumBandwidthRule(ctx, client, policyID, ruleID).ExtractErr()
+	case networkQoSRuleMinimumPacketRate:
+		resp, err := client.Delete(ctx, networkQoSRuleURL(client, policyID, ruleID, ruleType), nil)
+		_, _, err = gophercloud.ParseResponse(resp, err)
+		return err
+	default:
+		return fmt.Errorf("unsupported QoS rule type %q", ruleType)
+	}
+}
+
+func networkQoSRuleRESTMutate(ctx context.Context, client *gophercloud.ServiceClient, method string, policyID string, ruleID string, ruleType string, values map[string]any, okCode int) (map[string]any, error) {
+	resourceKey, _, ok := networkQoSRuleResourceKeys(ruleType)
+	if !ok {
+		return nil, fmt.Errorf("unsupported QoS rule type %q", ruleType)
+	}
+	requestBody := map[string]any{resourceKey: values}
+	var responseBody map[string]any
+	requestURL := networkQoSRuleURL(client, policyID, ruleID, ruleType)
+	requestOpts := &gophercloud.RequestOpts{OkCodes: []int{okCode}}
+	var resp *http.Response
+	var err error
+	switch method {
+	case http.MethodPost:
+		resp, err = client.Post(ctx, requestURL, requestBody, &responseBody, requestOpts)
+	case http.MethodPut:
+		resp, err = client.Put(ctx, requestURL, requestBody, &responseBody, requestOpts)
+	default:
+		return nil, fmt.Errorf("unsupported QoS rule method %q", method)
+	}
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return nil, err
+	}
+	return networkQoSRuleRawFromBody(responseBody, resourceKey)
+}
+
+func networkQoSRuleRawFromBody(body any, resourceKey string) (map[string]any, error) {
+	var wrapper map[string]map[string]any
+	encoded, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	if err := json.Unmarshal(encoded, &wrapper); err != nil {
+		return nil, err
+	}
+	raw := wrapper[resourceKey]
+	if raw == nil {
+		return nil, fmt.Errorf("missing %s response body", resourceKey)
+	}
+	return raw, nil
+}
+
+func networkQoSRuleRawFields(raw map[string]any, ruleType string) []outputField {
+	hidden := map[string]bool{
+		"location":      true,
+		"name":          true,
+		"qos_policy_id": true,
+		"tenant_id":     true,
+	}
+	namesByKey := map[string]bool{}
+	for _, name := range networkQoSRuleBaseFieldNames(ruleType) {
+		namesByKey[name] = true
+	}
+	for name := range raw {
+		if !hidden[name] {
+			namesByKey[name] = true
+		}
+	}
+	names := make([]string, 0, len(namesByKey))
+	for name := range namesByKey {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	fields := make([]outputField, 0, len(names))
+	for _, name := range names {
+		fields = append(fields, outputField{name, networkQoSRuleRawValue(name, raw[name])})
+	}
+	return fields
+}
+
+func networkQoSRuleBaseFieldNames(ruleType string) []string {
+	switch ruleType {
+	case networkQoSRuleBandwidthLimit:
+		return []string{"direction", "id", "max_burst_kbps", "max_kbps"}
+	case networkQoSRuleDSCPMarking:
+		return []string{"dscp_mark", "id"}
+	case networkQoSRuleMinimumBandwidth:
+		return []string{"direction", "id", "min_kbps"}
+	case networkQoSRuleMinimumPacketRate:
+		return []string{"direction", "id", "min_kpps"}
+	default:
+		return []string{"id"}
+	}
+}
+
+func networkQoSRuleRawValue(name string, value any) any {
+	switch name {
+	case "dscp_mark", "max_burst_kbps", "max_kbps", "min_kbps", "min_kpps":
+		return rawNumber(value)
+	default:
+		return value
+	}
+}
+
+func networkQoSRuleResourceKeys(ruleType string) (string, string, bool) {
+	switch ruleType {
+	case networkQoSRuleBandwidthLimit:
+		return networkQoSRuleBandwidthLimitKey, "bandwidth_limit_rules", true
+	case networkQoSRuleDSCPMarking:
+		return networkQoSRuleDSCPMarkingKey, "dscp_marking_rules", true
+	case networkQoSRuleMinimumBandwidth:
+		return networkQoSRuleMinimumBandwidthKey, "minimum_bandwidth_rules", true
+	case networkQoSRuleMinimumPacketRate:
+		return networkQoSRuleMinimumPacketKey, "minimum_packet_rate_rules", true
+	default:
+		return "", "", false
+	}
+}
+
+func networkQoSRuleURL(client *gophercloud.ServiceClient, policyID string, ruleID string, ruleType string) string {
+	_, resourcesKey, _ := networkQoSRuleResourceKeys(ruleType)
+	if ruleID == "" {
+		return client.ServiceURL("qos/policies", policyID, resourcesKey)
+	}
+	return client.ServiceURL("qos/policies", policyID, resourcesKey, ruleID)
 }
 
 func networkQoSRuleTypeList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {

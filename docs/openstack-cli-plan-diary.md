@@ -1039,3 +1039,18 @@ Sources consulted:
 * Local OSC oracle snapshots in `compat/osc/9.0.0/help/network/rbac/create.txt`, `compat/osc/9.0.0/help/network/rbac/delete.txt`, and `compat/osc/9.0.0/help/network/rbac/set.txt`.
 * Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/network/v2/network_rbac.py`, used only as the pinned local oracle implementation source.
 * Gophercloud package docs for [Neutron RBAC policies](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/rbacpolicies).
+
+## 2026-05-04: Network QoS Rule Commands
+
+Work done: added `network qos rule create`, `network qos rule delete`, `network qos rule list`, `network qos rule set`, and `network qos rule show`.
+
+Implementation note: QoS rule create/update/delete uses Gophercloud's QoS rule package for `bandwidth-limit`, `dscp-marking`, and `minimum-bandwidth`. Gophercloud v2.12.0 does not expose a typed `minimum-packet-rate` rule helper in the local module source, so that subtype uses a narrow authenticated Neutron request against `/qos/policies/{policy_id}/minimum_packet_rate_rules`. The OSC argument rules are mirrored from Python OSC: create requires the subtype's mandatory parameters, `--max-burst-kbits` is sent to Neutron as `max_burst_kbps`, `--any` is accepted only for `minimum-packet-rate`, and show output follows OpenStackSDK's per-resource column ordering.
+
+Live observations on `cloud6`: no disposable QoS rule lifecycle was attempted because the prerequisite QoS policy collection returns Neutron `404` on `cloud6` for both Python OSC and the Go CLI. A negative smoke of `network qos rule list golang-osc-missing-policy -f json` reached the new Go command path and returned a Neutron `404`; Python OSC returned the same endpoint-level `404` while resolving the policy by name. The commands remain implemented but not cloud-verified until a test cloud exposes the QoS policy and rule endpoints.
+
+Sources consulted:
+
+* Local OSC oracle snapshots in `compat/osc/9.0.0/help/network/qos/rule/create.txt`, `compat/osc/9.0.0/help/network/qos/rule/delete.txt`, `compat/osc/9.0.0/help/network/qos/rule/list.txt`, `compat/osc/9.0.0/help/network/qos/rule/set.txt`, and `compat/osc/9.0.0/help/network/qos/rule/show.txt`.
+* Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/network/v2/network_qos_rule.py`, used only as the pinned local oracle implementation source.
+* Local OpenStackSDK resource files `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/network/v2/qos_bandwidth_limit_rule.py`, `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/network/v2/qos_dscp_marking_rule.py`, `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/network/v2/qos_minimum_bandwidth_rule.py`, and `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/network/v2/qos_minimum_packet_rate_rule.py`, used to confirm resource keys and endpoint paths.
+* Gophercloud package docs for [Neutron QoS rules](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/qos/rules).

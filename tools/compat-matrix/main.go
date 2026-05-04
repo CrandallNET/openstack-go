@@ -220,6 +220,10 @@ func newCommandEntry(group string, command string) commandEntry {
 			entry.Tests = []string{"unit: command registry"}
 			entry.Notes = "Implemented with Gophercloud QoS policy calls and custom request builders where explicit false booleans or extension fields are needed. cloud6 returns Neutron 404 for the QoS policy collection in both Python OSC and the Go CLI, so a cloud exposing this extension is still needed for live verification."
 		}
+		if strings.HasPrefix(command, "network qos rule ") && !strings.HasPrefix(command, "network qos rule type ") {
+			entry.Tests = []string{"unit: command registry", "unit: QoS rule parameter validation"}
+			entry.Notes = "Implemented with Gophercloud QoS rule calls for bandwidth-limit, dscp-marking, and minimum-bandwidth. minimum-packet-rate uses a narrow authenticated Neutron request because Gophercloud v2.12.0 does not expose that subtype. cloud6 returns Neutron 404 for the QoS policy collection in both Python OSC and the Go CLI, so a cloud exposing this extension is still needed for live lifecycle verification."
+		}
 	}
 	return entry
 }
@@ -416,6 +420,11 @@ func coreReadPackages() map[string]string {
 		"network qos policy list":            "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/qos/policies",
 		"network qos policy set":             "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/qos/policies; false booleans and extension fields via custom request builders",
 		"network qos policy show":            "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/qos/policies",
+		"network qos rule create":            "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/qos/rules; minimum-packet-rate via authenticated Neutron request because Gophercloud v2.12.0 lacks that subtype",
+		"network qos rule delete":            "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/qos/rules; minimum-packet-rate via authenticated Neutron request because Gophercloud v2.12.0 lacks that subtype",
+		"network qos rule list":              "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/qos/policies",
+		"network qos rule set":               "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/qos/rules; minimum-packet-rate via authenticated Neutron request because Gophercloud v2.12.0 lacks that subtype",
+		"network qos rule show":              "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/qos/rules; minimum-packet-rate via authenticated Neutron request because Gophercloud v2.12.0 lacks that subtype",
 		"network qos rule type list":         "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/qos/ruletypes",
 		"network qos rule type show":         "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/qos/ruletypes",
 		"network rbac create":                "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/rbacpolicies; owner project and extension fields via custom request builders",
@@ -874,6 +883,9 @@ func coreWriteCommands() map[string]bool {
 		"network qos policy create":          true,
 		"network qos policy delete":          true,
 		"network qos policy set":             true,
+		"network qos rule create":            true,
+		"network qos rule delete":            true,
+		"network qos rule set":               true,
 		"network rbac create":                true,
 		"network rbac delete":                true,
 		"network rbac set":                   true,

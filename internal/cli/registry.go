@@ -105,6 +105,7 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"network create", "network delete", "network list", "network set", "network show", "network unset",
 		"network service provider list",
 		"network qos policy create", "network qos policy delete", "network qos policy list", "network qos policy set", "network qos policy show",
+		"network qos rule create", "network qos rule delete", "network qos rule list", "network qos rule set", "network qos rule show",
 		"network qos rule type list", "network qos rule type show",
 		"network rbac create", "network rbac delete", "network rbac list", "network rbac set", "network rbac show",
 		"network segment list", "network segment show",
@@ -498,6 +499,27 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().Bool("no-share", false, "do not share policy")
 		cmd.Flags().Bool("default", false, "set as default policy")
 		cmd.Flags().Bool("no-default", false, "set as non-default policy")
+	case "network qos rule create":
+		cmd.Flags().StringArray("extra-property", nil, "additional property type=<type>,name=<name>,value=<value>")
+		cmd.Flags().String("type", "", "QoS rule type")
+		cmd.Flags().Int("max-kbps", 0, "maximum bandwidth in kbps")
+		cmd.Flags().Int("max-burst-kbits", 0, "maximum burst in kilobits")
+		cmd.Flags().Int("dscp-mark", 0, "DSCP mark")
+		cmd.Flags().Int("min-kbps", 0, "minimum bandwidth in kbps")
+		cmd.Flags().Int("min-kpps", 0, "minimum packet rate in kpps")
+		cmd.Flags().Bool("ingress", false, "ingress direction")
+		cmd.Flags().Bool("egress", false, "egress direction")
+		cmd.Flags().Bool("any", false, "any direction")
+	case "network qos rule set":
+		cmd.Flags().StringArray("extra-property", nil, "additional property type=<type>,name=<name>,value=<value>")
+		cmd.Flags().Int("max-kbps", 0, "maximum bandwidth in kbps")
+		cmd.Flags().Int("max-burst-kbits", 0, "maximum burst in kilobits")
+		cmd.Flags().Int("dscp-mark", 0, "DSCP mark")
+		cmd.Flags().Int("min-kbps", 0, "minimum bandwidth in kbps")
+		cmd.Flags().Int("min-kpps", 0, "minimum packet rate in kpps")
+		cmd.Flags().Bool("ingress", false, "ingress direction")
+		cmd.Flags().Bool("egress", false, "egress direction")
+		cmd.Flags().Bool("any", false, "any direction")
 	case "network qos rule type list":
 		cmd.Flags().Bool("all-supported", false, "list all supported rule types")
 		cmd.Flags().Bool("all-rules", false, "list all implemented rule types")
