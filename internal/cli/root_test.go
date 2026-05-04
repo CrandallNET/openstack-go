@@ -316,6 +316,72 @@ func TestUnixSecondsISOFormatsUTC(t *testing.T) {
 	}
 }
 
+func TestFloatingIPPortForwardingPortRangeValidation(t *testing.T) {
+	cases := []struct {
+		name     string
+		internal string
+		external string
+		want     map[string]any
+		wantErr  string
+	}{
+		{
+			name:     "single ports",
+			internal: "22",
+			external: "2222",
+			want:     map[string]any{"internal_port": 22, "external_port": 2222},
+		},
+		{
+			name:     "one to many",
+			internal: "80",
+			external: "8080:8082",
+			want:     map[string]any{"internal_port": 80, "external_port_range": "8080:8082"},
+		},
+		{
+			name:     "many to many",
+			internal: "8000:8002",
+			external: "9000:9002",
+			want:     map[string]any{"internal_port_range": "8000:8002", "external_port_range": "9000:9002"},
+		},
+		{
+			name:     "mismatched ranges",
+			internal: "8000:8003",
+			external: "9000:9002",
+			wantErr:  "The relation between internal and external ports does not match the pattern 1:N and N:N",
+		},
+		{
+			name:     "descending range",
+			internal: "8002:8000",
+			external: "9000:9002",
+			wantErr:  "The last number in port range must be greater or equal to the first",
+		},
+		{
+			name:     "out of range",
+			internal: "0",
+			external: "9000",
+			wantErr:  "The port number range is <1-65535>",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			values := map[string]any{}
+			err := floatingIPPortForwardingApplyPortRanges(values, tc.internal, tc.external)
+			if tc.wantErr != "" {
+				if err == nil || err.Error() != tc.wantErr {
+					t.Fatalf("error mismatch: got %v want %q", err, tc.wantErr)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("expected no error, got %v", err)
+			}
+			if encoded, _ := json.Marshal(values); string(encoded) != mustJSON(tc.want) {
+				t.Fatalf("values mismatch: got %s want %s", encoded, mustJSON(tc.want))
+			}
+		})
+	}
+}
+
 func TestTokenIssueUsesInjectedIssuer(t *testing.T) {
 	previous := issueToken
 	issueToken = func(ctx context.Context, opts *Options) (tokenIssueRow, error) {
@@ -350,4 +416,12 @@ func maxOutputLineLength(output string) int {
 		longest = max(longest, len([]rune(line)))
 	}
 	return longest
+}
+
+func mustJSON(value any) string {
+	encoded, err := json.Marshal(value)
+	if err != nil {
+		panic(err)
+	}
+	return string(encoded)
 }

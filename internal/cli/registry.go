@@ -73,7 +73,9 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"container create", "container delete", "container list", "container set", "container show", "container unset",
 		"extension list", "extension show",
 		"flavor list", "flavor show",
-		"floating ip create", "floating ip delete", "floating ip list", "floating ip pool list", "floating ip set", "floating ip show", "floating ip unset",
+		"floating ip create", "floating ip delete", "floating ip list", "floating ip pool list",
+		"floating ip port forwarding create", "floating ip port forwarding delete", "floating ip port forwarding list", "floating ip port forwarding set", "floating ip port forwarding show",
+		"floating ip set", "floating ip show", "floating ip unset",
 		"host list", "host show",
 		"hypervisor list", "hypervisor show", "hypervisor stats show",
 		"image add project",
@@ -714,6 +716,26 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().Bool("qos-policy", false, "remove QoS policy")
 		cmd.Flags().StringArray("tag", nil, "floating IP tag")
 		cmd.Flags().Bool("all-tag", false, "clear all tags")
+	case "floating ip port forwarding create":
+		cmd.Flags().StringArray("extra-property", nil, "additional property type=<type>,name=<name>,value=<value>")
+		cmd.Flags().String("internal-ip-address", "", "internal IP address")
+		cmd.Flags().String("port", "", "internal network port")
+		cmd.Flags().String("internal-protocol-port", "", "internal protocol port or range")
+		cmd.Flags().String("external-protocol-port", "", "external protocol port or range")
+		cmd.Flags().String("protocol", "", "protocol")
+		cmd.Flags().String("description", "", "port forwarding description")
+	case "floating ip port forwarding list":
+		cmd.Flags().String("port", "", "filter by internal network port")
+		cmd.Flags().String("external-protocol-port", "", "filter by external protocol port or range")
+		cmd.Flags().String("protocol", "", "filter by protocol")
+	case "floating ip port forwarding set":
+		cmd.Flags().StringArray("extra-property", nil, "additional property type=<type>,name=<name>,value=<value>")
+		cmd.Flags().String("port", "", "internal network port")
+		cmd.Flags().String("internal-ip-address", "", "internal IP address")
+		cmd.Flags().String("internal-protocol-port", "", "internal protocol port or range")
+		cmd.Flags().String("external-protocol-port", "", "external protocol port or range")
+		cmd.Flags().String("protocol", "", "protocol")
+		cmd.Flags().String("description", "", "port forwarding description")
 	case "ip availability list":
 		cmd.Flags().Int("ip-version", 0, "filter by IP version")
 		cmd.Flags().String("project", "", "filter by project")
@@ -1238,7 +1260,9 @@ func isCoreReadCommand(path string) bool {
 		"container create", "container delete", "container list", "container set", "container show", "container unset",
 		"extension list", "extension show",
 		"flavor list", "flavor show",
-		"floating ip create", "floating ip delete", "floating ip list", "floating ip pool list", "floating ip set", "floating ip show", "floating ip unset",
+		"floating ip create", "floating ip delete", "floating ip list", "floating ip pool list",
+		"floating ip port forwarding create", "floating ip port forwarding delete", "floating ip port forwarding list", "floating ip port forwarding set", "floating ip port forwarding show",
+		"floating ip set", "floating ip show", "floating ip unset",
 		"host list", "host show",
 		"hypervisor list", "hypervisor show", "hypervisor stats show",
 		"image add project",

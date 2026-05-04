@@ -1581,57 +1581,67 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/portforwarding; port range and extension fields via gophercloud.ServiceClient"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "unit: floating ip port forwarding port range validation"
+    notes: "Implemented with Gophercloud port forwarding calls and raw Neutron list extraction for range fields. cloud6 returns Neutron 404 for floating IP port-forwarding endpoints in both Python OSC and the Go CLI, so a cloud exposing this extension is still needed for live lifecycle verification."
   - command: "floating ip port forwarding delete"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/portforwarding"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "unit: floating ip port forwarding port range validation"
+    notes: "Implemented with Gophercloud port forwarding calls and raw Neutron list extraction for range fields. cloud6 returns Neutron 404 for floating IP port-forwarding endpoints in both Python OSC and the Go CLI, so a cloud exposing this extension is still needed for live lifecycle verification."
   - command: "floating ip port forwarding list"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/portforwarding; raw Neutron list extraction preserves port range fields"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "unit: floating ip port forwarding port range validation"
+    notes: "Implemented with Gophercloud port forwarding calls and raw Neutron list extraction for range fields. cloud6 returns Neutron 404 for floating IP port-forwarding endpoints in both Python OSC and the Go CLI, so a cloud exposing this extension is still needed for live lifecycle verification."
   - command: "floating ip port forwarding set"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/portforwarding; port range and extension fields via gophercloud.ServiceClient"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "unit: floating ip port forwarding port range validation"
+    notes: "Implemented with Gophercloud port forwarding calls and raw Neutron list extraction for range fields. cloud6 returns Neutron 404 for floating IP port-forwarding endpoints in both Python OSC and the Go CLI, so a cloud exposing this extension is still needed for live lifecycle verification."
   - command: "floating ip port forwarding show"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/portforwarding"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+      - "unit: floating ip port forwarding port range validation"
+    notes: "Implemented with Gophercloud port forwarding calls and raw Neutron list extraction for range fields. cloud6 returns Neutron 404 for floating IP port-forwarding endpoints in both Python OSC and the Go CLI, so a cloud exposing this extension is still needed for live lifecycle verification."
   - command: "floating ip set"
     group: "openstack.network.v2"
     service: "network"

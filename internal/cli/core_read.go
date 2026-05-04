@@ -49,6 +49,7 @@ import (
 	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/agents"
 	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/addressscopes"
 	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/floatingips"
+	portforwarding "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/portforwarding"
 	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/routers"
 	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/networkipavailabilities"
 	qospolicies "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/qos/policies"
@@ -332,6 +333,36 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 			return floatingIPList(cmd.Context(), stdout, opts, client)
 		case "floating ip pool list":
 			return floatingIPPoolList()
+		case "floating ip port forwarding create":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return floatingIPPortForwardingCreate(cmd.Context(), stdout, opts, client, args)
+		case "floating ip port forwarding delete":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return floatingIPPortForwardingDelete(cmd.Context(), client, args)
+		case "floating ip port forwarding list":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return floatingIPPortForwardingList(cmd.Context(), stdout, opts, client, args)
+		case "floating ip port forwarding set":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return floatingIPPortForwardingSet(cmd.Context(), opts, client, args)
+		case "floating ip port forwarding show":
+			client, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return floatingIPPortForwardingShow(cmd.Context(), stdout, opts, client, args)
 		case "floating ip set":
 			client, err := clients.networkV2()
 			if err != nil {
@@ -10193,6 +10224,422 @@ func floatingIPFields(item *floatingips.FloatingIP) []outputField {
 
 func floatingIPPoolList() error {
 	return fmt.Errorf("Floating ip pool operations are only available for Compute v2 network.")
+}
+
+type floatingIPPortForwardingCreateOpts struct {
+	Values map[string]any
+}
+
+func (opts floatingIPPortForwardingCreateOpts) ToPortForwardingCreateMap() (map[string]any, error) {
+	return map[string]any{"port_forwarding": opts.Values}, nil
+}
+
+type floatingIPPortForwardingUpdateOpts struct {
+	Values map[string]any
+}
+
+func (opts floatingIPPortForwardingUpdateOpts) ToPortForwardingUpdateMap() (map[string]any, error) {
+	return map[string]any{"port_forwarding": opts.Values}, nil
+}
+
+func floatingIPPortForwardingCreate(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("floating ip port forwarding create requires <floating-ip>")
+	}
+	values, err := floatingIPPortForwardingCreateValues(ctx, opts, client)
+	if err != nil {
+		return err
+	}
+	floatingIP, err := findFloatingIP(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	result := portforwarding.Create(ctx, client, floatingIP.ID, floatingIPPortForwardingCreateOpts{Values: values})
+	item, err := result.Extract()
+	if err != nil {
+		return err
+	}
+	if raw, ok := floatingIPPortForwardingRawFromBody(result.Body); ok {
+		return renderShowOutput(stdout, opts, floatingIPPortForwardingRawFields(raw))
+	}
+	return renderShowOutput(stdout, opts, floatingIPPortForwardingFields(item))
+}
+
+func floatingIPPortForwardingCreateValues(ctx context.Context, opts *Options, client *gophercloud.ServiceClient) (map[string]any, error) {
+	required := []string{"internal-ip-address", "port", "internal-protocol-port", "external-protocol-port", "protocol"}
+	for _, flagName := range required {
+		if !flagChanged(opts, flagName) || flagValue(opts, flagName) == "" {
+			return nil, fmt.Errorf("argument --%s is required", flagName)
+		}
+	}
+	values := map[string]any{}
+	port, err := findPort(ctx, client, flagValue(opts, "port"))
+	if err != nil {
+		return nil, err
+	}
+	values["internal_port_id"] = port.ID
+	values["internal_ip_address"] = flagValue(opts, "internal-ip-address")
+	values["protocol"] = flagValue(opts, "protocol")
+	if err := floatingIPPortForwardingApplyPortRanges(values, flagValue(opts, "internal-protocol-port"), flagValue(opts, "external-protocol-port")); err != nil {
+		return nil, err
+	}
+	if flagChanged(opts, "description") {
+		values["description"] = flagValue(opts, "description")
+	}
+	extra, err := parseExtraProperties(flagValues(opts, "extra-property"))
+	if err != nil {
+		return nil, err
+	}
+	for key, value := range extra {
+		values[key] = value
+	}
+	return values, nil
+}
+
+func floatingIPPortForwardingDelete(ctx context.Context, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("floating ip port forwarding delete requires <floating-ip> <port-forwarding-id> [<port-forwarding-id> ...]")
+	}
+	floatingIP, err := findFloatingIP(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	failures := 0
+	for _, portForwardingID := range args[1:] {
+		if err := portforwarding.Delete(ctx, client, floatingIP.ID, portForwardingID).ExtractErr(); err != nil {
+			failures++
+		}
+	}
+	if failures > 0 {
+		return fmt.Errorf("%d of %d Port forwarding failed to delete.", failures, len(args)-1)
+	}
+	return nil
+}
+
+func floatingIPPortForwardingList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("floating ip port forwarding list requires <floating-ip>")
+	}
+	floatingIP, err := findFloatingIP(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	values := map[string]any{}
+	if portNameOrID := flagValue(opts, "port"); portNameOrID != "" {
+		port, err := findPort(ctx, client, portNameOrID)
+		if err != nil {
+			return err
+		}
+		values["internal_port_id"] = port.ID
+	}
+	if externalPort := flagValue(opts, "external-protocol-port"); externalPort != "" {
+		if strings.Contains(externalPort, ":") {
+			if _, err := parsePortRange(externalPort, "external-protocol-port"); err != nil {
+				return err
+			}
+			values["external_port_range"] = externalPort
+		} else {
+			parsed, err := parseProtocolPort(externalPort, "external-protocol-port")
+			if err != nil {
+				return err
+			}
+			values["external_port"] = parsed
+		}
+	}
+	if protocol := flagValue(opts, "protocol"); protocol != "" {
+		values["protocol"] = protocol
+	}
+	items, err := neutronFloatingIPPortForwardingRawList(ctx, client, floatingIP.ID, values)
+	if err != nil {
+		return err
+	}
+	rows := make([]outputRow, 0, len(items))
+	for _, item := range items {
+		rows = append(rows, outputRow{
+			"ID":                  item["id"],
+			"Internal Port ID":    item["internal_port_id"],
+			"Internal IP Address": item["internal_ip_address"],
+			"Internal Port":       rawNumber(item["internal_port"]),
+			"Internal Port Range": item["internal_port_range"],
+			"External Port":       rawNumber(item["external_port"]),
+			"External Port Range": item["external_port_range"],
+			"Protocol":            item["protocol"],
+			"Description":         item["description"],
+		})
+	}
+	columns := []string{"ID", "Internal Port ID", "Internal IP Address", "Internal Port", "Internal Port Range", "External Port", "External Port Range", "Protocol", "Description"}
+	return renderListOutput(stdout, opts, columns, rows)
+}
+
+func floatingIPPortForwardingSet(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("floating ip port forwarding set requires <floating-ip> <port-forwarding-id>")
+	}
+	floatingIP, err := findFloatingIP(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	values, err := floatingIPPortForwardingSetValues(ctx, opts, client)
+	if err != nil {
+		return err
+	}
+	if len(values) == 0 {
+		return nil
+	}
+	_, err = portforwarding.Update(ctx, client, floatingIP.ID, args[1], floatingIPPortForwardingUpdateOpts{Values: values}).Extract()
+	return err
+}
+
+func floatingIPPortForwardingSetValues(ctx context.Context, opts *Options, client *gophercloud.ServiceClient) (map[string]any, error) {
+	values := map[string]any{}
+	if portNameOrID := flagValue(opts, "port"); portNameOrID != "" {
+		port, err := findPort(ctx, client, portNameOrID)
+		if err != nil {
+			return nil, err
+		}
+		values["internal_port_id"] = port.ID
+	}
+	if flagChanged(opts, "internal-ip-address") {
+		values["internal_ip_address"] = flagValue(opts, "internal-ip-address")
+	}
+	if flagChanged(opts, "internal-protocol-port") || flagChanged(opts, "external-protocol-port") {
+		if err := floatingIPPortForwardingApplyPortRanges(values, flagValue(opts, "internal-protocol-port"), flagValue(opts, "external-protocol-port")); err != nil {
+			return nil, err
+		}
+	}
+	if flagChanged(opts, "protocol") {
+		values["protocol"] = flagValue(opts, "protocol")
+	}
+	if flagChanged(opts, "description") {
+		values["description"] = flagValue(opts, "description")
+	}
+	extra, err := parseExtraProperties(flagValues(opts, "extra-property"))
+	if err != nil {
+		return nil, err
+	}
+	for key, value := range extra {
+		values[key] = value
+	}
+	return values, nil
+}
+
+func floatingIPPortForwardingShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("floating ip port forwarding show requires <floating-ip> <port-forwarding-id>")
+	}
+	floatingIP, err := findFloatingIP(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	result := portforwarding.Get(ctx, client, floatingIP.ID, args[1])
+	item, err := result.Extract()
+	if err != nil {
+		return err
+	}
+	if raw, ok := floatingIPPortForwardingRawFromBody(result.Body); ok {
+		return renderShowOutput(stdout, opts, floatingIPPortForwardingRawFields(raw))
+	}
+	return renderShowOutput(stdout, opts, floatingIPPortForwardingFields(item))
+}
+
+func floatingIPPortForwardingApplyPortRanges(values map[string]any, internalValue string, externalValue string) error {
+	internalPorts, err := parseOptionalPortRange(internalValue, "internal-protocol-port")
+	if err != nil {
+		return err
+	}
+	externalPorts, err := parseOptionalPortRange(externalValue, "external-protocol-port")
+	if err != nil {
+		return err
+	}
+	if err := validateFloatingIPPortForwardingRanges(internalPorts, externalPorts); err != nil {
+		return err
+	}
+	if internalValue != "" {
+		if len(internalPorts) == 2 {
+			values["internal_port_range"] = internalValue
+		} else {
+			values["internal_port"] = internalPorts[0]
+		}
+	}
+	if externalValue != "" {
+		if len(externalPorts) == 2 {
+			values["external_port_range"] = externalValue
+		} else {
+			values["external_port"] = externalPorts[0]
+		}
+	}
+	return nil
+}
+
+func validateFloatingIPPortForwardingRanges(internalPorts []int, externalPorts []int) error {
+	internalDiff, err := portRangeDiff(internalPorts)
+	if err != nil {
+		return err
+	}
+	externalDiff, err := portRangeDiff(externalPorts)
+	if err != nil {
+		return err
+	}
+	if internalDiff != 0 && internalDiff != externalDiff {
+		return fmt.Errorf("The relation between internal and external ports does not match the pattern 1:N and N:N")
+	}
+	return nil
+}
+
+func parseOptionalPortRange(value string, option string) ([]int, error) {
+	if value == "" {
+		return nil, nil
+	}
+	if strings.Contains(value, ":") {
+		return parsePortRange(value, option)
+	}
+	parsed, err := parseProtocolPort(value, option)
+	if err != nil {
+		return nil, err
+	}
+	return []int{parsed}, nil
+}
+
+func parsePortRange(value string, option string) ([]int, error) {
+	parts := strings.Split(value, ":")
+	if len(parts) != 2 {
+		return nil, fmt.Errorf("invalid --%s %q", option, value)
+	}
+	start, err := parseProtocolPort(parts[0], option)
+	if err != nil {
+		return nil, err
+	}
+	end, err := parseProtocolPort(parts[1], option)
+	if err != nil {
+		return nil, err
+	}
+	return []int{start, end}, nil
+}
+
+func parseProtocolPort(value string, option string) (int, error) {
+	parsed, err := strconv.Atoi(value)
+	if err != nil {
+		return 0, fmt.Errorf("invalid --%s %q", option, value)
+	}
+	if parsed <= 0 || parsed > 65535 {
+		return 0, fmt.Errorf("The port number range is <1-65535>")
+	}
+	return parsed, nil
+}
+
+func portRangeDiff(ports []int) (int, error) {
+	if len(ports) == 0 {
+		return 0, nil
+	}
+	diff := ports[len(ports)-1] - ports[0]
+	if diff < 0 {
+		return 0, fmt.Errorf("The last number in port range must be greater or equal to the first")
+	}
+	return diff, nil
+}
+
+func nilIfZero(value int) any {
+	if value == 0 {
+		return nil
+	}
+	return value
+}
+
+func floatingIPPortForwardingRawFromBody(body any) (map[string]any, bool) {
+	var wrapper struct {
+		PortForwarding map[string]any `json:"port_forwarding"`
+	}
+	encoded, err := json.Marshal(body)
+	if err != nil {
+		return nil, false
+	}
+	if err := json.Unmarshal(encoded, &wrapper); err != nil {
+		return nil, false
+	}
+	if wrapper.PortForwarding == nil {
+		return nil, false
+	}
+	return wrapper.PortForwarding, true
+}
+
+func neutronFloatingIPPortForwardingRawList(ctx context.Context, client *gophercloud.ServiceClient, floatingIPID string, values map[string]any) ([]map[string]any, error) {
+	var body struct {
+		PortForwardings []map[string]any `json:"port_forwardings"`
+	}
+	target := client.ServiceURL("floatingips", url.PathEscape(floatingIPID), "port_forwardings") + floatingIPPortForwardingQuery(values)
+	resp, err := client.Get(ctx, target, &body, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return nil, err
+	}
+	return body.PortForwardings, nil
+}
+
+func floatingIPPortForwardingQuery(values map[string]any) string {
+	query := url.Values{}
+	for key, value := range values {
+		if value == nil {
+			continue
+		}
+		query.Set(key, fmt.Sprint(value))
+	}
+	encoded := query.Encode()
+	if encoded == "" {
+		return ""
+	}
+	return "?" + encoded
+}
+
+func floatingIPPortForwardingRawFields(raw map[string]any) []outputField {
+	known := map[string]bool{
+		"description":         true,
+		"external_port":       true,
+		"external_port_range": true,
+		"id":                  true,
+		"internal_ip_address": true,
+		"internal_port":       true,
+		"internal_port_id":    true,
+		"internal_port_range": true,
+		"location":            true,
+		"protocol":            true,
+		"tenant_id":           true,
+	}
+	fields := []outputField{
+		{"description", raw["description"]},
+		{"external_port", rawNumber(raw["external_port"])},
+		{"external_port_range", raw["external_port_range"]},
+		{"id", raw["id"]},
+		{"internal_ip_address", raw["internal_ip_address"]},
+		{"internal_port", rawNumber(raw["internal_port"])},
+		{"internal_port_id", raw["internal_port_id"]},
+		{"internal_port_range", raw["internal_port_range"]},
+		{"protocol", raw["protocol"]},
+	}
+	var extras []string
+	for key := range raw {
+		if !known[key] {
+			extras = append(extras, key)
+		}
+	}
+	sort.Strings(extras)
+	for _, key := range extras {
+		fields = append(fields, outputField{key, raw[key]})
+	}
+	return fields
+}
+
+func floatingIPPortForwardingFields(item *portforwarding.PortForwarding) []outputField {
+	return []outputField{
+		{"description", item.Description},
+		{"external_port", nilIfZero(item.ExternalPort)},
+		{"external_port_range", nil},
+		{"id", item.ID},
+		{"internal_ip_address", item.InternalIPAddress},
+		{"internal_port", nilIfZero(item.InternalPort)},
+		{"internal_port_id", item.InternalPortID},
+		{"internal_port_range", nil},
+		{"protocol", item.Protocol},
+	}
 }
 
 func ipAvailabilityList(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, client *gophercloud.ServiceClient) error {

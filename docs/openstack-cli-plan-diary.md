@@ -982,3 +982,17 @@ Sources consulted:
 * Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/network/v2/floating_ip.py`, used only as the pinned local oracle implementation source.
 * Local OpenStackSDK source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/network/v2/floating_ip.py`, used to map SDK attribute names to Neutron floating IP JSON fields.
 * Gophercloud package docs for [Neutron floating IPs](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/floatingips).
+
+## 2026-05-04: Floating IP Port Forwarding Commands
+
+Work done: added `floating ip port forwarding create`, `floating ip port forwarding delete`, `floating ip port forwarding list`, `floating ip port forwarding set`, and `floating ip port forwarding show`.
+
+Implementation note: create, update, get, and delete use Gophercloud's Neutron port forwarding package. The request builders are custom so Python OSC's `--extra-property` passthrough and `internal_port_range`/`external_port_range` fields can be sent even though the current Gophercloud struct only exposes single-port fields. List uses a raw Neutron JSON request through the authenticated service client so the Python list columns for `Internal Port Range` and `External Port Range` are preserved instead of being dropped by typed extraction.
+
+Live observations on `cloud6`: the Go CLI created disposable network, subnet, router, port, and floating IP fixtures, but Neutron returned `404` for `POST /v2.0/floatingips/{id}/port_forwardings`. Cleanup removed the disposable resources. A read-only comparison against existing floating IP `06376810-3b16-4160-b1d7-6135571d2efd` showed Python OSC also returns `NotFoundException: 404` for `GET /v2.0/floatingips/{id}/port_forwardings` on the same cloud. The commands remain implemented but not cloud-verified until a test cloud exposes the port-forwarding endpoint.
+
+Sources consulted:
+
+* Local OSC oracle snapshots in `compat/osc/9.0.0/help/floating/ip/port/forwarding/create.txt`, `compat/osc/9.0.0/help/floating/ip/port/forwarding/delete.txt`, `compat/osc/9.0.0/help/floating/ip/port/forwarding/list.txt`, `compat/osc/9.0.0/help/floating/ip/port/forwarding/set.txt`, and `compat/osc/9.0.0/help/floating/ip/port/forwarding/show.txt`.
+* Local Python OSC source file `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/network/v2/floating_ip_port_forwarding.py`, used only as the pinned local oracle implementation source.
+* Gophercloud package docs for [Neutron floating IP port forwarding](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/portforwarding).
