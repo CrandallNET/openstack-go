@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -172,6 +174,68 @@ func TestCompatErrorMessageFormatsKnownErrors(t *testing.T) {
 	}
 	if got := compatErrorMessage(errors.New("plain")); got != "plain" {
 		t.Fatalf("plain error message mismatch: %q", got)
+	}
+}
+
+func TestLifecycleRunNamesResourcesWithUniquePrefix(t *testing.T) {
+	run, err := newLifecycleRun("golang-osc-test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.HasPrefix(run.ID, "golang-osc-test-") {
+		t.Fatalf("expected lifecycle id to use test prefix, got %q", run.ID)
+	}
+	name := run.resourceName("network")
+	if !strings.HasPrefix(name, run.ID+"-network") {
+		t.Fatalf("expected resource name to include lifecycle id, got %q", name)
+	}
+}
+
+func TestLifecycleCleanupRunsLIFOAndRecordsFailures(t *testing.T) {
+	run, err := newLifecycleRun("golang-osc-test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var order []string
+	run.addCleanup("first", func(context.Context) error {
+		order = append(order, "first")
+		return nil
+	})
+	run.addCleanup("second", func(context.Context) error {
+		order = append(order, "second")
+		return errors.New("cleanup failed")
+	})
+	err = run.cleanup(context.Background())
+	if err == nil || !strings.Contains(err.Error(), "second") {
+		t.Fatalf("expected cleanup failure to include label, got %v", err)
+	}
+	if strings.Join(order, ",") != "second,first" {
+		t.Fatalf("expected cleanup to run LIFO, got %v", order)
+	}
+	if len(run.CleanupResults) != 2 || run.CleanupResults[0].Label != "second" || run.CleanupResults[0].Error == "" {
+		t.Fatalf("cleanup diagnostics mismatch: %+v", run.CleanupResults)
+	}
+}
+
+func TestLifecycleDiagnosticsWriteFixtureAndCleanupState(t *testing.T) {
+	run, err := newLifecycleRun("golang-osc-test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	run.recordFixture("image", "test-image")
+	run.CleanupResults = append(run.CleanupResults, lifecycleCleanupResult{Label: "image delete"})
+	path := filepath.Join(t.TempDir(), "diagnostics.json")
+	if err := run.writeDiagnostics(path); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{`"image": "test-image"`, `"label": "image delete"`} {
+		if !strings.Contains(string(data), want) {
+			t.Fatalf("diagnostics missing %q:\n%s", want, string(data))
+		}
 	}
 }
 

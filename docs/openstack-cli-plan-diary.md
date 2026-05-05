@@ -1419,3 +1419,28 @@ Sources consulted:
 
 * Local lookup helpers in `internal/cli/identity_read.go`.
 * Local Gophercloud v2.12.0 error types in `.cache/gomod/github.com/gophercloud/gophercloud/v2@v2.12.0/errors.go`.
+
+## 2026-05-04: Live Cloud Discovery Tool
+
+Decision: add live cloud discovery as a standalone tool that writes non-secret JSON artifacts under `compat/live-clouds/`. This keeps discovery separate from compatibility matrix generation because discovery reads live cloud state and must be refreshed before lifecycle tests.
+
+Work done: added `tools/cloud-discovery` and `make discover-cloud CLOUD=name[,name]`. The first discovery pass records service catalog endpoints and safe fixture candidates for images, flavors, networks, and volume types. It marks one sorted candidate per fixture type as a default candidate for diagnostics only; lifecycle tests must still re-query immediately before use.
+
+Implementation note: role discovery, API version detail, extension detail, and structured test eligibility remain open. The generated report includes a note that artifacts must not contain tokens, passwords, application credential secrets, `clouds.yaml` contents, or debug logs.
+
+Sources consulted:
+
+* Gophercloud cloud config parser in `.cache/gomod/github.com/gophercloud/gophercloud/v2@v2.12.0/openstack/config/clouds`.
+* Gophercloud service catalog, images, flavors, networks, and volume type packages in the local module cache.
+* Local cloud safety decisions in `docs/openstack-cli-compatibility-plan.md`.
+
+## 2026-05-04: Lifecycle Test Scaffolding
+
+Decision: add lifecycle safety helpers before adding more write tests. Every lifecycle test needs unique resource names, fixture recording, LIFO cleanup, and retained diagnostics before it is safe to broaden write coverage on shared clouds.
+
+Work done: added an internal lifecycle helper that generates `golang-osc-test-*` IDs, builds resource names from that prefix, records fixture values, registers cleanup callbacks, executes cleanup in reverse creation order, captures cleanup errors, and writes JSON diagnostics.
+
+Sources consulted:
+
+* Local cloud safety decisions in `docs/openstack-cli-compatibility-plan.md`.
+* Existing partial-failure helper in `internal/cli/compat_errors.go`.

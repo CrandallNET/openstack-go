@@ -1,0 +1,317 @@
+{
+  "cloud": "cloud6",
+  "generated_at": "2026-05-05T05:05:42Z",
+  "status": "ok",
+  "auth": {
+    "identity_endpoint": "http://10.10.1.36:5000",
+    "region": "RegionOne",
+    "endpoint_type": "public"
+  },
+  "services": [
+    {
+      "id": "83391c1120f4421b91aee8c852561793",
+      "name": "cinder",
+      "type": "block-storage",
+      "endpoints": [
+        {
+          "region": "RegionOne",
+          "region_id": "RegionOne",
+          "interface": "internal",
+          "url": "http://10.10.1.36:8776/v3"
+        },
+        {
+          "region": "RegionOne",
+          "region_id": "RegionOne",
+          "interface": "public",
+          "url": "http://10.10.1.36:8776/v3"
+        }
+      ]
+    },
+    {
+      "id": "05f0e14ece314bad98d3acf8898b9665",
+      "name": "heat-cfn",
+      "type": "cloudformation",
+      "endpoints": [
+        {
+          "region": "RegionOne",
+          "region_id": "RegionOne",
+          "interface": "internal",
+          "url": "http://10.10.1.36:8000/v1"
+        },
+        {
+          "region": "RegionOne",
+          "region_id": "RegionOne",
+          "interface": "public",
+          "url": "http://10.10.1.36:8000/v1"
+        }
+      ]
+    },
+    {
+      "id": "a88859da73a54f3a90307a15c7b4e475",
+      "name": "nova",
+      "type": "compute",
+      "endpoints": [
+        {
+          "region": "RegionOne",
+          "region_id": "RegionOne",
+          "interface": "internal",
+          "url": "http://10.10.1.36:8774/v2.1"
+        },
+        {
+          "region": "RegionOne",
+          "region_id": "RegionOne",
+          "interface": "public",
+          "url": "http://10.10.1.36:8774/v2.1"
+        }
+      ]
+    },
+    {
+      "id": "e76bfa2c9fc4415bac144a78c313cb39",
+      "name": "keystone",
+      "type": "identity",
+      "endpoints": [
+        {
+          "region": "RegionOne",
+          "region_id": "RegionOne",
+          "interface": "internal",
+          "url": "http://10.10.1.36:5000"
+        },
+        {
+          "region": "RegionOne",
+          "region_id": "RegionOne",
+          "interface": "public",
+          "url": "http://10.10.1.36:5000"
+        }
+      ]
+    },
+    {
+      "id": "b26daee6b3b243ac855802aac0135c59",
+      "name": "glance",
+      "type": "image",
+      "endpoints": [
+        {
+          "region": "RegionOne",
+          "region_id": "RegionOne",
+          "interface": "internal",
+          "url": "http://10.10.1.36:9292"
+        },
+        {
+          "region": "RegionOne",
+          "region_id": "RegionOne",
+          "interface": "public",
+          "url": "http://10.10.1.36:9292"
+        }
+      ]
+    },
+    {
+      "id": "e95523e1346144f28aa7b0e5982092da",
+      "name": "neutron",
+      "type": "network",
+      "endpoints": [
+        {
+          "region": "RegionOne",
+          "region_id": "RegionOne",
+          "interface": "internal",
+          "url": "http://10.10.1.36:9696"
+        },
+        {
+          "region": "RegionOne",
+          "region_id": "RegionOne",
+          "interface": "public",
+          "url": "http://10.10.1.36:9696"
+        }
+      ]
+    },
+    {
+      "id": "7efab657d31d440b958c3aedff096002",
+      "name": "heat",
+      "type": "orchestration",
+      "endpoints": [
+        {
+          "region": "RegionOne",
+          "region_id": "RegionOne",
+          "interface": "internal",
+          "url": "http://10.10.1.36:8004/v1/17613f25c8d742f8ab589c0fa7b6a66b"
+        },
+        {
+          "region": "RegionOne",
+          "region_id": "RegionOne",
+          "interface": "public",
+          "url": "http://10.10.1.36:8004/v1/17613f25c8d742f8ab589c0fa7b6a66b"
+        }
+      ]
+    },
+    {
+      "id": "5608cb5597624a97a4078a6cfe13535a",
+      "name": "skyline",
+      "type": "panel",
+      "endpoints": [
+        {
+          "region": "RegionOne",
+          "region_id": "RegionOne",
+          "interface": "internal",
+          "url": "http://10.10.1.36:9998"
+        },
+        {
+          "region": "RegionOne",
+          "region_id": "RegionOne",
+          "interface": "public",
+          "url": "http://10.10.1.36:9998"
+        }
+      ]
+    },
+    {
+      "id": "3365d9da060e47b2b5672cef5d06ccee",
+      "name": "placement",
+      "type": "placement",
+      "endpoints": [
+        {
+          "region": "RegionOne",
+          "region_id": "RegionOne",
+          "interface": "internal",
+          "url": "http://10.10.1.36:8780"
+        },
+        {
+          "region": "RegionOne",
+          "region_id": "RegionOne",
+          "interface": "public",
+          "url": "http://10.10.1.36:8780"
+        }
+      ]
+    },
+    {
+      "id": "0d734e5f4ea2497892bc53ec4ec36f19",
+      "name": "cinderv3",
+      "type": "volumev3",
+      "endpoints": [
+        {
+          "region": "RegionOne",
+          "region_id": "RegionOne",
+          "interface": "internal",
+          "url": "http://10.10.1.36:8776/v3/17613f25c8d742f8ab589c0fa7b6a66b"
+        },
+        {
+          "region": "RegionOne",
+          "region_id": "RegionOne",
+          "interface": "public",
+          "url": "http://10.10.1.36:8776/v3/17613f25c8d742f8ab589c0fa7b6a66b"
+        }
+      ]
+    }
+  ],
+  "fixtures": {
+    "images": {
+      "status": "ok",
+      "items": [
+        {
+          "id": "da8beb8e-7301-49a3-b952-ebde206f9a0b",
+          "name": "cirros",
+          "status": "active",
+          "extra": "shared",
+          "selected": true
+        },
+        {
+          "id": "06a27cb7-cd7d-4fdc-b3cc-66228e97ddf2",
+          "name": "rocky10",
+          "status": "active",
+          "extra": "shared"
+        },
+        {
+          "id": "ebfd3752-007a-4f88-9fd7-da6558dddfbc",
+          "name": "rocky8",
+          "status": "active",
+          "extra": "shared"
+        },
+        {
+          "id": "c6b80d68-64d6-406a-a1cc-251b3fef4929",
+          "name": "rocky9",
+          "status": "active",
+          "extra": "shared"
+        }
+      ]
+    },
+    "flavors": {
+      "status": "ok",
+      "items": [
+        {
+          "id": "5",
+          "name": "m1.jumbo",
+          "extra": "ram=4096 disk=10 vcpus=4",
+          "selected": true
+        },
+        {
+          "id": "3",
+          "name": "m1.large",
+          "extra": "ram=2048 disk=10 vcpus=2"
+        },
+        {
+          "id": "2",
+          "name": "m1.medium",
+          "extra": "ram=1024 disk=10 vcpus=2"
+        },
+        {
+          "id": "1",
+          "name": "m1.small",
+          "extra": "ram=1024 disk=10 vcpus=1"
+        },
+        {
+          "id": "0",
+          "name": "m1.tiny",
+          "extra": "ram=512 disk=10 vcpus=1"
+        },
+        {
+          "id": "4",
+          "name": "m1.xlarge",
+          "extra": "ram=2048 disk=10 vcpus=4"
+        }
+      ]
+    },
+    "networks": {
+      "status": "ok",
+      "items": [
+        {
+          "id": "cb696f01-32be-4dc3-b562-14ab121bda16",
+          "name": "os6-lan",
+          "status": "ACTIVE",
+          "extra": "shared=true subnets=1",
+          "selected": true
+        },
+        {
+          "id": "cf2e852f-5934-448e-8c10-530944b094b1",
+          "name": "testNet",
+          "status": "ACTIVE",
+          "extra": "shared=true subnets=1"
+        }
+      ]
+    },
+    "volume_types": {
+      "status": "ok",
+      "items": [
+        {
+          "id": "6ca04c81-db3e-49cc-91dd-a3d7ef816ef9",
+          "name": "LVM",
+          "extra": "public=true",
+          "selected": true
+        },
+        {
+          "id": "73ff2ab0-474e-4312-a7e4-0b8129e703f9",
+          "name": "luacloud-adv-compat-90993",
+          "extra": "public=false"
+        },
+        {
+          "id": "8ce88c8c-6fa5-4d81-ae58-fd5718fe51d3",
+          "name": "luacloud-adv-debug-91802",
+          "extra": "public=true"
+        }
+      ]
+    },
+    "roles": {
+      "status": "not-implemented",
+      "error": "role discovery is not implemented yet"
+    }
+  },
+  "notes": [
+    "Discovery artifacts must not include tokens, passwords, application credential secrets, clouds.yaml contents, or debug logs.",
+    "Fixture candidates are discovered at run time and should be re-queried before lifecycle tests because cloud state can change."
+  ]
+}

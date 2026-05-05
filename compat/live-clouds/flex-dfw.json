@@ -1,0 +1,647 @@
+{
+  "cloud": "flex-dfw",
+  "generated_at": "2026-05-05T05:05:55Z",
+  "status": "ok",
+  "auth": {
+    "identity_endpoint": "https://keystone.api.dfw3.rackspacecloud.com/v3/",
+    "region": "DFW3",
+    "endpoint_type": "public"
+  },
+  "services": [
+    {
+      "id": "56b45ed3c85c41fb9b87b19a8e463599",
+      "name": "heat-cfn",
+      "type": "cloudformation",
+      "endpoints": [
+        {
+          "region": "DFW3",
+          "region_id": "DFW3",
+          "interface": "admin",
+          "url": "http://heat-cfn.openstack.svc.cluster.local:8000/v1"
+        },
+        {
+          "region": "DFW3",
+          "region_id": "DFW3",
+          "interface": "internal",
+          "url": "http://heat-cfn.openstack.svc.cluster.local:8000/v1"
+        },
+        {
+          "region": "DFW3",
+          "region_id": "DFW3",
+          "interface": "public",
+          "url": "https://cloudformation.api.dfw3.rackspacecloud.com/v1"
+        }
+      ]
+    },
+    {
+      "id": "7a9ca84907ca4cdf894bd129bdf7b4ca",
+      "name": "nova",
+      "type": "compute",
+      "endpoints": [
+        {
+          "region": "DFW3",
+          "region_id": "DFW3",
+          "interface": "admin",
+          "url": "http://nova-api.openstack.svc.cluster.local:8774/v2.1/dbef088226a055b6373595f0f307291b"
+        },
+        {
+          "region": "DFW3",
+          "region_id": "DFW3",
+          "interface": "internal",
+          "url": "http://nova-api.openstack.svc.cluster.local:8774/v2.1/dbef088226a055b6373595f0f307291b"
+        },
+        {
+          "region": "DFW3",
+          "region_id": "DFW3",
+          "interface": "public",
+          "url": "https://nova.api.dfw3.rackspacecloud.com/v2.1/dbef088226a055b6373595f0f307291b"
+        }
+      ]
+    },
+    {
+      "id": "a41f0fcd0090467f842a6ac6af34a554",
+      "name": "magnum",
+      "type": "container-infra",
+      "endpoints": [
+        {
+          "region": "DFW3",
+          "region_id": "DFW3",
+          "interface": "admin",
+          "url": "http://magnum-api.openstack.svc.cluster.local:9511/v1"
+        },
+        {
+          "region": "DFW3",
+          "region_id": "DFW3",
+          "interface": "internal",
+          "url": "http://magnum-api.openstack.svc.cluster.local:9511/v1"
+        },
+        {
+          "region": "DFW3",
+          "region_id": "DFW3",
+          "interface": "public",
+          "url": "https://magnum.api.dfw3.rackspacecloud.com/v1"
+        }
+      ]
+    },
+    {
+      "id": "031f27fae90746f59cab0c152a2d81c4",
+      "name": "keystone",
+      "type": "identity",
+      "endpoints": [
+        {
+          "region": "DFW3",
+          "region_id": "DFW3",
+          "interface": "admin",
+          "url": "http://keystone.openstack.svc.cluster.local/v3"
+        },
+        {
+          "region": "DFW3",
+          "region_id": "DFW3",
+          "interface": "internal",
+          "url": "http://keystone-api.openstack.svc.cluster.local:5000/v3"
+        },
+        {
+          "region": "DFW3",
+          "region_id": "DFW3",
+          "interface": "public",
+          "url": "https://keystone.api.dfw3.rackspacecloud.com/v3"
+        }
+      ]
+    },
+    {
+      "id": "08dd4bda53d3466ab12e0009404676f1",
+      "name": "glance",
+      "type": "image",
+      "endpoints": [
+        {
+          "region": "DFW3",
+          "region_id": "DFW3",
+          "interface": "admin",
+          "url": "http://glance-api.openstack.svc.cluster.local:9292"
+        },
+        {
+          "region": "DFW3",
+          "region_id": "DFW3",
+          "interface": "internal",
+          "url": "http://glance-api.openstack.svc.cluster.local:9292"
+        },
+        {
+          "region": "DFW3",
+          "region_id": "DFW3",
+          "interface": "public",
+          "url": "https://glance.api.dfw3.rackspacecloud.com"
+        }
+      ]
+    },
+    {
+      "id": "a6dfbd7028704316b0c712e9bdb1f3ea",
+      "name": "barbican",
+      "type": "key-manager",
+      "endpoints": [
+        {
+          "region": "DFW3",
+          "region_id": "DFW3",
+          "interface": "admin",
+          "url": "http://barbican-api.openstack.svc.cluster.local:9311/"
+        },
+        {
+          "region": "DFW3",
+          "region_id": "DFW3",
+          "interface": "internal",
+          "url": "http://barbican-api.openstack.svc.cluster.local:9311/"
+        },
+        {
+          "region": "DFW3",
+          "region_id": "DFW3",
+          "interface": "public",
+          "url": "https://barbican.api.dfw3.rackspacecloud.com/"
+        }
+      ]
+    },
+    {
+      "id": "b88b294dbcf74c2d8421b5c3fd0a5c19",
+      "name": "octavia",
+      "type": "load-balancer",
+      "endpoints": [
+        {
+          "region": "DFW3",
+          "region_id": "DFW3",
+          "interface": "admin",
+          "url": "http://octavia.openstack.svc.cluster.local:9876"
+        },
+        {
+          "region": "DFW3",
+          "region_id": "DFW3",
+          "interface": "internal",
+          "url": "http://octavia-api.openstack.svc.cluster.local:9876"
+        },
+        {
+          "region": "DFW3",
+          "region_id": "DFW3",
+          "interface": "public",
+          "url": "https://octavia.api.dfw3.rackspacecloud.com"
+        }
+      ]
+    },
+    {
+      "id": "bb4c63a594f94b3d917a3503a4c83f00",
+      "name": "gnocchi",
+      "type": "metric",
+      "endpoints": [
+        {
+          "region": "DFW3",
+          "region_id": "DFW3",
+          "interface": "admin",
+          "url": "http://gnocchi-api.openstack.svc.cluster.local:8041"
+        },
+        {
+          "region": "DFW3",
+          "region_id": "DFW3",
+          "interface": "internal",
+          "url": "http://gnocchi-api.openstack.svc.cluster.local:8041"
+        },
+        {
+          "region": "DFW3",
+          "region_id": "DFW3",
+          "interface": "public",
+          "url": "https://gnocchi.api.dfw3.rackspacecloud.com"
+        }
+      ]
+    },
+    {
+      "id": "0811a16bd99d44789637cb3799101a6d",
+      "name": "neutron",
+      "type": "network",
+      "endpoints": [
+        {
+          "region": "DFW3",
+          "region_id": "DFW3",
+          "interface": "admin",
+          "url": "http://neutron-server.openstack.svc.cluster.local:9696"
+        },
+        {
+          "region": "DFW3",
+          "region_id": "DFW3",
+          "interface": "internal",
+          "url": "http://neutron-server.openstack.svc.cluster.local:9696"
+        },
+        {
+          "region": "DFW3",
+          "region_id": "DFW3",
+          "interface": "public",
+          "url": "https://neutron.api.dfw3.rackspacecloud.com"
+        }
+      ]
+    },
+    {
+      "id": "3605d1c1efe142dda6d6eef7bb9b305a",
+      "name": "swift",
+      "type": "object-store",
+      "endpoints": [
+        {
+          "region": "DFW3",
+          "region_id": "DFW3",
+          "interface": "internal",
+          "url": "https://swift.api.dfw3.rackspacecloud.com/v1/AUTH_dbef088226a055b6373595f0f307291b"
+        },
+        {
+          "region": "DFW3",
+          "region_id": "DFW3",
+          "interface": "public",
+          "url": "https://swift.api.dfw3.rackspacecloud.com/v1/AUTH_dbef088226a055b6373595f0f307291b"
+        }
+      ]
+    },
+    {
+      "id": "969dcf24988f40a59128a6a5ce1c551c",
+      "name": "heat",
+      "type": "orchestration",
+      "endpoints": [
+        {
+          "region": "DFW3",
+          "region_id": "DFW3",
+          "interface": "admin",
+          "url": "http://heat-api.openstack.svc.cluster.local:8004/v1/dbef088226a055b6373595f0f307291b"
+        },
+        {
+          "region": "DFW3",
+          "region_id": "DFW3",
+          "interface": "internal",
+          "url": "http://heat-api.openstack.svc.cluster.local:8004/v1/dbef088226a055b6373595f0f307291b"
+        },
+        {
+          "region": "DFW3",
+          "region_id": "DFW3",
+          "interface": "public",
+          "url": "https://heat.api.dfw3.rackspacecloud.com/v1/dbef088226a055b6373595f0f307291b"
+        }
+      ]
+    },
+    {
+      "id": "e37419fb9ff140e48ea1795c23d267d7",
+      "name": "placement",
+      "type": "placement",
+      "endpoints": [
+        {
+          "region": "DFW3",
+          "region_id": "DFW3",
+          "interface": "admin",
+          "url": "http://placement-api.openstack.svc.cluster.local:8778/"
+        },
+        {
+          "region": "DFW3",
+          "region_id": "DFW3",
+          "interface": "internal",
+          "url": "http://placement-api.openstack.svc.cluster.local:8778/"
+        },
+        {
+          "region": "DFW3",
+          "region_id": "DFW3",
+          "interface": "public",
+          "url": "https://placement.api.dfw3.rackspacecloud.com/"
+        }
+      ]
+    },
+    {
+      "id": "64fc38ee3a8a4dcd93133ea0fff0b8e4",
+      "name": "blazar",
+      "type": "reservation",
+      "endpoints": [
+        {
+          "region": "DFW3",
+          "region_id": "DFW3",
+          "interface": "admin",
+          "url": "http://blazar-api.openstack.svc.cluster.local:1234/v1"
+        },
+        {
+          "region": "DFW3",
+          "region_id": "DFW3",
+          "interface": "internal",
+          "url": "http://blazar-api.openstack.svc.cluster.local:1234/v1"
+        },
+        {
+          "region": "DFW3",
+          "region_id": "DFW3",
+          "interface": "public",
+          "url": "https://blazar.api.dfw3.rackspacecloud.com/v1"
+        }
+      ]
+    },
+    {
+      "id": "ade120d39e9d464d8b5a7081e9ea7c1c",
+      "name": "cinderv3",
+      "type": "volumev3",
+      "endpoints": [
+        {
+          "region": "DFW3",
+          "region_id": "DFW3",
+          "interface": "admin",
+          "url": "http://cinder-api.openstack.svc.cluster.local:8776/v3/dbef088226a055b6373595f0f307291b"
+        },
+        {
+          "region": "DFW3",
+          "region_id": "DFW3",
+          "interface": "internal",
+          "url": "http://cinder-api.openstack.svc.cluster.local:8776/v3/dbef088226a055b6373595f0f307291b"
+        },
+        {
+          "region": "DFW3",
+          "region_id": "DFW3",
+          "interface": "public",
+          "url": "https://cinder.api.dfw3.rackspacecloud.com/v3/dbef088226a055b6373595f0f307291b"
+        }
+      ]
+    }
+  ],
+  "fixtures": {
+    "images": {
+      "status": "ok",
+      "items": [
+        {
+          "id": "474e57b1-c42c-4a06-9790-12ff8b3f952d",
+          "name": "AlmaLinux 10",
+          "status": "active",
+          "extra": "public",
+          "selected": true
+        },
+        {
+          "id": "87ba11c6-898a-4c91-8148-bfd443fbcb9b",
+          "name": "AlmaLinux 8",
+          "status": "active",
+          "extra": "public"
+        },
+        {
+          "id": "9be6b2e7-5949-40e5-857b-6752f9d33d26",
+          "name": "AlmaLinux 9",
+          "status": "active",
+          "extra": "public"
+        },
+        {
+          "id": "4c2af401-9da3-4cb3-8701-b36bbdc359a9",
+          "name": "Debian 11",
+          "status": "active",
+          "extra": "public"
+        },
+        {
+          "id": "d09ba030-536a-4034-b372-05d5d5752465",
+          "name": "Debian 12",
+          "status": "active",
+          "extra": "public"
+        },
+        {
+          "id": "145fcf47-2644-47b4-bc09-0b3d43bb8177",
+          "name": "Oracle Linux 10",
+          "status": "active",
+          "extra": "public"
+        },
+        {
+          "id": "7991351e-5c7a-4adc-bda9-bb83f1cc1a45",
+          "name": "Oracle Linux 8",
+          "status": "active",
+          "extra": "public"
+        },
+        {
+          "id": "1e4ab9b4-ff7f-4fe9-96d0-dd3f07ae4fdf",
+          "name": "Oracle Linux 9",
+          "status": "active",
+          "extra": "public"
+        },
+        {
+          "id": "cc48a7a5-ff00-4f6c-a33e-b2c947d8c118",
+          "name": "Red Hat Enterprise Linux 10",
+          "status": "active",
+          "extra": "public"
+        },
+        {
+          "id": "8900c265-76f6-4761-ad2f-4d384fb80c22",
+          "name": "Red Hat Enterprise Linux 8",
+          "status": "active",
+          "extra": "public"
+        },
+        {
+          "id": "31aae779-ac8b-4255-afc2-84a6c813b486",
+          "name": "Red Hat Enterprise Linux 9",
+          "status": "active",
+          "extra": "public"
+        },
+        {
+          "id": "c9737119-f31f-4b06-9f6f-b2552b4e3337",
+          "name": "Rocky Linux 10",
+          "status": "active",
+          "extra": "public"
+        },
+        {
+          "id": "ab43f949-8a38-4387-a439-869230b408b4",
+          "name": "Rocky Linux 8",
+          "status": "active",
+          "extra": "public"
+        },
+        {
+          "id": "366b13d1-d566-407b-b4dd-9b3d87f541a1",
+          "name": "Rocky Linux 9",
+          "status": "active",
+          "extra": "public"
+        },
+        {
+          "id": "5abfcd0b-8647-4d16-89fc-488876900cfb",
+          "name": "Ubuntu 20.04",
+          "status": "active",
+          "extra": "public"
+        },
+        {
+          "id": "c9fccb13-e23f-44cc-9792-2d2d4428a45f",
+          "name": "Ubuntu 22.04",
+          "status": "active",
+          "extra": "public"
+        },
+        {
+          "id": "ec458631-309a-4b7d-846c-cd2ccc601137",
+          "name": "Ubuntu 24.04",
+          "status": "active",
+          "extra": "public"
+        },
+        {
+          "id": "e4df0af6-5ba0-4247-b9cc-96449fc3616d",
+          "name": "Windows Server 2016",
+          "status": "active",
+          "extra": "public"
+        },
+        {
+          "id": "eed4eaf4-157a-4995-8994-c89c67c93a52",
+          "name": "Windows Server 2016 with SQL 2016 Std",
+          "status": "active",
+          "extra": "public"
+        },
+        {
+          "id": "4ea28d36-5bed-4f2b-b68f-b8b31a3ab300",
+          "name": "Windows Server 2016 with SQL 2016 Web",
+          "status": "active",
+          "extra": "public"
+        }
+      ]
+    },
+    "flavors": {
+      "status": "ok",
+      "items": [
+        {
+          "id": "6bc9e614-d561-477c-a0e2-9122b115789d",
+          "name": "gp.5.1.2",
+          "extra": "ram=2048 disk=0 vcpus=1",
+          "selected": true
+        },
+        {
+          "id": "c85a20aa-30ee-40ba-8724-51f4860acc7d",
+          "name": "gp.5.1.4",
+          "extra": "ram=4096 disk=10 vcpus=1"
+        },
+        {
+          "id": "813056ca-3e63-4db4-9833-64a8019688e5",
+          "name": "gp.5.16.64",
+          "extra": "ram=65536 disk=240 vcpus=16"
+        },
+        {
+          "id": "d3a4a3f8-1aa3-4f9e-b08d-9081bb8aea08",
+          "name": "gp.5.2.2",
+          "extra": "ram=2048 disk=40 vcpus=2"
+        },
+        {
+          "id": "b5ccd490-b138-4d81-b8c3-c074287708e8",
+          "name": "gp.5.2.4",
+          "extra": "ram=4096 disk=40 vcpus=2"
+        },
+        {
+          "id": "05d771d6-a4c2-48e8-9c28-c7a029cdeb94",
+          "name": "gp.5.2.6",
+          "extra": "ram=6144 disk=40 vcpus=2"
+        },
+        {
+          "id": "06aba8cf-7181-4d70-be1d-2a46e8c46f22",
+          "name": "gp.5.2.8",
+          "extra": "ram=8192 disk=40 vcpus=2"
+        },
+        {
+          "id": "40d4958a-56d9-4c8e-ae8b-3e5072398739",
+          "name": "gp.5.24.96",
+          "extra": "ram=98304 disk=240 vcpus=24"
+        },
+        {
+          "id": "1ed24200-5d11-4fde-814d-6b2c2449b313",
+          "name": "gp.5.32.128",
+          "extra": "ram=131072 disk=240 vcpus=32"
+        },
+        {
+          "id": "f2e07e6c-20b0-4ffd-92ad-dbafb9fe86fb",
+          "name": "gp.5.4.12",
+          "extra": "ram=12288 disk=80 vcpus=4"
+        },
+        {
+          "id": "a78521e3-903a-4124-a844-35893a4b639e",
+          "name": "gp.5.4.16",
+          "extra": "ram=16384 disk=80 vcpus=4"
+        },
+        {
+          "id": "1ba37c74-34c1-47f8-965b-c5005c3825d2",
+          "name": "gp.5.4.4",
+          "extra": "ram=4096 disk=80 vcpus=4"
+        },
+        {
+          "id": "c2e4f7c5-26ef-49ca-a121-97e0193304c1",
+          "name": "gp.5.4.8",
+          "extra": "ram=8192 disk=80 vcpus=4"
+        },
+        {
+          "id": "7d1b2ff0-c0cb-4241-bc4f-fece811d6cb1",
+          "name": "gp.5.48.192",
+          "extra": "ram=196608 disk=240 vcpus=48"
+        },
+        {
+          "id": "d00a18da-865b-4b89-9036-ed1736d54649",
+          "name": "gp.5.8.16",
+          "extra": "ram=16384 disk=160 vcpus=8"
+        },
+        {
+          "id": "dbd37462-133a-4177-b1f1-56e5a773a027",
+          "name": "gp.5.8.24",
+          "extra": "ram=24576 disk=160 vcpus=8"
+        },
+        {
+          "id": "fa77d19e-cd7f-4eee-9222-a5680a58834b",
+          "name": "gp.5.8.32",
+          "extra": "ram=32768 disk=160 vcpus=8"
+        },
+        {
+          "id": "bde423c4-dd71-4710-901d-11905d22229d",
+          "name": "mo.6.2.12",
+          "extra": "ram=12288 disk=80 vcpus=2"
+        },
+        {
+          "id": "03acf2b1-631f-40e0-bb94-994d3eca2b58",
+          "name": "mo.6.2.16",
+          "extra": "ram=16384 disk=80 vcpus=2"
+        },
+        {
+          "id": "13a531a8-11ae-40e9-9910-f63de0d42faa",
+          "name": "mo.6.4.20",
+          "extra": "ram=20480 disk=80 vcpus=4"
+        }
+      ]
+    },
+    "networks": {
+      "status": "ok",
+      "items": [
+        {
+          "id": "82be3711-cd97-4f7c-8bbd-59f5524a949e",
+          "name": "PUBLICNET",
+          "status": "ACTIVE",
+          "extra": "shared=true subnets=3",
+          "selected": true
+        },
+        {
+          "id": "acc82179-24c6-4b87-9f8c-de951a1c24fa",
+          "name": "private_net",
+          "status": "ACTIVE",
+          "extra": "shared=false subnets=1"
+        }
+      ]
+    },
+    "volume_types": {
+      "status": "ok",
+      "items": [
+        {
+          "id": "c221069c-f2f6-4685-8139-30d6f3d231b4",
+          "name": "Capacity",
+          "extra": "public=true",
+          "selected": true
+        },
+        {
+          "id": "dece7db2-f286-4246-9684-422649663425",
+          "name": "HA-Performance",
+          "extra": "public=true"
+        },
+        {
+          "id": "746b3415-7ce2-4b69-ba2b-5cd94c0bcdd4",
+          "name": "HA-Standard",
+          "extra": "public=true"
+        },
+        {
+          "id": "86fb2be9-576a-4ae6-a1b4-e5bd956332fd",
+          "name": "Performance",
+          "extra": "public=true"
+        },
+        {
+          "id": "4e079462-d407-4f78-bb9f-8d346cde7fd6",
+          "name": "Standard",
+          "extra": "public=true"
+        }
+      ]
+    },
+    "roles": {
+      "status": "not-implemented",
+      "error": "role discovery is not implemented yet"
+    }
+  },
+  "notes": [
+    "Discovery artifacts must not include tokens, passwords, application credential secrets, clouds.yaml contents, or debug logs.",
+    "Fixture candidates are discovered at run time and should be re-queried before lifecycle tests because cloud state can change."
+  ]
+}

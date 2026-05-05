@@ -76,6 +76,15 @@ make compat-static
 
 This compares the pinned Python OSC oracle with `./bin/openstack` for required parser, help, completion, and local-output cases. It also reports known gaps, such as root help and parser error text, without failing the target. Use `make compat-static-all` to additionally compare `--help` output for every cataloged command.
 
+Discover non-secret live cloud capabilities and fixture candidates:
+
+```sh
+make discover-cloud CLOUD=cloud6
+make discover-cloud CLOUD=cloud6,flex-sjc,flex-dfw,flex-iad
+```
+
+Discovery writes JSON reports under `compat/live-clouds/`. These reports intentionally omit secrets and should be refreshed before lifecycle tests because cloud state can change.
+
 Regenerate compatibility artifacts after changing the local Python OSC oracle or matrix generator:
 
 ```sh

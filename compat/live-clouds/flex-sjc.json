@@ -1,0 +1,647 @@
+{
+  "cloud": "flex-sjc",
+  "generated_at": "2026-05-05T05:05:52Z",
+  "status": "ok",
+  "auth": {
+    "identity_endpoint": "https://keystone.api.sjc3.rackspacecloud.com/v3/",
+    "region": "SJC3",
+    "endpoint_type": "public"
+  },
+  "services": [
+    {
+      "id": "70bfb6b2e12c42629256595a089c5d11",
+      "name": "heat-cfn",
+      "type": "cloudformation",
+      "endpoints": [
+        {
+          "region": "SJC3",
+          "region_id": "SJC3",
+          "interface": "admin",
+          "url": "http://heat-cfn.openstack.svc.cluster.local:8000/v1"
+        },
+        {
+          "region": "SJC3",
+          "region_id": "SJC3",
+          "interface": "internal",
+          "url": "http://heat-cfn.openstack.svc.cluster.local:8000/v1"
+        },
+        {
+          "region": "SJC3",
+          "region_id": "SJC3",
+          "interface": "public",
+          "url": "https://cloudformation.api.sjc3.rackspacecloud.com/v1"
+        }
+      ]
+    },
+    {
+      "id": "f5892a9b120149f19ceb55a194863b78",
+      "name": "nova",
+      "type": "compute",
+      "endpoints": [
+        {
+          "region": "SJC3",
+          "region_id": "SJC3",
+          "interface": "admin",
+          "url": "http://nova-api.openstack.svc.cluster.local:8774/v2.1/dbef088226a055b6373595f0f307291b"
+        },
+        {
+          "region": "SJC3",
+          "region_id": "SJC3",
+          "interface": "internal",
+          "url": "http://nova-api.openstack.svc.cluster.local:8774/v2.1/dbef088226a055b6373595f0f307291b"
+        },
+        {
+          "region": "SJC3",
+          "region_id": "SJC3",
+          "interface": "public",
+          "url": "https://nova.api.sjc3.rackspacecloud.com/v2.1/dbef088226a055b6373595f0f307291b"
+        }
+      ]
+    },
+    {
+      "id": "1a21b61e301b4f50a5f898380860403a",
+      "name": "magnum",
+      "type": "container-infra",
+      "endpoints": [
+        {
+          "region": "SJC3",
+          "region_id": "SJC3",
+          "interface": "admin",
+          "url": "http://magnum-api.openstack.svc.cluster.local:9511/v1"
+        },
+        {
+          "region": "SJC3",
+          "region_id": "SJC3",
+          "interface": "internal",
+          "url": "http://magnum-api.openstack.svc.cluster.local:9511/v1"
+        },
+        {
+          "region": "SJC3",
+          "region_id": "SJC3",
+          "interface": "public",
+          "url": "https://magnum.api.sjc3.rackspacecloud.com/v1"
+        }
+      ]
+    },
+    {
+      "id": "487cc63dbe204a1e9fb32c9ca0dd3ba3",
+      "name": "keystone",
+      "type": "identity",
+      "endpoints": [
+        {
+          "region": "SJC3",
+          "region_id": "SJC3",
+          "interface": "admin",
+          "url": "http://keystone.openstack.svc.cluster.local/v3"
+        },
+        {
+          "region": "SJC3",
+          "region_id": "SJC3",
+          "interface": "internal",
+          "url": "http://keystone-api.openstack.svc.cluster.local:5000/v3"
+        },
+        {
+          "region": "SJC3",
+          "region_id": "SJC3",
+          "interface": "public",
+          "url": "https://keystone.api.sjc3.rackspacecloud.com/v3"
+        }
+      ]
+    },
+    {
+      "id": "8714519e53d943e59a91e52cfb2c4719",
+      "name": "glance",
+      "type": "image",
+      "endpoints": [
+        {
+          "region": "SJC3",
+          "region_id": "SJC3",
+          "interface": "admin",
+          "url": "http://glance-api.openstack.svc.cluster.local:9292"
+        },
+        {
+          "region": "SJC3",
+          "region_id": "SJC3",
+          "interface": "internal",
+          "url": "http://glance-api.openstack.svc.cluster.local:9292"
+        },
+        {
+          "region": "SJC3",
+          "region_id": "SJC3",
+          "interface": "public",
+          "url": "https://glance.api.sjc3.rackspacecloud.com"
+        }
+      ]
+    },
+    {
+      "id": "bb2f7d436a434716a3dd4f3cf7057d67",
+      "name": "barbican",
+      "type": "key-manager",
+      "endpoints": [
+        {
+          "region": "SJC3",
+          "region_id": "SJC3",
+          "interface": "admin",
+          "url": "http://barbican-api.openstack.svc.cluster.local:9311/"
+        },
+        {
+          "region": "SJC3",
+          "region_id": "SJC3",
+          "interface": "internal",
+          "url": "http://barbican-api.openstack.svc.cluster.local:9311/"
+        },
+        {
+          "region": "SJC3",
+          "region_id": "SJC3",
+          "interface": "public",
+          "url": "https://barbican.api.sjc3.rackspacecloud.com/"
+        }
+      ]
+    },
+    {
+      "id": "155800270cd8419d8817b2b959c9d3d3",
+      "name": "octavia",
+      "type": "load-balancer",
+      "endpoints": [
+        {
+          "region": "SJC3",
+          "region_id": "SJC3",
+          "interface": "admin",
+          "url": "http://octavia.openstack.svc.cluster.local:9876"
+        },
+        {
+          "region": "SJC3",
+          "region_id": "SJC3",
+          "interface": "internal",
+          "url": "http://octavia-api.openstack.svc.cluster.local:9876"
+        },
+        {
+          "region": "SJC3",
+          "region_id": "SJC3",
+          "interface": "public",
+          "url": "https://octavia.api.sjc3.rackspacecloud.com"
+        }
+      ]
+    },
+    {
+      "id": "ff6d9afbd41045a1a8ead379080def31",
+      "name": "gnocchi",
+      "type": "metric",
+      "endpoints": [
+        {
+          "region": "SJC3",
+          "region_id": "SJC3",
+          "interface": "admin",
+          "url": "http://gnocchi-api.openstack.svc.cluster.local:8041"
+        },
+        {
+          "region": "SJC3",
+          "region_id": "SJC3",
+          "interface": "internal",
+          "url": "http://gnocchi-api.openstack.svc.cluster.local:8041"
+        },
+        {
+          "region": "SJC3",
+          "region_id": "SJC3",
+          "interface": "public",
+          "url": "https://gnocchi.api.sjc3.rackspacecloud.com"
+        }
+      ]
+    },
+    {
+      "id": "f8deead95c1a428bb83efe9821c20359",
+      "name": "neutron",
+      "type": "network",
+      "endpoints": [
+        {
+          "region": "SJC3",
+          "region_id": "SJC3",
+          "interface": "admin",
+          "url": "http://neutron-server.openstack.svc.cluster.local:9696"
+        },
+        {
+          "region": "SJC3",
+          "region_id": "SJC3",
+          "interface": "internal",
+          "url": "http://neutron-server.openstack.svc.cluster.local:9696"
+        },
+        {
+          "region": "SJC3",
+          "region_id": "SJC3",
+          "interface": "public",
+          "url": "https://neutron.api.sjc3.rackspacecloud.com"
+        }
+      ]
+    },
+    {
+      "id": "ef2698fcc57b4826a7ac9e890ed5ab67",
+      "name": "swift",
+      "type": "object-store",
+      "endpoints": [
+        {
+          "region": "SJC3",
+          "region_id": "SJC3",
+          "interface": "internal",
+          "url": "https://swift.api.sjc3.rackspacecloud.com/v1/AUTH_dbef088226a055b6373595f0f307291b"
+        },
+        {
+          "region": "SJC3",
+          "region_id": "SJC3",
+          "interface": "public",
+          "url": "https://swift.api.sjc3.rackspacecloud.com/v1/AUTH_dbef088226a055b6373595f0f307291b"
+        }
+      ]
+    },
+    {
+      "id": "7687db24ba5e44438da55b76c6c87974",
+      "name": "heat",
+      "type": "orchestration",
+      "endpoints": [
+        {
+          "region": "SJC3",
+          "region_id": "SJC3",
+          "interface": "admin",
+          "url": "http://heat-api.openstack.svc.cluster.local:8004/v1/dbef088226a055b6373595f0f307291b"
+        },
+        {
+          "region": "SJC3",
+          "region_id": "SJC3",
+          "interface": "internal",
+          "url": "http://heat-api.openstack.svc.cluster.local:8004/v1/dbef088226a055b6373595f0f307291b"
+        },
+        {
+          "region": "SJC3",
+          "region_id": "SJC3",
+          "interface": "public",
+          "url": "https://heat.api.sjc3.rackspacecloud.com/v1/dbef088226a055b6373595f0f307291b"
+        }
+      ]
+    },
+    {
+      "id": "c34f943ba7664b799cd4875d967c8b77",
+      "name": "placement",
+      "type": "placement",
+      "endpoints": [
+        {
+          "region": "SJC3",
+          "region_id": "SJC3",
+          "interface": "admin",
+          "url": "http://placement-api.openstack.svc.cluster.local:8778/"
+        },
+        {
+          "region": "SJC3",
+          "region_id": "SJC3",
+          "interface": "internal",
+          "url": "http://placement-api.openstack.svc.cluster.local:8778/"
+        },
+        {
+          "region": "SJC3",
+          "region_id": "SJC3",
+          "interface": "public",
+          "url": "https://placement.api.sjc3.rackspacecloud.com/"
+        }
+      ]
+    },
+    {
+      "id": "6ddc7426cb624d21ae70ceda1ce7ec8e",
+      "name": "blazar",
+      "type": "reservation",
+      "endpoints": [
+        {
+          "region": "SJC3",
+          "region_id": "SJC3",
+          "interface": "admin",
+          "url": "http://blazar-api.openstack.svc.cluster.local:1234/v1"
+        },
+        {
+          "region": "SJC3",
+          "region_id": "SJC3",
+          "interface": "internal",
+          "url": "http://blazar-api.openstack.svc.cluster.local:1234/v1"
+        },
+        {
+          "region": "SJC3",
+          "region_id": "SJC3",
+          "interface": "public",
+          "url": "https://blazar.api.sjc3.rackspacecloud.com/v1"
+        }
+      ]
+    },
+    {
+      "id": "9aab4198032643529f4b8be6040d86fb",
+      "name": "cinderv3",
+      "type": "volumev3",
+      "endpoints": [
+        {
+          "region": "SJC3",
+          "region_id": "SJC3",
+          "interface": "admin",
+          "url": "http://cinder-api.openstack.svc.cluster.local:8776/v3/dbef088226a055b6373595f0f307291b"
+        },
+        {
+          "region": "SJC3",
+          "region_id": "SJC3",
+          "interface": "internal",
+          "url": "http://cinder-api.openstack.svc.cluster.local:8776/v3/dbef088226a055b6373595f0f307291b"
+        },
+        {
+          "region": "SJC3",
+          "region_id": "SJC3",
+          "interface": "public",
+          "url": "https://cinder.api.sjc3.rackspacecloud.com/v3/dbef088226a055b6373595f0f307291b"
+        }
+      ]
+    }
+  ],
+  "fixtures": {
+    "images": {
+      "status": "ok",
+      "items": [
+        {
+          "id": "e3c20505-15a1-4791-8150-49f0b1e88b75",
+          "name": "AlmaLinux 10",
+          "status": "active",
+          "extra": "public",
+          "selected": true
+        },
+        {
+          "id": "0eb89d15-136e-491d-af82-4b846c75732c",
+          "name": "AlmaLinux 8",
+          "status": "active",
+          "extra": "public"
+        },
+        {
+          "id": "d142b796-76aa-48c9-b315-adbb55a0763a",
+          "name": "AlmaLinux 9",
+          "status": "active",
+          "extra": "public"
+        },
+        {
+          "id": "1d4a0b15-68f1-4de3-a1cc-5a8730963b01",
+          "name": "Debian 11",
+          "status": "active",
+          "extra": "public"
+        },
+        {
+          "id": "77a59d2d-95dd-4300-9d6a-8c2bbfc19e54",
+          "name": "Debian 12",
+          "status": "active",
+          "extra": "public"
+        },
+        {
+          "id": "0bfb8c7d-8ec4-439a-baf6-e229324377cd",
+          "name": "Oracle Linux 10",
+          "status": "active",
+          "extra": "public"
+        },
+        {
+          "id": "07170995-76d7-4cc5-828d-584a648fdd9b",
+          "name": "Oracle Linux 8",
+          "status": "active",
+          "extra": "public"
+        },
+        {
+          "id": "f1e9d430-28ef-4737-b571-c7ab54db0bcf",
+          "name": "Oracle Linux 9",
+          "status": "active",
+          "extra": "public"
+        },
+        {
+          "id": "bbf27171-11a5-4099-8342-5e89619159ce",
+          "name": "Red Hat Enterprise Linux 10",
+          "status": "active",
+          "extra": "public"
+        },
+        {
+          "id": "6e55b016-6cd5-45ad-adaa-782fc66cddc1",
+          "name": "Red Hat Enterprise Linux 8",
+          "status": "active",
+          "extra": "public"
+        },
+        {
+          "id": "bf24f487-ea2d-4ac5-83bf-5dfe5eff6d91",
+          "name": "Red Hat Enterprise Linux 9",
+          "status": "active",
+          "extra": "public"
+        },
+        {
+          "id": "a158dbe5-6cbe-4c2a-88ce-c5fbcaf06aa9",
+          "name": "Rocky Linux 10",
+          "status": "active",
+          "extra": "public"
+        },
+        {
+          "id": "b78876a5-6464-4068-926d-688e10e79761",
+          "name": "Rocky Linux 8",
+          "status": "active",
+          "extra": "public"
+        },
+        {
+          "id": "13529985-5bf0-4d5d-bc3e-530bfe6f5045",
+          "name": "Rocky Linux 9",
+          "status": "active",
+          "extra": "public"
+        },
+        {
+          "id": "deef4b26-24f3-4d76-87fd-5d7cd8c514b1",
+          "name": "Rocky Linux 9 LVM",
+          "status": "active",
+          "extra": "shared"
+        },
+        {
+          "id": "3d722bc3-6db7-4b9d-9f5c-b53df9f752c8",
+          "name": "Rocky-Linux-9.4",
+          "status": "active",
+          "extra": "shared"
+        },
+        {
+          "id": "c130bdd1-7876-446e-89c8-91046af1a77b",
+          "name": "Ubuntu 22.04",
+          "status": "active",
+          "extra": "public"
+        },
+        {
+          "id": "799dcf97-3656-4361-8187-13ab1b295e33",
+          "name": "Ubuntu 24.04",
+          "status": "active",
+          "extra": "public"
+        },
+        {
+          "id": "42fd645e-44d8-4b1a-8a6a-30038d3bdb07",
+          "name": "Windows Server 2016",
+          "status": "active",
+          "extra": "public"
+        },
+        {
+          "id": "8d0e23af-b42d-4dba-8aa1-84bb78552edd",
+          "name": "Windows Server 2016 with SQL 2016 Std",
+          "status": "active",
+          "extra": "public"
+        }
+      ]
+    },
+    "flavors": {
+      "status": "ok",
+      "items": [
+        {
+          "id": "4176c195-d4bf-4de4-8f93-e6ebb84904a1",
+          "name": "gp.0.1.2",
+          "extra": "ram=2048 disk=0 vcpus=1",
+          "selected": true
+        },
+        {
+          "id": "cd36fef3-a00e-435c-bf5a-f36d7e5ab09c",
+          "name": "gp.0.1.4",
+          "extra": "ram=4096 disk=10 vcpus=1"
+        },
+        {
+          "id": "07da65c7-9117-450d-a9a4-a4e05c08c5bc",
+          "name": "gp.0.16.64",
+          "extra": "ram=65536 disk=240 vcpus=16"
+        },
+        {
+          "id": "204d0927-a294-4a37-8fd5-9b2a8c5e294e",
+          "name": "gp.0.2.2",
+          "extra": "ram=2048 disk=40 vcpus=2"
+        },
+        {
+          "id": "3a444cab-ad32-4e17-8f39-7cbf722a3c8c",
+          "name": "gp.0.2.4",
+          "extra": "ram=4096 disk=40 vcpus=2"
+        },
+        {
+          "id": "12d47105-4893-4b73-a0f9-07e55815d78d",
+          "name": "gp.0.2.6",
+          "extra": "ram=6144 disk=40 vcpus=2"
+        },
+        {
+          "id": "a907e82d-3ab5-4bc9-973d-f3c3ac58dd80",
+          "name": "gp.0.2.8",
+          "extra": "ram=8192 disk=40 vcpus=2"
+        },
+        {
+          "id": "1f2b42e5-29db-4871-affe-6b10ba5c487d",
+          "name": "gp.0.24.96",
+          "extra": "ram=98304 disk=240 vcpus=24"
+        },
+        {
+          "id": "f4876b72-8494-488f-852b-e08e2ebe6a7b",
+          "name": "gp.0.32.128",
+          "extra": "ram=131072 disk=240 vcpus=32"
+        },
+        {
+          "id": "a2a5960e-fd6e-42aa-baa5-df154f00c372",
+          "name": "gp.0.4.12",
+          "extra": "ram=12288 disk=80 vcpus=4"
+        },
+        {
+          "id": "f171caa5-9891-465e-b6f2-2301eabc7533",
+          "name": "gp.0.4.16",
+          "extra": "ram=16384 disk=80 vcpus=4"
+        },
+        {
+          "id": "eb4c139d-1d49-4f94-8c12-9492a841a32c",
+          "name": "gp.0.4.4",
+          "extra": "ram=4096 disk=80 vcpus=4"
+        },
+        {
+          "id": "f5c14236-5681-4bac-9ed6-6e28c7854240",
+          "name": "gp.0.4.8",
+          "extra": "ram=8192 disk=80 vcpus=4"
+        },
+        {
+          "id": "c047c58a-4c1e-455a-b3e0-cd0a7124d30f",
+          "name": "gp.0.48.192",
+          "extra": "ram=196608 disk=240 vcpus=48"
+        },
+        {
+          "id": "385e256a-7eaa-4d96-8742-f0d0f05ea8d4",
+          "name": "gp.0.8.16",
+          "extra": "ram=16384 disk=160 vcpus=8"
+        },
+        {
+          "id": "2fdbe10c-34ac-4e1e-a0b1-3eb88b6afb56",
+          "name": "gp.0.8.24",
+          "extra": "ram=24576 disk=160 vcpus=8"
+        },
+        {
+          "id": "e3b84823-9930-47e7-87b3-5c7ea7489126",
+          "name": "gp.0.8.32",
+          "extra": "ram=32768 disk=160 vcpus=8"
+        },
+        {
+          "id": "dd063aaa-3c04-4064-83a3-73faf22c2b16",
+          "name": "mo.1.2.12",
+          "extra": "ram=12288 disk=80 vcpus=2"
+        },
+        {
+          "id": "aa309302-f57b-45a2-9d35-6f8ecb1a7ace",
+          "name": "mo.1.2.16",
+          "extra": "ram=16384 disk=80 vcpus=2"
+        },
+        {
+          "id": "ddabca4b-1ef9-4ad5-9414-cc6481416532",
+          "name": "mo.1.4.20",
+          "extra": "ram=20480 disk=80 vcpus=4"
+        }
+      ]
+    },
+    "networks": {
+      "status": "ok",
+      "items": [
+        {
+          "id": "723f8fa2-dbf7-4cec-8d5f-017e62c12f79",
+          "name": "PUBLICNET",
+          "status": "ACTIVE",
+          "extra": "shared=true subnets=4",
+          "selected": true
+        },
+        {
+          "id": "f6ccf349-f6b9-4335-80bc-4f479a4cc35e",
+          "name": "privateNET",
+          "status": "ACTIVE",
+          "extra": "shared=false subnets=1"
+        }
+      ]
+    },
+    "volume_types": {
+      "status": "ok",
+      "items": [
+        {
+          "id": "50462ba1-01ba-4be8-a3c8-e389d146c833",
+          "name": "Capacity",
+          "extra": "public=true",
+          "selected": true
+        },
+        {
+          "id": "36f4683f-4052-44c0-9364-f5f8ecb3dca9",
+          "name": "HA-Performance",
+          "extra": "public=true"
+        },
+        {
+          "id": "fe8e457c-2ea7-47c8-8f40-9afa866f6fa1",
+          "name": "HA-Standard",
+          "extra": "public=true"
+        },
+        {
+          "id": "367dca2d-d6dc-4541-8e2d-62b8beca0448",
+          "name": "Performance",
+          "extra": "public=true"
+        },
+        {
+          "id": "4fa2c4e4-bb95-487b-b802-b86f101846ba",
+          "name": "Standard",
+          "extra": "public=true"
+        }
+      ]
+    },
+    "roles": {
+      "status": "not-implemented",
+      "error": "role discovery is not implemented yet"
+    }
+  },
+  "notes": [
+    "Discovery artifacts must not include tokens, passwords, application credential secrets, clouds.yaml contents, or debug logs.",
+    "Fixture candidates are discovered at run time and should be re-queried before lifecycle tests because cloud state can change."
+  ]
+}
