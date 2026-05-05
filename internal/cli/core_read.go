@@ -16309,31 +16309,45 @@ func waitForServerStatus(ctx context.Context, stdout io.Writer, opts *Options, c
 	target := upperStringSet(targets)
 	failed := upperStringSet(failures)
 	prettyProgress := 0.0
+	prettyProgressLineOpen := false
 	for {
 		item, err := servers.Get(ctx, client, serverID).Extract()
 		if err != nil {
+			if prettyProgressLineOpen {
+				_ = finishPrettyProgressLine(stdout)
+			}
 			return err
 		}
 		status := strings.ToUpper(item.Status)
 		if target[status] {
 			if prettyOutput(opts) {
-				_ = renderPrettyProgressAnimated(stdout, opts, "complete", prettyProgress, 1)
+				_ = renderPrettyProgressAnimated(stdout, opts, "complete", prettyProgress, 1, true)
 			}
 			return nil
 		}
 		if failed[status] {
+			if prettyProgressLineOpen {
+				_ = finishPrettyProgressLine(stdout)
+			}
 			return fmt.Errorf("server %s entered %s status", serverID, item.Status)
 		}
 		if time.Now().After(deadline) {
+			if prettyProgressLineOpen {
+				_ = finishPrettyProgressLine(stdout)
+			}
 			return fmt.Errorf("timed out waiting for server %s", serverID)
 		}
 		if prettyOutput(opts) {
 			previousProgress := prettyProgress
 			prettyProgress = nextPrettyWaitProgress(item.Progress, prettyProgress)
-			_ = renderPrettyProgressAnimated(stdout, opts, "waiting", previousProgress, prettyProgress)
+			_ = renderPrettyProgressAnimated(stdout, opts, "waiting", previousProgress, prettyProgress, false)
+			prettyProgressLineOpen = true
 		}
 		select {
 		case <-ctx.Done():
+			if prettyProgressLineOpen {
+				_ = finishPrettyProgressLine(stdout)
+			}
 			return ctx.Err()
 		case <-time.After(5 * time.Second):
 		}

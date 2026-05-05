@@ -1505,7 +1505,7 @@ Sources consulted:
 
 ## 2026-05-05: Pretty Wait Progress Animation
 
-Decision: keep default `server create --wait` output compatible with Python OSC, but make Pretty wait output feel alive. Pretty server-status waits now keep a local progress floor that advances by 5% on each poll when Nova does not report useful progress, cap visible progress below 100% until the target status is reached, and render the final completed state at 100%. Progress labels are padded so `waiting` and `complete` do not shift the progress bar column.
+Decision: keep default `server create --wait` output compatible with Python OSC, but make Pretty wait output feel alive. Pretty server-status waits now keep a local progress floor that advances by 5% on each poll when Nova does not report useful progress, cap visible progress below 100% until the target status is reached, update the existing terminal progress bar instead of printing a new one per poll, and render the final completed state at 100%. Progress labels are padded so `waiting` and `complete` do not shift the progress bar column.
 
 Decision: use Harmonica directly for terminal Pretty progress animation rather than switching the CLI to a Bubble Tea application loop. Bubbles’ progress model documents that `ViewAs` is static and that animation uses model updates; this CLI path is a synchronous command renderer, so a small terminal-only Harmonica spring keeps the behavior localized. Non-TTY Pretty output remains a single deterministic progress line.
 

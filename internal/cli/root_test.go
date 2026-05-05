@@ -943,7 +943,7 @@ func TestPrettyProgressAnimatedUsesCarriageReturnForTTY(t *testing.T) {
 	}()
 
 	var stdout bytes.Buffer
-	if err := renderPrettyProgressAnimated(&stdout, &Options{}, "waiting", 0, 0.5); err != nil {
+	if err := renderPrettyProgressAnimated(&stdout, &Options{}, "waiting", 0, 0.5, true); err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 	output := stdout.String()
@@ -955,6 +955,43 @@ func TestPrettyProgressAnimatedUsesCarriageReturnForTTY(t *testing.T) {
 	}
 	if !strings.Contains(output, "50%") {
 		t.Fatalf("expected animated progress to render the final target percent, got %q", output)
+	}
+}
+
+func TestPrettyProgressAnimatedKeepsTTYLineOpen(t *testing.T) {
+	t.Setenv("NO_COLOR", "1")
+	previousTTY := tableWriterIsTerminal
+	tableWriterIsTerminal = func(stdout io.Writer) bool {
+		return true
+	}
+	defer func() {
+		tableWriterIsTerminal = previousTTY
+	}()
+	previousDelay := prettyProgressAnimationFrameDelay
+	previousDuration := prettyProgressAnimationMaxDuration
+	prettyProgressAnimationFrameDelay = time.Millisecond
+	prettyProgressAnimationMaxDuration = 2 * time.Millisecond
+	defer func() {
+		prettyProgressAnimationFrameDelay = previousDelay
+		prettyProgressAnimationMaxDuration = previousDuration
+	}()
+
+	var stdout bytes.Buffer
+	if err := renderPrettyProgressAnimated(&stdout, &Options{}, "waiting", 0, 0.5, false); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	output := stdout.String()
+	if strings.HasSuffix(output, "\n") {
+		t.Fatalf("expected waiting progress to keep the terminal line open, got %q", output)
+	}
+	if err := renderPrettyProgressAnimated(&stdout, &Options{}, "complete", 0.5, 1, true); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if !strings.HasSuffix(stdout.String(), "\n") {
+		t.Fatalf("expected complete progress to close the terminal line, got %q", stdout.String())
+	}
+	if strings.Count(stdout.String(), "\n") != 1 {
+		t.Fatalf("expected only the final progress render to print a newline, got %q", stdout.String())
 	}
 }
 

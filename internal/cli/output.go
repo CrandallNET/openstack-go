@@ -407,14 +407,14 @@ func renderPrettyProgress(stdout io.Writer, opts *Options, label string, percent
 	return err
 }
 
-func renderPrettyProgressAnimated(stdout io.Writer, opts *Options, label string, from float64, to float64) error {
+func renderPrettyProgressAnimated(stdout io.Writer, opts *Options, label string, from float64, to float64, endLine bool) error {
 	if !tableWriterIsTerminal(stdout) {
 		return renderPrettyProgress(stdout, opts, label, to)
 	}
 	from = math.Max(0, math.Min(1, from))
 	to = math.Max(0, math.Min(1, to))
 	if math.Abs(to-from) < 0.001 {
-		return renderPrettyProgress(stdout, opts, label, to)
+		return renderPrettyProgressTerminal(stdout, opts, label, to, endLine)
 	}
 
 	spring := harmonica.NewSpring(harmonica.FPS(30), 18.0, 1.0)
@@ -431,7 +431,23 @@ func renderPrettyProgressAnimated(stdout io.Writer, opts *Options, label string,
 		}
 		time.Sleep(prettyProgressAnimationFrameDelay)
 	}
-	_, err := fmt.Fprintf(stdout, "\r%s\n", prettyProgressView(stdout, opts, label, to))
+	return renderPrettyProgressTerminal(stdout, opts, label, to, endLine)
+}
+
+func renderPrettyProgressTerminal(stdout io.Writer, opts *Options, label string, percent float64, endLine bool) error {
+	lineEnd := ""
+	if endLine {
+		lineEnd = "\n"
+	}
+	_, err := fmt.Fprintf(stdout, "\r%s%s", prettyProgressView(stdout, opts, label, percent), lineEnd)
+	return err
+}
+
+func finishPrettyProgressLine(stdout io.Writer) error {
+	if !tableWriterIsTerminal(stdout) {
+		return nil
+	}
+	_, err := fmt.Fprintln(stdout)
 	return err
 }
 
