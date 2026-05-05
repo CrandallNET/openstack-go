@@ -61,13 +61,18 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"aggregate list", "aggregate show",
 		"allocation candidate list",
 		"availability zone list",
-		"block storage cluster list", "block storage cluster show",
-		"block storage log level list",
+		"block storage cleanup",
+		"block storage cluster list", "block storage cluster set", "block storage cluster show",
+		"block storage log level list", "block storage log level set",
 		"block storage resource filter list", "block storage resource filter show",
+		"block storage snapshot manageable list", "block storage volume manageable list",
 		"cached image clear", "cached image delete",
 		"cached image list", "cached image queue",
 		"compute agent list",
 		"compute service list",
+		"consistency group add volume", "consistency group create", "consistency group delete", "consistency group list",
+		"consistency group remove volume", "consistency group set", "consistency group show",
+		"consistency group snapshot create", "consistency group snapshot delete", "consistency group snapshot list", "consistency group snapshot show",
 		"console connection show",
 		"console log show", "console url show",
 		"container create", "container delete", "container list", "container set", "container show", "container unset",
@@ -147,20 +152,30 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"trait list", "trait show",
 		"usage list", "usage show",
 		"versions show",
-		"volume attachment list", "volume attachment show",
+		"volume attachment complete", "volume attachment create", "volume attachment delete",
+		"volume attachment list", "volume attachment set", "volume attachment show",
+		"volume backend capability show",
 		"volume backend pool list",
-		"volume backup list", "volume backup show",
-		"volume group list", "volume group show",
-		"volume group snapshot list", "volume group snapshot show",
-		"volume group type list", "volume group type show",
-		"volume list", "volume show",
-		"volume message list", "volume message show",
-		"volume qos list", "volume qos show",
-		"volume service list",
-		"volume snapshot list", "volume snapshot show",
+		"volume backup create", "volume backup delete", "volume backup list",
+		"volume backup record export", "volume backup record import", "volume backup restore",
+		"volume backup set", "volume backup show", "volume backup unset",
+		"volume group create", "volume group delete", "volume group failover", "volume group list", "volume group set", "volume group show",
+		"volume group snapshot create", "volume group snapshot delete", "volume group snapshot list", "volume group snapshot show",
+		"volume group type create", "volume group type delete", "volume group type list", "volume group type set", "volume group type show",
+		"volume host set",
+		"volume create", "volume delete", "volume list", "volume set", "volume show", "volume unset",
+		"volume message delete", "volume message list", "volume message show",
+		"volume migrate",
+		"volume qos associate", "volume qos create", "volume qos delete", "volume qos disassociate",
+		"volume qos list", "volume qos set", "volume qos show", "volume qos unset",
+		"volume revert",
+		"volume service list", "volume service set",
+		"volume snapshot create", "volume snapshot delete", "volume snapshot list",
+		"volume snapshot set", "volume snapshot show", "volume snapshot unset",
 		"volume summary",
+		"volume transfer request accept", "volume transfer request create", "volume transfer request delete",
 		"volume transfer request list", "volume transfer request show",
-		"volume type list", "volume type show",
+		"volume type create", "volume type delete", "volume type list", "volume type set", "volume type show", "volume type unset",
 	} {
 		registry.implemented[path] = runCoreRead(path, stdout, opts)
 	}
@@ -1350,6 +1365,17 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		}
 	case "volume backend pool list":
 		cmd.Flags().Bool("long", false, "show detailed information about pools")
+	case "block storage cleanup":
+		cmd.Flags().String("cluster", "", "cluster name")
+		cmd.Flags().String("host", "", "host name")
+		cmd.Flags().String("binary", "", "service binary")
+		cmd.Flags().Bool("up", false, "filter by up status")
+		cmd.Flags().Bool("down", false, "filter by down status")
+		cmd.Flags().Bool("disabled", false, "filter by disabled status")
+		cmd.Flags().Bool("enabled", false, "filter by enabled status")
+		cmd.Flags().String("resource-id", "", "resource UUID")
+		cmd.Flags().String("resource-type", "", "resource type")
+		cmd.Flags().String("service-id", "", "service database ID")
 	case "block storage cluster list":
 		cmd.Flags().String("cluster", "", "filter by cluster name")
 		cmd.Flags().String("binary", "", "filter by cluster binary")
@@ -1360,12 +1386,52 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().Int("num-hosts", 0, "filter by number of hosts")
 		cmd.Flags().Int("num-down-hosts", 0, "filter by number of down hosts")
 		cmd.Flags().Bool("long", false, "list additional fields")
+	case "block storage cluster set":
+		cmd.Flags().String("binary", "cinder-volume", "service binary")
+		cmd.Flags().Bool("enable", false, "enable cluster")
+		cmd.Flags().Bool("disable", false, "disable cluster")
+		cmd.Flags().String("disable-reason", "", "disable reason")
 	case "block storage cluster show":
 		cmd.Flags().String("binary", "", "service binary")
 	case "block storage log level list":
 		cmd.Flags().String("host", "", "filter by host")
 		cmd.Flags().String("service", "", "filter by service binary")
 		cmd.Flags().String("log-prefix", "", "filter by log prefix")
+	case "block storage log level set":
+		cmd.Flags().String("host", "", "host name")
+		cmd.Flags().String("service", "", "service binary")
+		cmd.Flags().String("log-prefix", "", "log prefix")
+	case "block storage volume manageable list", "block storage snapshot manageable list":
+		cmd.Flags().String("cluster", "", "cluster name")
+		cmd.Flags().Bool("long", false, "list additional fields")
+		cmd.Flags().String("marker", "", "pagination marker")
+		cmd.Flags().Int("limit", 0, "maximum number of entries")
+		cmd.Flags().Int("offset", 0, "number of entries to skip")
+		cmd.Flags().String("sort", "", "sort expression")
+	case "consistency group list":
+		cmd.Flags().Bool("all-projects", false, "include all projects")
+		cmd.Flags().Bool("long", false, "list additional fields")
+	case "consistency group create":
+		cmd.Flags().String("volume-type", "", "volume type")
+		cmd.Flags().String("source", "", "source consistency group")
+		cmd.Flags().String("consistency-group-source", "", "source consistency group")
+		cmd.Flags().String("snapshot", "", "source consistency group snapshot")
+		cmd.Flags().String("consistency-group-snapshot", "", "source consistency group snapshot")
+		cmd.Flags().String("description", "", "consistency group description")
+		cmd.Flags().String("availability-zone", "", "availability zone")
+	case "consistency group delete":
+		cmd.Flags().Bool("force", false, "force delete")
+	case "consistency group set":
+		cmd.Flags().String("name", "", "new consistency group name")
+		cmd.Flags().String("description", "", "new consistency group description")
+	case "consistency group snapshot create":
+		cmd.Flags().String("consistency-group", "", "consistency group")
+		cmd.Flags().String("description", "", "consistency group snapshot description")
+	case "consistency group snapshot list":
+		cmd.Flags().Bool("all-projects", false, "include all projects")
+		cmd.Flags().Bool("long", false, "list additional fields")
+		cmd.Flags().String("status", "", "filter by status")
+		cmd.Flags().String("consistency-group", "", "filter by consistency group")
 	case "compute agent list":
 		cmd.Flags().String("hypervisor", "", "type of hypervisor")
 	case "host list":
@@ -1378,6 +1444,27 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().String("status", "", "filter by status")
 		cmd.Flags().Int("limit", 0, "maximum number of entries")
 		cmd.Flags().String("marker", "", "pagination marker")
+	case "volume attachment create":
+		cmd.Flags().Bool("connect", false, "make an active connection")
+		cmd.Flags().Bool("no-connect", false, "do not make an active connection")
+		cmd.Flags().String("initiator", "", "connector initiator")
+		cmd.Flags().String("ip", "", "connector IP")
+		cmd.Flags().String("host", "", "connector host")
+		cmd.Flags().String("platform", "", "connector platform")
+		cmd.Flags().String("os-type", "", "connector OS type")
+		cmd.Flags().Bool("multipath", false, "use multipath")
+		cmd.Flags().Bool("no-multipath", false, "do not use multipath")
+		cmd.Flags().String("mountpoint", "", "mountpoint")
+		cmd.Flags().String("mode", "", "attachment mode")
+	case "volume attachment set":
+		cmd.Flags().String("initiator", "", "connector initiator")
+		cmd.Flags().String("ip", "", "connector IP")
+		cmd.Flags().String("host", "", "connector host")
+		cmd.Flags().String("platform", "", "connector platform")
+		cmd.Flags().String("os-type", "", "connector OS type")
+		cmd.Flags().Bool("multipath", false, "use multipath")
+		cmd.Flags().Bool("no-multipath", false, "do not use multipath")
+		cmd.Flags().String("mountpoint", "", "mountpoint")
 	case "volume backup list":
 		cmd.Flags().String("project", "", "filter by project")
 		cmd.Flags().Bool("long", false, "list additional fields")
@@ -1387,12 +1474,59 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().Int("limit", 0, "maximum number of entries")
 		cmd.Flags().String("marker", "", "pagination marker")
 		cmd.Flags().Bool("all-projects", false, "include all projects")
+	case "volume backup create":
+		cmd.Flags().Bool("force", false, "force backup")
+		cmd.Flags().Bool("incremental", false, "incremental backup")
+		cmd.Flags().String("name", "", "backup name")
+		cmd.Flags().String("description", "", "backup description")
+		cmd.Flags().String("container", "", "backup container")
+		cmd.Flags().String("snapshot", "", "source snapshot")
+		cmd.Flags().String("availability-zone", "", "availability zone")
+		cmd.Flags().StringArray("property", nil, "metadata key=value")
+	case "volume backup delete":
+		cmd.Flags().Bool("force", false, "force delete")
+	case "volume backup restore":
+		cmd.Flags().Bool("force", false, "restore to existing volume")
+	case "volume backup set":
+		cmd.Flags().String("name", "", "backup name")
+		cmd.Flags().String("description", "", "backup description")
+		cmd.Flags().String("state", "", "backup state")
+		cmd.Flags().Bool("no-property", false, "clear metadata")
+		cmd.Flags().StringArray("property", nil, "metadata key=value")
+	case "volume backup unset":
+		cmd.Flags().StringArray("property", nil, "metadata key")
 	case "volume service list":
 		cmd.Flags().String("host", "", "filter by host")
 		cmd.Flags().String("service", "", "filter by service binary")
 		cmd.Flags().Bool("long", false, "list additional fields")
+	case "volume service set":
+		cmd.Flags().Bool("enable", false, "enable service")
+		cmd.Flags().Bool("disable", false, "disable service")
+		cmd.Flags().String("disable-reason", "", "disable reason")
+	case "volume host set":
+		cmd.Flags().Bool("disable", false, "freeze and disable host")
+		cmd.Flags().Bool("enable", false, "thaw and enable host")
 	case "volume group list":
 		cmd.Flags().Bool("all-projects", false, "include all projects")
+	case "volume group create":
+		cmd.Flags().String("volume-group-type", "", "volume group type")
+		cmd.Flags().StringArray("volume-type", nil, "volume type")
+		cmd.Flags().String("source-group", "", "source volume group")
+		cmd.Flags().String("group-snapshot", "", "source group snapshot")
+		cmd.Flags().String("name", "", "volume group name")
+		cmd.Flags().String("description", "", "volume group description")
+		cmd.Flags().String("availability-zone", "", "availability zone")
+	case "volume group delete":
+		cmd.Flags().Bool("force", false, "delete group volumes")
+	case "volume group failover":
+		cmd.Flags().Bool("allow-attached-volume", false, "allow attached volumes")
+		cmd.Flags().Bool("disallow-attached-volume", false, "disallow attached volumes")
+		cmd.Flags().String("secondary-backend-id", "", "secondary backend ID")
+	case "volume group set":
+		cmd.Flags().String("name", "", "volume group name")
+		cmd.Flags().String("description", "", "volume group description")
+		cmd.Flags().Bool("enable-replication", false, "enable replication")
+		cmd.Flags().Bool("disable-replication", false, "disable replication")
 	case "volume group show":
 		cmd.Flags().Bool("volumes", false, "show volumes in the group")
 		cmd.Flags().Bool("no-volumes", false, "do not show volumes in the group")
@@ -1400,13 +1534,31 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().Bool("no-replication-targets", false, "do not show replication targets")
 	case "volume group snapshot list":
 		cmd.Flags().Bool("all-projects", false, "include all projects")
+	case "volume group snapshot create":
+		cmd.Flags().String("name", "", "volume group snapshot name")
+		cmd.Flags().String("description", "", "volume group snapshot description")
 	case "volume group type list":
 		cmd.Flags().Bool("default", false, "list the default volume group type")
+	case "volume group type create":
+		cmd.Flags().String("description", "", "volume group type description")
+		cmd.Flags().Bool("public", false, "public group type")
+		cmd.Flags().Bool("private", false, "private group type")
+	case "volume group type set":
+		cmd.Flags().String("name", "", "volume group type name")
+		cmd.Flags().String("description", "", "volume group type description")
+		cmd.Flags().Bool("public", false, "public group type")
+		cmd.Flags().Bool("private", false, "private group type")
+		cmd.Flags().Bool("no-property", false, "clear properties")
+		cmd.Flags().StringArray("property", nil, "property key=value")
 	case "volume message list":
 		cmd.Flags().String("project", "", "filter by project")
 		cmd.Flags().String("project-domain", "", "project domain")
 		cmd.Flags().Int("limit", 0, "maximum number of entries")
 		cmd.Flags().String("marker", "", "pagination marker")
+	case "volume migrate":
+		cmd.Flags().String("host", "", "destination host")
+		cmd.Flags().Bool("force-host-copy", false, "force host copy")
+		cmd.Flags().Bool("lock-volume", false, "lock volume")
 	case "volume type list":
 		cmd.Flags().Bool("long", false, "list additional fields")
 		cmd.Flags().Bool("default", false, "list the default volume type")
@@ -1430,8 +1582,69 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().String("volume", "", "filter by volume")
 		cmd.Flags().Int("limit", 0, "maximum number of entries")
 		cmd.Flags().String("marker", "", "pagination marker")
+	case "volume snapshot create":
+		cmd.Flags().String("volume", "", "source volume")
+		cmd.Flags().Bool("force", false, "force snapshot")
+		cmd.Flags().String("description", "", "snapshot description")
+		cmd.Flags().StringArray("property", nil, "metadata key=value")
+		cmd.Flags().StringArray("remote-source", nil, "remote source key=value")
+	case "volume snapshot delete":
+		cmd.Flags().Bool("force", false, "force delete")
+		cmd.Flags().Bool("remote", false, "unmanage remote snapshot")
+	case "volume snapshot set":
+		cmd.Flags().String("name", "", "snapshot name")
+		cmd.Flags().String("description", "", "snapshot description")
+		cmd.Flags().String("state", "", "snapshot state")
+		cmd.Flags().String("progress", "", "snapshot progress")
+		cmd.Flags().Bool("no-property", false, "clear metadata")
+		cmd.Flags().StringArray("property", nil, "metadata key=value")
+	case "volume snapshot unset":
+		cmd.Flags().StringArray("property", nil, "metadata key")
 	case "volume summary":
 		cmd.Flags().Bool("all-projects", false, "include all projects")
+	case "volume create":
+		cmd.Flags().Int("size", 0, "volume size in GB")
+		cmd.Flags().String("type", "", "volume type")
+		cmd.Flags().String("image", "", "source image")
+		cmd.Flags().String("snapshot", "", "source snapshot")
+		cmd.Flags().String("source", "", "source volume")
+		cmd.Flags().String("backup", "", "source backup")
+		cmd.Flags().StringArray("remote-source", nil, "remote source key=value")
+		cmd.Flags().String("description", "", "volume description")
+		cmd.Flags().String("availability-zone", "", "availability zone")
+		cmd.Flags().String("consistency-group", "", "consistency group")
+		cmd.Flags().StringArray("property", nil, "metadata key=value")
+		cmd.Flags().StringArray("hint", nil, "scheduler hint key=value")
+		cmd.Flags().Bool("bootable", false, "mark bootable")
+		cmd.Flags().Bool("non-bootable", false, "mark non-bootable")
+		cmd.Flags().Bool("read-only", false, "set read-only")
+		cmd.Flags().Bool("read-write", false, "set read-write")
+		cmd.Flags().String("host", "", "manage source host")
+		cmd.Flags().String("cluster", "", "manage source cluster")
+	case "volume delete":
+		cmd.Flags().Bool("force", false, "force delete")
+		cmd.Flags().Bool("purge", false, "delete snapshots with volume")
+		cmd.Flags().Bool("cascade", false, "delete snapshots with volume")
+		cmd.Flags().Bool("remote", false, "unmanage remote volume")
+	case "volume set":
+		cmd.Flags().String("name", "", "volume name")
+		cmd.Flags().String("description", "", "volume description")
+		cmd.Flags().Int("size", 0, "new volume size")
+		cmd.Flags().String("type", "", "new volume type")
+		cmd.Flags().String("migration-policy", "", "migration policy")
+		cmd.Flags().String("state", "", "volume state")
+		cmd.Flags().Bool("attached", false, "set attached")
+		cmd.Flags().Bool("detached", false, "set detached")
+		cmd.Flags().Bool("bootable", false, "mark bootable")
+		cmd.Flags().Bool("non-bootable", false, "mark non-bootable")
+		cmd.Flags().Bool("read-only", false, "set read-only")
+		cmd.Flags().Bool("read-write", false, "set read-write")
+		cmd.Flags().Bool("no-property", false, "clear metadata")
+		cmd.Flags().StringArray("property", nil, "metadata key=value")
+		cmd.Flags().StringArray("image-property", nil, "image metadata key=value")
+	case "volume unset":
+		cmd.Flags().StringArray("property", nil, "metadata key")
+		cmd.Flags().StringArray("image-property", nil, "image metadata key")
 	case "versions show":
 		cmd.Flags().Bool("all-interfaces", false, "show all interfaces")
 		cmd.Flags().String("interface", "", "show a specific interface")
@@ -1440,6 +1653,61 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().String("status", "", "show a specific version status")
 	case "volume transfer request list":
 		cmd.Flags().Bool("all-projects", false, "include all projects")
+	case "volume transfer request create":
+		cmd.Flags().String("name", "", "transfer request name")
+		cmd.Flags().Bool("snapshots", false, "allow snapshots")
+		cmd.Flags().Bool("no-snapshots", false, "disallow snapshots")
+	case "volume transfer request accept":
+		cmd.Flags().String("auth-key", "", "transfer auth key")
+	case "volume qos create":
+		cmd.Flags().String("consumer", "", "QoS consumer")
+		cmd.Flags().StringArray("property", nil, "property key=value")
+	case "volume qos delete":
+		cmd.Flags().Bool("force", false, "force delete")
+	case "volume qos set":
+		cmd.Flags().Bool("no-property", false, "clear properties")
+		cmd.Flags().StringArray("property", nil, "property key=value")
+	case "volume qos unset":
+		cmd.Flags().StringArray("property", nil, "property key")
+	case "volume qos disassociate":
+		cmd.Flags().String("volume-type", "", "volume type")
+		cmd.Flags().Bool("all", false, "disassociate all")
+	case "volume type create":
+		cmd.Flags().String("description", "", "volume type description")
+		cmd.Flags().Bool("public", false, "public type")
+		cmd.Flags().Bool("private", false, "private type")
+		cmd.Flags().StringArray("property", nil, "property key=value")
+		cmd.Flags().Bool("multiattach", false, "enable multiattach")
+		cmd.Flags().Bool("cacheable", false, "enable cacheable")
+		cmd.Flags().Bool("replicated", false, "enable replication")
+		cmd.Flags().StringArray("availability-zone", nil, "availability zone")
+		cmd.Flags().String("project", "", "project")
+		cmd.Flags().String("project-domain", "", "project domain")
+		cmd.Flags().String("encryption-provider", "", "encryption provider")
+		cmd.Flags().String("encryption-cipher", "", "encryption cipher")
+		cmd.Flags().Int("encryption-key-size", 0, "encryption key size")
+		cmd.Flags().String("encryption-control-location", "", "encryption control location")
+	case "volume type set":
+		cmd.Flags().String("name", "", "volume type name")
+		cmd.Flags().String("description", "", "volume type description")
+		cmd.Flags().StringArray("property", nil, "property key=value")
+		cmd.Flags().Bool("multiattach", false, "enable multiattach")
+		cmd.Flags().Bool("cacheable", false, "enable cacheable")
+		cmd.Flags().Bool("replicated", false, "enable replication")
+		cmd.Flags().StringArray("availability-zone", nil, "availability zone")
+		cmd.Flags().String("project", "", "project")
+		cmd.Flags().Bool("public", false, "public type")
+		cmd.Flags().Bool("private", false, "private type")
+		cmd.Flags().String("project-domain", "", "project domain")
+		cmd.Flags().String("encryption-provider", "", "encryption provider")
+		cmd.Flags().String("encryption-cipher", "", "encryption cipher")
+		cmd.Flags().Int("encryption-key-size", 0, "encryption key size")
+		cmd.Flags().String("encryption-control-location", "", "encryption control location")
+	case "volume type unset":
+		cmd.Flags().StringArray("property", nil, "property key")
+		cmd.Flags().String("project", "", "project")
+		cmd.Flags().String("project-domain", "", "project domain")
+		cmd.Flags().Bool("encryption-type", false, "remove encryption type")
 	}
 }
 
@@ -1488,13 +1756,18 @@ func isCoreReadCommand(path string) bool {
 		"aggregate list", "aggregate show",
 		"allocation candidate list",
 		"availability zone list",
-		"block storage cluster list", "block storage cluster show",
-		"block storage log level list",
+		"block storage cleanup",
+		"block storage cluster list", "block storage cluster set", "block storage cluster show",
+		"block storage log level list", "block storage log level set",
 		"block storage resource filter list", "block storage resource filter show",
+		"block storage snapshot manageable list", "block storage volume manageable list",
 		"cached image clear", "cached image delete",
 		"cached image list", "cached image queue",
 		"compute agent list",
 		"compute service list",
+		"consistency group add volume", "consistency group create", "consistency group delete", "consistency group list",
+		"consistency group remove volume", "consistency group set", "consistency group show",
+		"consistency group snapshot create", "consistency group snapshot delete", "consistency group snapshot list", "consistency group snapshot show",
 		"console connection show",
 		"console log show", "console url show",
 		"container create", "container delete", "container list", "container set", "container show", "container unset",
@@ -1565,20 +1838,30 @@ func isCoreReadCommand(path string) bool {
 		"trait list", "trait show",
 		"usage list", "usage show",
 		"versions show",
-		"volume attachment list", "volume attachment show",
+		"volume attachment complete", "volume attachment create", "volume attachment delete",
+		"volume attachment list", "volume attachment set", "volume attachment show",
+		"volume backend capability show",
 		"volume backend pool list",
-		"volume backup list", "volume backup show",
-		"volume group list", "volume group show",
-		"volume group snapshot list", "volume group snapshot show",
-		"volume group type list", "volume group type show",
-		"volume list", "volume show",
-		"volume message list", "volume message show",
-		"volume qos list", "volume qos show",
-		"volume service list",
-		"volume snapshot list", "volume snapshot show",
+		"volume backup create", "volume backup delete", "volume backup list",
+		"volume backup record export", "volume backup record import", "volume backup restore",
+		"volume backup set", "volume backup show", "volume backup unset",
+		"volume group create", "volume group delete", "volume group failover", "volume group list", "volume group set", "volume group show",
+		"volume group snapshot create", "volume group snapshot delete", "volume group snapshot list", "volume group snapshot show",
+		"volume group type create", "volume group type delete", "volume group type list", "volume group type set", "volume group type show",
+		"volume host set",
+		"volume create", "volume delete", "volume list", "volume set", "volume show", "volume unset",
+		"volume message delete", "volume message list", "volume message show",
+		"volume migrate",
+		"volume qos associate", "volume qos create", "volume qos delete", "volume qos disassociate",
+		"volume qos list", "volume qos set", "volume qos show", "volume qos unset",
+		"volume revert",
+		"volume service list", "volume service set",
+		"volume snapshot create", "volume snapshot delete", "volume snapshot list",
+		"volume snapshot set", "volume snapshot show", "volume snapshot unset",
 		"volume summary",
+		"volume transfer request accept", "volume transfer request create", "volume transfer request delete",
 		"volume transfer request list", "volume transfer request show",
-		"volume type list", "volume type show":
+		"volume type create", "volume type delete", "volume type list", "volume type set", "volume type show", "volume type unset":
 		return true
 	default:
 		return false

@@ -1513,3 +1513,19 @@ Sources consulted:
 
 * Charmbracelet Harmonica docs: [github.com/charmbracelet/harmonica](https://github.com/charmbracelet/harmonica) and [pkg.go.dev/github.com/charmbracelet/harmonica](https://pkg.go.dev/github.com/charmbracelet/harmonica).
 * Bubbles progress source and docs in the pinned local module, especially `SetPercent`, `Update`, and `ViewAs`: [pkg.go.dev/charm.land/bubbles/v2/progress](https://pkg.go.dev/charm.land/bubbles/v2/progress).
+
+## 2026-05-05: Volume Command Completion
+
+Decision: finish the pinned `openstack.volume.v3` command surface by wiring every Volume v3 catalog command to either a typed Gophercloud package or a narrow Cinder REST shim through the authenticated Block Storage service client. This keeps production behavior self-contained in Go and preserves the existing rule that Python OSC is only an oracle, not a runtime dependency.
+
+Work done: implemented the remaining Volume v3 command families: block storage cleanup, cluster set, log-level set, manageable volume and snapshot lists, consistency groups, consistency group snapshots, volume groups, volume group snapshots, volume group types, host freeze/thaw, message delete, volume migrate, volume revert, backend capability display, remote-source volume and snapshot management, attachment mutations, backup mutations, QoS mutations, transfer mutations, service set, volume type mutations, and volume/snapshot set/unset/delete/create paths. The command registry now reports the Python Volume v3 command list without `(Not Implemented Yet)` markers, and the matrix generator marks the implemented commands and Cinder shim coverage.
+
+Validation: `go test ./internal/cli`, `go test ./...`, `make build`, `make matrix`, `./bin/openstack command list -f json --group openstack.volume.v3`, `/Users/ken/.local/bin/openstack command list -f json --group openstack.volume.v3`, and `OS_CLOUD=cloud6 ./bin/openstack volume list -f json` passed. The command-list outputs for the Go CLI and Python oracle contained the same Volume v3 commands.
+
+Sources consulted:
+
+* Gophercloud Block Storage package docs for [attachments](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/attachments), [backups](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/backups), [QoS](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/qos), [snapshots](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/snapshots), [transfers](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/transfers), [volumes](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/volumes), and [volume types](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/volumetypes).
+* Local Python OSC source under `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/volume/`.
+* Local cinderclient source under `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/cinderclient/v3/`.
+* Local OpenStackSDK source under `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/block_storage/v3/`.
+* Pinned local help snapshots under `compat/osc/9.0.0/help/`.

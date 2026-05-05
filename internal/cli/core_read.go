@@ -83,12 +83,24 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 		}
 
 		switch path {
+		case "block storage cleanup":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return blockStorageCleanup(cmd.Context(), stdout, opts, client)
 		case "block storage cluster list":
 			client, err := clients.blockStorageV3()
 			if err != nil {
 				return err
 			}
 			return blockStorageClusterList(cmd.Context(), stdout, opts, client)
+		case "block storage cluster set":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return blockStorageClusterSet(cmd.Context(), stdout, opts, client, args)
 		case "block storage cluster show":
 			client, err := clients.blockStorageV3()
 			if err != nil {
@@ -101,6 +113,12 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return blockStorageLogLevelList(cmd.Context(), stdout, opts, client)
+		case "block storage log level set":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return blockStorageLogLevelSet(cmd.Context(), opts, client, args)
 		case "block storage resource filter list":
 			client, err := clients.blockStorageV3()
 			if err != nil {
@@ -113,6 +131,18 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return blockStorageResourceFilterShow(cmd.Context(), stdout, opts, client, args)
+		case "block storage snapshot manageable list":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return blockStorageManageableList(cmd.Context(), stdout, opts, client, args, "snapshots")
+		case "block storage volume manageable list":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return blockStorageManageableList(cmd.Context(), stdout, opts, client, args, "volumes")
 		case "address group create":
 			networkClient, err := clients.networkV2()
 			if err != nil {
@@ -237,6 +267,72 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return computeServiceList(cmd.Context(), stdout, opts, client)
+		case "consistency group add volume":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return consistencyGroupAddRemoveVolume(cmd.Context(), opts, client, args, true)
+		case "consistency group create":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return consistencyGroupCreate(cmd.Context(), stdout, opts, client, args)
+		case "consistency group delete":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return consistencyGroupDelete(cmd.Context(), opts, client, args)
+		case "consistency group list":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return consistencyGroupList(cmd.Context(), stdout, opts, client)
+		case "consistency group remove volume":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return consistencyGroupAddRemoveVolume(cmd.Context(), opts, client, args, false)
+		case "consistency group set":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return consistencyGroupSet(cmd.Context(), opts, client, args)
+		case "consistency group show":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return consistencyGroupShow(cmd.Context(), stdout, opts, client, args)
+		case "consistency group snapshot create":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return consistencyGroupSnapshotCreate(cmd.Context(), stdout, opts, client, args)
+		case "consistency group snapshot delete":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return consistencyGroupSnapshotDelete(cmd.Context(), opts, client, args)
+		case "consistency group snapshot list":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return consistencyGroupSnapshotList(cmd.Context(), stdout, opts, client)
+		case "consistency group snapshot show":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return consistencyGroupSnapshotShow(cmd.Context(), stdout, opts, client, args)
 		case "console connection show":
 			client, err := clients.computeV2()
 			if err != nil {
@@ -1766,12 +1862,61 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return volumeList(cmd.Context(), stdout, opts, client)
+		case "volume create":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			imageClient, _ := clients.imageV2()
+			return volumeCreate(cmd.Context(), stdout, opts, client, imageClient, args)
+		case "volume delete":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeDelete(cmd.Context(), opts, client, args)
+		case "volume set":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeSet(cmd.Context(), opts, client, args)
+		case "volume unset":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeUnset(cmd.Context(), opts, client, args)
 		case "volume group list":
 			client, err := clients.blockStorageV3()
 			if err != nil {
 				return err
 			}
 			return volumeGroupList(cmd.Context(), stdout, opts, client)
+		case "volume group create":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeGroupCreate(cmd.Context(), stdout, opts, client, args)
+		case "volume group delete":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeGroupDelete(cmd.Context(), opts, client, args)
+		case "volume group failover":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeGroupFailover(cmd.Context(), opts, client, args)
+		case "volume group set":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeGroupSet(cmd.Context(), stdout, opts, client, args)
 		case "volume group show":
 			client, err := clients.blockStorageV3()
 			if err != nil {
@@ -1784,6 +1929,18 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return volumeGroupSnapshotList(cmd.Context(), stdout, opts, client)
+		case "volume group snapshot create":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeGroupSnapshotCreate(cmd.Context(), stdout, opts, client, args)
+		case "volume group snapshot delete":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeGroupSnapshotDelete(cmd.Context(), opts, client, args)
 		case "volume group snapshot show":
 			client, err := clients.blockStorageV3()
 			if err != nil {
@@ -1796,18 +1953,48 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return volumeGroupTypeList(cmd.Context(), stdout, opts, client)
+		case "volume group type create":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeGroupTypeCreate(cmd.Context(), stdout, opts, client, args)
+		case "volume group type delete":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeGroupTypeDelete(cmd.Context(), opts, client, args)
+		case "volume group type set":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeGroupTypeSet(cmd.Context(), stdout, opts, client, args)
 		case "volume group type show":
 			client, err := clients.blockStorageV3()
 			if err != nil {
 				return err
 			}
 			return volumeGroupTypeShow(cmd.Context(), stdout, opts, client, args)
+		case "volume host set":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeHostSet(cmd.Context(), opts, client, args)
 		case "volume message list":
 			client, err := clients.blockStorageV3()
 			if err != nil {
 				return err
 			}
 			return volumeMessageList(cmd.Context(), stdout, opts, clients, client)
+		case "volume message delete":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeMessageDelete(cmd.Context(), client, args)
 		case "volume message show":
 			client, err := clients.blockStorageV3()
 			if err != nil {
@@ -1820,6 +2007,24 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return volumeShow(cmd.Context(), stdout, opts, client, args)
+		case "volume migrate":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeMigrate(cmd.Context(), opts, client, args)
+		case "volume revert":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeRevert(cmd.Context(), opts, client, args)
+		case "volume backend capability show":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeBackendCapabilityShow(cmd.Context(), stdout, opts, client, args)
 		case "volume backend pool list":
 			client, err := clients.blockStorageV3()
 			if err != nil {
@@ -1832,6 +2037,31 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return volumeAttachmentList(cmd.Context(), stdout, opts, client)
+		case "volume attachment create":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			computeClient, _ := clients.computeV2()
+			return volumeAttachmentCreate(cmd.Context(), stdout, opts, client, computeClient, args)
+		case "volume attachment delete":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeAttachmentDelete(cmd.Context(), opts, client, args)
+		case "volume attachment set":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeAttachmentSet(cmd.Context(), stdout, opts, client, args)
+		case "volume attachment complete":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeAttachmentComplete(cmd.Context(), opts, client, args)
 		case "volume attachment show":
 			client, err := clients.blockStorageV3()
 			if err != nil {
@@ -1844,6 +2074,48 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return volumeBackupList(cmd.Context(), stdout, opts, client)
+		case "volume backup create":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeBackupCreate(cmd.Context(), stdout, opts, client, args)
+		case "volume backup delete":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeBackupDelete(cmd.Context(), opts, client, args)
+		case "volume backup restore":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeBackupRestore(cmd.Context(), stdout, opts, client, args)
+		case "volume backup set":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeBackupSet(cmd.Context(), opts, client, args)
+		case "volume backup unset":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeBackupUnset(cmd.Context(), opts, client, args)
+		case "volume backup record export":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeBackupRecordExport(cmd.Context(), stdout, opts, client, args)
+		case "volume backup record import":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeBackupRecordImport(cmd.Context(), stdout, opts, client, args)
 		case "volume backup show":
 			client, err := clients.blockStorageV3()
 			if err != nil {
@@ -1856,30 +2128,96 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return volumeServiceList(cmd.Context(), stdout, opts, client)
+		case "volume service set":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeServiceSet(cmd.Context(), opts, client, args)
 		case "volume snapshot list":
 			client, err := clients.blockStorageV3()
 			if err != nil {
 				return err
 			}
 			return volumeSnapshotList(cmd.Context(), stdout, opts, client)
+		case "volume snapshot create":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeSnapshotCreate(cmd.Context(), stdout, opts, client, args)
+		case "volume snapshot delete":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeSnapshotDelete(cmd.Context(), opts, client, args)
+		case "volume snapshot set":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeSnapshotSet(cmd.Context(), opts, client, args)
 		case "volume snapshot show":
 			client, err := clients.blockStorageV3()
 			if err != nil {
 				return err
 			}
 			return volumeSnapshotShow(cmd.Context(), stdout, opts, client, args)
+		case "volume snapshot unset":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeSnapshotUnset(cmd.Context(), opts, client, args)
 		case "volume qos list":
 			client, err := clients.blockStorageV3()
 			if err != nil {
 				return err
 			}
 			return volumeQoSList(cmd.Context(), stdout, opts, client)
+		case "volume qos create":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeQoSCreate(cmd.Context(), stdout, opts, client, args)
+		case "volume qos delete":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeQoSDelete(cmd.Context(), opts, client, args)
+		case "volume qos set":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeQoSSet(cmd.Context(), opts, client, args)
 		case "volume qos show":
 			client, err := clients.blockStorageV3()
 			if err != nil {
 				return err
 			}
 			return volumeQoSShow(cmd.Context(), stdout, opts, client, args)
+		case "volume qos unset":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeQoSUnset(cmd.Context(), opts, client, args)
+		case "volume qos associate":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeQoSAssociate(cmd.Context(), opts, client, args)
+		case "volume qos disassociate":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeQoSDisassociate(cmd.Context(), opts, client, args)
 		case "volume summary":
 			client, err := clients.blockStorageV3()
 			if err != nil {
@@ -1892,18 +2230,60 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return volumeTypeList(cmd.Context(), stdout, opts, client)
+		case "volume type create":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeTypeCreate(cmd.Context(), stdout, opts, clients, client, args)
+		case "volume type delete":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeTypeDelete(cmd.Context(), opts, client, args)
+		case "volume type set":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeTypeSet(cmd.Context(), opts, clients, client, args)
 		case "volume type show":
 			client, err := clients.blockStorageV3()
 			if err != nil {
 				return err
 			}
 			return volumeTypeShow(cmd.Context(), stdout, opts, client, args)
+		case "volume type unset":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeTypeUnset(cmd.Context(), opts, clients, client, args)
 		case "volume transfer request list":
 			client, err := clients.blockStorageV3()
 			if err != nil {
 				return err
 			}
 			return volumeTransferList(cmd.Context(), stdout, opts, client)
+		case "volume transfer request create":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeTransferCreate(cmd.Context(), stdout, opts, client, args)
+		case "volume transfer request delete":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeTransferDelete(cmd.Context(), opts, client, args)
+		case "volume transfer request accept":
+			client, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return volumeTransferAccept(cmd.Context(), stdout, opts, client, args)
 		case "volume transfer request show":
 			client, err := clients.blockStorageV3()
 			if err != nil {
@@ -9999,6 +10379,322 @@ func volumeShow(ctx context.Context, stdout io.Writer, opts *Options, client *go
 	})
 }
 
+func volumeCreate(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, imageClient *gophercloud.ServiceClient, args []string) error {
+	name := ""
+	if len(args) > 0 {
+		name = args[0]
+	}
+	metadata, err := parseStringMap(flagValues(opts, "property"), "property")
+	if err != nil {
+		return err
+	}
+	if remoteValues := flagValues(opts, "remote-source"); len(remoteValues) > 0 {
+		remoteSource, err := parseJSONKeyValueMap(remoteValues, "remote-source")
+		if err != nil {
+			return err
+		}
+		host := flagValue(opts, "host")
+		cluster := flagValue(opts, "cluster")
+		if host == "" && cluster == "" {
+			return fmt.Errorf("volume create --remote-source requires --host or --cluster")
+		}
+		minimum := "3.8"
+		if cluster != "" {
+			minimum = "3.16"
+		}
+		client, err = blockStorageClientWithMinimumMicroversion(ctx, client, minimum)
+		if err != nil {
+			return err
+		}
+		body := map[string]any{
+			"volume": map[string]any{
+				"host":              host,
+				"cluster":           nilIfEmpty(cluster),
+				"ref":               remoteSource,
+				"name":              nilIfEmpty(name),
+				"description":       nilIfEmpty(flagValue(opts, "description")),
+				"volume_type":       nilIfEmpty(flagValue(opts, "type")),
+				"availability_zone": nilIfEmpty(flagValue(opts, "availability-zone")),
+				"metadata":          metadata,
+				"bootable":          boolFlag(opts, "bootable"),
+			},
+		}
+		var response struct {
+			Volume *volumes.Volume `json:"volume"`
+		}
+		resp, err := client.Post(ctx, client.ServiceURL("manageable_volumes"), body, &response, &gophercloud.RequestOpts{
+			OkCodes: []int{http.StatusOK, http.StatusAccepted},
+		})
+		_, _, err = gophercloud.ParseResponse(resp, err)
+		if err != nil {
+			return oscHTTPException(err)
+		}
+		if response.Volume == nil {
+			return fmt.Errorf("response did not contain volume object")
+		}
+		if boolFlag(opts, "read-only") {
+			if err := volumeSetReadOnly(ctx, client, response.Volume.ID, true); err != nil {
+				return err
+			}
+		} else if boolFlag(opts, "read-write") {
+			if err := volumeSetReadOnly(ctx, client, response.Volume.ID, false); err != nil {
+				return err
+			}
+		}
+		managed, err := volumes.Get(ctx, client, response.Volume.ID).Extract()
+		if err == nil {
+			response.Volume = managed
+		}
+		return renderVolumeShow(stdout, opts, response.Volume)
+	}
+	createOpts := volumes.CreateOpts{
+		Size:               intFlag(opts, "size"),
+		AvailabilityZone:   flagValue(opts, "availability-zone"),
+		ConsistencyGroupID: flagValue(opts, "consistency-group"),
+		Description:        flagValue(opts, "description"),
+		Metadata:           metadata,
+		Name:               name,
+		VolumeType:         flagValue(opts, "type"),
+	}
+	if snapshotValue := flagValue(opts, "snapshot"); snapshotValue != "" {
+		snapshot, err := findVolumeSnapshot(ctx, client, snapshotValue)
+		if err != nil {
+			return err
+		}
+		createOpts.SnapshotID = snapshot.ID
+	}
+	if sourceValue := flagValue(opts, "source"); sourceValue != "" {
+		source, err := findVolume(ctx, client, sourceValue)
+		if err != nil {
+			return err
+		}
+		createOpts.SourceVolID = source.ID
+	}
+	if backupValue := flagValue(opts, "backup"); backupValue != "" {
+		backup, err := findVolumeBackup(ctx, client, backupValue)
+		if err != nil {
+			return err
+		}
+		createOpts.BackupID = backup.ID
+		client, err = blockStorageClientWithMinimumMicroversion(ctx, client, "3.47")
+		if err != nil {
+			return err
+		}
+	}
+	if imageValue := flagValue(opts, "image"); imageValue != "" {
+		if imageClient == nil {
+			return fmt.Errorf("image service is required for volume create --image")
+		}
+		image, err := findImage(ctx, imageClient, imageValue)
+		if err != nil {
+			return err
+		}
+		createOpts.ImageID = image.ID
+	}
+	if createOpts.Size == 0 && createOpts.SnapshotID == "" && createOpts.SourceVolID == "" && createOpts.BackupID == "" {
+		return fmt.Errorf("volume create requires --size unless --snapshot, --source, or --backup is specified")
+	}
+	hints, err := volumeSchedulerHints(flagValues(opts, "hint"))
+	if err != nil {
+		return err
+	}
+	result := volumes.Create(ctx, client, createOpts, hints)
+	created, err := result.Extract()
+	if err != nil {
+		return err
+	}
+	if boolFlag(opts, "bootable") {
+		if err := volumes.SetBootable(ctx, client, created.ID, volumes.BootableOpts{Bootable: true}).ExtractErr(); err != nil {
+			return err
+		}
+	} else if boolFlag(opts, "non-bootable") {
+		if err := volumes.SetBootable(ctx, client, created.ID, volumes.BootableOpts{Bootable: false}).ExtractErr(); err != nil {
+			return err
+		}
+	}
+	if boolFlag(opts, "read-only") {
+		if err := volumeSetReadOnly(ctx, client, created.ID, true); err != nil {
+			return err
+		}
+	} else if boolFlag(opts, "read-write") {
+		if err := volumeSetReadOnly(ctx, client, created.ID, false); err != nil {
+			return err
+		}
+	}
+	created, err = volumes.Get(ctx, client, created.ID).Extract()
+	if err != nil {
+		return err
+	}
+	return renderVolumeShow(stdout, opts, created)
+}
+
+func volumeDelete(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("volume delete requires <volume>")
+	}
+	failures := 0
+	for _, value := range args {
+		item, err := findVolume(ctx, client, value)
+		if err != nil {
+			failures++
+			continue
+		}
+		switch {
+		case boolFlag(opts, "remote"):
+			err = volumes.Unmanage(ctx, client, item.ID).ExtractErr()
+		case boolFlag(opts, "force"):
+			err = volumes.ForceDelete(ctx, client, item.ID).ExtractErr()
+		default:
+			err = volumes.Delete(ctx, client, item.ID, volumes.DeleteOpts{Cascade: boolFlag(opts, "cascade") || boolFlag(opts, "purge")}).ExtractErr()
+		}
+		if err != nil {
+			failures++
+		}
+	}
+	if failures > 0 {
+		return fmt.Errorf("%d of %d volumes failed to delete.", failures, len(args))
+	}
+	return nil
+}
+
+func volumeSet(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("volume set requires <volume>")
+	}
+	item, err := findVolume(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	update := volumes.UpdateOpts{}
+	needsUpdate := false
+	if flagChanged(opts, "name") {
+		update.Name = valueStringPtr(flagValue(opts, "name"))
+		needsUpdate = true
+	}
+	if flagChanged(opts, "description") {
+		update.Description = valueStringPtr(flagValue(opts, "description"))
+		needsUpdate = true
+	}
+	properties, err := parseStringMap(flagValues(opts, "property"), "property")
+	if err != nil {
+		return err
+	}
+	if boolFlag(opts, "no-property") {
+		update.Metadata = map[string]string{}
+		needsUpdate = true
+	}
+	if len(properties) > 0 {
+		metadata := map[string]string{}
+		if !boolFlag(opts, "no-property") {
+			for key, value := range item.Metadata {
+				metadata[key] = value
+			}
+		}
+		for key, value := range properties {
+			metadata[key] = value
+		}
+		update.Metadata = metadata
+		needsUpdate = true
+	}
+	if needsUpdate {
+		if _, err := volumes.Update(ctx, client, item.ID, update).Extract(); err != nil {
+			return err
+		}
+	}
+	if newSize := intFlag(opts, "size"); newSize > 0 {
+		if err := volumes.ExtendSize(ctx, client, item.ID, volumes.ExtendSizeOpts{NewSize: newSize}).ExtractErr(); err != nil {
+			return err
+		}
+	}
+	imageProperties, err := parseStringMap(flagValues(opts, "image-property"), "image-property")
+	if err != nil {
+		return err
+	}
+	if len(imageProperties) > 0 {
+		if err := volumes.SetImageMetadata(ctx, client, item.ID, volumes.ImageMetadataOpts{Metadata: imageProperties}).ExtractErr(); err != nil {
+			return err
+		}
+	}
+	if state := flagValue(opts, "state"); state != "" || boolFlag(opts, "attached") || boolFlag(opts, "detached") {
+		reset := volumes.ResetStatusOpts{Status: state}
+		if boolFlag(opts, "attached") {
+			reset.AttachStatus = "attached"
+		} else if boolFlag(opts, "detached") {
+			reset.AttachStatus = "detached"
+		}
+		if err := volumes.ResetStatus(ctx, client, item.ID, reset).ExtractErr(); err != nil {
+			return err
+		}
+	}
+	if typeValue := flagValue(opts, "type"); typeValue != "" {
+		volumeType, err := findVolumeType(ctx, client, typeValue)
+		if err != nil {
+			return err
+		}
+		policy := volumes.MigrationPolicy(flagValue(opts, "migration-policy"))
+		if policy == "" {
+			policy = volumes.MigrationPolicyNever
+		}
+		if err := volumes.ChangeType(ctx, client, item.ID, volumes.ChangeTypeOpts{NewType: volumeType.ID, MigrationPolicy: policy}).ExtractErr(); err != nil {
+			return err
+		}
+	}
+	if boolFlag(opts, "bootable") {
+		if err := volumes.SetBootable(ctx, client, item.ID, volumes.BootableOpts{Bootable: true}).ExtractErr(); err != nil {
+			return err
+		}
+	} else if boolFlag(opts, "non-bootable") {
+		if err := volumes.SetBootable(ctx, client, item.ID, volumes.BootableOpts{Bootable: false}).ExtractErr(); err != nil {
+			return err
+		}
+	}
+	if boolFlag(opts, "read-only") {
+		return volumeSetReadOnly(ctx, client, item.ID, true)
+	}
+	if boolFlag(opts, "read-write") {
+		return volumeSetReadOnly(ctx, client, item.ID, false)
+	}
+	return nil
+}
+
+func volumeUnset(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("volume unset requires <volume>")
+	}
+	item, err := findVolume(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	for _, key := range flagValues(opts, "property") {
+		if err := blockStorageDeleteMetadataKey(ctx, client, "volumes", item.ID, key); err != nil {
+			return err
+		}
+	}
+	for _, key := range flagValues(opts, "image-property") {
+		if err := volumeUnsetImageMetadata(ctx, client, item.ID, key); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func renderVolumeShow(stdout io.Writer, opts *Options, item *volumes.Volume) error {
+	return renderShowOutput(stdout, opts, []outputField{
+		{"id", item.ID},
+		{"name", prettyVolumeValue(item.Name)},
+		{"status", item.Status},
+		{"size", item.Size},
+		{"availability_zone", item.AvailabilityZone},
+		{"bootable", item.Bootable},
+		{"encrypted", item.Encrypted},
+		{"volume_type", item.VolumeType},
+		{"attachments", volumeAttachments(item.Attachments)},
+		{"metadata", item.Metadata},
+		{"description", item.Description},
+		{"created_at", item.CreatedAt},
+	})
+}
+
 func volumeBackupList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
 	page, err := backups.List(client, backups.ListOpts{
 		AllTenants: boolFlag(opts, "all-projects") || flagValue(opts, "project") != "",
@@ -10073,6 +10769,211 @@ func volumeBackupShow(ctx context.Context, stdout io.Writer, opts *Options, clie
 	})
 }
 
+func volumeBackupCreate(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("volume backup create requires <volume>")
+	}
+	volume, err := findVolume(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	metadata, err := parseStringMap(flagValues(opts, "property"), "property")
+	if err != nil {
+		return err
+	}
+	createOpts := backups.CreateOpts{
+		VolumeID:         volume.ID,
+		Force:            boolFlag(opts, "force"),
+		Name:             flagValue(opts, "name"),
+		Description:      flagValue(opts, "description"),
+		Metadata:         metadata,
+		Container:        flagValue(opts, "container"),
+		Incremental:      boolFlag(opts, "incremental"),
+		AvailabilityZone: flagValue(opts, "availability-zone"),
+	}
+	if snapshotValue := flagValue(opts, "snapshot"); snapshotValue != "" {
+		snapshot, err := findVolumeSnapshot(ctx, client, snapshotValue)
+		if err != nil {
+			return err
+		}
+		createOpts.SnapshotID = snapshot.ID
+	}
+	created, err := backups.Create(ctx, client, createOpts).Extract()
+	if err != nil {
+		return err
+	}
+	return volumeBackupShow(ctx, stdout, opts, client, []string{created.ID})
+}
+
+func volumeBackupDelete(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("volume backup delete requires <backup>")
+	}
+	failures := 0
+	for _, value := range args {
+		item, err := findVolumeBackup(ctx, client, value)
+		if err != nil {
+			failures++
+			continue
+		}
+		if boolFlag(opts, "force") {
+			err = backups.ForceDelete(ctx, client, item.ID).ExtractErr()
+		} else {
+			err = backups.Delete(ctx, client, item.ID).ExtractErr()
+		}
+		if err != nil {
+			failures++
+		}
+	}
+	if failures > 0 {
+		return fmt.Errorf("%d of %d volume backups failed to delete.", failures, len(args))
+	}
+	return nil
+}
+
+func volumeBackupRestore(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("volume backup restore requires <backup>")
+	}
+	backup, err := findVolumeBackup(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	restoreOpts := backups.RestoreOpts{}
+	if len(args) > 1 {
+		if boolFlag(opts, "force") {
+			volume, err := findVolume(ctx, client, args[1])
+			if err != nil {
+				return err
+			}
+			restoreOpts.VolumeID = volume.ID
+		} else {
+			if volume, err := findVolume(ctx, client, args[1]); err == nil {
+				restoreOpts.VolumeID = volume.ID
+			} else {
+				restoreOpts.Name = args[1]
+			}
+		}
+	}
+	restored, err := backups.RestoreFromBackup(ctx, client, backup.ID, restoreOpts).Extract()
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, []outputField{
+		{"backup_id", restored.BackupID},
+		{"volume_id", restored.VolumeID},
+		{"volume_name", restored.VolumeName},
+	})
+}
+
+func volumeBackupSet(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("volume backup set requires <backup>")
+	}
+	item, err := findVolumeBackup(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	update := backups.UpdateOpts{}
+	needsUpdate := false
+	if flagChanged(opts, "name") {
+		update.Name = valueStringPtr(flagValue(opts, "name"))
+		needsUpdate = true
+	}
+	if flagChanged(opts, "description") {
+		update.Description = valueStringPtr(flagValue(opts, "description"))
+		needsUpdate = true
+	}
+	properties, err := parseStringMap(flagValues(opts, "property"), "property")
+	if err != nil {
+		return err
+	}
+	if boolFlag(opts, "no-property") {
+		update.Metadata = map[string]string{}
+		needsUpdate = true
+	}
+	if len(properties) > 0 {
+		metadata := map[string]string{}
+		if !boolFlag(opts, "no-property") && item.Metadata != nil {
+			for key, value := range *item.Metadata {
+				metadata[key] = value
+			}
+		}
+		for key, value := range properties {
+			metadata[key] = value
+		}
+		update.Metadata = metadata
+		needsUpdate = true
+	}
+	if needsUpdate {
+		client, err = blockStorageClientWithMinimumMicroversion(ctx, client, "3.9")
+		if err != nil {
+			return err
+		}
+		if _, err := backups.Update(ctx, client, item.ID, update).Extract(); err != nil {
+			return err
+		}
+	}
+	if state := flagValue(opts, "state"); state != "" {
+		if err := backups.ResetStatus(ctx, client, item.ID, backups.ResetStatusOpts{Status: state}).ExtractErr(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func volumeBackupUnset(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("volume backup unset requires <backup>")
+	}
+	item, err := findVolumeBackup(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	client, err = blockStorageClientWithMinimumMicroversion(ctx, client, "3.43")
+	if err != nil {
+		return err
+	}
+	for _, key := range flagValues(opts, "property") {
+		if err := blockStorageDeleteMetadataKey(ctx, client, "backups", item.ID, key); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func volumeBackupRecordExport(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("volume backup record export requires <backup>")
+	}
+	item, err := findVolumeBackup(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	record, err := backups.Export(ctx, client, item.ID).Extract()
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, []outputField{
+		{"backup_service", record.BackupService},
+		{"backup_url", string(record.BackupURL)},
+	})
+}
+
+func volumeBackupRecordImport(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("volume backup record import requires <backup_service> <backup_metadata>")
+	}
+	result, err := backups.Import(ctx, client, backups.ImportOpts{BackupService: args[0], BackupURL: []byte(args[1])}).Extract()
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, []outputField{
+		{"id", result.ID},
+		{"name", result.Name},
+	})
+}
+
 func volumeServiceList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
 	page, err := bsservices.List(client, bsservices.ListOpts{
 		Binary: flagValue(opts, "service"),
@@ -10107,6 +11008,28 @@ func volumeServiceList(ctx context.Context, stdout io.Writer, opts *Options, cli
 		columns = append(columns, "Disabled Reason")
 	}
 	return renderListOutput(stdout, opts, columns, rows)
+}
+
+func volumeServiceSet(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("volume service set requires <host> <service>")
+	}
+	if flagValue(opts, "disable-reason") != "" && !boolFlag(opts, "disable") {
+		return fmt.Errorf("Cannot specify --disable-reason without --disable")
+	}
+	action := "enable"
+	body := map[string]any{
+		"host":   args[0],
+		"binary": args[1],
+	}
+	if boolFlag(opts, "disable") {
+		action = "disable"
+		if reason := flagValue(opts, "disable-reason"); reason != "" {
+			action = "disable-log-reason"
+			body["disabled_reason"] = reason
+		}
+	}
+	return blockStoragePutAction(ctx, client, client.ServiceURL("os-services", action), body, http.StatusOK, http.StatusAccepted)
 }
 
 func volumeBackendPoolList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
@@ -10189,6 +11112,150 @@ func volumeAttachmentShow(ctx context.Context, stdout io.Writer, opts *Options, 
 	})
 }
 
+type volumeAttachmentCreateOpts struct {
+	VolumeUUID   string
+	InstanceUUID string
+	Connector    map[string]any
+	Mode         any
+	HasMode      bool
+}
+
+func (opts volumeAttachmentCreateOpts) ToAttachmentCreateMap() (map[string]any, error) {
+	attachment := map[string]any{
+		"volume_uuid":   opts.VolumeUUID,
+		"instance_uuid": opts.InstanceUUID,
+	}
+	if opts.Connector != nil {
+		attachment["connector"] = opts.Connector
+	}
+	if opts.HasMode {
+		attachment["mode"] = opts.Mode
+	}
+	return map[string]any{"attachment": attachment}, nil
+}
+
+func volumeAttachmentCreate(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, computeClient *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("volume attachment create requires <volume> <server>")
+	}
+	client, err := blockStorageClientWithMinimumMicroversion(ctx, client, "3.27")
+	if err != nil {
+		return err
+	}
+	if flagValue(opts, "mode") != "" {
+		client, err = blockStorageClientWithMinimumMicroversion(ctx, client, "3.54")
+		if err != nil {
+			return err
+		}
+	}
+	if computeClient == nil {
+		return fmt.Errorf("compute service is required for volume attachment create")
+	}
+	volume, err := findVolume(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	server, err := findServer(ctx, computeClient, args[1])
+	if err != nil {
+		return err
+	}
+	connector := map[string]any(nil)
+	if boolFlag(opts, "connect") {
+		connector = volumeAttachmentConnector(opts)
+	} else if volumeAttachmentConnectorFlagsSet(opts) {
+		return fmt.Errorf("You must specify the --connect option for any of the connection-specific options such as --initiator to be valid")
+	}
+	createOpts := volumeAttachmentCreateOpts{
+		VolumeUUID:   volume.ID,
+		InstanceUUID: server.ID,
+		Connector:    connector,
+	}
+	if mode := flagValue(opts, "mode"); mode != "" {
+		createOpts.HasMode = true
+		if mode == "null" {
+			createOpts.Mode = nil
+		} else {
+			createOpts.Mode = mode
+		}
+	}
+	item, err := bsattachments.Create(ctx, client, createOpts).Extract()
+	if err != nil {
+		return err
+	}
+	return renderVolumeAttachmentShow(stdout, opts, item)
+}
+
+func volumeAttachmentDelete(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("volume attachment delete requires <attachment>")
+	}
+	client, err := blockStorageClientWithMinimumMicroversion(ctx, client, "3.27")
+	if err != nil {
+		return err
+	}
+	return bsattachments.Delete(ctx, client, args[0]).ExtractErr()
+}
+
+func volumeAttachmentSet(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("volume attachment set requires <attachment>")
+	}
+	client, err := blockStorageClientWithMinimumMicroversion(ctx, client, "3.27")
+	if err != nil {
+		return err
+	}
+	item, err := bsattachments.Update(ctx, client, args[0], bsattachments.UpdateOpts{Connector: volumeAttachmentConnector(opts)}).Extract()
+	if err != nil {
+		return err
+	}
+	return renderVolumeAttachmentShow(stdout, opts, item)
+}
+
+func volumeAttachmentComplete(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("volume attachment complete requires <attachment>")
+	}
+	client, err := blockStorageClientWithMinimumMicroversion(ctx, client, "3.44")
+	if err != nil {
+		return err
+	}
+	return bsattachments.Complete(ctx, client, args[0]).ExtractErr()
+}
+
+func renderVolumeAttachmentShow(stdout io.Writer, opts *Options, item *bsattachments.Attachment) error {
+	return renderShowOutput(stdout, opts, []outputField{
+		{"ID", item.ID},
+		{"Volume ID", item.VolumeID},
+		{"Instance ID", item.Instance},
+		{"Status", item.Status},
+		{"Attach Mode", item.AttachMode},
+		{"Attached At", valueString(oscTime(item.AttachedAt))},
+		{"Detached At", valueString(oscTime(item.DetachedAt))},
+		{"Properties", item.ConnectionInfo},
+	})
+}
+
+func volumeAttachmentConnector(opts *Options) map[string]any {
+	return map[string]any{
+		"initiator":  nilIfEmpty(flagValue(opts, "initiator")),
+		"ip":         nilIfEmpty(flagValue(opts, "ip")),
+		"platform":   nilIfEmpty(flagValue(opts, "platform")),
+		"host":       nilIfEmpty(flagValue(opts, "host")),
+		"os_type":    nilIfEmpty(flagValue(opts, "os-type")),
+		"multipath":  boolFlag(opts, "multipath"),
+		"mountpoint": nilIfEmpty(flagValue(opts, "mountpoint")),
+	}
+}
+
+func volumeAttachmentConnectorFlagsSet(opts *Options) bool {
+	for _, name := range []string{"initiator", "ip", "platform", "host", "os-type", "multipath", "mountpoint"} {
+		if flagChanged(opts, name) {
+			return true
+		}
+	}
+	return false
+}
+
 func volumeQoSList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
 	page, err := bsqos.List(client, bsqos.ListOpts{}).AllPages(ctx)
 	if err != nil {
@@ -10215,6 +11282,83 @@ func volumeQoSList(ctx context.Context, stdout io.Writer, opts *Options, client 
 	return renderListOutput(stdout, opts, []string{"ID", "Name", "Consumer", "Associations", "Properties"}, rows)
 }
 
+func volumeQoSCreate(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("volume qos create requires <name>")
+	}
+	properties, err := parseStringMap(flagValues(opts, "property"), "property")
+	if err != nil {
+		return err
+	}
+	consumer := flagValue(opts, "consumer")
+	if consumer == "" {
+		consumer = "both"
+	}
+	item, err := bsqos.Create(ctx, client, bsqos.CreateOpts{
+		Name:     args[0],
+		Consumer: bsqos.QoSConsumer(consumer),
+		Specs:    properties,
+	}).Extract()
+	if err != nil {
+		return err
+	}
+	return renderVolumeQoSShow(ctx, stdout, opts, client, item)
+}
+
+func volumeQoSDelete(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("volume qos delete requires <qos-spec>")
+	}
+	failures := 0
+	for _, value := range args {
+		item, err := findVolumeQoS(ctx, client, value)
+		if err != nil {
+			failures++
+			continue
+		}
+		if err := bsqos.Delete(ctx, client, item.ID, bsqos.DeleteOpts{Force: boolFlag(opts, "force")}).ExtractErr(); err != nil {
+			failures++
+		}
+	}
+	if failures > 0 {
+		return fmt.Errorf("%d of %d QoS specifications failed to delete.", failures, len(args))
+	}
+	return nil
+}
+
+func volumeQoSSet(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("volume qos set requires <qos-spec>")
+	}
+	item, err := findVolumeQoS(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	failures := 0
+	if boolFlag(opts, "no-property") && len(item.Specs) > 0 {
+		keys := make([]string, 0, len(item.Specs))
+		for key := range item.Specs {
+			keys = append(keys, key)
+		}
+		if err := bsqos.DeleteKeys(ctx, client, item.ID, bsqos.DeleteKeysOpts(keys)).ExtractErr(); err != nil {
+			failures++
+		}
+	}
+	properties, err := parseStringMap(flagValues(opts, "property"), "property")
+	if err != nil {
+		return err
+	}
+	if len(properties) > 0 {
+		if _, err := bsqos.Update(ctx, client, item.ID, bsqos.UpdateOpts{Specs: properties}).Extract(); err != nil {
+			failures++
+		}
+	}
+	if failures > 0 {
+		return fmt.Errorf("One or more of the set operations failed")
+	}
+	return nil
+}
+
 func volumeQoSShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
 	if len(args) < 1 {
 		return fmt.Errorf("volume qos show requires <qos-spec>")
@@ -10223,6 +11367,62 @@ func volumeQoSShow(ctx context.Context, stdout io.Writer, opts *Options, client 
 	if err != nil {
 		return err
 	}
+	return renderVolumeQoSShow(ctx, stdout, opts, client, item)
+}
+
+func volumeQoSUnset(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("volume qos unset requires <qos-spec>")
+	}
+	item, err := findVolumeQoS(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	values := flagValues(opts, "property")
+	if len(values) == 0 {
+		return nil
+	}
+	return bsqos.DeleteKeys(ctx, client, item.ID, bsqos.DeleteKeysOpts(values)).ExtractErr()
+}
+
+func volumeQoSAssociate(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("volume qos associate requires <qos-spec> <volume-type>")
+	}
+	qosSpec, err := findVolumeQoS(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	volumeType, err := findVolumeType(ctx, client, args[1])
+	if err != nil {
+		return err
+	}
+	return bsqos.Associate(ctx, client, qosSpec.ID, bsqos.AssociateOpts{VolumeTypeID: volumeType.ID}).ExtractErr()
+}
+
+func volumeQoSDisassociate(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("volume qos disassociate requires <qos-spec>")
+	}
+	qosSpec, err := findVolumeQoS(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	if boolFlag(opts, "all") {
+		return bsqos.DisassociateAll(ctx, client, qosSpec.ID).ExtractErr()
+	}
+	volumeTypeValue := flagValue(opts, "volume-type")
+	if volumeTypeValue == "" {
+		return nil
+	}
+	volumeType, err := findVolumeType(ctx, client, volumeTypeValue)
+	if err != nil {
+		return err
+	}
+	return bsqos.Disassociate(ctx, client, qosSpec.ID, bsqos.DisassociateOpts{VolumeTypeID: volumeType.ID}).ExtractErr()
+}
+
+func renderVolumeQoSShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, item *bsqos.QoS) error {
 	associations, err := volumeQoSAssociations(ctx, client, item.ID)
 	if err != nil {
 		return err
@@ -10396,6 +11596,130 @@ func blockStorageClusterShow(ctx context.Context, stdout io.Writer, opts *Option
 	})
 }
 
+func blockStorageClusterSet(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("block storage cluster set requires <cluster>")
+	}
+	client, err := blockStorageClientWithExplicitMinimumMicroversion(client, "3.7", "block storage cluster set")
+	if err != nil {
+		return err
+	}
+	if flagValue(opts, "disable-reason") != "" && !boolFlag(opts, "disable") {
+		return fmt.Errorf("Cannot specify --disable-reason without --disable")
+	}
+	binary := flagValue(opts, "binary")
+	if binary == "" {
+		binary = "cinder-volume"
+	}
+	action := "enable"
+	body := map[string]any{
+		"name":   args[0],
+		"binary": binary,
+	}
+	if boolFlag(opts, "disable") {
+		action = "disable"
+		if reason := flagValue(opts, "disable-reason"); reason != "" {
+			body["disabled_reason"] = reason
+		}
+	}
+	var response struct {
+		Cluster blockStorageClusterRecord `json:"cluster"`
+	}
+	resp, err := client.Put(ctx, client.ServiceURL("clusters", action), body, &response, &gophercloud.RequestOpts{
+		OkCodes: []int{http.StatusOK, http.StatusAccepted},
+	})
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return oscHTTPException(err)
+	}
+	item := response.Cluster
+	return renderShowOutput(stdout, opts, []outputField{
+		{"Name", item.Name},
+		{"Binary", item.Binary},
+		{"State", item.State},
+		{"Status", item.Status},
+		{"Disabled Reason", nilIfEmpty(item.DisabledReason)},
+		{"Hosts", item.NumHosts},
+		{"Down Hosts", item.NumDownHosts},
+		{"Last Heartbeat", nilIfEmpty(item.LastHeartbeat)},
+		{"Created At", nilIfEmpty(item.CreatedAt)},
+		{"Updated At", nilIfEmpty(item.UpdatedAt)},
+		{"Replication Status", nilIfEmpty(item.ReplicationStatus)},
+		{"Frozen", item.Frozen},
+		{"Active Backend ID", nilIfEmpty(item.ActiveBackendID)},
+	})
+}
+
+type blockStorageCleanupServiceRecord struct {
+	ID          string `json:"id"`
+	ClusterName string `json:"cluster_name"`
+	Host        string `json:"host"`
+	Binary      string `json:"binary"`
+}
+
+func blockStorageCleanup(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	client, err := blockStorageClientWithMinimumMicroversion(ctx, client, "3.24")
+	if err != nil {
+		return err
+	}
+	body := map[string]any{}
+	if value := flagValue(opts, "cluster"); value != "" {
+		body["cluster_name"] = value
+	}
+	if value := flagValue(opts, "host"); value != "" {
+		body["host"] = value
+	}
+	if value := flagValue(opts, "binary"); value != "" {
+		body["binary"] = value
+	}
+	if flagChanged(opts, "up") || flagChanged(opts, "down") {
+		body["is_up"] = boolFlag(opts, "up")
+	}
+	if flagChanged(opts, "disabled") || flagChanged(opts, "enabled") {
+		body["disabled"] = boolFlag(opts, "disabled")
+	}
+	if value := flagValue(opts, "resource-id"); value != "" {
+		body["resource_id"] = value
+	}
+	if value := flagValue(opts, "resource-type"); value != "" {
+		body["resource_type"] = value
+	}
+	if value := flagValue(opts, "service-id"); value != "" {
+		body["service_id"] = value
+	}
+	var response struct {
+		Cleaning    []blockStorageCleanupServiceRecord `json:"cleaning"`
+		Unavailable []blockStorageCleanupServiceRecord `json:"unavailable"`
+	}
+	resp, err := client.Post(ctx, client.ServiceURL("workers", "cleanup"), body, &response, &gophercloud.RequestOpts{
+		OkCodes: []int{http.StatusOK, http.StatusAccepted},
+	})
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return oscHTTPException(err)
+	}
+	rows := make([]outputRow, 0, len(response.Cleaning)+len(response.Unavailable))
+	for _, item := range response.Cleaning {
+		rows = append(rows, outputRow{
+			"ID":           item.ID,
+			"Cluster Name": nilIfEmpty(item.ClusterName),
+			"Host":         nilIfEmpty(item.Host),
+			"Binary":       nilIfEmpty(item.Binary),
+			"Status":       "Cleaning",
+		})
+	}
+	for _, item := range response.Unavailable {
+		rows = append(rows, outputRow{
+			"ID":           item.ID,
+			"Cluster Name": nilIfEmpty(item.ClusterName),
+			"Host":         nilIfEmpty(item.Host),
+			"Binary":       nilIfEmpty(item.Binary),
+			"Status":       "Unavailable",
+		})
+	}
+	return renderListOutput(stdout, opts, []string{"ID", "Cluster Name", "Host", "Binary", "Status"}, rows)
+}
+
 type blockStorageResourceFilterRecord struct {
 	Resource string   `json:"resource"`
 	Filters  []string `json:"filters"`
@@ -10501,6 +11825,506 @@ func blockStorageLogLevelList(ctx context.Context, stdout io.Writer, opts *Optio
 	return renderListOutput(stdout, opts, []string{"Binary", "Host", "Prefix", "Level"}, rows)
 }
 
+func blockStorageLogLevelSet(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("block storage log level set requires <log-level>")
+	}
+	client, err := blockStorageClientWithMinimumMicroversion(ctx, client, "3.32")
+	if err != nil {
+		return err
+	}
+	return blockStoragePutAction(ctx, client, client.ServiceURL("os-services", "set-log"), map[string]any{
+		"level":  strings.ToUpper(args[0]),
+		"binary": flagValue(opts, "service"),
+		"server": nilIfEmpty(flagValue(opts, "host")),
+		"prefix": nilIfEmpty(flagValue(opts, "log-prefix")),
+	}, http.StatusOK, http.StatusAccepted)
+}
+
+type blockStorageManageableRecord struct {
+	Reference       any `json:"reference"`
+	Size            any `json:"size"`
+	SafeToManage    any `json:"safe_to_manage"`
+	ReasonNotSafe   any `json:"reason_not_safe"`
+	CinderID        any `json:"cinder_id"`
+	ExtraInfo       any `json:"extra_info"`
+	SourceReference any `json:"source_reference"`
+}
+
+func blockStorageManageableList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string, resource string) error {
+	client, err := blockStorageClientWithMinimumMicroversion(ctx, client, "3.8")
+	if err != nil {
+		return err
+	}
+	host := ""
+	if len(args) > 0 {
+		host = args[0]
+	}
+	cluster := flagValue(opts, "cluster")
+	if cluster != "" {
+		client, err = blockStorageClientWithMinimumMicroversion(ctx, client, "3.17")
+		if err != nil {
+			return err
+		}
+	} else if host == "" {
+		return fmt.Errorf("block storage %s manageable list requires <host> or --cluster", strings.TrimSuffix(resource, "s"))
+	}
+	path := "manageable_volumes"
+	responseKey := "manageable-volumes"
+	if resource == "snapshots" {
+		path = "manageable_snapshots"
+		responseKey = "manageable-snapshots"
+	}
+	if boolFlag(opts, "long") {
+		path += "/detail"
+	}
+	query := url.Values{}
+	if cluster != "" {
+		query.Set("cluster", cluster)
+	} else {
+		query.Set("host", host)
+	}
+	if value := flagValue(opts, "marker"); value != "" {
+		query.Set("marker", value)
+	}
+	if value := intFlag(opts, "limit"); value > 0 {
+		query.Set("limit", strconv.Itoa(value))
+	}
+	if value := intFlag(opts, "offset"); value > 0 {
+		query.Set("offset", strconv.Itoa(value))
+	}
+	if value := flagValue(opts, "sort"); value != "" {
+		query.Set("sort", value)
+	}
+	requestURL := client.ServiceURL(strings.Split(path, "/")...)
+	if encoded := query.Encode(); encoded != "" {
+		requestURL += "?" + encoded
+	}
+	var raw map[string][]blockStorageManageableRecord
+	resp, err := client.Get(ctx, requestURL, &raw, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return oscHTTPException(err)
+	}
+	items := raw[responseKey]
+	columns := []string{"reference", "size", "safe_to_manage"}
+	if resource == "snapshots" {
+		columns = []string{"reference", "size", "safe_to_manage", "source_reference"}
+	}
+	if boolFlag(opts, "long") {
+		columns = append(columns, "reason_not_safe", "cinder_id", "extra_info")
+	}
+	rows := make([]outputRow, 0, len(items))
+	for _, item := range items {
+		row := outputRow{
+			"reference":      item.Reference,
+			"size":           item.Size,
+			"safe_to_manage": item.SafeToManage,
+		}
+		if resource == "snapshots" {
+			row["source_reference"] = item.SourceReference
+		}
+		if boolFlag(opts, "long") {
+			row["reason_not_safe"] = item.ReasonNotSafe
+			row["cinder_id"] = item.CinderID
+			row["extra_info"] = item.ExtraInfo
+		}
+		rows = append(rows, row)
+	}
+	return renderListOutput(stdout, opts, columns, rows)
+}
+
+type consistencyGroupRecord struct {
+	ID               string   `json:"id"`
+	Status           string   `json:"status"`
+	Name             string   `json:"name"`
+	Description      string   `json:"description"`
+	AvailabilityZone string   `json:"availability_zone"`
+	VolumeTypes      []string `json:"volume_types"`
+	CreatedAt        string   `json:"created_at"`
+}
+
+func consistencyGroupList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	items, err := listConsistencyGroups(ctx, client, boolFlag(opts, "all-projects"))
+	if err != nil {
+		return err
+	}
+	columns := []string{"ID", "Status", "Name"}
+	if boolFlag(opts, "long") {
+		columns = []string{"ID", "Status", "Availability Zone", "Name", "Description", "Volume Types"}
+	}
+	rows := make([]outputRow, 0, len(items))
+	for _, item := range items {
+		row := outputRow{
+			"ID":     item.ID,
+			"Status": item.Status,
+			"Name":   item.Name,
+		}
+		if boolFlag(opts, "long") {
+			row["Availability Zone"] = item.AvailabilityZone
+			row["Description"] = item.Description
+			row["Volume Types"] = item.VolumeTypes
+		}
+		rows = append(rows, row)
+	}
+	return renderListOutput(stdout, opts, columns, rows)
+}
+
+func consistencyGroupShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("consistency group show requires <consistency-group>")
+	}
+	item, err := findConsistencyGroup(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	raw, err := getBlockStorageResourceMap(ctx, client, client.ServiceURL("consistencygroups", url.PathEscape(item.ID)), "consistencygroup")
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, sortedFieldsFromMap(raw, false))
+}
+
+func consistencyGroupCreate(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	name := ""
+	if len(args) > 0 {
+		name = args[0]
+	}
+	volumeTypeValue := flagValue(opts, "volume-type")
+	sourceValue := firstNonEmpty(flagValue(opts, "source"), flagValue(opts, "consistency-group-source"))
+	snapshotValue := firstNonEmpty(flagValue(opts, "snapshot"), flagValue(opts, "consistency-group-snapshot"))
+	if volumeTypeValue == "" && sourceValue == "" && snapshotValue == "" {
+		return fmt.Errorf("one of --volume-type, --source, or --snapshot is required")
+	}
+	var request map[string]any
+	requestURL := client.ServiceURL("consistencygroups")
+	if volumeTypeValue != "" {
+		volumeType, err := findVolumeType(ctx, client, volumeTypeValue)
+		if err != nil {
+			return err
+		}
+		request = map[string]any{
+			"consistencygroup": map[string]any{
+				"name":              nilIfEmpty(name),
+				"description":       nilIfEmpty(flagValue(opts, "description")),
+				"volume_types":      volumeType.ID,
+				"availability_zone": nilIfEmpty(flagValue(opts, "availability-zone")),
+				"status":            "creating",
+			},
+		}
+	} else {
+		body := map[string]any{
+			"name":        nilIfEmpty(name),
+			"description": nilIfEmpty(flagValue(opts, "description")),
+			"status":      "creating",
+		}
+		if sourceValue != "" {
+			source, err := findConsistencyGroup(ctx, client, sourceValue)
+			if err != nil {
+				return err
+			}
+			body["source_cgid"] = source.ID
+		}
+		if snapshotValue != "" {
+			snapshot, err := findConsistencyGroupSnapshot(ctx, client, snapshotValue)
+			if err != nil {
+				return err
+			}
+			body["cgsnapshot_id"] = snapshot.ID
+		}
+		requestURL = client.ServiceURL("consistencygroups", "create_from_src")
+		request = map[string]any{"consistencygroup-from-src": body}
+	}
+	raw, err := postBlockStorageResourceMap(ctx, client, requestURL, request, "consistencygroup")
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, sortedFieldsFromMap(raw, false))
+}
+
+func consistencyGroupDelete(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("consistency group delete requires <consistency-group>")
+	}
+	failures := 0
+	for _, value := range args {
+		item, err := findConsistencyGroup(ctx, client, value)
+		if err != nil {
+			failures++
+			continue
+		}
+		if err := blockStoragePostAction(ctx, client, client.ServiceURL("consistencygroups", url.PathEscape(item.ID), "delete"), map[string]any{
+			"consistencygroup": map[string]any{"force": boolFlag(opts, "force")},
+		}, http.StatusOK, http.StatusAccepted, http.StatusNoContent); err != nil {
+			failures++
+		}
+	}
+	if failures > 0 {
+		return fmt.Errorf("%d of %d consistency groups failed to delete.", failures, len(args))
+	}
+	return nil
+}
+
+func consistencyGroupSet(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("consistency group set requires <consistency-group>")
+	}
+	item, err := findConsistencyGroup(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	update := map[string]any{}
+	if flagChanged(opts, "name") {
+		update["name"] = flagValue(opts, "name")
+	}
+	if flagChanged(opts, "description") {
+		update["description"] = flagValue(opts, "description")
+	}
+	if len(update) == 0 {
+		return nil
+	}
+	return blockStoragePutAction(ctx, client, client.ServiceURL("consistencygroups", url.PathEscape(item.ID)), map[string]any{"consistencygroup": update}, http.StatusOK, http.StatusAccepted)
+}
+
+func consistencyGroupAddRemoveVolume(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string, add bool) error {
+	if len(args) < 2 {
+		if add {
+			return fmt.Errorf("consistency group add volume requires <consistency-group> <volume>")
+		}
+		return fmt.Errorf("consistency group remove volume requires <consistency-group> <volume>")
+	}
+	group, err := findConsistencyGroup(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	ids := make([]string, 0, len(args)-1)
+	failures := 0
+	for _, value := range args[1:] {
+		volume, err := findVolume(ctx, client, value)
+		if err != nil {
+			failures++
+			continue
+		}
+		ids = append(ids, volume.ID)
+	}
+	if len(ids) > 0 {
+		key := "add_volumes"
+		if !add {
+			key = "remove_volumes"
+		}
+		err = blockStoragePutAction(ctx, client, client.ServiceURL("consistencygroups", url.PathEscape(group.ID)), map[string]any{
+			"consistencygroup": map[string]any{key: strings.Join(ids, ",")},
+		}, http.StatusOK, http.StatusAccepted)
+		if err != nil {
+			return err
+		}
+	}
+	if failures > 0 {
+		action := "add"
+		if !add {
+			action = "remove"
+		}
+		return fmt.Errorf("%d of %d volumes failed to %s.", failures, len(args)-1, action)
+	}
+	return nil
+}
+
+func listConsistencyGroups(ctx context.Context, client *gophercloud.ServiceClient, allProjects bool) ([]consistencyGroupRecord, error) {
+	requestURL := client.ServiceURL("consistencygroups", "detail")
+	query := url.Values{}
+	if allProjects {
+		query.Set("all_tenants", "True")
+	}
+	if encoded := query.Encode(); encoded != "" {
+		requestURL += "?" + encoded
+	}
+	var response struct {
+		ConsistencyGroups []consistencyGroupRecord `json:"consistencygroups"`
+	}
+	resp, err := client.Get(ctx, requestURL, &response, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return nil, oscHTTPException(err)
+	}
+	return response.ConsistencyGroups, nil
+}
+
+func findConsistencyGroup(ctx context.Context, client *gophercloud.ServiceClient, nameOrID string) (consistencyGroupRecord, error) {
+	items, err := listConsistencyGroups(ctx, client, false)
+	if err == nil {
+		for _, item := range items {
+			if item.ID == nameOrID || item.Name == nameOrID {
+				return item, nil
+			}
+		}
+	}
+	var response struct {
+		ConsistencyGroup consistencyGroupRecord `json:"consistencygroup"`
+	}
+	resp, err := client.Get(ctx, client.ServiceURL("consistencygroups", url.PathEscape(nameOrID)), &response, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return consistencyGroupRecord{}, oscHTTPException(err)
+	}
+	return response.ConsistencyGroup, nil
+}
+
+type consistencyGroupSnapshotRecord struct {
+	ID                 string `json:"id"`
+	Status             string `json:"status"`
+	Name               string `json:"name"`
+	Description        string `json:"description"`
+	ConsistencyGroupID string `json:"consistencygroup_id"`
+	CreatedAt          string `json:"created_at"`
+}
+
+func consistencyGroupSnapshotList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	consistencyGroupID := ""
+	if value := flagValue(opts, "consistency-group"); value != "" {
+		group, err := findConsistencyGroup(ctx, client, value)
+		if err != nil {
+			return err
+		}
+		consistencyGroupID = group.ID
+	}
+	items, err := listConsistencyGroupSnapshots(ctx, client, boolFlag(opts, "all-projects"), flagValue(opts, "status"), consistencyGroupID)
+	if err != nil {
+		return err
+	}
+	columns := []string{"ID", "Status", "Name"}
+	if boolFlag(opts, "long") {
+		columns = []string{"ID", "Status", "ConsistencyGroup ID", "Name", "Description", "Created At"}
+	}
+	rows := make([]outputRow, 0, len(items))
+	for _, item := range items {
+		row := outputRow{
+			"ID":     item.ID,
+			"Status": item.Status,
+			"Name":   item.Name,
+		}
+		if boolFlag(opts, "long") {
+			row["ConsistencyGroup ID"] = item.ConsistencyGroupID
+			row["Description"] = item.Description
+			row["Created At"] = item.CreatedAt
+		}
+		rows = append(rows, row)
+	}
+	return renderListOutput(stdout, opts, columns, rows)
+}
+
+func consistencyGroupSnapshotShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("consistency group snapshot show requires <consistency-group-snapshot>")
+	}
+	item, err := findConsistencyGroupSnapshot(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	raw, err := getBlockStorageResourceMap(ctx, client, client.ServiceURL("cgsnapshots", url.PathEscape(item.ID)), "cgsnapshot")
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, sortedFieldsFromMap(raw, false))
+}
+
+func consistencyGroupSnapshotCreate(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	name := ""
+	if len(args) > 0 {
+		name = args[0]
+	}
+	groupValue := flagValue(opts, "consistency-group")
+	if groupValue == "" {
+		groupValue = name
+	}
+	if groupValue == "" {
+		return fmt.Errorf("consistency group snapshot create requires <snapshot-name> or --consistency-group")
+	}
+	group, err := findConsistencyGroup(ctx, client, groupValue)
+	if err != nil {
+		return err
+	}
+	request := map[string]any{
+		"cgsnapshot": map[string]any{
+			"consistencygroup_id": group.ID,
+			"name":                nilIfEmpty(name),
+			"description":         nilIfEmpty(flagValue(opts, "description")),
+			"status":              "creating",
+		},
+	}
+	raw, err := postBlockStorageResourceMap(ctx, client, client.ServiceURL("cgsnapshots"), request, "cgsnapshot")
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, sortedFieldsFromMap(raw, false))
+}
+
+func consistencyGroupSnapshotDelete(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("consistency group snapshot delete requires <consistency-group-snapshot>")
+	}
+	failures := 0
+	for _, value := range args {
+		item, err := findConsistencyGroupSnapshot(ctx, client, value)
+		if err != nil {
+			failures++
+			continue
+		}
+		if err := blockStorageDeleteAction(ctx, client, client.ServiceURL("cgsnapshots", url.PathEscape(item.ID)), http.StatusOK, http.StatusAccepted, http.StatusNoContent); err != nil {
+			failures++
+		}
+	}
+	if failures > 0 {
+		return fmt.Errorf("%d of %d consistency group snapshots failed to delete.", failures, len(args))
+	}
+	return nil
+}
+
+func listConsistencyGroupSnapshots(ctx context.Context, client *gophercloud.ServiceClient, allProjects bool, status string, consistencyGroupID string) ([]consistencyGroupSnapshotRecord, error) {
+	requestURL := client.ServiceURL("cgsnapshots", "detail")
+	query := url.Values{}
+	if allProjects {
+		query.Set("all_tenants", "True")
+	}
+	if status != "" {
+		query.Set("status", status)
+	}
+	if consistencyGroupID != "" {
+		query.Set("consistencygroup_id", consistencyGroupID)
+	}
+	if encoded := query.Encode(); encoded != "" {
+		requestURL += "?" + encoded
+	}
+	var response struct {
+		CGSnapshots []consistencyGroupSnapshotRecord `json:"cgsnapshots"`
+	}
+	resp, err := client.Get(ctx, requestURL, &response, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return nil, oscHTTPException(err)
+	}
+	return response.CGSnapshots, nil
+}
+
+func findConsistencyGroupSnapshot(ctx context.Context, client *gophercloud.ServiceClient, nameOrID string) (consistencyGroupSnapshotRecord, error) {
+	items, err := listConsistencyGroupSnapshots(ctx, client, false, "", "")
+	if err == nil {
+		for _, item := range items {
+			if item.ID == nameOrID || item.Name == nameOrID {
+				return item, nil
+			}
+		}
+	}
+	var response struct {
+		CGSnapshot consistencyGroupSnapshotRecord `json:"cgsnapshot"`
+	}
+	resp, err := client.Get(ctx, client.ServiceURL("cgsnapshots", url.PathEscape(nameOrID)), &response, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return consistencyGroupSnapshotRecord{}, oscHTTPException(err)
+	}
+	return response.CGSnapshot, nil
+}
+
 type volumeMessageRecord struct {
 	ID              string              `json:"id"`
 	EventID         string              `json:"event_id"`
@@ -10602,6 +12426,102 @@ func volumeMessageShow(ctx context.Context, stdout io.Writer, opts *Options, cli
 	})
 }
 
+func volumeMessageDelete(ctx context.Context, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("volume message delete requires <message-id>")
+	}
+	client, err := blockStorageClientWithExplicitMinimumMicroversion(client, "3.3", "volume message delete")
+	if err != nil {
+		return err
+	}
+	failures := 0
+	for _, id := range args {
+		if err := blockStorageDeleteAction(ctx, client, client.ServiceURL("messages", url.PathEscape(id)), http.StatusOK, http.StatusAccepted, http.StatusNoContent); err != nil {
+			failures++
+		}
+	}
+	if failures > 0 {
+		return fmt.Errorf("%d of %d volume messages failed to delete.", failures, len(args))
+	}
+	return nil
+}
+
+func volumeHostSet(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("volume host set requires <host-name>")
+	}
+	action := "thaw"
+	if boolFlag(opts, "disable") {
+		action = "freeze"
+	}
+	return blockStoragePutAction(ctx, client, client.ServiceURL("os-services", action), map[string]any{"host": args[0]}, http.StatusOK, http.StatusAccepted)
+}
+
+func volumeMigrate(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("volume migrate requires <volume>")
+	}
+	host := flagValue(opts, "host")
+	if host == "" {
+		return fmt.Errorf("volume migrate requires --host <host>")
+	}
+	item, err := findVolume(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	return blockStoragePostAction(ctx, client, client.ServiceURL("volumes", url.PathEscape(item.ID), "action"), map[string]any{
+		"os-migrate_volume": map[string]any{
+			"host":            host,
+			"force_host_copy": boolFlag(opts, "force-host-copy"),
+			"lock_volume":     boolFlag(opts, "lock-volume"),
+		},
+	}, http.StatusOK, http.StatusAccepted, http.StatusNoContent)
+}
+
+func volumeRevert(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("volume revert requires <snapshot>")
+	}
+	client, err := blockStorageClientWithMinimumMicroversion(ctx, client, "3.40")
+	if err != nil {
+		return err
+	}
+	snapshot, err := findVolumeSnapshot(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	return blockStoragePostAction(ctx, client, client.ServiceURL("volumes", url.PathEscape(snapshot.VolumeID), "action"), map[string]any{
+		"revert": map[string]any{"snapshot_id": snapshot.ID},
+	}, http.StatusOK, http.StatusAccepted, http.StatusNoContent)
+}
+
+func volumeBackendCapabilityShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("volume backend capability show requires <host>")
+	}
+	raw, err := getBlockStorageResourceMap(ctx, client, client.ServiceURL("capabilities", url.PathEscape(args[0])), "")
+	if err != nil {
+		return err
+	}
+	properties, _ := raw["properties"].(map[string]any)
+	keys := make([]string, 0, len(properties))
+	for key := range properties {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	rows := make([]outputRow, 0, len(keys))
+	for _, key := range keys {
+		property := mapAnyFromRaw(properties[key])
+		rows = append(rows, outputRow{
+			"Title":       property["title"],
+			"Key":         key,
+			"Type":        property["type"],
+			"Description": property["description"],
+		})
+	}
+	return renderListOutput(stdout, opts, []string{"Title", "Key", "Type", "Description"}, rows)
+}
+
 type volumeGroupRecord struct {
 	ID               string   `json:"id"`
 	Status           string   `json:"status"`
@@ -10688,6 +12608,213 @@ func volumeGroupShow(ctx context.Context, stdout io.Writer, opts *Options, clien
 	})
 }
 
+func volumeGroupCreate(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	volumeGroupTypeValue := flagValue(opts, "volume-group-type")
+	volumeTypeValues := append([]string{}, flagValues(opts, "volume-type")...)
+	if volumeGroupTypeValue == "" && len(args) > 0 {
+		volumeGroupTypeValue = args[0]
+		if len(args) > 1 {
+			volumeTypeValues = append(volumeTypeValues, args[1:]...)
+		}
+	}
+	sourceGroupValue := flagValue(opts, "source-group")
+	groupSnapshotValue := flagValue(opts, "group-snapshot")
+	if sourceGroupValue != "" || groupSnapshotValue != "" {
+		client, err := blockStorageClientWithExplicitMinimumMicroversion(client, "3.14", "volume group create [--source-group|--group-snapshot]")
+		if err != nil {
+			return err
+		}
+		body := map[string]any{
+			"name":        nilIfEmpty(flagValue(opts, "name")),
+			"description": nilIfEmpty(flagValue(opts, "description")),
+		}
+		if sourceGroupValue != "" {
+			sourceGroup, err := findVolumeGroup(ctx, client, sourceGroupValue)
+			if err != nil {
+				return err
+			}
+			body["source_group_id"] = sourceGroup.ID
+		}
+		if groupSnapshotValue != "" {
+			groupSnapshot, err := findVolumeGroupSnapshot(ctx, client, groupSnapshotValue)
+			if err != nil {
+				return err
+			}
+			body["group_snapshot_id"] = groupSnapshot.ID
+		}
+		var response struct {
+			Group volumeGroupRecord `json:"group"`
+		}
+		resp, err := client.Post(ctx, client.ServiceURL("groups", "action"), map[string]any{"create-from-src": body}, &response, &gophercloud.RequestOpts{
+			OkCodes: []int{http.StatusOK, http.StatusAccepted},
+		})
+		_, _, err = gophercloud.ParseResponse(resp, err)
+		if err != nil {
+			return oscHTTPException(err)
+		}
+		group, err := getVolumeGroup(ctx, client, response.Group.ID)
+		if err == nil {
+			response.Group = group
+		}
+		return renderVolumeGroupShow(stdout, opts, response.Group)
+	}
+	client, err := blockStorageClientWithExplicitMinimumMicroversion(client, "3.13", "volume group create")
+	if err != nil {
+		return err
+	}
+	if volumeGroupTypeValue == "" {
+		return fmt.Errorf("--volume-group-type is required unless --source-group or --group-snapshot is specified")
+	}
+	if len(volumeTypeValues) == 0 {
+		return fmt.Errorf("--volume-type is a required argument when creating a group from group type")
+	}
+	volumeGroupType, err := findVolumeGroupType(ctx, client, volumeGroupTypeValue)
+	if err != nil {
+		return err
+	}
+	volumeTypeIDs := make([]string, 0, len(volumeTypeValues))
+	for _, value := range volumeTypeValues {
+		volumeType, err := findVolumeType(ctx, client, value)
+		if err != nil {
+			return err
+		}
+		volumeTypeIDs = append(volumeTypeIDs, volumeType.ID)
+	}
+	request := map[string]any{
+		"group": map[string]any{
+			"name":              nilIfEmpty(flagValue(opts, "name")),
+			"description":       nilIfEmpty(flagValue(opts, "description")),
+			"group_type":        volumeGroupType.ID,
+			"volume_types":      volumeTypeIDs,
+			"availability_zone": nilIfEmpty(flagValue(opts, "availability-zone")),
+		},
+	}
+	var response struct {
+		Group volumeGroupRecord `json:"group"`
+	}
+	resp, err := client.Post(ctx, client.ServiceURL("groups"), request, &response, &gophercloud.RequestOpts{
+		OkCodes: []int{http.StatusOK, http.StatusAccepted},
+	})
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return oscHTTPException(err)
+	}
+	group, err := getVolumeGroup(ctx, client, response.Group.ID)
+	if err == nil {
+		response.Group = group
+	}
+	return renderVolumeGroupShow(stdout, opts, response.Group)
+}
+
+func volumeGroupDelete(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("volume group delete requires <group>")
+	}
+	client, err := blockStorageClientWithExplicitMinimumMicroversion(client, "3.13", "volume group delete")
+	if err != nil {
+		return err
+	}
+	group, err := findVolumeGroup(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	return blockStoragePostAction(ctx, client, client.ServiceURL("groups", url.PathEscape(group.ID), "action"), map[string]any{
+		"delete": map[string]any{"delete-volumes": boolFlag(opts, "force")},
+	}, http.StatusOK, http.StatusAccepted, http.StatusNoContent)
+}
+
+func volumeGroupSet(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("volume group set requires <group>")
+	}
+	client, err := blockStorageClientWithExplicitMinimumMicroversion(client, "3.13", "volume group set")
+	if err != nil {
+		return err
+	}
+	group, err := findVolumeGroup(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	update := map[string]any{}
+	if flagChanged(opts, "name") {
+		update["name"] = flagValue(opts, "name")
+	}
+	if flagChanged(opts, "description") {
+		update["description"] = flagValue(opts, "description")
+	}
+	if len(update) > 0 {
+		var response struct {
+			Group volumeGroupRecord `json:"group"`
+		}
+		resp, err := client.Put(ctx, client.ServiceURL("groups", url.PathEscape(group.ID)), map[string]any{"group": update}, &response, &gophercloud.RequestOpts{
+			OkCodes: []int{http.StatusOK, http.StatusAccepted},
+		})
+		_, _, err = gophercloud.ParseResponse(resp, err)
+		if err != nil {
+			return oscHTTPException(err)
+		}
+		group = response.Group
+	}
+	if boolFlag(opts, "enable-replication") || boolFlag(opts, "disable-replication") {
+		client, err = blockStorageClientWithExplicitMinimumMicroversion(client, "3.38", "volume group set --enable-replication/--disable-replication")
+		if err != nil {
+			return err
+		}
+		action := "enable_replication"
+		if boolFlag(opts, "disable-replication") {
+			action = "disable_replication"
+		}
+		if err := blockStoragePostAction(ctx, client, client.ServiceURL("groups", url.PathEscape(group.ID), "action"), map[string]any{action: map[string]any{}}, http.StatusOK, http.StatusAccepted, http.StatusNoContent); err != nil {
+			return err
+		}
+	}
+	group, err = getVolumeGroup(ctx, client, group.ID)
+	if err != nil {
+		return err
+	}
+	return renderVolumeGroupShow(stdout, opts, group)
+}
+
+func volumeGroupFailover(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("volume group failover requires <group>")
+	}
+	client, err := blockStorageClientWithExplicitMinimumMicroversion(client, "3.38", "volume group failover")
+	if err != nil {
+		return err
+	}
+	group, err := findVolumeGroup(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	allowAttached := boolFlag(opts, "allow-attached-volume")
+	if boolFlag(opts, "disallow-attached-volume") {
+		allowAttached = false
+	}
+	return blockStoragePostAction(ctx, client, client.ServiceURL("groups", url.PathEscape(group.ID), "action"), map[string]any{
+		"failover_replication": map[string]any{
+			"allow_attached_volume": allowAttached,
+			"secondary_backend_id":  nilIfEmpty(flagValue(opts, "secondary-backend-id")),
+		},
+	}, http.StatusOK, http.StatusAccepted, http.StatusNoContent)
+}
+
+func renderVolumeGroupShow(stdout io.Writer, opts *Options, item volumeGroupRecord) error {
+	return renderShowOutput(stdout, opts, []outputField{
+		{"ID", item.ID},
+		{"Status", item.Status},
+		{"Name", item.Name},
+		{"Description", nilIfEmpty(item.Description)},
+		{"Group Type", nilIfEmpty(item.GroupType)},
+		{"Volume Types", item.VolumeTypes},
+		{"Availability Zone", nilIfEmpty(item.AvailabilityZone)},
+		{"Created At", nilIfEmpty(item.CreatedAt)},
+		{"Volumes", item.Volumes},
+		{"Group Snapshot ID", nilIfEmpty(item.GroupSnapshotID)},
+		{"Source Group ID", nilIfEmpty(item.SourceGroupID)},
+	})
+}
+
 func listVolumeGroups(ctx context.Context, client *gophercloud.ServiceClient, allProjects bool, listVolumes bool) ([]volumeGroupRecord, error) {
 	requestURL := client.ServiceURL("groups", "detail")
 	query := url.Values{}
@@ -10721,10 +12848,14 @@ func findVolumeGroup(ctx context.Context, client *gophercloud.ServiceClient, nam
 			return item, nil
 		}
 	}
+	return getVolumeGroup(ctx, client, nameOrID)
+}
+
+func getVolumeGroup(ctx context.Context, client *gophercloud.ServiceClient, id string) (volumeGroupRecord, error) {
 	var response struct {
 		Group volumeGroupRecord `json:"group"`
 	}
-	resp, err := client.Get(ctx, client.ServiceURL("groups", nameOrID), &response, nil)
+	resp, err := client.Get(ctx, client.ServiceURL("groups", url.PathEscape(id)), &response, nil)
 	_, _, err = gophercloud.ParseResponse(resp, err)
 	if err != nil {
 		return volumeGroupRecord{}, err
@@ -10739,6 +12870,7 @@ type volumeGroupSnapshotRecord struct {
 	Description string `json:"description"`
 	GroupID     string `json:"group_id"`
 	GroupTypeID string `json:"group_type_id"`
+	CreatedAt   string `json:"created_at"`
 }
 
 func volumeGroupSnapshotList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
@@ -10783,6 +12915,78 @@ func volumeGroupSnapshotShow(ctx context.Context, stdout io.Writer, opts *Option
 	})
 }
 
+func volumeGroupSnapshotCreate(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("volume group snapshot create requires <volume_group>")
+	}
+	client, err := blockStorageClientWithMinimumMicroversion(ctx, client, "3.14")
+	if err != nil {
+		return err
+	}
+	group, err := findVolumeGroup(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	request := map[string]any{
+		"group_snapshot": map[string]any{
+			"group_id":    group.ID,
+			"name":        nilIfEmpty(flagValue(opts, "name")),
+			"description": nilIfEmpty(flagValue(opts, "description")),
+		},
+	}
+	var response struct {
+		GroupSnapshot volumeGroupSnapshotRecord `json:"group_snapshot"`
+	}
+	resp, err := client.Post(ctx, client.ServiceURL("group_snapshots"), request, &response, &gophercloud.RequestOpts{
+		OkCodes: []int{http.StatusOK, http.StatusAccepted},
+	})
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return oscHTTPException(err)
+	}
+	item, err := getVolumeGroupSnapshot(ctx, client, response.GroupSnapshot.ID)
+	if err == nil {
+		response.GroupSnapshot = item
+	}
+	return renderVolumeGroupSnapshotShow(stdout, opts, response.GroupSnapshot)
+}
+
+func volumeGroupSnapshotDelete(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("volume group snapshot delete requires <snapshot>")
+	}
+	client, err := blockStorageClientWithMinimumMicroversion(ctx, client, "3.14")
+	if err != nil {
+		return err
+	}
+	failures := 0
+	for _, value := range args {
+		item, err := findVolumeGroupSnapshot(ctx, client, value)
+		if err != nil {
+			failures++
+			continue
+		}
+		if err := blockStorageDeleteAction(ctx, client, client.ServiceURL("group_snapshots", url.PathEscape(item.ID)), http.StatusOK, http.StatusAccepted, http.StatusNoContent); err != nil {
+			failures++
+		}
+	}
+	if failures > 0 {
+		return fmt.Errorf("%d of %d volume group snapshots failed to delete.", failures, len(args))
+	}
+	return nil
+}
+
+func renderVolumeGroupSnapshotShow(stdout io.Writer, opts *Options, item volumeGroupSnapshotRecord) error {
+	return renderShowOutput(stdout, opts, []outputField{
+		{"ID", item.ID},
+		{"Status", item.Status},
+		{"Name", item.Name},
+		{"Description", nilIfEmpty(item.Description)},
+		{"Group", nilIfEmpty(item.GroupID)},
+		{"Group Type", nilIfEmpty(item.GroupTypeID)},
+	})
+}
+
 func listVolumeGroupSnapshots(ctx context.Context, client *gophercloud.ServiceClient, allProjects bool) ([]volumeGroupSnapshotRecord, error) {
 	requestURL := client.ServiceURL("group_snapshots", "detail")
 	if allProjects {
@@ -10812,10 +13016,14 @@ func findVolumeGroupSnapshot(ctx context.Context, client *gophercloud.ServiceCli
 			break
 		}
 	}
+	return getVolumeGroupSnapshot(ctx, client, nameOrID)
+}
+
+func getVolumeGroupSnapshot(ctx context.Context, client *gophercloud.ServiceClient, id string) (volumeGroupSnapshotRecord, error) {
 	var response struct {
 		GroupSnapshot volumeGroupSnapshotRecord `json:"group_snapshot"`
 	}
-	resp, err := client.Get(ctx, client.ServiceURL("group_snapshots", nameOrID), &response, nil)
+	resp, err := client.Get(ctx, client.ServiceURL("group_snapshots", url.PathEscape(id)), &response, nil)
 	_, _, err = gophercloud.ParseResponse(resp, err)
 	if err != nil {
 		return volumeGroupSnapshotRecord{}, err
@@ -10873,6 +13081,133 @@ func volumeGroupTypeShow(ctx context.Context, stdout io.Writer, opts *Options, c
 	if err != nil {
 		return err
 	}
+	return renderShowOutput(stdout, opts, []outputField{
+		{"ID", item.ID},
+		{"Name", item.Name},
+		{"Description", nilIfEmpty(item.Description)},
+		{"Is Public", item.IsPublic},
+		{"Properties", mapAnyIfNil(item.GroupSpecs)},
+	})
+}
+
+func volumeGroupTypeCreate(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("volume group type create requires <name>")
+	}
+	client, err := blockStorageClientWithExplicitMinimumMicroversion(client, "3.11", "volume group type create")
+	if err != nil {
+		return err
+	}
+	isPublic := true
+	if boolFlag(opts, "private") {
+		isPublic = false
+	}
+	request := map[string]any{
+		"group_type": map[string]any{
+			"name":        args[0],
+			"description": nilIfEmpty(flagValue(opts, "description")),
+			"is_public":   isPublic,
+		},
+	}
+	var response struct {
+		GroupType volumeGroupTypeRecord `json:"group_type"`
+	}
+	resp, err := client.Post(ctx, client.ServiceURL("group_types"), request, &response, &gophercloud.RequestOpts{
+		OkCodes: []int{http.StatusOK, http.StatusAccepted},
+	})
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return oscHTTPException(err)
+	}
+	return renderVolumeGroupTypeShow(stdout, opts, response.GroupType)
+}
+
+func volumeGroupTypeDelete(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("volume group type delete requires <group_type>")
+	}
+	client, err := blockStorageClientWithExplicitMinimumMicroversion(client, "3.11", "volume group type delete")
+	if err != nil {
+		return err
+	}
+	failures := 0
+	for _, value := range args {
+		item, err := findVolumeGroupType(ctx, client, value)
+		if err != nil {
+			failures++
+			continue
+		}
+		if err := blockStorageDeleteAction(ctx, client, client.ServiceURL("group_types", url.PathEscape(item.ID)), http.StatusOK, http.StatusAccepted, http.StatusNoContent); err != nil {
+			failures++
+		}
+	}
+	if failures > 0 {
+		return fmt.Errorf("%d of %d volume group types failed to delete.", failures, len(args))
+	}
+	return nil
+}
+
+func volumeGroupTypeSet(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("volume group type set requires <group_type>")
+	}
+	client, err := blockStorageClientWithExplicitMinimumMicroversion(client, "3.11", "volume group type set")
+	if err != nil {
+		return err
+	}
+	item, err := findVolumeGroupType(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	update := map[string]any{}
+	if flagChanged(opts, "name") {
+		update["name"] = flagValue(opts, "name")
+	}
+	if flagChanged(opts, "description") {
+		update["description"] = flagValue(opts, "description")
+	}
+	if boolFlag(opts, "public") {
+		update["is_public"] = true
+	} else if boolFlag(opts, "private") {
+		update["is_public"] = false
+	}
+	if len(update) > 0 {
+		var response struct {
+			GroupType volumeGroupTypeRecord `json:"group_type"`
+		}
+		resp, err := client.Put(ctx, client.ServiceURL("group_types", url.PathEscape(item.ID)), map[string]any{"group_type": update}, &response, &gophercloud.RequestOpts{
+			OkCodes: []int{http.StatusOK, http.StatusAccepted},
+		})
+		_, _, err = gophercloud.ParseResponse(resp, err)
+		if err != nil {
+			return oscHTTPException(err)
+		}
+		item = response.GroupType
+	}
+	if boolFlag(opts, "no-property") {
+		for key := range item.GroupSpecs {
+			if err := blockStorageDeleteAction(ctx, client, client.ServiceURL("group_types", url.PathEscape(item.ID), "group_specs", url.PathEscape(key)), http.StatusOK, http.StatusAccepted, http.StatusNoContent); err != nil {
+				return err
+			}
+		}
+	}
+	properties, err := parseStringMap(flagValues(opts, "property"), "property")
+	if err != nil {
+		return err
+	}
+	if len(properties) > 0 {
+		if err := blockStoragePostAction(ctx, client, client.ServiceURL("group_types", url.PathEscape(item.ID), "group_specs"), map[string]any{"group_specs": properties}, http.StatusOK, http.StatusAccepted); err != nil {
+			return err
+		}
+	}
+	item, err = findVolumeGroupType(ctx, client, item.ID)
+	if err != nil {
+		return err
+	}
+	return renderVolumeGroupTypeShow(stdout, opts, item)
+}
+
+func renderVolumeGroupTypeShow(stdout io.Writer, opts *Options, item volumeGroupTypeRecord) error {
 	return renderShowOutput(stdout, opts, []outputField{
 		{"ID", item.ID},
 		{"Name", item.Name},
@@ -10970,6 +13305,95 @@ func volumeTransferShow(ctx context.Context, stdout io.Writer, opts *Options, cl
 	if err != nil {
 		return err
 	}
+	return renderShowOutput(stdout, opts, []outputField{
+		{"auth_key", nilIfEmpty(item.AuthKey)},
+		{"created_at", oscTime(item.CreatedAt)},
+		{"id", item.ID},
+		{"name", item.Name},
+		{"volume_id", item.VolumeID},
+	})
+}
+
+func volumeTransferCreate(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("volume transfer request create requires <volume>")
+	}
+	if boolFlag(opts, "no-snapshots") {
+		clientWithVersion, err := blockStorageClientWithMinimumMicroversion(ctx, client, "3.55")
+		if err != nil {
+			return err
+		}
+		client = clientWithVersion
+	}
+	volume, err := findVolume(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	body := map[string]any{
+		"transfer": map[string]any{
+			"volume_id": volume.ID,
+			"name":      nilIfEmpty(flagValue(opts, "name")),
+		},
+	}
+	if boolFlag(opts, "no-snapshots") {
+		body["transfer"].(map[string]any)["no_snapshots"] = true
+	}
+	var response struct {
+		Transfer transfers.Transfer `json:"transfer"`
+	}
+	resp, err := client.Post(ctx, client.ServiceURL("volume-transfers"), body, &response, &gophercloud.RequestOpts{
+		OkCodes: []int{http.StatusAccepted},
+	})
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		resp, err = client.Post(ctx, client.ServiceURL("os-volume-transfer"), body, &response, &gophercloud.RequestOpts{
+			OkCodes: []int{http.StatusAccepted},
+		})
+		_, _, err = gophercloud.ParseResponse(resp, err)
+		if err != nil {
+			return err
+		}
+	}
+	return renderVolumeTransferShow(stdout, opts, &response.Transfer)
+}
+
+func volumeTransferDelete(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("volume transfer request delete requires <transfer-request>")
+	}
+	failures := 0
+	for _, value := range args {
+		item, err := findVolumeTransfer(ctx, client, value)
+		if err != nil {
+			failures++
+			continue
+		}
+		if err := transfers.Delete(ctx, client, item.ID).ExtractErr(); err != nil {
+			failures++
+		}
+	}
+	if failures > 0 {
+		return fmt.Errorf("%d of %d volume transfer requests failed to delete.", failures, len(args))
+	}
+	return nil
+}
+
+func volumeTransferAccept(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("volume transfer request accept requires <transfer-request-id>")
+	}
+	authKey := flagValue(opts, "auth-key")
+	if authKey == "" {
+		return fmt.Errorf("volume transfer request accept requires --auth-key <key>")
+	}
+	item, err := transfers.Accept(ctx, client, args[0], transfers.AcceptOpts{AuthKey: authKey}).Extract()
+	if err != nil {
+		return err
+	}
+	return renderVolumeTransferShow(stdout, opts, item)
+}
+
+func renderVolumeTransferShow(stdout io.Writer, opts *Options, item *transfers.Transfer) error {
 	return renderShowOutput(stdout, opts, []outputField{
 		{"auth_key", nilIfEmpty(item.AuthKey)},
 		{"created_at", oscTime(item.CreatedAt)},
@@ -14344,6 +16768,272 @@ func volumeTypeShow(ctx context.Context, stdout io.Writer, opts *Options, client
 	})
 }
 
+func volumeTypeCreate(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("volume type create requires <name>")
+	}
+	if flagValue(opts, "project") != "" && !boolFlag(opts, "private") {
+		return fmt.Errorf("--project is only allowed with --private")
+	}
+	properties, err := volumeTypeProperties(opts)
+	if err != nil {
+		return err
+	}
+	createOpts := volumetypes.CreateOpts{
+		Name:        args[0],
+		Description: flagValue(opts, "description"),
+		ExtraSpecs:  properties,
+	}
+	if boolFlag(opts, "public") {
+		createOpts.IsPublic = valueBoolPtr(true)
+	} else if boolFlag(opts, "private") {
+		createOpts.IsPublic = valueBoolPtr(false)
+	}
+	item, err := volumetypes.Create(ctx, client, createOpts).Extract()
+	if err != nil {
+		return err
+	}
+	if projectValue := flagValue(opts, "project"); projectValue != "" {
+		projectID, err := volumeTypeProjectID(ctx, opts, clients, projectValue)
+		if err != nil {
+			return err
+		}
+		if err := volumetypes.AddAccess(ctx, client, item.ID, volumetypes.AddAccessOpts{Project: projectID}).ExtractErr(); err != nil {
+			return err
+		}
+	}
+	encryption, err := volumeTypeCreateEncryption(ctx, opts, client, item.ID)
+	if err != nil {
+		return err
+	}
+	fields := volumeTypeFields(item)
+	if encryption != nil {
+		fields = append(fields, outputField{"encryption", volumeTypeEncryptionMap(encryption)})
+	}
+	return renderShowOutput(stdout, opts, fields)
+}
+
+func volumeTypeDelete(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("volume type delete requires <volume-type>")
+	}
+	failures := 0
+	for _, value := range args {
+		item, err := findVolumeType(ctx, client, value)
+		if err != nil {
+			failures++
+			continue
+		}
+		if err := volumetypes.Delete(ctx, client, item.ID).ExtractErr(); err != nil {
+			failures++
+		}
+	}
+	if failures > 0 {
+		return fmt.Errorf("%d of %d volume types failed to delete.", failures, len(args))
+	}
+	return nil
+}
+
+func volumeTypeSet(ctx context.Context, opts *Options, clients *openStackClients, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("volume type set requires <volume-type>")
+	}
+	item, err := findVolumeType(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	update := volumetypes.UpdateOpts{}
+	needsUpdate := false
+	if flagChanged(opts, "name") {
+		update.Name = valueStringPtr(flagValue(opts, "name"))
+		needsUpdate = true
+	}
+	if flagChanged(opts, "description") {
+		update.Description = valueStringPtr(flagValue(opts, "description"))
+		needsUpdate = true
+	}
+	if boolFlag(opts, "public") {
+		update.IsPublic = valueBoolPtr(true)
+		needsUpdate = true
+	} else if boolFlag(opts, "private") {
+		update.IsPublic = valueBoolPtr(false)
+		needsUpdate = true
+	}
+	if needsUpdate {
+		if _, err := volumetypes.Update(ctx, client, item.ID, update).Extract(); err != nil {
+			return err
+		}
+	}
+	properties, err := volumeTypeProperties(opts)
+	if err != nil {
+		return err
+	}
+	if len(properties) > 0 {
+		if _, err := volumetypes.CreateExtraSpecs(ctx, client, item.ID, volumetypes.ExtraSpecsOpts(properties)).Extract(); err != nil {
+			return err
+		}
+	}
+	if projectValue := flagValue(opts, "project"); projectValue != "" {
+		projectID, err := volumeTypeProjectID(ctx, opts, clients, projectValue)
+		if err != nil {
+			return err
+		}
+		if err := volumetypes.AddAccess(ctx, client, item.ID, volumetypes.AddAccessOpts{Project: projectID}).ExtractErr(); err != nil {
+			return err
+		}
+	}
+	if volumeTypeEncryptionFlagsSet(opts) {
+		if err := volumeTypeSetEncryption(ctx, opts, client, item.ID); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func volumeTypeUnset(ctx context.Context, opts *Options, clients *openStackClients, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("volume type unset requires <volume-type>")
+	}
+	item, err := findVolumeType(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	failures := 0
+	for _, key := range flagValues(opts, "property") {
+		if err := volumetypes.DeleteExtraSpec(ctx, client, item.ID, key).ExtractErr(); err != nil {
+			failures++
+		}
+	}
+	if projectValue := flagValue(opts, "project"); projectValue != "" {
+		projectID, err := volumeTypeProjectID(ctx, opts, clients, projectValue)
+		if err != nil {
+			failures++
+		} else if err := volumetypes.RemoveAccess(ctx, client, item.ID, volumetypes.RemoveAccessOpts{Project: projectID}).ExtractErr(); err != nil {
+			failures++
+		}
+	}
+	if boolFlag(opts, "encryption-type") {
+		encryption, err := volumetypes.GetEncryption(ctx, client, item.ID).Extract()
+		if err != nil {
+			failures++
+		} else if err := volumetypes.DeleteEncryption(ctx, client, item.ID, encryption.EncryptionID).ExtractErr(); err != nil {
+			failures++
+		}
+	}
+	if failures > 0 {
+		return fmt.Errorf("Command Failed: One or more of the operations failed")
+	}
+	return nil
+}
+
+func volumeTypeFields(item *volumetypes.VolumeType) []outputField {
+	return []outputField{
+		{"id", item.ID},
+		{"name", item.Name},
+		{"description", item.Description},
+		{"is_public", volumeTypeIsPublic(*item)},
+		{"properties", item.ExtraSpecs},
+		{"qos_specs_id", item.QosSpecID},
+	}
+}
+
+func volumeTypeProperties(opts *Options) (map[string]string, error) {
+	properties, err := parseStringMap(flagValues(opts, "property"), "property")
+	if err != nil {
+		return nil, err
+	}
+	if properties == nil {
+		properties = map[string]string{}
+	}
+	if boolFlag(opts, "multiattach") {
+		properties["multiattach"] = "<is> True"
+	}
+	if boolFlag(opts, "cacheable") {
+		properties["cacheable"] = "<is> True"
+	}
+	if boolFlag(opts, "replicated") {
+		properties["replication_enabled"] = "<is> True"
+	}
+	if availabilityZones := flagValues(opts, "availability-zone"); len(availabilityZones) > 0 {
+		properties["RESKEY:availability_zones"] = strings.Join(availabilityZones, ",")
+	}
+	if len(properties) == 0 {
+		return nil, nil
+	}
+	return properties, nil
+}
+
+func volumeTypeProjectID(ctx context.Context, opts *Options, clients *openStackClients, value string) (string, error) {
+	identityClient, err := clients.identityV3()
+	if err != nil {
+		return "", err
+	}
+	project, err := findProjectWithDomain(ctx, identityClient, value, flagValue(opts, "project-domain"))
+	if err != nil {
+		return "", err
+	}
+	return project.ID, nil
+}
+
+func volumeTypeCreateEncryption(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, volumeTypeID string) (*volumetypes.EncryptionType, error) {
+	if !volumeTypeEncryptionFlagsSet(opts) {
+		return nil, nil
+	}
+	if flagValue(opts, "encryption-provider") == "" {
+		return nil, fmt.Errorf("'--encryption-provider' should be specified while creating a new encryption type")
+	}
+	controlLocation := flagValue(opts, "encryption-control-location")
+	if controlLocation == "" {
+		controlLocation = "front-end"
+	}
+	return volumetypes.CreateEncryption(ctx, client, volumeTypeID, volumetypes.CreateEncryptionOpts{
+		Provider:        flagValue(opts, "encryption-provider"),
+		Cipher:          flagValue(opts, "encryption-cipher"),
+		KeySize:         intFlag(opts, "encryption-key-size"),
+		ControlLocation: controlLocation,
+	}).Extract()
+}
+
+func volumeTypeSetEncryption(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, volumeTypeID string) error {
+	encryption, err := volumetypes.GetEncryption(ctx, client, volumeTypeID).Extract()
+	if err != nil {
+		if flagValue(opts, "encryption-provider") == "" {
+			return fmt.Errorf("'--encryption-provider' should be specified while creating a new encryption type")
+		}
+		_, createErr := volumeTypeCreateEncryption(ctx, opts, client, volumeTypeID)
+		return createErr
+	}
+	_, err = volumetypes.UpdateEncryption(ctx, client, volumeTypeID, encryption.EncryptionID, volumetypes.UpdateEncryptionOpts{
+		Provider:        flagValue(opts, "encryption-provider"),
+		Cipher:          flagValue(opts, "encryption-cipher"),
+		KeySize:         intFlag(opts, "encryption-key-size"),
+		ControlLocation: flagValue(opts, "encryption-control-location"),
+	}).Extract()
+	return err
+}
+
+func volumeTypeEncryptionFlagsSet(opts *Options) bool {
+	for _, name := range []string{"encryption-provider", "encryption-cipher", "encryption-key-size", "encryption-control-location"} {
+		if flagChanged(opts, name) {
+			return true
+		}
+	}
+	return false
+}
+
+func volumeTypeEncryptionMap(item *volumetypes.EncryptionType) map[string]any {
+	if item == nil {
+		return map[string]any{}
+	}
+	return map[string]any{
+		"cipher":           item.Cipher,
+		"control_location": item.ControlLocation,
+		"encryption_id":    item.EncryptionID,
+		"key_size":         item.KeySize,
+		"provider":         item.Provider,
+	}
+}
+
 func volumeSnapshotList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
 	listOpts := snapshots.ListOpts{
 		AllTenants: boolFlag(opts, "all-projects"),
@@ -14405,6 +17095,161 @@ func volumeSnapshotShow(ctx context.Context, stdout io.Writer, opts *Options, cl
 		{"created_at", item.CreatedAt},
 		{"updated_at", item.UpdatedAt},
 	})
+}
+
+func volumeSnapshotCreate(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("volume snapshot create requires <snapshot-name>")
+	}
+	volumeValue := flagValue(opts, "volume")
+	if volumeValue == "" {
+		volumeValue = args[0]
+	}
+	volume, err := findVolume(ctx, client, volumeValue)
+	if err != nil {
+		return err
+	}
+	metadata, err := parseStringMap(flagValues(opts, "property"), "property")
+	if err != nil {
+		return err
+	}
+	if remoteValues := flagValues(opts, "remote-source"); len(remoteValues) > 0 {
+		remoteSource, err := parseJSONKeyValueMap(remoteValues, "remote-source")
+		if err != nil {
+			return err
+		}
+		client, err = blockStorageClientWithMinimumMicroversion(ctx, client, "3.8")
+		if err != nil {
+			return err
+		}
+		body := map[string]any{
+			"snapshot": map[string]any{
+				"volume_id":   volume.ID,
+				"ref":         remoteSource,
+				"name":        args[0],
+				"description": nilIfEmpty(flagValue(opts, "description")),
+				"metadata":    metadata,
+			},
+		}
+		var response struct {
+			Snapshot *snapshots.Snapshot `json:"snapshot"`
+		}
+		resp, err := client.Post(ctx, client.ServiceURL("manageable_snapshots"), body, &response, &gophercloud.RequestOpts{
+			OkCodes: []int{http.StatusOK, http.StatusAccepted},
+		})
+		_, _, err = gophercloud.ParseResponse(resp, err)
+		if err != nil {
+			return oscHTTPException(err)
+		}
+		if response.Snapshot == nil {
+			return fmt.Errorf("response did not contain snapshot object")
+		}
+		return volumeSnapshotShow(ctx, stdout, opts, client, []string{response.Snapshot.ID})
+	}
+	created, err := snapshots.Create(ctx, client, snapshots.CreateOpts{
+		VolumeID:    volume.ID,
+		Force:       boolFlag(opts, "force"),
+		Name:        args[0],
+		Description: flagValue(opts, "description"),
+		Metadata:    metadata,
+	}).Extract()
+	if err != nil {
+		return err
+	}
+	return volumeSnapshotShow(ctx, stdout, opts, client, []string{created.ID})
+}
+
+func volumeSnapshotDelete(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("volume snapshot delete requires <snapshot>")
+	}
+	failures := 0
+	for _, value := range args {
+		item, err := findVolumeSnapshot(ctx, client, value)
+		if err != nil {
+			failures++
+			continue
+		}
+		if boolFlag(opts, "remote") {
+			err = snapshotUnmanage(ctx, client, item.ID)
+		} else if boolFlag(opts, "force") {
+			err = snapshots.ForceDelete(ctx, client, item.ID).ExtractErr()
+		} else {
+			err = snapshots.Delete(ctx, client, item.ID).ExtractErr()
+		}
+		if err != nil {
+			failures++
+		}
+	}
+	if failures > 0 {
+		return fmt.Errorf("%d of %d snapshots failed to delete.", failures, len(args))
+	}
+	return nil
+}
+
+func volumeSnapshotSet(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("volume snapshot set requires <snapshot>")
+	}
+	item, err := findVolumeSnapshot(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	update := snapshots.UpdateOpts{}
+	needsUpdate := false
+	if flagChanged(opts, "name") {
+		update.Name = valueStringPtr(flagValue(opts, "name"))
+		needsUpdate = true
+	}
+	if flagChanged(opts, "description") {
+		update.Description = valueStringPtr(flagValue(opts, "description"))
+		needsUpdate = true
+	}
+	if needsUpdate {
+		if _, err := snapshots.Update(ctx, client, item.ID, update).Extract(); err != nil {
+			return err
+		}
+	}
+	properties, err := parseStringMap(flagValues(opts, "property"), "property")
+	if err != nil {
+		return err
+	}
+	if boolFlag(opts, "no-property") || len(properties) > 0 {
+		metadata := map[string]any{}
+		if !boolFlag(opts, "no-property") {
+			for key, value := range item.Metadata {
+				metadata[key] = value
+			}
+		}
+		for key, value := range properties {
+			metadata[key] = value
+		}
+		if _, err := snapshots.UpdateMetadata(ctx, client, item.ID, snapshots.UpdateMetadataOpts{Metadata: metadata}).ExtractMetadata(); err != nil {
+			return err
+		}
+	}
+	if state := flagValue(opts, "state"); state != "" {
+		if err := snapshots.ResetStatus(ctx, client, item.ID, snapshots.ResetStatusOpts{Status: state}).ExtractErr(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func volumeSnapshotUnset(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("volume snapshot unset requires <snapshot>")
+	}
+	item, err := findVolumeSnapshot(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	for _, key := range flagValues(opts, "property") {
+		if err := blockStorageDeleteMetadataKey(ctx, client, "snapshots", item.ID, key); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func findServer(ctx context.Context, client *gophercloud.ServiceClient, value string) (*servers.Server, error) {
@@ -16478,7 +19323,124 @@ func parseStringMap(values []string, option string) (map[string]string, error) {
 	return result, nil
 }
 
+func volumeSchedulerHints(values []string) (volumes.SchedulerHintOptsBuilder, error) {
+	if len(values) == 0 {
+		return nil, nil
+	}
+	hints := volumes.SchedulerHintOpts{AdditionalProperties: map[string]any{}}
+	for _, value := range values {
+		key, raw, ok := strings.Cut(value, "=")
+		key = strings.TrimSpace(key)
+		if !ok || key == "" {
+			return nil, fmt.Errorf("invalid hint %q, expected <key>=<value>", value)
+		}
+		switch key {
+		case "same_host":
+			hints.SameHost = append(hints.SameHost, raw)
+		case "different_host":
+			hints.DifferentHost = append(hints.DifferentHost, raw)
+		case "local_to_instance":
+			hints.LocalToInstance = raw
+		case "query":
+			hints.Query = raw
+		default:
+			hints.AdditionalProperties[key] = raw
+		}
+	}
+	if len(hints.AdditionalProperties) == 0 {
+		hints.AdditionalProperties = nil
+	}
+	return hints, nil
+}
+
+func blockStoragePutAction(ctx context.Context, client *gophercloud.ServiceClient, requestURL string, body any, okCodes ...int) error {
+	if len(okCodes) == 0 {
+		okCodes = []int{http.StatusOK, http.StatusAccepted, http.StatusNoContent}
+	}
+	resp, err := client.Put(ctx, requestURL, body, nil, &gophercloud.RequestOpts{OkCodes: okCodes})
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	return oscHTTPException(err)
+}
+
+func blockStoragePostAction(ctx context.Context, client *gophercloud.ServiceClient, requestURL string, body any, okCodes ...int) error {
+	if len(okCodes) == 0 {
+		okCodes = []int{http.StatusOK, http.StatusAccepted, http.StatusNoContent}
+	}
+	resp, err := client.Post(ctx, requestURL, body, nil, &gophercloud.RequestOpts{OkCodes: okCodes})
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	return oscHTTPException(err)
+}
+
+func getBlockStorageResourceMap(ctx context.Context, client *gophercloud.ServiceClient, requestURL string, key string) (map[string]any, error) {
+	response := map[string]any{}
+	resp, err := client.Get(ctx, requestURL, &response, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return nil, oscHTTPException(err)
+	}
+	if key == "" {
+		return response, nil
+	}
+	item, ok := response[key].(map[string]any)
+	if !ok {
+		return nil, fmt.Errorf("response did not contain %q object", key)
+	}
+	return item, nil
+}
+
+func postBlockStorageResourceMap(ctx context.Context, client *gophercloud.ServiceClient, requestURL string, body any, key string) (map[string]any, error) {
+	response := map[string]any{}
+	resp, err := client.Post(ctx, requestURL, body, &response, &gophercloud.RequestOpts{OkCodes: []int{http.StatusOK, http.StatusAccepted}})
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return nil, oscHTTPException(err)
+	}
+	if key == "" {
+		return response, nil
+	}
+	item, ok := response[key].(map[string]any)
+	if !ok {
+		return nil, fmt.Errorf("response did not contain %q object", key)
+	}
+	return item, nil
+}
+
+func blockStorageDeleteAction(ctx context.Context, client *gophercloud.ServiceClient, requestURL string, okCodes ...int) error {
+	if len(okCodes) == 0 {
+		okCodes = []int{http.StatusOK, http.StatusAccepted, http.StatusNoContent}
+	}
+	resp, err := client.Delete(ctx, requestURL, &gophercloud.RequestOpts{OkCodes: okCodes})
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	return oscHTTPException(err)
+}
+
+func blockStorageDeleteMetadataKey(ctx context.Context, client *gophercloud.ServiceClient, resource string, id string, key string) error {
+	return blockStorageDeleteAction(ctx, client, client.ServiceURL(resource, url.PathEscape(id), "metadata", url.PathEscape(key)), http.StatusOK, http.StatusAccepted, http.StatusNoContent)
+}
+
+func volumeSetReadOnly(ctx context.Context, client *gophercloud.ServiceClient, id string, readOnly bool) error {
+	return blockStoragePostAction(ctx, client, client.ServiceURL("volumes", url.PathEscape(id), "action"), map[string]any{
+		"os-update_readonly_flag": map[string]any{"readonly": readOnly},
+	}, http.StatusOK, http.StatusAccepted, http.StatusNoContent)
+}
+
+func volumeUnsetImageMetadata(ctx context.Context, client *gophercloud.ServiceClient, id string, key string) error {
+	return blockStoragePostAction(ctx, client, client.ServiceURL("volumes", url.PathEscape(id), "action"), map[string]any{
+		"os-unset_image_metadata": key,
+	}, http.StatusOK, http.StatusAccepted, http.StatusNoContent)
+}
+
+func snapshotUnmanage(ctx context.Context, client *gophercloud.ServiceClient, id string) error {
+	return blockStoragePostAction(ctx, client, client.ServiceURL("snapshots", url.PathEscape(id), "action"), map[string]any{
+		"os-unmanage": nil,
+	}, http.StatusOK, http.StatusAccepted, http.StatusNoContent)
+}
+
 func valueStringPtr(value string) *string {
+	return &value
+}
+
+func valueBoolPtr(value bool) *bool {
 	return &value
 }
 
