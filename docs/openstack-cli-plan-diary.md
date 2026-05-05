@@ -1502,3 +1502,14 @@ Sources consulted:
 * Gophercloud package docs for [Networking ports](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/ports) and [Networking floating IPs](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/floatingips).
 * Local OSC oracle help snapshots under `compat/osc/9.0.0/help/server/`.
 * Local keypair implementation in `internal/cli/core_read.go`.
+
+## 2026-05-05: Pretty Wait Progress Animation
+
+Decision: keep default `server create --wait` output compatible with Python OSC, but make Pretty wait output feel alive. Pretty server-status waits now keep a local progress floor that advances by 5% on each poll when Nova does not report useful progress, cap visible progress below 100% until the target status is reached, and render the final completed state at 100%. Progress labels are padded so `waiting` and `complete` do not shift the progress bar column.
+
+Decision: use Harmonica directly for terminal Pretty progress animation rather than switching the CLI to a Bubble Tea application loop. Bubbles’ progress model documents that `ViewAs` is static and that animation uses model updates; this CLI path is a synchronous command renderer, so a small terminal-only Harmonica spring keeps the behavior localized. Non-TTY Pretty output remains a single deterministic progress line.
+
+Sources consulted:
+
+* Charmbracelet Harmonica docs: [github.com/charmbracelet/harmonica](https://github.com/charmbracelet/harmonica) and [pkg.go.dev/github.com/charmbracelet/harmonica](https://pkg.go.dev/github.com/charmbracelet/harmonica).
+* Bubbles progress source and docs in the pinned local module, especially `SetPercent`, `Update`, and `ViewAs`: [pkg.go.dev/charm.land/bubbles/v2/progress](https://pkg.go.dev/charm.land/bubbles/v2/progress).

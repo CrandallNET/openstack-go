@@ -20,6 +20,7 @@ import (
 	"charm.land/bubbles/v2/progress"
 	"charm.land/bubbles/v2/table"
 	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/harmonica"
 	bubblelipgloss "github.com/charmbracelet/lipgloss"
 	bubbletable "github.com/evertras/bubble-table/table"
 	yaml "gopkg.in/yaml.v2"
@@ -39,6 +40,9 @@ type prettyValueFormatter interface {
 type prettySemanticValue interface {
 	PrettySemanticRole() string
 }
+
+var prettyProgressAnimationFrameDelay = time.Second / 30
+var prettyProgressAnimationMaxDuration = 350 * time.Millisecond
 
 type prettyCellColorizer func(rowIndex int, columnIndex int, text string) string
 type prettyCellContext func(rowIndex int, columnIndex int) string
@@ -399,8 +403,45 @@ func renderPrettyEmpty(stdout io.Writer) error {
 }
 
 func renderPrettyProgress(stdout io.Writer, opts *Options, label string, percent float64) error {
+	_, err := fmt.Fprintln(stdout, prettyProgressView(stdout, opts, label, percent))
+	return err
+}
+
+func renderPrettyProgressAnimated(stdout io.Writer, opts *Options, label string, from float64, to float64) error {
+	if !tableWriterIsTerminal(stdout) {
+		return renderPrettyProgress(stdout, opts, label, to)
+	}
+	from = math.Max(0, math.Min(1, from))
+	to = math.Max(0, math.Min(1, to))
+	if math.Abs(to-from) < 0.001 {
+		return renderPrettyProgress(stdout, opts, label, to)
+	}
+
+	spring := harmonica.NewSpring(harmonica.FPS(30), 18.0, 1.0)
+	position := from
+	velocity := 0.0
+	deadline := time.Now().Add(prettyProgressAnimationMaxDuration)
+	for time.Now().Before(deadline) {
+		position, velocity = spring.Update(position, velocity, to)
+		if _, err := fmt.Fprintf(stdout, "\r%s", prettyProgressView(stdout, opts, label, position)); err != nil {
+			return err
+		}
+		if math.Abs(position-to) < 0.002 && math.Abs(velocity) < 0.002 {
+			break
+		}
+		time.Sleep(prettyProgressAnimationFrameDelay)
+	}
+	_, err := fmt.Fprintf(stdout, "\r%s\n", prettyProgressView(stdout, opts, label, to))
+	return err
+}
+
+func prettyProgressView(stdout io.Writer, opts *Options, label string, percent float64) string {
 	color := prettyColorEnabled(stdout)
-	width := min(max(prettyOutputWidth(stdout, opts, color)-displayWidth(label)-4, 20), 80)
+	labelWidth := displayWidth(label)
+	if labelWidth > 0 {
+		labelWidth = max(labelWidth, 8)
+	}
+	width := min(max(prettyOutputWidth(stdout, opts, color)-labelWidth-4, 20), 80)
 	percent = math.Max(0, math.Min(1, percent))
 
 	options := []progress.Option{progress.WithWidth(width)}
@@ -418,10 +459,9 @@ func renderPrettyProgress(stdout io.Writer, opts *Options, label string, percent
 		model.EmptyColor = lipgloss.NoColor{}
 	}
 	if label != "" {
-		label += " "
+		label = padRight(label, 8) + " "
 	}
-	_, err := fmt.Fprintf(stdout, "%s%s\n", label, model.ViewAs(percent))
-	return err
+	return fmt.Sprintf("%s%s", label, model.ViewAs(percent))
 }
 
 func prettyTableColumns(headers []string, rows []table.Row, termWidth int, color bool) []table.Column {

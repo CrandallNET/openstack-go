@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"charm.land/bubbles/v2/table"
 	"github.com/crandallnet/golang-osc/compat/osc"
@@ -897,6 +898,81 @@ func TestPrettyProgressUsesBubblesProgressWithoutANSIForNonTTY(t *testing.T) {
 	}
 	if containsANSI(output) {
 		t.Fatalf("expected non-TTY pretty progress output without ANSI escapes, got:\n%q", output)
+	}
+}
+
+func TestPrettyProgressPadsLabels(t *testing.T) {
+	var stdout bytes.Buffer
+	if err := renderPrettyProgress(&stdout, &Options{}, "waiting", 0.5); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if err := renderPrettyProgress(&stdout, &Options{}, "complete", 1); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	lines := strings.Split(strings.TrimRight(stdout.String(), "\n"), "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected two progress lines, got %d:\n%s", len(lines), stdout.String())
+	}
+	if !strings.HasPrefix(lines[0], "waiting  ") {
+		t.Fatalf("expected waiting label to be padded, got %q", lines[0])
+	}
+	if !strings.HasPrefix(lines[1], "complete ") {
+		t.Fatalf("expected complete label to keep the same bar column, got %q", lines[1])
+	}
+	if strings.Index(lines[0], "[") != strings.Index(lines[1], "[") {
+		t.Fatalf("expected progress bars to start in the same column, got:\n%s", stdout.String())
+	}
+}
+
+func TestPrettyProgressAnimatedUsesCarriageReturnForTTY(t *testing.T) {
+	t.Setenv("NO_COLOR", "1")
+	previousTTY := tableWriterIsTerminal
+	tableWriterIsTerminal = func(stdout io.Writer) bool {
+		return true
+	}
+	defer func() {
+		tableWriterIsTerminal = previousTTY
+	}()
+	previousDelay := prettyProgressAnimationFrameDelay
+	previousDuration := prettyProgressAnimationMaxDuration
+	prettyProgressAnimationFrameDelay = time.Millisecond
+	prettyProgressAnimationMaxDuration = 2 * time.Millisecond
+	defer func() {
+		prettyProgressAnimationFrameDelay = previousDelay
+		prettyProgressAnimationMaxDuration = previousDuration
+	}()
+
+	var stdout bytes.Buffer
+	if err := renderPrettyProgressAnimated(&stdout, &Options{}, "waiting", 0, 0.5); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	output := stdout.String()
+	if !strings.Contains(output, "\r") {
+		t.Fatalf("expected animated progress to redraw with carriage returns, got %q", output)
+	}
+	if !strings.HasSuffix(output, "\n") {
+		t.Fatalf("expected animated progress to end with a newline, got %q", output)
+	}
+	if !strings.Contains(output, "50%") {
+		t.Fatalf("expected animated progress to render the final target percent, got %q", output)
+	}
+}
+
+func TestNextPrettyWaitProgressAdvancesAndCapsBeforeComplete(t *testing.T) {
+	progress := 0.0
+	for _, want := range []float64{0.05, 0.10, 0.15} {
+		progress = nextPrettyWaitProgress(0, progress)
+		if diff := progress - want; diff > 0.0001 || diff < -0.0001 {
+			t.Fatalf("expected progress %.2f, got %.2f", want, progress)
+		}
+	}
+	progress = nextPrettyWaitProgress(60, progress)
+	if diff := progress - 0.60; diff > 0.0001 || diff < -0.0001 {
+		t.Fatalf("expected reported progress to win, got %.2f", progress)
+	}
+	progress = nextPrettyWaitProgress(100, 0.94)
+	if diff := progress - 0.95; diff > 0.0001 || diff < -0.0001 {
+		t.Fatalf("expected progress to cap below complete, got %.2f", progress)
 	}
 }
 

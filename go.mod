@@ -6,6 +6,7 @@ require (
 	charm.land/bubbles/v2 v2.1.0
 	charm.land/lipgloss/v2 v2.0.3
 	github.com/caddyserver/caddy/v2 v2.11.2
+	github.com/charmbracelet/harmonica v0.2.0
 	github.com/charmbracelet/lipgloss v0.5.0
 	github.com/evertras/bubble-table v0.17.2
 	github.com/gophercloud/gophercloud/v2 v2.12.0
@@ -26,7 +27,6 @@ require (
 	github.com/charmbracelet/bubbles v0.11.0 // indirect
 	github.com/charmbracelet/bubbletea v0.21.0 // indirect
 	github.com/charmbracelet/colorprofile v0.4.3 // indirect
-	github.com/charmbracelet/harmonica v0.2.0 // indirect
 	github.com/charmbracelet/ultraviolet v0.0.0-20260416155717-489999b90468 // indirect
 	github.com/charmbracelet/x/ansi v0.11.7 // indirect
 	github.com/charmbracelet/x/term v0.2.2 // indirect

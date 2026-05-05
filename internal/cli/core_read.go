@@ -16308,6 +16308,7 @@ func waitForServerStatus(ctx context.Context, stdout io.Writer, opts *Options, c
 	deadline := time.Now().Add(30 * time.Minute)
 	target := upperStringSet(targets)
 	failed := upperStringSet(failures)
+	prettyProgress := 0.0
 	for {
 		item, err := servers.Get(ctx, client, serverID).Extract()
 		if err != nil {
@@ -16316,7 +16317,7 @@ func waitForServerStatus(ctx context.Context, stdout io.Writer, opts *Options, c
 		status := strings.ToUpper(item.Status)
 		if target[status] {
 			if prettyOutput(opts) {
-				_ = renderPrettyProgress(stdout, opts, "complete", 1)
+				_ = renderPrettyProgressAnimated(stdout, opts, "complete", prettyProgress, 1)
 			}
 			return nil
 		}
@@ -16327,11 +16328,9 @@ func waitForServerStatus(ctx context.Context, stdout io.Writer, opts *Options, c
 			return fmt.Errorf("timed out waiting for server %s", serverID)
 		}
 		if prettyOutput(opts) {
-			percent := float64(item.Progress) / 100
-			if percent <= 0 {
-				percent = 0.25
-			}
-			_ = renderPrettyProgress(stdout, opts, "waiting", percent)
+			previousProgress := prettyProgress
+			prettyProgress = nextPrettyWaitProgress(item.Progress, prettyProgress)
+			_ = renderPrettyProgressAnimated(stdout, opts, "waiting", previousProgress, prettyProgress)
 		}
 		select {
 		case <-ctx.Done():
@@ -16339,6 +16338,20 @@ func waitForServerStatus(ctx context.Context, stdout io.Writer, opts *Options, c
 		case <-time.After(5 * time.Second):
 		}
 	}
+}
+
+func nextPrettyWaitProgress(reportedPercent int, current float64) float64 {
+	next := current + 0.05
+	if reported := float64(reportedPercent) / 100; reported > next {
+		next = reported
+	}
+	if next <= 0 {
+		next = 0.05
+	}
+	if next >= 1 {
+		return 0.95
+	}
+	return next
 }
 
 func waitForServerGone(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, serverID string) error {
