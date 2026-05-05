@@ -16375,27 +16375,41 @@ func nextPrettyWaitProgress(reportedPercent int, current float64) float64 {
 
 func waitForServerGone(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, serverID string) error {
 	deadline := time.Now().Add(30 * time.Minute)
+	prettyProgress := 0.0
+	prettyProgressLineOpen := false
 	for {
 		result := servers.Get(ctx, client, serverID)
 		if result.Err != nil {
 			if codeErr, ok := unexpectedResponseCode(result.Err); ok && codeErr.Actual == http.StatusNotFound {
 				if prettyOutput(opts) {
-					_ = renderPrettyProgress(stdout, opts, "deleted", 1)
+					_ = renderPrettyProgressAnimated(stdout, opts, "Deleted", prettyProgress, 1, true)
 				}
 				return nil
+			}
+			if prettyProgressLineOpen {
+				_ = finishPrettyProgressLine(stdout)
 			}
 			return result.Err
 		}
 		if time.Now().After(deadline) {
+			if prettyProgressLineOpen {
+				_ = finishPrettyProgressLine(stdout)
+			}
 			return fmt.Errorf("timed out waiting for server %s delete", serverID)
 		}
 		if prettyOutput(opts) {
-			_ = renderPrettyProgress(stdout, opts, "deleting", 0.5)
+			previousProgress := prettyProgress
+			prettyProgress = nextPrettyWaitProgress(0, prettyProgress)
+			_ = renderPrettyProgressAnimated(stdout, opts, "Deleting", previousProgress, prettyProgress, false)
+			prettyProgressLineOpen = true
 		}
 		select {
 		case <-ctx.Done():
+			if prettyProgressLineOpen {
+				_ = finishPrettyProgressLine(stdout)
+			}
 			return ctx.Err()
-		case <-time.After(5 * time.Second):
+		case <-time.After(serverStatusPollInterval):
 		}
 	}
 }
