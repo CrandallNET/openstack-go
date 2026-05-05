@@ -576,13 +576,15 @@ commands:
     group: "openstack.cli"
     service: "cli"
     api: "local"
-    status: "implemented"
+    status: "golden-matched"
     sdk_package: ""
     shim: false
     plugin_scope: false
     implemented_in: "internal/cli"
-    tests: []
-    notes: "Initial implementation uses the embedded OSC catalog and marks unfinished commands."
+    tests:
+      - "compat-static: command-list-cli-table"
+      - "compat-static: command-list-cli-json"
+    notes: "Static Python oracle parity recorded for openstack.cli table and JSON output. Service command groups intentionally mark unfinished commands."
   - command: "compute agent create"
     group: "openstack.compute.v2"
     service: "compute"
@@ -1481,7 +1483,7 @@ commands:
     group: "openstack.compute.v2"
     service: "compute"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/flavors"
     shim: false
     plugin_scope: false
@@ -1489,7 +1491,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud read smoke"
-    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 default output"
+    notes: "Python-vs-Go default output parity recorded against cloud6 with the live compatibility harness. Broader flag and cloud coverage still need completion."
   - command: "flavor set"
     group: "openstack.compute.v2"
     service: "compute"
@@ -1976,7 +1979,7 @@ commands:
     group: "openstack.image.v2"
     service: "image"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/image/v2/images"
     shim: false
     plugin_scope: false
@@ -1984,7 +1987,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud read smoke"
-    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 default output"
+    notes: "Python-vs-Go default output parity recorded against cloud6 with the live compatibility harness. Broader flag and cloud coverage still need completion."
   - command: "image member get"
     group: "openstack.image.v2"
     service: "image"
@@ -3059,7 +3063,7 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/networks"
     shim: false
     plugin_scope: false
@@ -3067,7 +3071,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud read smoke"
-    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 default output"
+    notes: "Python-vs-Go default output parity recorded against cloud6 with the live compatibility harness. Broader flag and cloud coverage still need completion."
   - command: "network meter create"
     group: "openstack.network.v2"
     service: "network"

@@ -1444,3 +1444,15 @@ Sources consulted:
 
 * Local cloud safety decisions in `docs/openstack-cli-compatibility-plan.md`.
 * Existing partial-failure helper in `internal/cli/compat_errors.go`.
+
+## 2026-05-04: First Golden-Matched Rows
+
+Decision: use the compatibility harness to record `golden-matched` status only after Python and Go output match for the same command form. Static local commands can use no-cloud comparisons; service commands need a live cloud comparison against the same cloud state.
+
+Work done: extended `tools/compat-check` with `--live-cloud` and `--live-command` so selected commands run with the same `OS_CLOUD` for both Python OSC and the Go binary. `command list` is now `golden-matched` for static table and JSON checks. `flavor list`, `image list`, and `network list` are now `golden-matched` for default output against `cloud6`.
+
+Sources consulted:
+
+* Local compatibility harness in `tools/compat-check`.
+* Pinned Python OSC oracle at `/Users/ken/.local/bin/openstack`.
+* Live `cloud6` compatibility run using default table output.

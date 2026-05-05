@@ -25,6 +25,7 @@ type commandGroup struct {
 type checkCase struct {
 	Name     string
 	Args     []string
+	Env      []string
 	KnownGap bool
 	Reason   string
 }
@@ -51,6 +52,8 @@ func main() {
 	var commandsPath string
 	var allHelp bool
 	var includeKnownGaps bool
+	var liveCloud string
+	var liveCommands string
 	var timeout time.Duration
 
 	flag.StringVar(&oraclePath, "oracle", "", "path to the Python OpenStackClient oracle")
@@ -59,6 +62,8 @@ func main() {
 	flag.StringVar(&commandsPath, "commands", "compat/osc/9.0.0/commands.json", "OSC command catalog path")
 	flag.BoolVar(&allHelp, "all-help", false, "compare --help output for every cataloged command")
 	flag.BoolVar(&includeKnownGaps, "known-gaps", true, "run known-gap cases and report them without failing the check")
+	flag.StringVar(&liveCloud, "live-cloud", "", "OS_CLOUD value for live Python-vs-Go command comparisons")
+	flag.StringVar(&liveCommands, "live-command", "", "comma-separated live commands to compare against --live-cloud")
 	flag.DurationVar(&timeout, "timeout", 30*time.Second, "timeout per command")
 	flag.Parse()
 
@@ -82,6 +87,19 @@ func main() {
 			cases = append(cases, checkCase{
 				Name: "help: " + command,
 				Args: append(strings.Fields(command), "--help"),
+			})
+		}
+	}
+	if strings.TrimSpace(liveCommands) != "" {
+		if strings.TrimSpace(liveCloud) == "" {
+			fmt.Fprintln(os.Stderr, "compat-check: --live-command requires --live-cloud")
+			os.Exit(1)
+		}
+		for _, command := range splitComma(liveCommands) {
+			cases = append(cases, checkCase{
+				Name: "live:" + liveCloud + ":" + command,
+				Args: strings.Fields(command),
+				Env:  []string{"OS_CLOUD=" + liveCloud},
 			})
 		}
 	}
@@ -116,6 +134,17 @@ func defaultCases(includeKnownGaps bool) []checkCase {
 		)
 	}
 	return cases
+}
+
+func splitComma(value string) []string {
+	var values []string
+	for _, part := range strings.Split(value, ",") {
+		part = strings.TrimSpace(part)
+		if part != "" {
+			values = append(values, part)
+		}
+	}
+	return values
 }
 
 func oraclePathFromMetadata(path string) (string, error) {
@@ -153,8 +182,8 @@ func readCommands(path string) ([]string, error) {
 func runCases(oraclePath string, goBinary string, cases []checkCase, timeout time.Duration) []checkResult {
 	results := make([]checkResult, 0, len(cases))
 	for _, testCase := range cases {
-		oracle := runCommand(timeout, oraclePath, testCase.Args...)
-		goResult := runCommand(timeout, goBinary, testCase.Args...)
+		oracle := runCommand(timeout, testCase.Env, oraclePath, testCase.Args...)
+		goResult := runCommand(timeout, testCase.Env, goBinary, testCase.Args...)
 		matched, diff := compareResults(oracle, goResult)
 		results = append(results, checkResult{
 			Case:       testCase,
@@ -167,12 +196,13 @@ func runCases(oraclePath string, goBinary string, cases []checkCase, timeout tim
 	return results
 }
 
-func runCommand(timeout time.Duration, name string, args ...string) commandResult {
+func runCommand(timeout time.Duration, extraEnv []string, name string, args ...string) commandResult {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, name, args...)
 	cmd.Env = append(os.Environ(), "NO_COLOR=1", "CLICOLOR=0", "CLIFF_FIT_WIDTH=0", "OS_PRETTY=0")
+	cmd.Env = append(cmd.Env, extraEnv...)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	cmd.Stdout = &stdout

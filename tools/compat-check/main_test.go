@@ -42,6 +42,14 @@ func TestRequiredFailuresIgnoresKnownGaps(t *testing.T) {
 	}
 }
 
+func TestSplitCommaTrimsEmptyParts(t *testing.T) {
+	got := splitComma("flavor list, image list ,, server list")
+	want := []string{"flavor list", "image list", "server list"}
+	if strings.Join(got, "|") != strings.Join(want, "|") {
+		t.Fatalf("split mismatch: got %v want %v", got, want)
+	}
+}
+
 func TestReadCommandsSortsFlattenedCatalog(t *testing.T) {
 	path := t.TempDir() + "/commands.json"
 	data := `[

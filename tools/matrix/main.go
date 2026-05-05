@@ -341,9 +341,10 @@ func newCommandEntry(group string, command string) commandEntry {
 	}
 	switch command {
 	case "command list":
-		entry.Status = "implemented"
+		entry.Status = "golden-matched"
 		entry.ImplementedIn = "internal/cli"
-		entry.Notes = "Initial implementation uses the embedded OSC catalog and marks unfinished commands."
+		entry.Tests = []string{"compat-static: command-list-cli-table", "compat-static: command-list-cli-json"}
+		entry.Notes = "Static Python oracle parity recorded for openstack.cli table and JSON output. Service command groups intentionally mark unfinished commands."
 	case "module list":
 		entry.Status = "implemented"
 		entry.ImplementedIn = "internal/cli"
@@ -392,6 +393,11 @@ func newCommandEntry(group string, command string) commandEntry {
 			}
 		} else {
 			entry.Notes += " Live fixture still needed before this row can be marked cloud-verified."
+		}
+		if coreGoldenMatched()[command] {
+			entry.Status = "golden-matched"
+			entry.Tests = append(entry.Tests, "compat-live: cloud6 default output")
+			entry.Notes = "Python-vs-Go default output parity recorded against cloud6 with the live compatibility harness. Broader flag and cloud coverage still need completion."
 		}
 		if strings.HasPrefix(command, "floating ip port forwarding ") {
 			entry.Tests = []string{"unit: command registry", "unit: floating ip port forwarding port range validation"}
@@ -1037,6 +1043,14 @@ func coreCloudVerified() map[string]bool {
 	verified["image metadef resource type association delete"] = true
 	verified["image metadef resource type association list"] = true
 	return verified
+}
+
+func coreGoldenMatched() map[string]bool {
+	return map[string]bool{
+		"flavor list":  true,
+		"image list":   true,
+		"network list": true,
+	}
 }
 
 func coreWriteCommands() map[string]bool {

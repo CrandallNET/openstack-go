@@ -76,6 +76,12 @@ make compat-static
 
 This compares the pinned Python OSC oracle with `./bin/openstack` for required parser, help, completion, and local-output cases. It also reports known gaps, such as root help and parser error text, without failing the target. Use `make compat-static-all` to additionally compare `--help` output for every cataloged command.
 
+To compare selected live read commands against the same cloud state:
+
+```sh
+go run ./tools/compat-check --live-cloud cloud6 --live-command "flavor list,image list,network list"
+```
+
 Discover non-secret live cloud capabilities and fixture candidates:
 
 ```sh

@@ -14,8 +14,8 @@ func TestServiceForGroup(t *testing.T) {
 
 func TestNewCommandEntryMarksImplementedCommandList(t *testing.T) {
 	entry := newCommandEntry("openstack.cli", "command list")
-	if entry.Status != "implemented" {
-		t.Fatalf("expected command list to be implemented, got %q", entry.Status)
+	if entry.Status != "golden-matched" {
+		t.Fatalf("expected command list to be golden-matched, got %q", entry.Status)
 	}
 	if entry.ImplementedIn != "internal/cli" {
 		t.Fatalf("unexpected implementation owner: %q", entry.ImplementedIn)
@@ -42,6 +42,24 @@ func TestNewCommandEntryMarksCinderResourceFilterShim(t *testing.T) {
 	}
 	if entry.ImplementedIn != "internal/cli" {
 		t.Fatalf("unexpected implementation owner: %q", entry.ImplementedIn)
+	}
+}
+
+func TestNewCommandEntryMarksGoldenMatchedCoreReads(t *testing.T) {
+	for _, command := range []string{"flavor list", "image list", "network list"} {
+		entry := newCommandEntry("openstack.compute.v2", command)
+		if strings.HasPrefix(command, "image ") {
+			entry = newCommandEntry("openstack.image.v2", command)
+		}
+		if strings.HasPrefix(command, "network ") {
+			entry = newCommandEntry("openstack.network.v2", command)
+		}
+		if entry.Status != "golden-matched" {
+			t.Fatalf("expected %s to be golden-matched, got %q", command, entry.Status)
+		}
+		if !strings.Contains(strings.Join(entry.Tests, " "), "compat-live") {
+			t.Fatalf("expected %s to record compat-live evidence, got %v", command, entry.Tests)
+		}
 	}
 }
 
