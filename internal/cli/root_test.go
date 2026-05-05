@@ -903,20 +903,20 @@ func TestPrettyProgressUsesBubblesProgressWithoutANSIForNonTTY(t *testing.T) {
 
 func TestPrettyProgressPadsLabels(t *testing.T) {
 	var stdout bytes.Buffer
-	if err := renderPrettyProgress(&stdout, &Options{}, "waiting", 0.5); err != nil {
+	if err := renderPrettyProgress(&stdout, &Options{}, "Creating", 0.5); err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
-	if err := renderPrettyProgress(&stdout, &Options{}, "complete", 1); err != nil {
+	if err := renderPrettyProgress(&stdout, &Options{}, "Complete", 1); err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 	lines := strings.Split(strings.TrimRight(stdout.String(), "\n"), "\n")
 	if len(lines) != 2 {
 		t.Fatalf("expected two progress lines, got %d:\n%s", len(lines), stdout.String())
 	}
-	if !strings.HasPrefix(lines[0], "waiting  ") {
-		t.Fatalf("expected waiting label to be padded, got %q", lines[0])
+	if !strings.HasPrefix(lines[0], "Creating ") {
+		t.Fatalf("expected creating label to be padded, got %q", lines[0])
 	}
-	if !strings.HasPrefix(lines[1], "complete ") {
+	if !strings.HasPrefix(lines[1], "Complete ") {
 		t.Fatalf("expected complete label to keep the same bar column, got %q", lines[1])
 	}
 	if strings.Index(lines[0], "[") != strings.Index(lines[1], "[") {
@@ -984,7 +984,7 @@ func TestPrettyProgressAnimatedKeepsTTYLineOpen(t *testing.T) {
 	if strings.HasSuffix(output, "\n") {
 		t.Fatalf("expected waiting progress to keep the terminal line open, got %q", output)
 	}
-	if err := renderPrettyProgressAnimated(&stdout, &Options{}, "complete", 0.5, 1, true); err != nil {
+	if err := renderPrettyProgressAnimated(&stdout, &Options{}, "Complete", 0.5, 1, true); err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 	if !strings.HasSuffix(stdout.String(), "\n") {
@@ -996,6 +996,9 @@ func TestPrettyProgressAnimatedKeepsTTYLineOpen(t *testing.T) {
 }
 
 func TestNextPrettyWaitProgressAdvancesAndCapsBeforeComplete(t *testing.T) {
+	if serverStatusPollInterval != time.Second {
+		t.Fatalf("expected server status wait polling every second, got %s", serverStatusPollInterval)
+	}
 	progress := 0.0
 	for _, want := range []float64{0.05, 0.10, 0.15} {
 		progress = nextPrettyWaitProgress(0, progress)

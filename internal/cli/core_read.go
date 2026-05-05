@@ -2073,7 +2073,7 @@ func serverReboot(ctx context.Context, stdout io.Writer, opts *Options, client *
 		return err
 	}
 	if boolFlag(opts, "wait") {
-		return waitForServerStatus(ctx, stdout, opts, client, server.ID, []string{"ACTIVE"}, []string{"ERROR"})
+		return waitForServerStatus(ctx, stdout, opts, client, server.ID, "Rebooting", []string{"ACTIVE"}, []string{"ERROR"})
 	}
 	return nil
 }
@@ -2104,7 +2104,7 @@ func serverResize(ctx context.Context, stdout io.Writer, opts *Options, client *
 		return err
 	}
 	if boolFlag(opts, "wait") {
-		return waitForServerStatus(ctx, stdout, opts, client, server.ID, []string{"VERIFY_RESIZE"}, []string{"ERROR"})
+		return waitForServerStatus(ctx, stdout, opts, client, server.ID, "Resizing", []string{"VERIFY_RESIZE"}, []string{"ERROR"})
 	}
 	return nil
 }
@@ -2142,7 +2142,7 @@ func serverMigrate(ctx context.Context, stdout io.Writer, opts *Options, client 
 			return err
 		}
 		if boolFlag(opts, "wait") {
-			return waitForServerStatus(ctx, stdout, opts, client, server.ID, []string{"ACTIVE"}, []string{"ERROR"})
+			return waitForServerStatus(ctx, stdout, opts, client, server.ID, "Migrating", []string{"ACTIVE"}, []string{"ERROR"})
 		}
 		return nil
 	}
@@ -2154,7 +2154,7 @@ func serverMigrate(ctx context.Context, stdout io.Writer, opts *Options, client 
 		return err
 	}
 	if boolFlag(opts, "wait") {
-		return waitForServerStatus(ctx, stdout, opts, client, server.ID, []string{"VERIFY_RESIZE"}, []string{"ERROR"})
+		return waitForServerStatus(ctx, stdout, opts, client, server.ID, "Migrating", []string{"VERIFY_RESIZE"}, []string{"ERROR"})
 	}
 	return nil
 }
@@ -2214,7 +2214,7 @@ func serverRebuild(ctx context.Context, stdout io.Writer, opts *Options, compute
 		return err
 	}
 	if boolFlag(opts, "wait") {
-		if err := waitForServerStatus(ctx, stdout, opts, computeClient, server.ID, []string{"ACTIVE"}, []string{"ERROR"}); err != nil {
+		if err := waitForServerStatus(ctx, stdout, opts, computeClient, server.ID, "Rebuilding", []string{"ACTIVE"}, []string{"ERROR"}); err != nil {
 			return err
 		}
 		rebuilt, err = servers.Get(ctx, computeClient, server.ID).Extract()
@@ -2276,7 +2276,7 @@ func serverEvacuate(ctx context.Context, stdout io.Writer, opts *Options, client
 		return err
 	}
 	if boolFlag(opts, "wait") {
-		if err := waitForServerStatus(ctx, stdout, opts, client, server.ID, []string{"ACTIVE"}, []string{"ERROR"}); err != nil {
+		if err := waitForServerStatus(ctx, stdout, opts, client, server.ID, "Evacuating", []string{"ACTIVE"}, []string{"ERROR"}); err != nil {
 			return err
 		}
 	}
@@ -2308,7 +2308,7 @@ func serverShelve(ctx context.Context, stdout io.Writer, opts *Options, client *
 			if boolFlag(opts, "offload") {
 				targets = []string{"SHELVED_OFFLOADED"}
 			}
-			if err := waitForServerStatus(ctx, stdout, opts, client, server.ID, targets, []string{"ERROR"}); err != nil {
+			if err := waitForServerStatus(ctx, stdout, opts, client, server.ID, "Shelving", targets, []string{"ERROR"}); err != nil {
 				return err
 			}
 		}
@@ -2353,7 +2353,7 @@ func serverUnshelve(ctx context.Context, stdout io.Writer, opts *Options, client
 			return err
 		}
 		if boolFlag(opts, "wait") {
-			if err := waitForServerStatus(ctx, stdout, opts, client, server.ID, []string{"ACTIVE"}, []string{"ERROR"}); err != nil {
+			if err := waitForServerStatus(ctx, stdout, opts, client, server.ID, "Unshelving", []string{"ACTIVE"}, []string{"ERROR"}); err != nil {
 				return err
 			}
 		}
@@ -2565,7 +2565,7 @@ func serverCreate(ctx context.Context, stdout io.Writer, opts *Options, computeC
 		return err
 	}
 	if boolFlag(opts, "wait") {
-		if err := waitForServerStatus(ctx, stdout, opts, computeClient, created.ID, []string{"ACTIVE"}, []string{"ERROR"}); err != nil {
+		if err := waitForServerStatus(ctx, stdout, opts, computeClient, created.ID, "Creating", []string{"ACTIVE"}, []string{"ERROR"}); err != nil {
 			return err
 		}
 		created, err = servers.Get(ctx, computeClient, created.ID).Extract()
@@ -16304,7 +16304,12 @@ func findServerForServerCommand(ctx context.Context, client *gophercloud.Service
 	return singleByName(value, items, func(item servers.Server) string { return item.Name })
 }
 
-func waitForServerStatus(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, serverID string, targets []string, failures []string) error {
+var serverStatusPollInterval = time.Second
+
+func waitForServerStatus(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, serverID string, actionLabel string, targets []string, failures []string) error {
+	if actionLabel == "" {
+		actionLabel = "Waiting"
+	}
 	deadline := time.Now().Add(30 * time.Minute)
 	target := upperStringSet(targets)
 	failed := upperStringSet(failures)
@@ -16321,7 +16326,7 @@ func waitForServerStatus(ctx context.Context, stdout io.Writer, opts *Options, c
 		status := strings.ToUpper(item.Status)
 		if target[status] {
 			if prettyOutput(opts) {
-				_ = renderPrettyProgressAnimated(stdout, opts, "complete", prettyProgress, 1, true)
+				_ = renderPrettyProgressAnimated(stdout, opts, "Complete", prettyProgress, 1, true)
 			}
 			return nil
 		}
@@ -16340,7 +16345,7 @@ func waitForServerStatus(ctx context.Context, stdout io.Writer, opts *Options, c
 		if prettyOutput(opts) {
 			previousProgress := prettyProgress
 			prettyProgress = nextPrettyWaitProgress(item.Progress, prettyProgress)
-			_ = renderPrettyProgressAnimated(stdout, opts, "waiting", previousProgress, prettyProgress, false)
+			_ = renderPrettyProgressAnimated(stdout, opts, actionLabel, previousProgress, prettyProgress, false)
 			prettyProgressLineOpen = true
 		}
 		select {
@@ -16349,7 +16354,7 @@ func waitForServerStatus(ctx context.Context, stdout io.Writer, opts *Options, c
 				_ = finishPrettyProgressLine(stdout)
 			}
 			return ctx.Err()
-		case <-time.After(5 * time.Second):
+		case <-time.After(serverStatusPollInterval):
 		}
 	}
 }
