@@ -1408,3 +1408,14 @@ Sources consulted:
 * Local Python OSC oracle metadata in `compat/osc/9.0.0/metadata.json`.
 * Local generated command catalog in `compat/osc/9.0.0/commands.json`.
 * Local CLI entry point in `cmd/openstack/main.go`.
+
+## 2026-05-04: Typed Lookup And Error Helpers
+
+Decision: add typed compatibility errors before broadening write and delete behavior. Name-or-ID lookup, partial failures, and HTTP response failures need machine-checkable error types so commands and tests do not have to parse user-facing strings.
+
+Work done: added typed lookup errors for not-found and ambiguous lookup results, a partial-failure error helper, and a first normalized OpenStack HTTP error formatter. The existing generic `singleMatch` helper now returns typed lookup errors while preserving its current user-facing text.
+
+Sources consulted:
+
+* Local lookup helpers in `internal/cli/identity_read.go`.
+* Local Gophercloud v2.12.0 error types in `.cache/gomod/github.com/gophercloud/gophercloud/v2@v2.12.0/errors.go`.

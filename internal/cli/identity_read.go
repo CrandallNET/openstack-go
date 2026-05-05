@@ -1703,11 +1703,11 @@ func singleByName[T any](value string, items []T, name func(T) string) (*T, erro
 func singleMatch[T any](value string, matches []T) (*T, error) {
 	switch len(matches) {
 	case 0:
-		return nil, fmt.Errorf("no resource found for %q", value)
+		return nil, newLookupNotFound("resource", value)
 	case 1:
 		return &matches[0], nil
 	default:
-		return nil, fmt.Errorf("multiple resources found for %q", value)
+		return nil, newLookupAmbiguous("resources", value, len(matches))
 	}
 }
 

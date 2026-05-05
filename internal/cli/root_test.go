@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"strings"
 	"testing"
@@ -148,6 +149,29 @@ func TestCommandListJSONMarksIdentityReadsImplemented(t *testing.T) {
 	}
 	if strings.Contains(stdout, `"project list (Not Implemented Yet)"`) {
 		t.Fatalf("expected project list without not-implemented suffix, got:\n%s", stdout)
+	}
+}
+
+func TestSingleMatchReturnsTypedLookupErrors(t *testing.T) {
+	if _, err := singleMatch("missing", []string{}); !isLookupNotFound(err) {
+		t.Fatalf("expected typed not-found lookup error, got %T %[1]v", err)
+	}
+	if _, err := singleMatch("duplicate", []string{"a", "b"}); !isLookupAmbiguous(err) {
+		t.Fatalf("expected typed ambiguous lookup error, got %T %[1]v", err)
+	}
+}
+
+func TestCompatErrorMessageFormatsKnownErrors(t *testing.T) {
+	notFound := newLookupNotFound("resource", "missing")
+	if got := compatErrorMessage(notFound); got != `no resource found for "missing"` {
+		t.Fatalf("lookup error message mismatch: %q", got)
+	}
+	partial := newPartialFailureError("delete", "images", 2, 3)
+	if got := compatErrorMessage(partial); got != "Failed to delete 2 of 3 images." {
+		t.Fatalf("partial failure message mismatch: %q", got)
+	}
+	if got := compatErrorMessage(errors.New("plain")); got != "plain" {
+		t.Fatalf("plain error message mismatch: %q", got)
 	}
 }
 
