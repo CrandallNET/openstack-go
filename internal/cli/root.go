@@ -1,10 +1,13 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
+	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/crandallnet/golang-osc/compat/osc"
 	_ "github.com/crandallnet/golang-osc/internal/plugins/local"
@@ -61,7 +64,91 @@ type Options struct {
 func Execute(args []string, stdout io.Writer, stderr io.Writer) error {
 	cmd := NewRootCommand(stdout, stderr)
 	cmd.SetArgs(args)
-	return cmd.Execute()
+	err := cmd.Execute()
+	if err == nil {
+		return nil
+	}
+	if handled, ok := handleParserError(err, args, stdout, stderr); ok {
+		return handled
+	}
+	return err
+}
+
+type cliExitError struct {
+	code   int
+	silent bool
+}
+
+func (e *cliExitError) Error() string {
+	return fmt.Sprintf("exit status %d", e.code)
+}
+
+func (e *cliExitError) ExitCode() int {
+	return e.code
+}
+
+func (e *cliExitError) Silent() bool {
+	return e.silent
+}
+
+type parserOutputError struct {
+	code    int
+	stream  string
+	message string
+}
+
+func (e *parserOutputError) Error() string {
+	return strings.TrimRight(e.message, "\n")
+}
+
+func (e *parserOutputError) ExitCode() int {
+	return e.code
+}
+
+func ExitCode(err error) int {
+	if err == nil {
+		return 0
+	}
+	var exit interface {
+		ExitCode() int
+	}
+	if errors.As(err, &exit) {
+		return exit.ExitCode()
+	}
+	return 1
+}
+
+func ShouldPrintError(err error) bool {
+	if err == nil {
+		return false
+	}
+	var silent interface {
+		Silent() bool
+	}
+	if errors.As(err, &silent) && silent.Silent() {
+		return false
+	}
+	return true
+}
+
+func handleParserError(err error, args []string, stdout io.Writer, stderr io.Writer) (error, bool) {
+	var parserErr *parserOutputError
+	if errors.As(err, &parserErr) {
+		if parserErr.stream == "stdout" {
+			_, _ = fmt.Fprint(stdout, parserErr.message)
+		} else {
+			_, _ = fmt.Fprint(stderr, parserErr.message)
+		}
+		return &cliExitError{code: parserErr.code, silent: true}, true
+	}
+	if isCobraUnknownCommand(err) && len(args) > 0 {
+		groups, loadErr := osc.Commands()
+		if loadErr == nil {
+			_, _ = fmt.Fprint(stdout, unknownCommandMessage(args, groups))
+			return &cliExitError{code: 2, silent: true}, true
+		}
+	}
+	return err, false
 }
 
 func NewRootCommand(stdout io.Writer, stderr io.Writer) *cobra.Command {
@@ -90,6 +177,14 @@ func NewRootCommand(stdout io.Writer, stderr io.Writer) *cobra.Command {
 	root.SetOut(stdout)
 	root.SetErr(stderr)
 	root.SetVersionTemplate("openstack {{.Version}}\n")
+	root.SetHelpFunc(func(command *cobra.Command, args []string) {
+		if help, ok, err := osc.Help(""); err == nil && ok {
+			fmt.Fprint(stdout, help)
+		}
+	})
+	root.SetFlagErrorFunc(func(command *cobra.Command, err error) error {
+		return parserFlagError("", err)
+	})
 	root.Flags().SortFlags = false
 	root.PersistentFlags().SortFlags = false
 	addGlobalFlags(root.PersistentFlags(), opts)
@@ -184,6 +279,184 @@ func envInt(name string) int {
 
 func envBoolInt(name string) bool {
 	return envInt(name) != 0
+}
+
+func parserFlagError(path string, err error) error {
+	message := formatFlagError(path, err)
+	return &parserOutputError{code: 2, stream: "stderr", message: message}
+}
+
+func formatFlagError(path string, err error) string {
+	usage := usageBlock(path)
+	if usage != "" {
+		usage += "\n"
+	}
+	flagText := unrecognizedArgument(err)
+	commandName := "openstack"
+	if strings.TrimSpace(path) != "" {
+		commandName += " " + path
+	}
+	return usage + fmt.Sprintf("%s: error: unrecognized arguments: %s\n", commandName, flagText)
+}
+
+func usageBlock(path string) string {
+	help, ok, err := osc.Help(path)
+	if err != nil || !ok {
+		return ""
+	}
+	help = strings.ReplaceAll(help, "\r\n", "\n")
+	help = strings.ReplaceAll(help, "\r", "\n")
+	if index := strings.Index(help, "\n\n"); index >= 0 {
+		return strings.TrimRight(help[:index], "\n")
+	}
+	return strings.TrimRight(help, "\n")
+}
+
+func unrecognizedArgument(err error) string {
+	message := err.Error()
+	if strings.HasPrefix(message, "unknown flag: ") {
+		return strings.TrimPrefix(message, "unknown flag: ")
+	}
+	if strings.HasPrefix(message, "unknown shorthand flag: ") {
+		fields := strings.Fields(message)
+		if len(fields) >= 5 {
+			return "-" + strings.Trim(fields[3], "'\"")
+		}
+	}
+	if strings.HasPrefix(message, "flag needs an argument: ") {
+		return strings.TrimPrefix(message, "flag needs an argument: ")
+	}
+	return message
+}
+
+func isCobraUnknownCommand(err error) bool {
+	message := err.Error()
+	return strings.HasPrefix(message, "unknown command ")
+}
+
+func unknownCommandMessage(args []string, groups []osc.CommandGroup) string {
+	commandText := strings.Join(args, " ")
+	var builder strings.Builder
+	fmt.Fprintf(&builder, "openstack: '%s' is not an openstack command. See 'openstack --help'.\n", commandText)
+	matches := fuzzyCommandMatches(args[0], groups)
+	if len(matches) > 0 {
+		builder.WriteString("Did you mean one of these?\n")
+		for _, match := range matches {
+			fmt.Fprintf(&builder, "  %s\n", match)
+		}
+	}
+	return builder.String()
+}
+
+func fuzzyCommandMatches(command string, groups []osc.CommandGroup) []string {
+	commands := catalogCommandNames(groups)
+	distances := make([]commandDistance, 0, len(commands))
+	for _, candidate := range commands {
+		prefix := strings.Fields(candidate)[0]
+		if strings.HasPrefix(candidate, command) {
+			distances = append(distances, commandDistance{Distance: 0, Command: candidate})
+			continue
+		}
+		distances = append(distances, commandDistance{
+			Distance: damerauLevenshtein(command, prefix) + 1,
+			Command:  candidate,
+		})
+	}
+	sort.Slice(distances, func(i int, j int) bool {
+		if distances[i].Distance == distances[j].Distance {
+			return distances[i].Command < distances[j].Command
+		}
+		return distances[i].Distance < distances[j].Distance
+	})
+	var matches []string
+	matchDistance := 0
+	for _, distance := range distances {
+		if distance.Distance > matchDistance {
+			if matchDistance != 0 {
+				break
+			}
+			matchDistance = distance.Distance
+		}
+		matches = append(matches, distance.Command)
+	}
+	return matches
+}
+
+type commandDistance struct {
+	Distance int
+	Command  string
+}
+
+func catalogCommandNames(groups []osc.CommandGroup) []string {
+	seen := map[string]bool{}
+	var commands []string
+	for _, group := range groups {
+		for _, command := range group.Commands {
+			if seen[command] {
+				continue
+			}
+			seen[command] = true
+			commands = append(commands, command)
+		}
+	}
+	sort.Strings(commands)
+	return commands
+}
+
+func damerauLevenshtein(a string, b string) int {
+	const (
+		swapCost         = 0
+		substitutionCost = 2
+		insertionCost    = 1
+		deletionCost     = 3
+	)
+	if a == b {
+		return 0
+	}
+	if len(a) == 0 {
+		return len(b) * insertionCost
+	}
+	if len(b) == 0 {
+		return len(a) * deletionCost
+	}
+
+	row1 := make([]int, len(b)+1)
+	row2 := make([]int, len(b)+1)
+	row0 := make([]int, len(b)+1)
+	for i := range row1 {
+		row1[i] = i * insertionCost
+		row2[i] = row1[i]
+		row0[i] = row1[i]
+	}
+
+	for i := range a {
+		row2[0] = (i + 1) * deletionCost
+		for j := range b {
+			substitution := row1[j]
+			if a[i] != b[j] {
+				substitution += substitutionCost
+			}
+			insertion := row2[j] + insertionCost
+			deletion := row1[j+1] + deletionCost
+			cost := minInt(substitution, insertion, deletion)
+			if i > 0 && j > 0 && a[i-1] == b[j] && a[i] == b[j-1] {
+				cost = minInt(cost, row0[j-1]+swapCost)
+			}
+			row2[j+1] = cost
+		}
+		row0, row1, row2 = row1, row2, row0
+	}
+	return row1[len(b)]
+}
+
+func minInt(first int, values ...int) int {
+	minimum := first
+	for _, value := range values {
+		if value < minimum {
+			minimum = value
+		}
+	}
+	return minimum
 }
 
 func newHelpCommand(root *cobra.Command, stdout io.Writer) *cobra.Command {

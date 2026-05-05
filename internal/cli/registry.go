@@ -197,6 +197,9 @@ func (r *commandRegistry) addCommand(root *cobra.Command, path string) {
 
 func (r *commandRegistry) configureLeaf(cmd *cobra.Command, path string) {
 	cmd.Short = path
+	cmd.SetFlagErrorFunc(func(command *cobra.Command, err error) error {
+		return parserFlagError(path, err)
+	})
 	cmd.SetHelpFunc(func(command *cobra.Command, args []string) {
 		if help, ok, err := osc.Help(path); err == nil && ok {
 			fmt.Fprint(r.stdout, help)

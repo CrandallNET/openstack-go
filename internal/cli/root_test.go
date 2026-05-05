@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"charm.land/bubbles/v2/table"
+	"github.com/crandallnet/golang-osc/compat/osc"
 	"github.com/gophercloud/gophercloud/v2"
 	"github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/volumes"
 	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/ports"
@@ -45,9 +46,55 @@ func TestRootHelp(t *testing.T) {
 	if stderr != "" {
 		t.Fatalf("expected empty stderr, got %q", stderr)
 	}
-	for _, want := range []string{"OpenStack command line client", "--os-cloud", "--pretty", "command"} {
+	want, ok, err := osc.Help("")
+	if err != nil || !ok {
+		t.Fatalf("load oracle root help: ok=%t err=%v", ok, err)
+	}
+	if stdout != want {
+		t.Fatalf("root help mismatch")
+	}
+}
+
+func TestInvalidFlagUsesOracleUsageAndExitCode(t *testing.T) {
+	stdout, stderr, err := executeForTest("command", "list", "--bogus")
+	if err == nil {
+		t.Fatalf("expected error")
+	}
+	if got := ExitCode(err); got != 2 {
+		t.Fatalf("expected exit code 2, got %d", got)
+	}
+	if stdout != "" {
+		t.Fatalf("expected empty stdout, got %q", stdout)
+	}
+	for _, want := range []string{
+		"usage: openstack command list",
+		"openstack command list: error: unrecognized arguments: --bogus",
+	} {
+		if !strings.Contains(stderr, want) {
+			t.Fatalf("invalid flag output missing %q:\n%s", want, stderr)
+		}
+	}
+}
+
+func TestUnknownCommandUsesFuzzySuggestionsAndExitCode(t *testing.T) {
+	stdout, stderr, err := executeForTest("nosuch")
+	if err == nil {
+		t.Fatalf("expected error")
+	}
+	if got := ExitCode(err); got != 2 {
+		t.Fatalf("expected exit code 2, got %d", got)
+	}
+	if stderr != "" {
+		t.Fatalf("expected empty stderr, got %q", stderr)
+	}
+	for _, want := range []string{
+		"openstack: 'nosuch' is not an openstack command. See 'openstack --help'.",
+		"Did you mean one of these?",
+		"  consumer create",
+		"  resource usage show",
+	} {
 		if !strings.Contains(stdout, want) {
-			t.Fatalf("help output missing %q:\n%s", want, stdout)
+			t.Fatalf("unknown command output missing %q:\n%s", want, stdout)
 		}
 	}
 }

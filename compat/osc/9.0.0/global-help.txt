@@ -16,11 +16,7 @@ usage: openstack [--version] [-v | -q] [--log-file LOG_FILE] [-h] [--debug]
                  [--os-object-api-version <object-api-version>]
                  [--os-volume-api-version <volume-api-version>]
                  [--os-placement-api-version <placement-api-version>]
-                 [--os-auth-type <auth-type>] [--os-endpoint <auth-endpoint>]
-                 [--os-auth-url <auth-auth-url>]
-                 [--os-trust-id <auth-trust-id>]
-                 [--os-username <auth-username>] [--os-user-id <auth-user-id>]
-                 [--os-password <auth-password>]
+                 [--os-auth-type <auth-type>] [--os-auth-url <auth-auth-url>]
                  [--os-system-scope <auth-system-scope>]
                  [--os-domain-id <auth-domain-id>]
                  [--os-domain-name <auth-domain-name>]
@@ -28,33 +24,37 @@ usage: openstack [--version] [-v | -q] [--log-file LOG_FILE] [-h] [--debug]
                  [--os-project-name <auth-project-name>]
                  [--os-project-domain-id <auth-project-domain-id>]
                  [--os-project-domain-name <auth-project-domain-name>]
+                 [--os-trust-id <auth-trust-id>]
                  [--os-auth-methods <auth-auth-methods>]
-                 [--os-token <auth-token>]
+                 [--os-token <auth-token>] [--os-user-id <auth-user-id>]
+                 [--os-username <auth-username>]
                  [--os-user-domain-id <auth-user-domain-id>]
                  [--os-user-domain-name <auth-user-domain-name>]
+                 [--os-password <auth-password>]
                  [--os-application-credential-secret <auth-application-credential-secret>]
                  [--os-application-credential-id <auth-application-credential-id>]
                  [--os-application-credential-name <auth-application-credential-name>]
-                 [--os-passcode <auth-passcode>]
-                 [--os-identity-provider <auth-identity-provider>]
-                 [--os-protocol <auth-protocol>]
-                 [--os-access-token <auth-access-token>]
-                 [--os-default-domain-id <auth-default-domain-id>]
-                 [--os-default-domain-name <auth-default-domain-name>]
                  [--os-oauth2-endpoint <auth-oauth2-endpoint>]
                  [--os-oauth2-client-id <auth-oauth2-client-id>]
+                 [--os-oauth2-client-secret <auth-oauth2-client-secret>]
+                 [--os-identity-provider <auth-identity-provider>]
+                 [--os-protocol <auth-protocol>]
                  [--os-client-id <auth-client-id>]
                  [--os-client-secret <auth-client-secret>]
                  [--os-openid-scope <auth-openid-scope>]
                  [--os-access-token-endpoint <auth-access-token-endpoint>]
                  [--os-discovery-endpoint <auth-discovery-endpoint>]
                  [--os-access-token-type <auth-access-token-type>]
+                 [--os-endpoint <auth-endpoint>]
+                 [--os-idp-otp-key <auth-idp-otp-key>]
+                 [--os-default-domain-id <auth-default-domain-id>]
+                 [--os-default-domain-name <auth-default-domain-name>]
+                 [--os-passcode <auth-passcode>]
                  [--os-device-authorization-endpoint <auth-device-authorization-endpoint>]
                  [--os-code-challenge-method <auth-code-challenge-method>]
+                 [--os-access-token <auth-access-token>]
                  [--os-redirect-uri <auth-redirect-uri>]
                  [--os-code <auth-code>]
-                 [--os-oauth2-client-secret <auth-oauth2-client-secret>]
-                 [--os-idp-otp-key <auth-idp-otp-key>]
 
 Command-line interface to the OpenStack APIs
 
@@ -125,205 +125,199 @@ options:
                         Placement API version, default=1 (Env:
                         OS_PLACEMENT_API_VERSION)
   --os-auth-type <auth-type>
-                        Select an authentication type. Available types: none,
-                        v2password, v3multifactor, v2token,
-                        v3applicationcredential, admin_token, v3totp,
-                        v3oidcaccesstoken, v3password, password,
+                        Select an authentication type. Available types:
+                        v3multifactor, v3token, v3password,
+                        v3applicationcredential, v3tokenlessauth,
+                        v3oauth2clientcredential, v3oidcclientcredentials,
+                        http_basic, v3oidcpassword, password, none,
+                        v2password, token, v3totp,
                         v3oauth2mtlsclientcredential, v3oidcdeviceauthz,
-                        v3oidcclientcredentials, token, noauth,
-                        v3oidcauthcode, v3token, v3tokenlessauth,
-                        v3oauth2clientcredential, http_basic, v3oidcpassword.
-                        Default: selected based on --os-username/--os-token
-                        (Env: OS_AUTH_TYPE)
-  --os-endpoint <auth-endpoint>
-                        With none: The endpoint that will always be used With
-                        admin_token: The endpoint that will always be used
-                        With noauth: Cinder endpoint With http_basic: The
-                        endpoint that will always be used (Env: OS_ENDPOINT)
+                        v2token, v3oidcaccesstoken, admin_token,
+                        v3oidcauthcode, noauth. Default: selected based on
+                        --os-username/--os-token (Env: OS_AUTH_TYPE)
   --os-auth-url <auth-auth-url>
-                        With v2password: Authentication URL With
-                        v3multifactor: Authentication URL With v2token:
-                        Authentication URL With v3applicationcredential:
-                        Authentication URL With v3totp: Authentication URL
-                        With v3oidcaccesstoken: Authentication URL With
-                        v3password: Authentication URL With password:
+                        With v3multifactor: Authentication URL With v3token:
+                        Authentication URL With v3password: Authentication URL
+                        With v3applicationcredential: Authentication URL With
+                        v3tokenlessauth: Authentication URL With
+                        v3oauth2clientcredential: Authentication URL With
+                        v3oidcclientcredentials: Authentication URL With
+                        v3oidcpassword: Authentication URL With password:
+                        Authentication URL With v2password: Authentication URL
+                        With token: Authentication URL With v3totp:
                         Authentication URL With v3oauth2mtlsclientcredential:
                         Authentication URL With v3oidcdeviceauthz:
-                        Authentication URL With v3oidcclientcredentials:
-                        Authentication URL With token: Authentication URL With
-                        v3oidcauthcode: Authentication URL With v3token:
-                        Authentication URL With v3tokenlessauth:
-                        Authentication URL With v3oauth2clientcredential:
-                        Authentication URL With v3oidcpassword: Authentication
-                        URL (Env: OS_AUTH_URL)
-  --os-trust-id <auth-trust-id>
-                        With v2password: ID of the trust to use as a trustee
-                        use With v3multifactor: ID of the trust to use as a
-                        trustee use With v2token: ID of the trust to use as a
-                        trustee use With v3applicationcredential: ID of the
-                        trust to use as a trustee use With v3totp: ID of the
-                        trust to use as a trustee use With v3oidcaccesstoken:
-                        ID of the trust to use as a trustee use With
-                        v3password: ID of the trust to use as a trustee use
-                        With password: ID of the trust to use as a trustee use
-                        With v3oauth2mtlsclientcredential: ID of the trust to
-                        use as a trustee use With v3oidcdeviceauthz: ID of the
-                        trust to use as a trustee use With
-                        v3oidcclientcredentials: ID of the trust to use as a
-                        trustee use With token: ID of the trust to use as a
-                        trustee use With v3oidcauthcode: ID of the trust to
-                        use as a trustee use With v3token: ID of the trust to
-                        use as a trustee use With v3oauth2clientcredential: ID
-                        of the trust to use as a trustee use With
-                        v3oidcpassword: ID of the trust to use as a trustee
-                        use (Env: OS_TRUST_ID)
-  --os-username <auth-username>
-                        With v2password: Username to login with With
-                        v3applicationcredential: User's username With v3totp:
-                        User's username With v3password: User's username With
-                        password: Username With http_basic: Username With
-                        v3oidcpassword: Username (Env: OS_USERNAME)
-  --os-user-id <auth-user-id>
-                        With v2password: User ID to login with With
-                        v3applicationcredential: User's user ID With v3totp:
-                        User's user ID With v3password: User's user ID With
-                        password: User id With noauth: User ID (Env:
-                        OS_USER_ID)
-  --os-password <auth-password>
-                        With v2password: Password to use With v3password:
-                        User's password With password: User's password With
-                        http_basic: User's password With v3oidcpassword:
-                        Password (Env: OS_PASSWORD)
+                        Authentication URL With v2token: Authentication URL
+                        With v3oidcaccesstoken: Authentication URL With
+                        v3oidcauthcode: Authentication URL (Env: OS_AUTH_URL)
   --os-system-scope <auth-system-scope>
                         With v3multifactor: Scope for system operations With
-                        v3applicationcredential: Scope for system operations
-                        With v3totp: Scope for system operations With
-                        v3oidcaccesstoken: Scope for system operations With
-                        v3password: Scope for system operations With password:
+                        v3token: Scope for system operations With v3password:
                         Scope for system operations With
+                        v3applicationcredential: Scope for system operations
+                        With v3oauth2clientcredential: Scope for system
+                        operations With v3oidcclientcredentials: Scope for
+                        system operations With v3oidcpassword: Scope for
+                        system operations With password: Scope for system
+                        operations With token: Scope for system operations
+                        With v3totp: Scope for system operations With
                         v3oauth2mtlsclientcredential: Scope for system
                         operations With v3oidcdeviceauthz: Scope for system
-                        operations With v3oidcclientcredentials: Scope for
-                        system operations With token: Scope for system
+                        operations With v3oidcaccesstoken: Scope for system
                         operations With v3oidcauthcode: Scope for system
-                        operations With v3token: Scope for system operations
-                        With v3oauth2clientcredential: Scope for system
-                        operations With v3oidcpassword: Scope for system
                         operations (Env: OS_SYSTEM_SCOPE)
   --os-domain-id <auth-domain-id>
                         With v3multifactor: Domain ID to scope to With
-                        v3applicationcredential: Domain ID to scope to With
-                        v3totp: Domain ID to scope to With v3oidcaccesstoken:
-                        Domain ID to scope to With v3password: Domain ID to
-                        scope to With password: Domain ID to scope to With
+                        v3token: Domain ID to scope to With v3password: Domain
+                        ID to scope to With v3applicationcredential: Domain ID
+                        to scope to With v3tokenlessauth: Domain ID to scope
+                        to With v3oauth2clientcredential: Domain ID to scope
+                        to With v3oidcclientcredentials: Domain ID to scope to
+                        With v3oidcpassword: Domain ID to scope to With
+                        password: Domain ID to scope to With token: Domain ID
+                        to scope to With v3totp: Domain ID to scope to With
                         v3oauth2mtlsclientcredential: Domain ID to scope to
                         With v3oidcdeviceauthz: Domain ID to scope to With
-                        v3oidcclientcredentials: Domain ID to scope to With
-                        token: Domain ID to scope to With v3oidcauthcode:
-                        Domain ID to scope to With v3token: Domain ID to scope
-                        to With v3tokenlessauth: Domain ID to scope to With
-                        v3oauth2clientcredential: Domain ID to scope to With
-                        v3oidcpassword: Domain ID to scope to (Env:
+                        v3oidcaccesstoken: Domain ID to scope to With
+                        v3oidcauthcode: Domain ID to scope to (Env:
                         OS_DOMAIN_ID)
   --os-domain-name <auth-domain-name>
                         With v3multifactor: Domain name to scope to With
-                        v3applicationcredential: Domain name to scope to With
-                        v3totp: Domain name to scope to With
-                        v3oidcaccesstoken: Domain name to scope to With
-                        v3password: Domain name to scope to With password:
-                        Domain name to scope to With
-                        v3oauth2mtlsclientcredential: Domain name to scope to
-                        With v3oidcdeviceauthz: Domain name to scope to With
-                        v3oidcclientcredentials: Domain name to scope to With
-                        token: Domain name to scope to With v3oidcauthcode:
-                        Domain name to scope to With v3token: Domain name to
-                        scope to With v3tokenlessauth: Domain name to scope to
-                        With v3oauth2clientcredential: Domain name to scope to
-                        With v3oidcpassword: Domain name to scope to (Env:
-                        OS_DOMAIN_NAME)
+                        v3token: Domain name to scope to With v3password:
+                        Domain name to scope to With v3applicationcredential:
+                        Domain name to scope to With v3tokenlessauth: Domain
+                        name to scope to With v3oauth2clientcredential: Domain
+                        name to scope to With v3oidcclientcredentials: Domain
+                        name to scope to With v3oidcpassword: Domain name to
+                        scope to With password: Domain name to scope to With
+                        token: Domain name to scope to With v3totp: Domain
+                        name to scope to With v3oauth2mtlsclientcredential:
+                        Domain name to scope to With v3oidcdeviceauthz: Domain
+                        name to scope to With v3oidcaccesstoken: Domain name
+                        to scope to With v3oidcauthcode: Domain name to scope
+                        to (Env: OS_DOMAIN_NAME)
   --os-project-id <auth-project-id>
                         With v3multifactor: Project ID to scope to With
-                        v3applicationcredential: Project ID to scope to With
-                        v3totp: Project ID to scope to With v3oidcaccesstoken:
-                        Project ID to scope to With v3password: Project ID to
+                        v3token: Project ID to scope to With v3password:
+                        Project ID to scope to With v3applicationcredential:
+                        Project ID to scope to With v3tokenlessauth: Project
+                        ID to scope to With v3oauth2clientcredential: Project
+                        ID to scope to With v3oidcclientcredentials: Project
+                        ID to scope to With v3oidcpassword: Project ID to
                         scope to With password: Project ID to scope to With
-                        v3oauth2mtlsclientcredential: Project ID to scope to
-                        With v3oidcdeviceauthz: Project ID to scope to With
-                        v3oidcclientcredentials: Project ID to scope to With
-                        token: Project ID to scope to With noauth: Project ID
-                        With v3oidcauthcode: Project ID to scope to With
-                        v3token: Project ID to scope to With v3tokenlessauth:
-                        Project ID to scope to With v3oauth2clientcredential:
-                        Project ID to scope to With v3oidcpassword: Project ID
-                        to scope to (Env: OS_PROJECT_ID)
+                        token: Project ID to scope to With v3totp: Project ID
+                        to scope to With v3oauth2mtlsclientcredential: Project
+                        ID to scope to With v3oidcdeviceauthz: Project ID to
+                        scope to With v3oidcaccesstoken: Project ID to scope
+                        to With v3oidcauthcode: Project ID to scope to With
+                        noauth: Project ID (Env: OS_PROJECT_ID)
   --os-project-name <auth-project-name>
                         With v3multifactor: Project name to scope to With
-                        v3applicationcredential: Project name to scope to With
-                        v3totp: Project name to scope to With
-                        v3oidcaccesstoken: Project name to scope to With
-                        v3password: Project name to scope to With password:
+                        v3token: Project name to scope to With v3password:
+                        Project name to scope to With v3applicationcredential:
+                        Project name to scope to With v3tokenlessauth: Project
+                        name to scope to With v3oauth2clientcredential:
+                        Project name to scope to With v3oidcclientcredentials:
+                        Project name to scope to With v3oidcpassword: Project
+                        name to scope to With password: Project name to scope
+                        to With token: Project name to scope to With v3totp:
                         Project name to scope to With
                         v3oauth2mtlsclientcredential: Project name to scope to
                         With v3oidcdeviceauthz: Project name to scope to With
-                        v3oidcclientcredentials: Project name to scope to With
-                        token: Project name to scope to With v3oidcauthcode:
-                        Project name to scope to With v3token: Project name to
-                        scope to With v3tokenlessauth: Project name to scope
-                        to With v3oauth2clientcredential: Project name to
-                        scope to With v3oidcpassword: Project name to scope to
-                        (Env: OS_PROJECT_NAME)
+                        v3oidcaccesstoken: Project name to scope to With
+                        v3oidcauthcode: Project name to scope to (Env:
+                        OS_PROJECT_NAME)
   --os-project-domain-id <auth-project-domain-id>
                         With v3multifactor: Domain ID containing project With
+                        v3token: Domain ID containing project With v3password:
+                        Domain ID containing project With
                         v3applicationcredential: Domain ID containing project
-                        With v3totp: Domain ID containing project With
-                        v3oidcaccesstoken: Domain ID containing project With
-                        v3password: Domain ID containing project With
-                        password: Domain ID containing project With
-                        v3oauth2mtlsclientcredential: Domain ID containing
-                        project With v3oidcdeviceauthz: Domain ID containing
-                        project With v3oidcclientcredentials: Domain ID
-                        containing project With token: Domain ID containing
-                        project With v3oidcauthcode: Domain ID containing
-                        project With v3token: Domain ID containing project
                         With v3tokenlessauth: Domain ID containing project
                         With v3oauth2clientcredential: Domain ID containing
-                        project With v3oidcpassword: Domain ID containing
+                        project With v3oidcclientcredentials: Domain ID
+                        containing project With v3oidcpassword: Domain ID
+                        containing project With password: Domain ID containing
+                        project With token: Domain ID containing project With
+                        v3totp: Domain ID containing project With
+                        v3oauth2mtlsclientcredential: Domain ID containing
+                        project With v3oidcdeviceauthz: Domain ID containing
+                        project With v3oidcaccesstoken: Domain ID containing
+                        project With v3oidcauthcode: Domain ID containing
                         project (Env: OS_PROJECT_DOMAIN_ID)
   --os-project-domain-name <auth-project-domain-name>
                         With v3multifactor: Domain name containing project
-                        With v3applicationcredential: Domain name containing
-                        project With v3totp: Domain name containing project
-                        With v3oidcaccesstoken: Domain name containing project
-                        With v3password: Domain name containing project With
-                        password: Domain name containing project With
-                        v3oauth2mtlsclientcredential: Domain name containing
-                        project With v3oidcdeviceauthz: Domain name containing
-                        project With v3oidcclientcredentials: Domain name
-                        containing project With token: Domain name containing
-                        project With v3oidcauthcode: Domain name containing
-                        project With v3token: Domain name containing project
-                        With v3tokenlessauth: Domain name containing project
-                        With v3oauth2clientcredential: Domain name containing
-                        project With v3oidcpassword: Domain name containing
-                        project (Env: OS_PROJECT_DOMAIN_NAME)
+                        With v3token: Domain name containing project With
+                        v3password: Domain name containing project With
+                        v3applicationcredential: Domain name containing
+                        project With v3tokenlessauth: Domain name containing
+                        project With v3oauth2clientcredential: Domain name
+                        containing project With v3oidcclientcredentials:
+                        Domain name containing project With v3oidcpassword:
+                        Domain name containing project With password: Domain
+                        name containing project With token: Domain name
+                        containing project With v3totp: Domain name containing
+                        project With v3oauth2mtlsclientcredential: Domain name
+                        containing project With v3oidcdeviceauthz: Domain name
+                        containing project With v3oidcaccesstoken: Domain name
+                        containing project With v3oidcauthcode: Domain name
+                        containing project (Env: OS_PROJECT_DOMAIN_NAME)
+  --os-trust-id <auth-trust-id>
+                        With v3multifactor: ID of the trust to use as a
+                        trustee use With v3token: ID of the trust to use as a
+                        trustee use With v3password: ID of the trust to use as
+                        a trustee use With v3applicationcredential: ID of the
+                        trust to use as a trustee use With
+                        v3oauth2clientcredential: ID of the trust to use as a
+                        trustee use With v3oidcclientcredentials: ID of the
+                        trust to use as a trustee use With v3oidcpassword: ID
+                        of the trust to use as a trustee use With password: ID
+                        of the trust to use as a trustee use With v2password:
+                        ID of the trust to use as a trustee use With token: ID
+                        of the trust to use as a trustee use With v3totp: ID
+                        of the trust to use as a trustee use With
+                        v3oauth2mtlsclientcredential: ID of the trust to use
+                        as a trustee use With v3oidcdeviceauthz: ID of the
+                        trust to use as a trustee use With v2token: ID of the
+                        trust to use as a trustee use With v3oidcaccesstoken:
+                        ID of the trust to use as a trustee use With
+                        v3oidcauthcode: ID of the trust to use as a trustee
+                        use (Env: OS_TRUST_ID)
   --os-auth-methods <auth-auth-methods>
                         With v3multifactor: Methods to authenticate with.
                         (Env: OS_AUTH_METHODS)
   --os-token <auth-token>
-                        With v2token: Token With admin_token: The token that
-                        will always be used With token: Token to authenticate
-                        with With v3token: Token to authenticate with (Env:
+                        With v3token: Token to authenticate with With token:
+                        Token to authenticate with With v2token: Token With
+                        admin_token: The token that will always be used (Env:
                         OS_TOKEN)
+  --os-user-id <auth-user-id>
+                        With v3password: User's user ID With
+                        v3applicationcredential: User's user ID With password:
+                        User id With v2password: User ID to login with With
+                        v3totp: User's user ID With noauth: User ID (Env:
+                        OS_USER_ID)
+  --os-username <auth-username>
+                        With v3password: User's username With
+                        v3applicationcredential: User's username With
+                        http_basic: Username With v3oidcpassword: Username
+                        With password: Username With v2password: Username to
+                        login with With v3totp: User's username (Env:
+                        OS_USERNAME)
   --os-user-domain-id <auth-user-domain-id>
-                        With v3applicationcredential: User's domain ID With
-                        v3totp: User's domain ID With v3password: User's
-                        domain ID With password: User's domain id (Env:
-                        OS_USER_DOMAIN_ID)
+                        With v3password: User's domain ID With
+                        v3applicationcredential: User's domain ID With
+                        password: User's domain id With v3totp: User's domain
+                        ID (Env: OS_USER_DOMAIN_ID)
   --os-user-domain-name <auth-user-domain-name>
-                        With v3applicationcredential: User's domain name With
-                        v3totp: User's domain name With v3password: User's
-                        domain name With password: User's domain name (Env:
-                        OS_USER_DOMAIN_NAME)
+                        With v3password: User's domain name With
+                        v3applicationcredential: User's domain name With
+                        password: User's domain name With v3totp: User's
+                        domain name (Env: OS_USER_DOMAIN_NAME)
+  --os-password <auth-password>
+                        With v3password: User's password With http_basic:
+                        User's password With v3oidcpassword: Password With
+                        password: User's password With v2password: Password to
+                        use (Env: OS_PASSWORD)
   --os-application-credential-secret <auth-application-credential-secret>
                         With v3applicationcredential: Application credential
                         auth secret (Env: OS_APPLICATION_CREDENTIAL_SECRET)
@@ -333,25 +327,129 @@ options:
   --os-application-credential-name <auth-application-credential-name>
                         With v3applicationcredential: Application credential
                         name (Env: OS_APPLICATION_CREDENTIAL_NAME)
-  --os-passcode <auth-passcode>
-                        With v3totp: User's TOTP passcode (Env: OS_PASSCODE)
+  --os-oauth2-endpoint <auth-oauth2-endpoint>
+                        With v3oauth2clientcredential: Endpoint for OAuth2.0
+                        With v3oauth2mtlsclientcredential: Endpoint for
+                        OAuth2.0 Mutual-TLS Authorization (Env:
+                        OS_OAUTH2_ENDPOINT)
+  --os-oauth2-client-id <auth-oauth2-client-id>
+                        With v3oauth2clientcredential: Client id for OAuth2.0
+                        With v3oauth2mtlsclientcredential: Client credential
+                        ID for OAuth2.0 Mutual-TLS Authorization (Env:
+                        OS_OAUTH2_CLIENT_ID)
+  --os-oauth2-client-secret <auth-oauth2-client-secret>
+                        With v3oauth2clientcredential: Client secret for
+                        OAuth2.0 (Env: OS_OAUTH2_CLIENT_SECRET)
   --os-identity-provider <auth-identity-provider>
-                        With v3oidcaccesstoken: Identity Provider's name With
+                        With v3oidcclientcredentials: Identity Provider's name
+                        With v3oidcpassword: Identity Provider's name With
                         v3oidcdeviceauthz: Identity Provider's name With
-                        v3oidcclientcredentials: Identity Provider's name With
-                        v3oidcauthcode: Identity Provider's name With
-                        v3oidcpassword: Identity Provider's name (Env:
+                        v3oidcaccesstoken: Identity Provider's name With
+                        v3oidcauthcode: Identity Provider's name (Env:
                         OS_IDENTITY_PROVIDER)
   --os-protocol <auth-protocol>
-                        With v3oidcaccesstoken: Protocol for federated plugin
-                        With v3oidcdeviceauthz: Protocol for federated plugin
                         With v3oidcclientcredentials: Protocol for federated
-                        plugin With v3oidcauthcode: Protocol for federated
                         plugin With v3oidcpassword: Protocol for federated
+                        plugin With v3oidcdeviceauthz: Protocol for federated
+                        plugin With v3oidcaccesstoken: Protocol for federated
+                        plugin With v3oidcauthcode: Protocol for federated
                         plugin (Env: OS_PROTOCOL)
-  --os-access-token <auth-access-token>
-                        With v3oidcaccesstoken: OAuth 2.0 Access Token (Env:
-                        OS_ACCESS_TOKEN)
+  --os-client-id <auth-client-id>
+                        With v3oidcclientcredentials: OAuth 2.0 Client ID With
+                        v3oidcpassword: OAuth 2.0 Client ID With
+                        v3oidcdeviceauthz: OAuth 2.0 Client ID With
+                        v3oidcauthcode: OAuth 2.0 Client ID (Env:
+                        OS_CLIENT_ID)
+  --os-client-secret <auth-client-secret>
+                        With v3oidcclientcredentials: OAuth 2.0 Client Secret
+                        With v3oidcpassword: OAuth 2.0 Client Secret With
+                        v3oidcdeviceauthz: OAuth 2.0 Client Secret With
+                        v3oidcauthcode: OAuth 2.0 Client Secret (Env:
+                        OS_CLIENT_SECRET)
+  --os-openid-scope <auth-openid-scope>
+                        With v3oidcclientcredentials: OpenID Connect scope
+                        that is requested from authorization server. Note that
+                        the OpenID Connect specification states that "openid"
+                        must be always specified. With v3oidcpassword: OpenID
+                        Connect scope that is requested from authorization
+                        server. Note that the OpenID Connect specification
+                        states that "openid" must be always specified. With
+                        v3oidcdeviceauthz: OpenID Connect scope that is
+                        requested from authorization server. Note that the
+                        OpenID Connect specification states that "openid" must
+                        be always specified. With v3oidcauthcode: OpenID
+                        Connect scope that is requested from authorization
+                        server. Note that the OpenID Connect specification
+                        states that "openid" must be always specified. (Env:
+                        OS_OPENID_SCOPE)
+  --os-access-token-endpoint <auth-access-token-endpoint>
+                        With v3oidcclientcredentials: OpenID Connect Provider
+                        Token Endpoint. Note that if a discovery document is
+                        being passed this option will override the endpoint
+                        provided by the server in the discovery document. With
+                        v3oidcpassword: OpenID Connect Provider Token
+                        Endpoint. Note that if a discovery document is being
+                        passed this option will override the endpoint provided
+                        by the server in the discovery document. With
+                        v3oidcdeviceauthz: OpenID Connect Provider Token
+                        Endpoint. Note that if a discovery document is being
+                        passed this option will override the endpoint provided
+                        by the server in the discovery document. With
+                        v3oidcauthcode: OpenID Connect Provider Token
+                        Endpoint. Note that if a discovery document is being
+                        passed this option will override the endpoint provided
+                        by the server in the discovery document. (Env:
+                        OS_ACCESS_TOKEN_ENDPOINT)
+  --os-discovery-endpoint <auth-discovery-endpoint>
+                        With v3oidcclientcredentials: OpenID Connect Discovery
+                        Document URL. The discovery document will be used to
+                        obtain the values of the access token endpoint and the
+                        authentication endpoint. This URL should look like
+                        https://idp.example.org/.well-known/openid-
+                        configuration With v3oidcpassword: OpenID Connect
+                        Discovery Document URL. The discovery document will be
+                        used to obtain the values of the access token endpoint
+                        and the authentication endpoint. This URL should look
+                        like https://idp.example.org/.well-known/openid-
+                        configuration With v3oidcdeviceauthz: OpenID Connect
+                        Discovery Document URL. The discovery document will be
+                        used to obtain the values of the access token endpoint
+                        and the authentication endpoint. This URL should look
+                        like https://idp.example.org/.well-known/openid-
+                        configuration With v3oidcauthcode: OpenID Connect
+                        Discovery Document URL. The discovery document will be
+                        used to obtain the values of the access token endpoint
+                        and the authentication endpoint. This URL should look
+                        like https://idp.example.org/.well-known/openid-
+                        configuration (Env: OS_DISCOVERY_ENDPOINT)
+  --os-access-token-type <auth-access-token-type>
+                        With v3oidcclientcredentials: OAuth 2.0 Authorization
+                        Server Introspection token type, it is used to decide
+                        which type of token will be used when processing token
+                        introspection. Valid values are: "access_token" or
+                        "id_token" With v3oidcpassword: OAuth 2.0
+                        Authorization Server Introspection token type, it is
+                        used to decide which type of token will be used when
+                        processing token introspection. Valid values are:
+                        "access_token" or "id_token" With v3oidcdeviceauthz:
+                        OAuth 2.0 Authorization Server Introspection token
+                        type, it is used to decide which type of token will be
+                        used when processing token introspection. Valid values
+                        are: "access_token" or "id_token" With v3oidcauthcode:
+                        OAuth 2.0 Authorization Server Introspection token
+                        type, it is used to decide which type of token will be
+                        used when processing token introspection. Valid values
+                        are: "access_token" or "id_token" (Env:
+                        OS_ACCESS_TOKEN_TYPE)
+  --os-endpoint <auth-endpoint>
+                        With http_basic: The endpoint that will always be used
+                        With none: The endpoint that will always be used With
+                        admin_token: The endpoint that will always be used
+                        With noauth: Cinder endpoint (Env: OS_ENDPOINT)
+  --os-idp-otp-key <auth-idp-otp-key>
+                        With v3oidcpassword: A key to be used in the Identity
+                        Provider access token endpoint to pass the OTP value.
+                        E.g. totp (Env: OS_IDP_OTP_KEY)
   --os-default-domain-id <auth-default-domain-id>
                         With password: Optional domain ID to use with v3 and
                         v2 parameters. It will be used for both the user and
@@ -368,104 +466,8 @@ options:
                         use with v3 API and v2 parameters. It will be used for
                         both the user and project domain in v3 and ignored in
                         v2 authentication. (Env: OS_DEFAULT_DOMAIN_NAME)
-  --os-oauth2-endpoint <auth-oauth2-endpoint>
-                        With v3oauth2mtlsclientcredential: Endpoint for
-                        OAuth2.0 Mutual-TLS Authorization With
-                        v3oauth2clientcredential: Endpoint for OAuth2.0 (Env:
-                        OS_OAUTH2_ENDPOINT)
-  --os-oauth2-client-id <auth-oauth2-client-id>
-                        With v3oauth2mtlsclientcredential: Client credential
-                        ID for OAuth2.0 Mutual-TLS Authorization With
-                        v3oauth2clientcredential: Client id for OAuth2.0 (Env:
-                        OS_OAUTH2_CLIENT_ID)
-  --os-client-id <auth-client-id>
-                        With v3oidcdeviceauthz: OAuth 2.0 Client ID With
-                        v3oidcclientcredentials: OAuth 2.0 Client ID With
-                        v3oidcauthcode: OAuth 2.0 Client ID With
-                        v3oidcpassword: OAuth 2.0 Client ID (Env:
-                        OS_CLIENT_ID)
-  --os-client-secret <auth-client-secret>
-                        With v3oidcdeviceauthz: OAuth 2.0 Client Secret With
-                        v3oidcclientcredentials: OAuth 2.0 Client Secret With
-                        v3oidcauthcode: OAuth 2.0 Client Secret With
-                        v3oidcpassword: OAuth 2.0 Client Secret (Env:
-                        OS_CLIENT_SECRET)
-  --os-openid-scope <auth-openid-scope>
-                        With v3oidcdeviceauthz: OpenID Connect scope that is
-                        requested from authorization server. Note that the
-                        OpenID Connect specification states that "openid" must
-                        be always specified. With v3oidcclientcredentials:
-                        OpenID Connect scope that is requested from
-                        authorization server. Note that the OpenID Connect
-                        specification states that "openid" must be always
-                        specified. With v3oidcauthcode: OpenID Connect scope
-                        that is requested from authorization server. Note that
-                        the OpenID Connect specification states that "openid"
-                        must be always specified. With v3oidcpassword: OpenID
-                        Connect scope that is requested from authorization
-                        server. Note that the OpenID Connect specification
-                        states that "openid" must be always specified. (Env:
-                        OS_OPENID_SCOPE)
-  --os-access-token-endpoint <auth-access-token-endpoint>
-                        With v3oidcdeviceauthz: OpenID Connect Provider Token
-                        Endpoint. Note that if a discovery document is being
-                        passed this option will override the endpoint provided
-                        by the server in the discovery document. With
-                        v3oidcclientcredentials: OpenID Connect Provider Token
-                        Endpoint. Note that if a discovery document is being
-                        passed this option will override the endpoint provided
-                        by the server in the discovery document. With
-                        v3oidcauthcode: OpenID Connect Provider Token
-                        Endpoint. Note that if a discovery document is being
-                        passed this option will override the endpoint provided
-                        by the server in the discovery document. With
-                        v3oidcpassword: OpenID Connect Provider Token
-                        Endpoint. Note that if a discovery document is being
-                        passed this option will override the endpoint provided
-                        by the server in the discovery document. (Env:
-                        OS_ACCESS_TOKEN_ENDPOINT)
-  --os-discovery-endpoint <auth-discovery-endpoint>
-                        With v3oidcdeviceauthz: OpenID Connect Discovery
-                        Document URL. The discovery document will be used to
-                        obtain the values of the access token endpoint and the
-                        authentication endpoint. This URL should look like
-                        https://idp.example.org/.well-known/openid-
-                        configuration With v3oidcclientcredentials: OpenID
-                        Connect Discovery Document URL. The discovery document
-                        will be used to obtain the values of the access token
-                        endpoint and the authentication endpoint. This URL
-                        should look like https://idp.example.org/.well-
-                        known/openid-configuration With v3oidcauthcode: OpenID
-                        Connect Discovery Document URL. The discovery document
-                        will be used to obtain the values of the access token
-                        endpoint and the authentication endpoint. This URL
-                        should look like https://idp.example.org/.well-
-                        known/openid-configuration With v3oidcpassword: OpenID
-                        Connect Discovery Document URL. The discovery document
-                        will be used to obtain the values of the access token
-                        endpoint and the authentication endpoint. This URL
-                        should look like https://idp.example.org/.well-
-                        known/openid-configuration (Env:
-                        OS_DISCOVERY_ENDPOINT)
-  --os-access-token-type <auth-access-token-type>
-                        With v3oidcdeviceauthz: OAuth 2.0 Authorization Server
-                        Introspection token type, it is used to decide which
-                        type of token will be used when processing token
-                        introspection. Valid values are: "access_token" or
-                        "id_token" With v3oidcclientcredentials: OAuth 2.0
-                        Authorization Server Introspection token type, it is
-                        used to decide which type of token will be used when
-                        processing token introspection. Valid values are:
-                        "access_token" or "id_token" With v3oidcauthcode:
-                        OAuth 2.0 Authorization Server Introspection token
-                        type, it is used to decide which type of token will be
-                        used when processing token introspection. Valid values
-                        are: "access_token" or "id_token" With v3oidcpassword:
-                        OAuth 2.0 Authorization Server Introspection token
-                        type, it is used to decide which type of token will be
-                        used when processing token introspection. Valid values
-                        are: "access_token" or "id_token" (Env:
-                        OS_ACCESS_TOKEN_TYPE)
+  --os-passcode <auth-passcode>
+                        With v3totp: User's TOTP passcode (Env: OS_PASSCODE)
   --os-device-authorization-endpoint <auth-device-authorization-endpoint>
                         With v3oidcdeviceauthz: OAuth 2.0 Device Authorization
                         Endpoint. Note that if a discovery document is being
@@ -475,19 +477,15 @@ options:
   --os-code-challenge-method <auth-code-challenge-method>
                         With v3oidcdeviceauthz: PKCE Challenge Method (RFC
                         7636) (Env: OS_CODE_CHALLENGE_METHOD)
+  --os-access-token <auth-access-token>
+                        With v3oidcaccesstoken: OAuth 2.0 Access Token (Env:
+                        OS_ACCESS_TOKEN)
   --os-redirect-uri <auth-redirect-uri>
                         With v3oidcauthcode: OpenID Connect Redirect URL (Env:
                         OS_REDIRECT_URI)
   --os-code <auth-code>
                         With v3oidcauthcode: OAuth 2.0 Authorization Code
                         (Env: OS_CODE)
-  --os-oauth2-client-secret <auth-oauth2-client-secret>
-                        With v3oauth2clientcredential: Client secret for
-                        OAuth2.0 (Env: OS_OAUTH2_CLIENT_SECRET)
-  --os-idp-otp-key <auth-idp-otp-key>
-                        With v3oidcpassword: A key to be used in the Identity
-                        Provider access token endpoint to pass the OTP value.
-                        E.g. totp (Env: OS_IDP_OTP_KEY)
 
 Commands:
   access rule delete  Delete access rule(s)

@@ -35,6 +35,7 @@ func TestRequiredFailuresIgnoresKnownGaps(t *testing.T) {
 	results := []checkResult{
 		{Case: checkCase{Name: "pass"}, Matched: true},
 		{Case: checkCase{Name: "known", KnownGap: true}, Matched: false},
+		{Case: checkCase{Name: "skip", Skip: true}, Skipped: true},
 		{Case: checkCase{Name: "required"}, Matched: false},
 	}
 	if got := requiredFailures(results); got != 1 {
@@ -66,5 +67,44 @@ func TestReadCommandsSortsFlattenedCatalog(t *testing.T) {
 	want := []string{"aggregate list", "command list", "server list"}
 	if strings.Join(commands, "|") != strings.Join(want, "|") {
 		t.Fatalf("commands mismatch: got %v want %v", commands, want)
+	}
+}
+
+func TestFirstFixtureIDUsesFirstIDOrName(t *testing.T) {
+	got, err := firstFixtureID(`[{"Name":"alpha"},{"ID":"server-id","Name":"beta"}]`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != "alpha" {
+		t.Fatalf("expected first available name, got %q", got)
+	}
+
+	got, err = firstFixtureID(`[{"ID":"server-id","Name":"beta"}]`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != "server-id" {
+		t.Fatalf("expected ID, got %q", got)
+	}
+}
+
+func TestFixtureResolverReplacesAliases(t *testing.T) {
+	resolver := &fixtureResolver{cache: map[string]fixtureLookup{
+		"server": {Value: "server-id"},
+	}}
+	args, skip := resolver.resolveArgs([]string{"server", "show", "{server_id}"})
+	if skip != "" {
+		t.Fatalf("unexpected skip: %s", skip)
+	}
+	if strings.Join(args, " ") != "server show server-id" {
+		t.Fatalf("resolved args mismatch: %v", args)
+	}
+}
+
+func TestFixtureResolverSkipsUnsupportedPlaceholders(t *testing.T) {
+	resolver := &fixtureResolver{cache: map[string]fixtureLookup{}}
+	_, skip := resolver.resolveArgs([]string{"server", "show", "{unsupported}"})
+	if !strings.Contains(skip, "unsupported live fixture placeholder") {
+		t.Fatalf("expected unsupported placeholder skip, got %q", skip)
 	}
 }

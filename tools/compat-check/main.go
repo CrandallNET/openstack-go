@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -28,6 +29,7 @@ type checkCase struct {
 	Env      []string
 	KnownGap bool
 	Reason   string
+	Skip     bool
 }
 
 type commandResult struct {
@@ -41,8 +43,28 @@ type checkResult struct {
 	Oracle     commandResult
 	Go         commandResult
 	Matched    bool
+	Skipped    bool
 	Difference string
 	Error      error
+}
+
+var placeholderPattern = regexp.MustCompile(`\{([a-zA-Z0-9_-]+)\}`)
+
+var liveFixtureCommands = map[string][]string{
+	"flavor":         {"flavor", "list", "-f", "json"},
+	"floating_ip":    {"floating", "ip", "list", "-f", "json"},
+	"group":          {"group", "list", "-f", "json"},
+	"image":          {"image", "list", "-f", "json"},
+	"keypair":        {"keypair", "list", "-f", "json"},
+	"network":        {"network", "list", "-f", "json"},
+	"port":           {"port", "list", "-f", "json"},
+	"project":        {"project", "list", "-f", "json"},
+	"router":         {"router", "list", "-f", "json"},
+	"security_group": {"security", "group", "list", "-f", "json"},
+	"server":         {"server", "list", "-f", "json"},
+	"subnet":         {"subnet", "list", "-f", "json"},
+	"user":           {"user", "list", "-f", "json"},
+	"volume":         {"volume", "list", "-f", "json"},
 }
 
 func main() {
@@ -95,10 +117,23 @@ func main() {
 			fmt.Fprintln(os.Stderr, "compat-check: --live-command requires --live-cloud")
 			os.Exit(1)
 		}
+		resolver := newFixtureResolver(oraclePath, liveCloud, timeout)
 		for _, command := range splitComma(liveCommands) {
+			args := strings.Fields(command)
+			resolvedArgs, skipReason := resolver.resolveArgs(args)
+			if skipReason != "" {
+				cases = append(cases, checkCase{
+					Name:   "live:" + liveCloud + ":" + command,
+					Args:   args,
+					Env:    []string{"OS_CLOUD=" + liveCloud},
+					Skip:   true,
+					Reason: skipReason,
+				})
+				continue
+			}
 			cases = append(cases, checkCase{
 				Name: "live:" + liveCloud + ":" + command,
-				Args: strings.Fields(command),
+				Args: resolvedArgs,
 				Env:  []string{"OS_CLOUD=" + liveCloud},
 			})
 		}
@@ -124,12 +159,12 @@ func defaultCases(includeKnownGaps bool) []checkCase {
 		{Name: "help-server-list-command", Args: []string{"help", "server", "list"}},
 		{Name: "help-volume-list", Args: []string{"volume", "list", "--help"}},
 		{Name: "help-image-list", Args: []string{"image", "list", "--help"}},
+		{Name: "invalid-command", Args: []string{"nosuch"}},
+		{Name: "invalid-flag", Args: []string{"command", "list", "--bogus"}},
 	}
 	if includeKnownGaps {
 		cases = append(cases,
-			checkCase{Name: "root-help", Args: []string{"--help"}, KnownGap: true, Reason: "root help still uses Cobra-generated text instead of OSC global help"},
-			checkCase{Name: "invalid-command", Args: []string{"nosuch"}, KnownGap: true, Reason: "unknown-command formatter and suggestion ordering are not OSC-compatible yet"},
-			checkCase{Name: "invalid-flag", Args: []string{"command", "list", "--bogus"}, KnownGap: true, Reason: "flag errors still use pflag/Cobra text instead of argparse usage plus error text"},
+			checkCase{Name: "root-help", Args: []string{"--help"}, KnownGap: true, Reason: "root help uses the embedded OSC snapshot, but Python OSC root help is nondeterministic because auth plugin option groups can be ordered differently between invocations"},
 			checkCase{Name: "module-list-json", Args: []string{"module", "list", "-f", "json"}, KnownGap: true, Reason: "Go module list intentionally reports Go plugin/module state; Python reports installed Python modules"},
 		)
 	}
@@ -179,9 +214,107 @@ func readCommands(path string) ([]string, error) {
 	return commands, nil
 }
 
+type fixtureResolver struct {
+	oraclePath string
+	cloud      string
+	timeout    time.Duration
+	cache      map[string]fixtureLookup
+}
+
+type fixtureLookup struct {
+	Value string
+	Error string
+}
+
+func newFixtureResolver(oraclePath string, cloud string, timeout time.Duration) *fixtureResolver {
+	return &fixtureResolver{
+		oraclePath: oraclePath,
+		cloud:      cloud,
+		timeout:    timeout,
+		cache:      map[string]fixtureLookup{},
+	}
+}
+
+func (r *fixtureResolver) resolveArgs(args []string) ([]string, string) {
+	resolved := append([]string(nil), args...)
+	for index, arg := range resolved {
+		matches := placeholderPattern.FindAllStringSubmatch(arg, -1)
+		for _, match := range matches {
+			if len(match) < 2 {
+				continue
+			}
+			name := normalizeFixtureName(match[1])
+			lookup := r.lookup(name)
+			if lookup.Error != "" {
+				return args, lookup.Error
+			}
+			resolved[index] = strings.ReplaceAll(resolved[index], match[0], lookup.Value)
+		}
+	}
+	return resolved, ""
+}
+
+func normalizeFixtureName(name string) string {
+	name = strings.TrimSuffix(name, "_id")
+	name = strings.ReplaceAll(name, "-", "_")
+	return name
+}
+
+func (r *fixtureResolver) lookup(name string) fixtureLookup {
+	if lookup, ok := r.cache[name]; ok {
+		return lookup
+	}
+	args, ok := liveFixtureCommands[name]
+	if !ok {
+		lookup := fixtureLookup{Error: fmt.Sprintf("unsupported live fixture placeholder {%s}", name)}
+		r.cache[name] = lookup
+		return lookup
+	}
+	result := runCommand(r.timeout, []string{"OS_CLOUD=" + r.cloud}, r.oraclePath, args...)
+	if result.ExitCode != 0 {
+		lookup := fixtureLookup{Error: fmt.Sprintf("fixture {%s} query failed: %s", name, strings.TrimSpace(result.Stderr+result.Stdout))}
+		r.cache[name] = lookup
+		return lookup
+	}
+	value, err := firstFixtureID(result.Stdout)
+	if err != nil {
+		lookup := fixtureLookup{Error: fmt.Sprintf("fixture {%s} unavailable: %s", name, err)}
+		r.cache[name] = lookup
+		return lookup
+	}
+	lookup := fixtureLookup{Value: value}
+	r.cache[name] = lookup
+	return lookup
+}
+
+func firstFixtureID(jsonText string) (string, error) {
+	var rows []map[string]any
+	if err := json.Unmarshal([]byte(jsonText), &rows); err != nil {
+		return "", err
+	}
+	for _, row := range rows {
+		for _, key := range []string{"ID", "Id", "id", "Name", "name"} {
+			if value, ok := row[key]; ok {
+				text := strings.TrimSpace(fmt.Sprint(value))
+				if text != "" && text != "<nil>" {
+					return text, nil
+				}
+			}
+		}
+	}
+	return "", fmt.Errorf("no rows with an ID or name")
+}
+
 func runCases(oraclePath string, goBinary string, cases []checkCase, timeout time.Duration) []checkResult {
 	results := make([]checkResult, 0, len(cases))
 	for _, testCase := range cases {
+		if testCase.Skip {
+			results = append(results, checkResult{
+				Case:    testCase,
+				Skipped: true,
+			})
+			continue
+		}
 		oracle := runCommand(timeout, testCase.Env, oraclePath, testCase.Args...)
 		goResult := runCommand(timeout, testCase.Env, goBinary, testCase.Args...)
 		matched, diff := compareResults(oracle, goResult)
@@ -275,11 +408,15 @@ func firstDiff(stream string, oracle string, goValue string) string {
 
 func printResults(stdout *os.File, results []checkResult) error {
 	passed := 0
+	skipped := 0
 	knownGapFailures := 0
 	requiredFailed := 0
 	for _, result := range results {
 		status := "PASS"
-		if !result.Matched && result.Case.KnownGap {
+		if result.Skipped {
+			status = "SKIP"
+			skipped++
+		} else if !result.Matched && result.Case.KnownGap {
 			status = "KNOWN-GAP"
 			knownGapFailures++
 		} else if !result.Matched {
@@ -291,7 +428,13 @@ func printResults(stdout *os.File, results []checkResult) error {
 		if _, err := fmt.Fprintf(stdout, "%-9s %s\n", status, result.Case.Name); err != nil {
 			return err
 		}
-		if !result.Matched {
+		if result.Skipped {
+			if result.Case.Reason != "" {
+				if _, err := fmt.Fprintf(stdout, "          reason: %s\n", result.Case.Reason); err != nil {
+					return err
+				}
+			}
+		} else if !result.Matched {
 			if result.Case.Reason != "" {
 				if _, err := fmt.Fprintf(stdout, "          reason: %s\n", result.Case.Reason); err != nil {
 					return err
@@ -302,13 +445,16 @@ func printResults(stdout *os.File, results []checkResult) error {
 			}
 		}
 	}
-	_, err := fmt.Fprintf(stdout, "summary: pass=%d fail=%d known-gap=%d total=%d\n", passed, requiredFailed, knownGapFailures, len(results))
+	_, err := fmt.Fprintf(stdout, "summary: pass=%d fail=%d known-gap=%d skip=%d total=%d\n", passed, requiredFailed, knownGapFailures, skipped, len(results))
 	return err
 }
 
 func requiredFailures(results []checkResult) int {
 	failures := 0
 	for _, result := range results {
+		if result.Skipped {
+			continue
+		}
 		if !result.Matched && !result.Case.KnownGap {
 			failures++
 		}
