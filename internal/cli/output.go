@@ -33,6 +33,34 @@ type outputField struct {
 	Value any
 }
 
+type tableValue struct {
+	Value  any
+	Table  string
+	Pretty any
+}
+
+func (value tableValue) MarshalJSON() ([]byte, error) {
+	return json.Marshal(value.Value)
+}
+
+func (value tableValue) MarshalYAML() (any, error) {
+	return value.Value, nil
+}
+
+func (value tableValue) PrettyString() string {
+	if value.Pretty != nil {
+		return prettyValueString(value.Pretty)
+	}
+	return value.Table
+}
+
+func (value tableValue) PrettySemanticRole() string {
+	if semantic, ok := value.Pretty.(prettySemanticValue); ok {
+		return semantic.PrettySemanticRole()
+	}
+	return ""
+}
+
 type prettyValueFormatter interface {
 	PrettyString() string
 }
@@ -1749,6 +1777,8 @@ func valueString(value any) string {
 	switch typed := value.(type) {
 	case nil:
 		return "None"
+	case tableValue:
+		return typed.Table
 	case string:
 		return typed
 	case bool:

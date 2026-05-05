@@ -373,6 +373,11 @@ func newCommandEntry(group string, command string) commandEntry {
 		if identityCloudVerified()[command] {
 			entry.Status = "cloud-verified"
 		}
+		if identityGoldenMatched()[command] {
+			entry.Status = "golden-matched"
+			entry.Tests = append(entry.Tests, "compat-live: cloud6 default table output", "compat-live: cloud6 JSON output")
+			entry.Notes = "Python-vs-Go default table and JSON output parity recorded against cloud6 with the live compatibility harness. Broader flag and cloud coverage still need completion."
+		}
 	}
 	if packagePath, ok := coreReadPackages()[command]; ok {
 		entry.Status = "implemented"
@@ -401,8 +406,8 @@ func newCommandEntry(group string, command string) commandEntry {
 		}
 		if coreGoldenMatched()[command] {
 			entry.Status = "golden-matched"
-			entry.Tests = append(entry.Tests, "compat-live: cloud6 default output")
-			entry.Notes = "Python-vs-Go default output parity recorded against cloud6 with the live compatibility harness. Broader flag and cloud coverage still need completion."
+			entry.Tests = append(entry.Tests, "compat-live: cloud6 default table output", "compat-live: cloud6 JSON output")
+			entry.Notes = "Python-vs-Go default table and JSON output parity recorded against cloud6 with the live compatibility harness. Broader flag and cloud coverage still need completion."
 		}
 		if strings.HasPrefix(command, "floating ip port forwarding ") {
 			entry.Tests = []string{"unit: command registry", "unit: floating ip port forwarding port range validation"}
@@ -529,6 +534,13 @@ func identityCloudVerified() map[string]bool {
 		"trust list":                  true,
 		"user list":                   true,
 		"user show":                   true,
+	}
+}
+
+func identityGoldenMatched() map[string]bool {
+	return map[string]bool{
+		"project list": true,
+		"project show": true,
 	}
 }
 
@@ -1210,9 +1222,27 @@ func coreCloudVerified() map[string]bool {
 
 func coreGoldenMatched() map[string]bool {
 	return map[string]bool{
-		"flavor list":  true,
-		"image list":   true,
-		"network list": true,
+		"flavor list":         true,
+		"flavor show":         true,
+		"hypervisor list":     true,
+		"image list":          true,
+		"image show":          true,
+		"keypair list":        true,
+		"keypair show":        true,
+		"network list":        true,
+		"network show":        true,
+		"port list":           true,
+		"port show":           true,
+		"router list":         true,
+		"router show":         true,
+		"security group list": true,
+		"security group show": true,
+		"server list":         true,
+		"server show":         true,
+		"subnet list":         true,
+		"subnet show":         true,
+		"volume list":         true,
+		"volume show":         true,
 	}
 }
 

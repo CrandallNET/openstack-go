@@ -1529,3 +1529,20 @@ Sources consulted:
 * Local cinderclient source under `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/cinderclient/v3/`.
 * Local OpenStackSDK source under `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/block_storage/v3/`.
 * Pinned local help snapshots under `compat/osc/9.0.0/help/`.
+
+## 2026-05-05: Live Output Parity Expansion
+
+Decision: promote a command to `golden-matched` only when the live compatibility harness has compared the Go command against the pinned Python OSC oracle for the same cloud fixture, and the observed default table and JSON output match exactly. This is still narrower than full command completion because flags, write paths, alternate formats, and other clouds may remain untested.
+
+Work done: fixed table/JSON split values for nested and multiline output where Python OSC renders compact table strings but structured JSON. The fixes covered server networks, enriched `server show` flavor/image/address/attachment fields, volume list attachments, image properties ordering, security group rule ordering, router state and gateway ordering, port fixed-IP ordering, empty port hints, and flavor `rxtx_factor` JSON formatting.
+
+Validation: `go test ./internal/cli`, `make build`, and `go test ./...` passed. The static compatibility gate passed with the two existing known gaps: nondeterministic Python OSC root help auth-option ordering and intentionally different Go `module list` reporting. The live `cloud6` compatibility run passed for default table output and JSON output for `flavor list/show`, `hypervisor list`, `image list/show`, `keypair list/show`, `network list/show`, `port list/show`, `project list/show`, `router list/show`, `security group list/show`, `server list/show`, `subnet list/show`, and `volume list/show`.
+
+Remaining work: many implemented commands are still only `implemented` or `cloud-verified`; they need the same oracle-backed output parity treatment before they can be called compatible or finished. This includes write commands, admin-only commands, less common read commands, command flags, alternate output formats beyond table and JSON, and remote-cloud breadth checks.
+
+Sources consulted:
+
+* Local compatibility harness in `tools/compat-check`.
+* Pinned Python OSC oracle at `/Users/ken/.local/bin/openstack`.
+* Local Go CLI binary at `./bin/openstack`.
+* Live `cloud6` fixture data resolved by the Python oracle through `tools/compat-check`.

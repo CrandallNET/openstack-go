@@ -15,6 +15,7 @@ import (
 	"net/netip"
 	"net/url"
 	"os"
+	"reflect"
 	"sort"
 	"strconv"
 	"strings"
@@ -1861,7 +1862,8 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 			if err != nil {
 				return err
 			}
-			return volumeList(cmd.Context(), stdout, opts, client)
+			computeClient, _ := clients.computeV2()
+			return volumeList(cmd.Context(), stdout, opts, client, computeClient)
 		case "volume create":
 			client, err := clients.blockStorageV3()
 			if err != nil {
@@ -2323,9 +2325,10 @@ func computeServerList(ctx context.Context, stdout io.Writer, opts *Options, cli
 	imageNames := imageNameMap(ctx, imageClient)
 	rows := make([]outputRow, 0, len(items))
 	for _, item := range items {
-		networks := any(serverNetworksSummary(item.Addresses))
-		if prettyOutput(opts) {
-			networks = prettyNetworkAddresses(serverNetworks(item.Addresses))
+		networks := tableValue{
+			Value:  serverNetworksInAPISliceOrder(item.Addresses),
+			Table:  serverNetworksSummary(item.Addresses),
+			Pretty: prettyNetworkAddresses(serverNetworks(item.Addresses)),
 		}
 		rows = append(rows, outputRow{
 			"ID":       item.ID,
@@ -2343,9 +2346,18 @@ func computeServerShow(ctx context.Context, stdout io.Writer, opts *Options, cli
 	if len(args) < 1 {
 		return fmt.Errorf("server show requires <server>")
 	}
+	if os.Getenv("OS_COMPUTE_API_VERSION") == "" {
+		if withMinimum, err := computeClientWithMinimumMicroversion(ctx, client, "2.96"); err == nil {
+			client = withMinimum
+		}
+	}
 	item, err := findServer(ctx, client, args[0])
 	if err != nil {
 		return err
+	}
+	if raw, err := computeServerRaw(ctx, client, item.ID); err == nil {
+		enrichServerRaw(ctx, client, raw)
+		return renderShowOutput(stdout, opts, serverRawFields(raw))
 	}
 	addresses := any(serverNetworksSummary(item.Addresses))
 	if prettyOutput(opts) {
@@ -2365,6 +2377,314 @@ func computeServerShow(ctx context.Context, stdout io.Writer, opts *Options, cli
 		{"metadata", item.Metadata},
 		{"key_name", nilIfEmpty(item.KeyName)},
 	})
+}
+
+func computeServerRaw(ctx context.Context, client *gophercloud.ServiceClient, id string) (map[string]any, error) {
+	var body struct {
+		Server map[string]any `json:"server"`
+	}
+	resp, err := client.Get(ctx, client.ServiceURL("servers", url.PathEscape(id)), &body, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return nil, err
+	}
+	return body.Server, nil
+}
+
+func serverRawFields(raw map[string]any) []outputField {
+	return []outputField{
+		{"OS-DCF:diskConfig", raw["OS-DCF:diskConfig"]},
+		{"OS-EXT-AZ:availability_zone", raw["OS-EXT-AZ:availability_zone"]},
+		{"OS-EXT-SRV-ATTR:host", raw["OS-EXT-SRV-ATTR:host"]},
+		{"OS-EXT-SRV-ATTR:hostname", raw["OS-EXT-SRV-ATTR:hostname"]},
+		{"OS-EXT-SRV-ATTR:hypervisor_hostname", raw["OS-EXT-SRV-ATTR:hypervisor_hostname"]},
+		{"OS-EXT-SRV-ATTR:instance_name", raw["OS-EXT-SRV-ATTR:instance_name"]},
+		{"OS-EXT-SRV-ATTR:kernel_id", raw["OS-EXT-SRV-ATTR:kernel_id"]},
+		{"OS-EXT-SRV-ATTR:launch_index", rawNumber(raw["OS-EXT-SRV-ATTR:launch_index"])},
+		{"OS-EXT-SRV-ATTR:ramdisk_id", raw["OS-EXT-SRV-ATTR:ramdisk_id"]},
+		{"OS-EXT-SRV-ATTR:reservation_id", raw["OS-EXT-SRV-ATTR:reservation_id"]},
+		{"OS-EXT-SRV-ATTR:root_device_name", raw["OS-EXT-SRV-ATTR:root_device_name"]},
+		{"OS-EXT-SRV-ATTR:user_data", raw["OS-EXT-SRV-ATTR:user_data"]},
+		{"OS-EXT-STS:power_state", serverPowerStateValue(raw["OS-EXT-STS:power_state"])},
+		{"OS-EXT-STS:task_state", raw["OS-EXT-STS:task_state"]},
+		{"OS-EXT-STS:vm_state", raw["OS-EXT-STS:vm_state"]},
+		{"OS-SRV-USG:launched_at", raw["OS-SRV-USG:launched_at"]},
+		{"OS-SRV-USG:terminated_at", raw["OS-SRV-USG:terminated_at"]},
+		{"accessIPv4", raw["accessIPv4"]},
+		{"accessIPv6", raw["accessIPv6"]},
+		{"addresses", serverAddressesValue(raw["addresses"])},
+		{"config_drive", raw["config_drive"]},
+		{"created", raw["created"]},
+		{"description", raw["description"]},
+		{"flavor", serverFlavorShowValue(raw["flavor"])},
+		{"hostId", raw["hostId"]},
+		{"host_status", raw["host_status"]},
+		{"id", raw["id"]},
+		{"image", serverImageShowValue(raw["image"])},
+		{"key_name", raw["key_name"]},
+		{"locked", raw["locked"]},
+		{"locked_reason", raw["locked_reason"]},
+		{"name", raw["name"]},
+		{"pinned_availability_zone", raw["pinned_availability_zone"]},
+		{"progress", rawNumber(raw["progress"])},
+		{"project_id", firstPresent(raw, "project_id", "tenant_id")},
+		{"properties", mapTableValue(raw["metadata"], "")},
+		{"scheduler_hints", mapTableValue(raw["scheduler_hints"], "")},
+		{"security_groups", serverKeyValueList(raw["security_groups"], []string{"name"})},
+		{"server_groups", raw["server_groups"]},
+		{"status", raw["status"]},
+		{"tags", blankEmptyListValue(raw["tags"])},
+		{"trusted_image_certificates", raw["trusted_image_certificates"]},
+		{"updated", raw["updated"]},
+		{"user_id", raw["user_id"]},
+		{"volumes_attached", serverKeyValueListWithJSONKeys(raw["os-extended-volumes:volumes_attached"], []string{"delete_on_termination", "id"}, []string{"id", "delete_on_termination"})},
+	}
+}
+
+func enrichServerRaw(ctx context.Context, client *gophercloud.ServiceClient, raw map[string]any) {
+	flavor, ok := raw["flavor"].(map[string]any)
+	if !ok {
+		return
+	}
+	ref := firstNonEmpty(
+		stringValue(firstPresent(flavor, "id")),
+		stringValue(firstPresent(flavor, "name")),
+		stringValue(firstPresent(flavor, "original_name")),
+	)
+	if ref == "" {
+		return
+	}
+	item, err := findFlavor(ctx, client, ref)
+	if err != nil {
+		return
+	}
+	setIfMissing(flavor, "id", firstNonEmpty(stringValue(firstPresent(flavor, "original_name")), item.Name, item.ID))
+	setIfMissing(flavor, "name", item.Name)
+	setIfMissing(flavor, "original_name", item.Name)
+	setIfMissing(flavor, "disk", item.Disk)
+	setIfMissing(flavor, "ephemeral", item.Ephemeral)
+	setIfMissing(flavor, "is_public", item.IsPublic)
+	setIfMissing(flavor, "ram", item.RAM)
+	setIfMissing(flavor, "swap", item.Swap)
+	setIfMissing(flavor, "vcpus", item.VCPUs)
+	if _, ok := flavor["extra_specs"]; !ok {
+		flavor["extra_specs"] = map[string]any{}
+	}
+}
+
+func stringValue(value any) string {
+	text, ok := value.(string)
+	if !ok {
+		return ""
+	}
+	return strings.TrimSpace(text)
+}
+
+func setIfMissing(values map[string]any, key string, value any) {
+	if !emptyServerShowValue(values[key]) {
+		return
+	}
+	if emptyServerShowValue(value) {
+		return
+	}
+	values[key] = value
+}
+
+func serverPowerStateValue(value any) any {
+	number, ok := intFromAny(value)
+	if !ok {
+		return value
+	}
+	states := map[int]string{
+		0: "NOSTATE",
+		1: "Running",
+		3: "Paused",
+		4: "Shutdown",
+		6: "Crashed",
+		7: "Suspended",
+	}
+	label, ok := states[number]
+	if !ok {
+		return value
+	}
+	return tableValue{Value: value, Table: label, Pretty: label}
+}
+
+func serverAddressesValue(value any) any {
+	addresses, ok := value.(map[string]any)
+	if !ok {
+		return value
+	}
+	return tableValue{
+		Value:  serverNetworksInAPISliceOrder(addresses),
+		Table:  serverNetworksSummary(addresses),
+		Pretty: prettyNetworkAddresses(serverNetworks(addresses)),
+	}
+}
+
+func serverFlavorShowValue(value any) any {
+	flavor, ok := value.(map[string]any)
+	if !ok {
+		return value
+	}
+	tableKeys := []string{"description", "disk", "ephemeral", "extra_specs", "id", "is_disabled", "is_public", "location", "name", "original_name", "ram", "rxtx_factor", "swap", "vcpus"}
+	jsonKeys := []string{"name", "original_name", "description", "disk", "is_public", "ram", "vcpus", "swap", "ephemeral", "is_disabled", "rxtx_factor", "extra_specs", "id", "location"}
+	values := map[string]any{
+		"description":   firstPresent(flavor, "description"),
+		"disk":          firstPresent(flavor, "disk"),
+		"ephemeral":     firstPresent(flavor, "ephemeral", "OS-FLV-EXT-DATA:ephemeral"),
+		"extra_specs":   firstPresent(flavor, "extra_specs"),
+		"id":            firstPresent(flavor, "id"),
+		"is_disabled":   firstPresent(flavor, "is_disabled", "OS-FLV-DISABLED:disabled"),
+		"is_public":     firstPresent(flavor, "is_public", "os-flavor-access:is_public"),
+		"location":      firstPresent(flavor, "location"),
+		"name":          firstPresent(flavor, "name"),
+		"original_name": firstPresent(flavor, "original_name"),
+		"ram":           firstPresent(flavor, "ram"),
+		"rxtx_factor":   firstPresent(flavor, "rxtx_factor"),
+		"swap":          serverFlavorSwapShowValue(firstPresent(flavor, "swap")),
+		"vcpus":         firstPresent(flavor, "vcpus"),
+	}
+	parts := make([]string, 0, len(tableKeys))
+	for _, key := range tableKeys {
+		if key == "extra_specs" {
+			parts = append(parts, "")
+			continue
+		}
+		parts = append(parts, serverShowKeyValueToken(key, values[key]))
+	}
+	return tableValue{
+		Value:  orderedMapFromKeys(values, jsonKeys),
+		Table:  strings.Join(parts, ", "),
+		Pretty: value,
+	}
+}
+
+func serverFlavorSwapShowValue(value any) any {
+	text := strings.TrimSpace(valueString(value))
+	if text == "" || text == "None" {
+		return 0
+	}
+	return rawNumber(value)
+}
+
+func serverImageShowValue(value any) any {
+	switch typed := value.(type) {
+	case nil:
+		return value
+	case string:
+		if strings.TrimSpace(typed) == "" {
+			return "N/A (booted from volume)"
+		}
+		return typed
+	case map[string]any:
+		if len(typed) == 0 {
+			return "N/A (booted from volume)"
+		}
+		return tableValue{Value: value, Table: valueString(serverImage(typed, nil)), Pretty: serverImage(typed, nil)}
+	default:
+		return value
+	}
+}
+
+func serverKeyValueList(value any, keys []string) tableValue {
+	return serverKeyValueListWithJSONKeys(value, keys, keys)
+}
+
+func serverKeyValueListWithJSONKeys(value any, tableKeys []string, jsonKeys []string) tableValue {
+	items := anySlice(value)
+	jsonValues := make([]any, 0, len(items))
+	lines := make([]string, 0, len(items))
+	for _, item := range items {
+		itemMap, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		values := make(map[string]any, len(jsonKeys))
+		presentKeys := make([]string, 0, len(jsonKeys))
+		parts := make([]string, 0, len(tableKeys))
+		for _, key := range jsonKeys {
+			itemValue, ok := itemMap[key]
+			if ok {
+				values[key] = itemValue
+				presentKeys = append(presentKeys, key)
+			}
+		}
+		for _, key := range tableKeys {
+			itemValue, ok := itemMap[key]
+			if !ok || emptyServerShowValue(itemValue) {
+				continue
+			}
+			parts = append(parts, serverShowQuotedKeyValueToken(key, itemValue))
+		}
+		jsonValues = append(jsonValues, orderedJSONObject{keys: presentKeys, values: values})
+		if len(parts) > 0 {
+			lines = append(lines, strings.Join(parts, ", "))
+		}
+	}
+	return tableValue{Value: jsonValues, Table: strings.Join(lines, "\n"), Pretty: value}
+}
+
+func serverShowKeyValueToken(key string, value any) string {
+	if emptyServerShowValue(value) {
+		return key + "="
+	}
+	return serverShowQuotedKeyValueToken(key, value)
+}
+
+func serverShowQuotedKeyValueToken(key string, value any) string {
+	return fmt.Sprintf("%s='%s'", key, strings.ReplaceAll(valueString(value), "'", "\\'"))
+}
+
+func emptyServerShowValue(value any) bool {
+	if value == nil {
+		return true
+	}
+	text := strings.TrimSpace(valueString(value))
+	return text == "" || text == "None"
+}
+
+func intFromAny(value any) (int, bool) {
+	switch typed := value.(type) {
+	case int:
+		return typed, true
+	case int8:
+		return int(typed), true
+	case int16:
+		return int(typed), true
+	case int32:
+		return int(typed), true
+	case int64:
+		return int(typed), true
+	case uint:
+		return int(typed), true
+	case uint8:
+		return int(typed), true
+	case uint16:
+		return int(typed), true
+	case uint32:
+		return int(typed), true
+	case uint64:
+		return int(typed), true
+	case float32:
+		return int(typed), true
+	case float64:
+		return int(typed), true
+	case json.Number:
+		parsed, err := typed.Int64()
+		if err != nil {
+			return 0, false
+		}
+		return int(parsed), true
+	case string:
+		parsed, err := strconv.Atoi(strings.TrimSpace(typed))
+		if err != nil {
+			return 0, false
+		}
+		return parsed, true
+	default:
+		return 0, false
+	}
 }
 
 type serverActionFunc func(context.Context, *gophercloud.ServiceClient, string) error
@@ -4048,18 +4368,58 @@ func computeFlavorShow(ctx context.Context, stdout io.Writer, opts *Options, cli
 	if err != nil {
 		return err
 	}
-	return renderShowOutput(stdout, opts, []outputField{
+	if raw, err := computeFlavorRaw(ctx, client, item.ID); err == nil {
+		return renderShowOutput(stdout, opts, flavorRawFields(raw))
+	}
+	return renderShowOutput(stdout, opts, flavorFields(item))
+}
+
+func computeFlavorRaw(ctx context.Context, client *gophercloud.ServiceClient, id string) (map[string]any, error) {
+	var body struct {
+		Flavor map[string]any `json:"flavor"`
+	}
+	resp, err := client.Get(ctx, client.ServiceURL("flavors", url.PathEscape(id)), &body, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return nil, err
+	}
+	return body.Flavor, nil
+}
+
+func flavorRawFields(raw map[string]any) []outputField {
+	return []outputField{
+		{"OS-FLV-DISABLED:disabled", raw["OS-FLV-DISABLED:disabled"]},
+		{"OS-FLV-EXT-DATA:ephemeral", rawNumber(raw["OS-FLV-EXT-DATA:ephemeral"])},
+		{"access_project_ids", raw["access_project_ids"]},
+		{"description", raw["description"]},
+		{"disk", rawNumber(raw["disk"])},
+		{"id", raw["id"]},
+		{"name", raw["name"]},
+		{"os-flavor-access:is_public", raw["os-flavor-access:is_public"]},
+		{"properties", flavorPropertiesValue(raw["extra_specs"])},
+		{"ram", rawNumber(raw["ram"])},
+		{"rxtx_factor", flavorRxTxValue(raw["rxtx_factor"])},
+		{"swap", flavorSwapValue(raw["swap"])},
+		{"vcpus", rawNumber(raw["vcpus"])},
+	}
+}
+
+func flavorFields(item *flavors.Flavor) []outputField {
+	return []outputField{
+		{"OS-FLV-DISABLED:disabled", nil},
+		{"OS-FLV-EXT-DATA:ephemeral", item.Ephemeral},
+		{"access_project_ids", nil},
+		{"description", nilIfEmpty(item.Description)},
+		{"disk", item.Disk},
 		{"id", item.ID},
 		{"name", item.Name},
+		{"os-flavor-access:is_public", item.IsPublic},
+		{"properties", flavorPropertiesValue(item.ExtraSpecs)},
 		{"ram", item.RAM},
-		{"disk", item.Disk},
-		{"ephemeral", item.Ephemeral},
-		{"vcpus", item.VCPUs},
-		{"is_public", item.IsPublic},
+		{"rxtx_factor", flavorRxTxValue(item.RxTxFactor)},
 		{"swap", item.Swap},
-		{"rxtx_factor", item.RxTxFactor},
-		{"properties", item.ExtraSpecs},
-	})
+		{"vcpus", item.VCPUs},
+	}
 }
 
 func cachedImageList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
@@ -4890,7 +5250,7 @@ func imageCreateFields(item *images.Image) []outputField {
 	add("name", prettyImageValue(item.Name), item.Name != "")
 	add("owner", item.Owner, item.Owner != "")
 	if len(properties) > 0 {
-		add("properties", properties, true)
+		add("properties", imagePropertiesValue(properties), true)
 	}
 	add("protected", item.Protected, true)
 	add("schema", item.Schema, item.Schema != "")
@@ -4900,7 +5260,7 @@ func imageCreateFields(item *images.Image) []outputField {
 	if tags == nil {
 		tags = []string{}
 	}
-	add("tags", tags, true)
+	add("tags", blankEmptyStringListValue(tags), true)
 	add("updated_at", imageTime(item.UpdatedAt), !item.UpdatedAt.IsZero())
 	add("virtual_size", item.VirtualSize, item.VirtualSize > 0)
 	add("visibility", string(item.Visibility), item.Visibility != "")
@@ -4957,23 +5317,7 @@ func imageShow(ctx context.Context, stdout io.Writer, opts *Options, client *gop
 	if err != nil {
 		return err
 	}
-	return renderShowOutput(stdout, opts, []outputField{
-		{"id", item.ID},
-		{"name", prettyImageValue(item.Name)},
-		{"status", string(item.Status)},
-		{"visibility", string(item.Visibility)},
-		{"protected", item.Protected},
-		{"container_format", item.ContainerFormat},
-		{"disk_format", item.DiskFormat},
-		{"min_disk", item.MinDiskGigabytes},
-		{"min_ram", item.MinRAMMegabytes},
-		{"owner", item.Owner},
-		{"size", item.SizeBytes},
-		{"checksum", item.Checksum},
-		{"tags", item.Tags},
-		{"created_at", oscTime(item.CreatedAt)},
-		{"updated_at", oscTime(item.UpdatedAt)},
-	})
+	return renderShowOutput(stdout, opts, imageCreateFields(item))
 }
 
 func cachedImageClear(ctx context.Context, opts *Options, client *gophercloud.ServiceClient) error {
@@ -6414,8 +6758,8 @@ func networkRawFields(raw map[string]any) []outputField {
 		"vlan_transparent":          true,
 	}
 	fields := []outputField{
-		{"admin_state_up", raw["admin_state_up"]},
-		{"availability_zone_hints", raw["availability_zone_hints"]},
+		{"admin_state_up", adminStateValue(raw["admin_state_up"])},
+		{"availability_zone_hints", blankEmptyListValue(raw["availability_zone_hints"])},
 		{"availability_zones", raw["availability_zones"]},
 		{"created_at", raw["created_at"]},
 		{"description", raw["description"]},
@@ -6435,12 +6779,12 @@ func networkRawFields(raw map[string]any) []outputField {
 		{"provider:segmentation_id", rawNumber(raw["provider:segmentation_id"])},
 		{"qos_policy_id", raw["qos_policy_id"]},
 		{"revision_number", rawNumber(raw["revision_number"])},
-		{"router:external", raw["router:external"]},
+		{"router:external", routerExternalValue(raw["router:external"])},
 		{"segments", raw["segments"]},
 		{"shared", raw["shared"]},
 		{"status", raw["status"]},
 		{"subnets", raw["subnets"]},
-		{"tags", raw["tags"]},
+		{"tags", blankEmptyListValue(raw["tags"])},
 		{"updated_at", raw["updated_at"]},
 	}
 	var extras []string
@@ -9243,7 +9587,7 @@ func routerList(ctx context.Context, stdout io.Writer, opts *Options, client *go
 			"ID":          item.ID,
 			"Name":        item.Name,
 			"Status":      item.Status,
-			"State":       adminStateLabel(item.AdminStateUp),
+			"State":       adminStateValue(item.AdminStateUp),
 			"Project":     item.ProjectID,
 			"Distributed": item.Distributed,
 			"HA":          false,
@@ -9308,28 +9652,28 @@ func routerRawFromBody(body any) (map[string]any, bool) {
 
 func routerRawFields(raw map[string]any, interfaces []map[string]string) []outputField {
 	fields := []outputField{
-		{"admin_state_up", raw["admin_state_up"]},
+		{"admin_state_up", adminStateValue(raw["admin_state_up"])},
 		{"availability_zone_hints", raw["availability_zone_hints"]},
 		{"availability_zones", raw["availability_zones"]},
 		{"created_at", raw["created_at"]},
 		{"description", raw["description"]},
 		{"distributed", raw["distributed"]},
 		{"enable_ndp_proxy", raw["enable_ndp_proxy"]},
-		{"external_gateway_info", raw["external_gateway_info"]},
+		{"external_gateway_info", routerGatewayTableValue(raw["external_gateway_info"])},
 		{"flavor_id", raw["flavor_id"]},
 		{"ha", raw["ha"]},
 		{"id", raw["id"]},
 	}
 	if interfaces != nil {
-		fields = append(fields, outputField{"interfaces_info", interfaces})
+		fields = append(fields, outputField{"interfaces_info", routerInterfacesTableValue(interfaces)})
 	}
 	fields = append(fields,
 		outputField{"name", raw["name"]},
 		outputField{"project_id", firstPresent(raw, "project_id", "tenant_id")},
 		outputField{"revision_number", rawNumber(raw["revision_number"])},
-		outputField{"routes", raw["routes"]},
+		outputField{"routes", blankEmptyListValue(raw["routes"])},
 		outputField{"status", raw["status"]},
-		outputField{"tags", raw["tags"]},
+		outputField{"tags", blankEmptyListValue(raw["tags"])},
 		outputField{"updated_at", raw["updated_at"]},
 	)
 	return fields
@@ -9677,7 +10021,7 @@ func securityGroupRawFields(raw map[string]any) []outputField {
 		{"name", raw["name"]},
 		{"project_id", raw["project_id"]},
 		{"revision_number", raw["revision_number"]},
-		{"rules", firstPresent(raw, "rules", "security_group_rules")},
+		{"rules", securityGroupRulesValue(firstPresent(raw, "rules", "security_group_rules"))},
 		{"stateful", raw["stateful"]},
 		{"tags", raw["tags"]},
 		{"updated_at", raw["updated_at"]},
@@ -10212,6 +10556,39 @@ func securityGroupRuleDetails(items []secgrouprules.SecGroupRule) []map[string]a
 	return rows
 }
 
+func securityGroupRulesValue(value any) tableValue {
+	items := anySlice(value)
+	jsonKeys := []string{"id", "project_id", "tenant_id", "security_group_id", "ethertype", "direction", "protocol", "port_range_min", "port_range_max", "remote_ip_prefix", "remote_address_group_id", "normalized_cidr", "remote_group_id", "standard_attr_id", "belongs_to_default_sg", "description", "tags", "created_at", "updated_at", "revision_number"}
+	jsonValues := make([]any, 0, len(items))
+	lines := make([]string, 0, len(items))
+	for _, item := range items {
+		itemMap, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		orderedValues := map[string]any{}
+		presentKeys := make([]string, 0, len(jsonKeys))
+		for _, key := range jsonKeys {
+			if itemValue, ok := itemMap[key]; ok {
+				orderedValues[key] = itemValue
+				presentKeys = append(presentKeys, key)
+			}
+		}
+		jsonValues = append(jsonValues, orderedJSONObject{keys: presentKeys, values: orderedValues})
+		keys := []string{"belongs_to_default_sg", "created_at", "direction", "ethertype", "id", "normalized_cidr", "port_range_min", "port_range_max", "protocol", "remote_address_group_id", "remote_group_id", "remote_ip_prefix", "standard_attr_id", "updated_at"}
+		parts := make([]string, 0, len(keys))
+		for _, key := range keys {
+			value, ok := itemMap[key]
+			if !ok || value == nil || valueString(value) == "" || valueString(value) == "None" {
+				continue
+			}
+			parts = append(parts, fmt.Sprintf("%s='%s'", key, strings.ReplaceAll(valueString(value), "'", "\\'")))
+		}
+		lines = append(lines, strings.Join(parts, ", "))
+	}
+	return tableValue{Value: jsonValues, Table: strings.Join(lines, "\n"), Pretty: value}
+}
+
 func securityGroupRuleList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
 	listOpts := secgrouprules.ListOpts{
 		Protocol:  protocolFilter(opts),
@@ -10329,7 +10706,7 @@ func zeroNil(value int) any {
 	return value
 }
 
-func volumeList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+func volumeList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, computeClient *gophercloud.ServiceClient) error {
 	page, err := volumes.List(client, volumes.ListOpts{}).AllPages(ctx)
 	if err != nil {
 		return err
@@ -10338,20 +10715,21 @@ func volumeList(ctx context.Context, stdout io.Writer, opts *Options, client *go
 	if err != nil {
 		return err
 	}
+	serverNames := serverNameMap(ctx, computeClient)
 	rows := make([]outputRow, 0, len(items))
 	for _, item := range items {
-		rows = append(rows, volumeListRow(item))
+		rows = append(rows, volumeListRow(item, serverNames))
 	}
 	return renderListOutput(stdout, opts, []string{"ID", "Name", "Status", "Size", "Attached to"}, rows)
 }
 
-func volumeListRow(item volumes.Volume) outputRow {
+func volumeListRow(item volumes.Volume, serverNames map[string]string) outputRow {
 	return outputRow{
 		"ID":          item.ID,
 		"Name":        item.Name,
 		"Status":      item.Status,
 		"Size":        item.Size,
-		"Attached to": volumeAttachments(item.Attachments),
+		"Attached to": volumeAttachmentValue(item.Attachments, serverNames),
 	}
 }
 
@@ -10359,24 +10737,109 @@ func volumeShow(ctx context.Context, stdout io.Writer, opts *Options, client *go
 	if len(args) < 1 {
 		return fmt.Errorf("volume show requires <volume>")
 	}
+	if client.Microversion == "" {
+		if withMinimum, err := blockStorageClientWithMinimumMicroversion(ctx, client, "3.65"); err == nil {
+			client = withMinimum
+		}
+	}
 	item, err := findVolume(ctx, client, args[0])
 	if err != nil {
 		return err
 	}
-	return renderShowOutput(stdout, opts, []outputField{
-		{"id", item.ID},
-		{"name", prettyVolumeValue(item.Name)},
-		{"status", item.Status},
-		{"size", item.Size},
+	if raw, err := cinderVolumeRaw(ctx, client, item.ID); err == nil {
+		return renderShowOutput(stdout, opts, volumeRawFields(raw))
+	}
+	return renderShowOutput(stdout, opts, volumeFields(item))
+}
+
+func cinderVolumeRaw(ctx context.Context, client *gophercloud.ServiceClient, id string) (map[string]any, error) {
+	var body struct {
+		Volume map[string]any `json:"volume"`
+	}
+	resp, err := client.Get(ctx, client.ServiceURL("volumes", url.PathEscape(id)), &body, nil)
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return nil, err
+	}
+	return body.Volume, nil
+}
+
+func volumeRawFields(raw map[string]any) []outputField {
+	attachments := volumeAttachmentValueFromAny(raw["attachments"], nil)
+	properties := mapValueOrEmptyAny(raw["metadata"])
+	return []outputField{
+		{"attachments", attachments},
+		{"availability_zone", raw["availability_zone"]},
+		{"backup_id", raw["backup_id"]},
+		{"bootable", cinderBool(raw["bootable"])},
+		{"cluster_name", raw["cluster_name"]},
+		{"consumes_quota", raw["consumes_quota"]},
+		{"created_at", raw["created_at"]},
+		{"description", raw["description"]},
+		{"encrypted", raw["encrypted"]},
+		{"group_id", firstPresent(raw, "group_id", "consistencygroup_id")},
+		{"id", raw["id"]},
+		{"multiattach", raw["multiattach"]},
+		{"name", prettyVolumeValue(fmt.Sprint(raw["name"]))},
+		{"os-vol-host-attr:host", raw["os-vol-host-attr:host"]},
+		{"os-vol-mig-status-attr:migstat", raw["os-vol-mig-status-attr:migstat"]},
+		{"os-vol-mig-status-attr:name_id", raw["os-vol-mig-status-attr:name_id"]},
+		{"os-vol-tenant-attr:tenant_id", raw["os-vol-tenant-attr:tenant_id"]},
+		{"properties", mapTableValue(properties, "")},
+		{"provider_id", raw["provider_id"]},
+		{"replication_status", raw["replication_status"]},
+		{"service_uuid", raw["service_uuid"]},
+		{"shared_targets", raw["shared_targets"]},
+		{"size", rawNumber(raw["size"])},
+		{"snapshot_id", raw["snapshot_id"]},
+		{"source_volid", raw["source_volid"]},
+		{"status", raw["status"]},
+		{"type", raw["volume_type"]},
+		{"updated_at", raw["updated_at"]},
+		{"user_id", raw["user_id"]},
+		{"volume_image_metadata", volumeImageMetadataValue(raw["volume_image_metadata"])},
+		{"volume_type_id", raw["volume_type_id"]},
+	}
+}
+
+func volumeFields(item *volumes.Volume) []outputField {
+	properties := map[string]any{}
+	for key, value := range item.Metadata {
+		properties[key] = value
+	}
+	return []outputField{
+		{"attachments", volumeAttachmentValue(item.Attachments, nil)},
 		{"availability_zone", item.AvailabilityZone},
-		{"bootable", item.Bootable},
-		{"encrypted", item.Encrypted},
-		{"volume_type", item.VolumeType},
-		{"attachments", volumeAttachments(item.Attachments)},
-		{"metadata", item.Metadata},
+		{"backup_id", stringPtrValue(item.BackupID)},
+		{"bootable", cinderBool(item.Bootable)},
+		{"cluster_name", nil},
+		{"consumes_quota", nil},
+		{"created_at", oscTime(item.CreatedAt)},
 		{"description", item.Description},
-		{"created_at", item.CreatedAt},
-	})
+		{"encrypted", item.Encrypted},
+		{"group_id", nilIfEmpty(item.ConsistencyGroupID)},
+		{"id", item.ID},
+		{"multiattach", item.Multiattach},
+		{"name", prettyVolumeValue(item.Name)},
+		{"os-vol-host-attr:host", nilIfEmpty(item.Host)},
+		{"os-vol-mig-status-attr:migstat", nil},
+		{"os-vol-mig-status-attr:name_id", nil},
+		{"os-vol-tenant-attr:tenant_id", nilIfEmpty(item.TenantID)},
+		{"properties", mapTableValue(properties, "")},
+		{"provider_id", nil},
+		{"replication_status", nilIfEmpty(item.ReplicationStatus)},
+		{"service_uuid", nil},
+		{"shared_targets", nil},
+		{"size", item.Size},
+		{"snapshot_id", nilIfEmpty(item.SnapshotID)},
+		{"source_volid", nilIfEmpty(item.SourceVolID)},
+		{"status", item.Status},
+		{"type", item.VolumeType},
+		{"updated_at", oscTime(item.UpdatedAt)},
+		{"user_id", nilIfEmpty(item.UserID)},
+		{"volume_image_metadata", volumeImageMetadataValue(item.VolumeImageMetadata)},
+		{"volume_type_id", nil},
+	}
 }
 
 func volumeCreate(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, imageClient *gophercloud.ServiceClient, args []string) error {
@@ -13860,19 +14323,33 @@ type subnetAllocationPoolOutput struct {
 }
 
 func subnetAllocationPoolsForOutput(value any) any {
+	table := func(items []subnetAllocationPoolOutput) tableValue {
+		lines := make([]string, 0, len(items))
+		jsonValues := make([]any, 0, len(items))
+		for _, item := range items {
+			if item.Start != "" && item.End != "" {
+				lines = append(lines, item.Start+"-"+item.End)
+			}
+			jsonValues = append(jsonValues, orderedJSONObject{
+				keys:   []string{"start", "end"},
+				values: map[string]any{"start": item.Start, "end": item.End},
+			})
+		}
+		return tableValue{Value: jsonValues, Table: strings.Join(lines, "\n"), Pretty: items}
+	}
 	switch typed := value.(type) {
 	case []subnets.AllocationPool:
 		items := make([]subnetAllocationPoolOutput, 0, len(typed))
 		for _, pool := range typed {
 			items = append(items, subnetAllocationPoolOutput{Start: pool.Start, End: pool.End})
 		}
-		return items
+		return table(items)
 	case []map[string]string:
 		items := make([]subnetAllocationPoolOutput, 0, len(typed))
 		for _, pool := range typed {
 			items = append(items, subnetAllocationPoolOutput{Start: pool["start"], End: pool["end"]})
 		}
-		return items
+		return table(items)
 	case []any:
 		items := make([]subnetAllocationPoolOutput, 0, len(typed))
 		for _, item := range typed {
@@ -13885,7 +14362,7 @@ func subnetAllocationPoolsForOutput(value any) any {
 				End:   valueString(pool["end"]),
 			})
 		}
-		return items
+		return table(items)
 	default:
 		return value
 	}
@@ -14086,7 +14563,7 @@ func subnetRawFields(raw map[string]any) []outputField {
 		{"dns_publish_fixed_ip", raw["dns_publish_fixed_ip"]},
 		{"enable_dhcp", raw["enable_dhcp"]},
 		{"gateway_ip", raw["gateway_ip"]},
-		{"host_routes", raw["host_routes"]},
+		{"host_routes", blankEmptyListValue(raw["host_routes"])},
 		{"id", raw["id"]},
 		{"ip_version", rawNumber(raw["ip_version"])},
 		{"ipv6_address_mode", raw["ipv6_address_mode"]},
@@ -14097,9 +14574,9 @@ func subnetRawFields(raw map[string]any) []outputField {
 		{"revision_number", rawNumber(raw["revision_number"])},
 		{"router:external", raw["router:external"]},
 		{"segment_id", raw["segment_id"]},
-		{"service_types", raw["service_types"]},
+		{"service_types", blankEmptyListValue(raw["service_types"])},
 		{"subnetpool_id", raw["subnetpool_id"]},
-		{"tags", raw["tags"]},
+		{"tags", blankEmptyListValue(raw["tags"])},
 		{"updated_at", raw["updated_at"]},
 	}
 	var extras []string
@@ -14125,7 +14602,7 @@ func subnetFields(item *subnets.Subnet) []outputField {
 		{"dns_publish_fixed_ip", item.DNSPublishFixedIP},
 		{"enable_dhcp", item.EnableDHCP},
 		{"gateway_ip", nilIfEmpty(item.GatewayIP)},
-		{"host_routes", subnetHostRouteMaps(item.HostRoutes)},
+		{"host_routes", blankEmptyListValue(subnetHostRouteMaps(item.HostRoutes))},
 		{"id", item.ID},
 		{"ip_version", item.IPVersion},
 		{"ipv6_address_mode", nilIfEmpty(item.IPv6AddressMode)},
@@ -14136,9 +14613,9 @@ func subnetFields(item *subnets.Subnet) []outputField {
 		{"revision_number", item.RevisionNumber},
 		{"router:external", nil},
 		{"segment_id", nilIfEmpty(item.SegmentID)},
-		{"service_types", item.ServiceTypes},
+		{"service_types", blankEmptyStringListValue(item.ServiceTypes)},
 		{"subnetpool_id", nilIfEmpty(item.SubnetPoolID)},
-		{"tags", item.Tags},
+		{"tags", blankEmptyStringListValue(item.Tags)},
 		{"updated_at", oscTime(item.UpdatedAt)},
 	}
 }
@@ -15250,11 +15727,11 @@ func portRawFromBody(body any) (map[string]any, bool) {
 
 func portRawFields(raw map[string]any) []outputField {
 	return []outputField{
-		{"admin_state_up", raw["admin_state_up"]},
-		{"allowed_address_pairs", raw["allowed_address_pairs"]},
+		{"admin_state_up", adminStateValue(raw["admin_state_up"])},
+		{"allowed_address_pairs", blankEmptyListValue(raw["allowed_address_pairs"])},
 		{"binding_host_id", raw["binding:host_id"]},
-		{"binding_profile", raw["binding:profile"]},
-		{"binding_vif_details", raw["binding:vif_details"]},
+		{"binding_profile", blankEmptyMapValue(raw["binding:profile"])},
+		{"binding_vif_details", blankEmptyMapValue(raw["binding:vif_details"])},
 		{"binding_vif_type", raw["binding:vif_type"]},
 		{"binding_vnic_type", raw["binding:vnic_type"]},
 		{"created_at", raw["created_at"]},
@@ -15263,13 +15740,13 @@ func portRawFields(raw map[string]any) []outputField {
 		{"device_id", raw["device_id"]},
 		{"device_owner", raw["device_owner"]},
 		{"device_profile", raw["device_profile"]},
-		{"dns_assignment", raw["dns_assignment"]},
+		{"dns_assignment", blankEmptyListValue(raw["dns_assignment"])},
 		{"dns_domain", raw["dns_domain"]},
 		{"dns_name", raw["dns_name"]},
-		{"extra_dhcp_opts", raw["extra_dhcp_opts"]},
-		{"fixed_ips", raw["fixed_ips"]},
+		{"extra_dhcp_opts", blankEmptyListValue(raw["extra_dhcp_opts"])},
+		{"fixed_ips", portFixedIPsTableValue(raw["fixed_ips"])},
 		{"hardware_offload_type", raw["hardware_offload_type"]},
-		{"hints", raw["hints"]},
+		{"hints", blankEmptyMapAsStringValue(raw["hints"])},
 		{"id", raw["id"]},
 		{"ip_allocation", raw["ip_allocation"]},
 		{"mac_address", raw["mac_address"]},
@@ -15283,9 +15760,9 @@ func portRawFields(raw map[string]any) []outputField {
 		{"revision_number", rawNumber(raw["revision_number"])},
 		{"qos_network_policy_id", raw["qos_network_policy_id"]},
 		{"qos_policy_id", raw["qos_policy_id"]},
-		{"security_group_ids", raw["security_groups"]},
+		{"security_group_ids", blankEmptyListValue(raw["security_groups"])},
 		{"status", raw["status"]},
-		{"tags", raw["tags"]},
+		{"tags", blankEmptyListValue(raw["tags"])},
 		{"trunk_details", raw["trunk_details"]},
 		{"trusted", raw["trusted"]},
 		{"updated_at", raw["updated_at"]},
@@ -15372,15 +15849,11 @@ func portList(ctx context.Context, stdout io.Writer, opts *Options, client *goph
 	}
 	rows := make([]outputRow, 0, len(items))
 	for _, item := range items {
-		fixedIPs := any(portFixedIPs(item.FixedIPs))
-		if prettyOutput(opts) {
-			fixedIPs = prettyPortFixedIPAddresses(item.FixedIPs)
-		}
 		row := outputRow{
 			"ID":                 item.ID,
 			"Name":               item.Name,
 			"MAC Address":        item.MACAddress,
-			"Fixed IP Addresses": fixedIPs,
+			"Fixed IP Addresses": portFixedIPsValue(item.FixedIPs),
 			"Status":             item.Status,
 		}
 		if boolFlag(opts, "long") {
@@ -17739,6 +18212,14 @@ func imageNameMap(ctx context.Context, client *gophercloud.ServiceClient) map[st
 }
 
 func serverNetworks(addresses map[string]any) map[string][]string {
+	networks := serverNetworksInAPISliceOrder(addresses)
+	for _, values := range networks {
+		sort.Strings(values)
+	}
+	return networks
+}
+
+func serverNetworksInAPISliceOrder(addresses map[string]any) map[string][]string {
 	networks := make(map[string][]string, len(addresses))
 	for name, rawAddresses := range addresses {
 		for _, rawAddress := range anySlice(rawAddresses) {
@@ -17752,9 +18233,6 @@ func serverNetworks(addresses map[string]any) map[string][]string {
 				networks[name] = append(networks[name], addr)
 			}
 		}
-	}
-	for _, values := range networks {
-		sort.Strings(values)
 	}
 	return networks
 }
@@ -18233,6 +18711,27 @@ func anySlice(value any) []any {
 	}
 }
 
+func serverNameMap(ctx context.Context, client *gophercloud.ServiceClient) map[string]string {
+	names := map[string]string{}
+	if client == nil {
+		return names
+	}
+	page, err := servers.List(client, servers.ListOpts{}).AllPages(ctx)
+	if err != nil {
+		return names
+	}
+	items, err := extractServers(page)
+	if err != nil {
+		return names
+	}
+	for _, item := range items {
+		if item.ID != "" && item.Name != "" {
+			names[item.ID] = item.Name
+		}
+	}
+	return names
+}
+
 func volumeAttachments(attachments []volumes.Attachment) []map[string]any {
 	values := make([]map[string]any, 0, len(attachments))
 	for _, item := range attachments {
@@ -18247,6 +18746,471 @@ func volumeAttachments(attachments []volumes.Attachment) []map[string]any {
 		})
 	}
 	return values
+}
+
+func volumeAttachmentValue(attachments []volumes.Attachment, serverNames map[string]string) tableValue {
+	jsonValues := make([]any, 0, len(attachments))
+	prettyValues := make([]map[string]any, 0, len(attachments))
+	tableLines := make([]string, 0, len(attachments))
+	for _, item := range attachments {
+		jsonValues = append(jsonValues, orderedJSONObject{
+			keys: []string{"id", "attachment_id", "volume_id", "server_id", "host_name", "device", "attached_at"},
+			values: map[string]any{
+				"id":            item.ID,
+				"attachment_id": item.AttachmentID,
+				"volume_id":     item.VolumeID,
+				"server_id":     item.ServerID,
+				"host_name":     item.HostName,
+				"device":        item.Device,
+				"attached_at":   item.AttachedAt.Format("2006-01-02T15:04:05.000000"),
+			},
+		})
+		prettyValues = append(prettyValues, map[string]any{
+			"id":            prettyVolumeValue(item.ID),
+			"attachment_id": item.AttachmentID,
+			"volume_id":     prettyVolumeValue(item.VolumeID),
+			"server_id":     item.ServerID,
+			"host_name":     item.HostName,
+			"device":        item.Device,
+			"attached_at":   item.AttachedAt.Format("2006-01-02T15:04:05.000000"),
+		})
+		if serverNames != nil && item.ServerID != "" && item.Device != "" {
+			server := item.ServerID
+			if name := serverNames[item.ServerID]; name != "" {
+				server = name
+			}
+			tableLines = append(tableLines, fmt.Sprintf("Attached to %s on %s ", server, item.Device))
+		}
+	}
+	return tableValue{
+		Value:  jsonValues,
+		Table:  strings.Join(tableLines, "\n"),
+		Pretty: prettyValues,
+	}
+}
+
+func volumeAttachmentValueFromAny(value any, serverNames map[string]string) tableValue {
+	items := anySlice(value)
+	jsonValues := make([]any, 0, len(items))
+	prettyValues := make([]map[string]any, 0, len(items))
+	tableLines := make([]string, 0, len(items))
+	for _, item := range items {
+		itemMap, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		ordered := orderedJSONObject{
+			keys: []string{"id", "attachment_id", "volume_id", "server_id", "host_name", "device", "attached_at"},
+			values: map[string]any{
+				"id":            itemMap["id"],
+				"attachment_id": itemMap["attachment_id"],
+				"volume_id":     itemMap["volume_id"],
+				"server_id":     itemMap["server_id"],
+				"host_name":     itemMap["host_name"],
+				"device":        itemMap["device"],
+				"attached_at":   itemMap["attached_at"],
+			},
+		}
+		jsonValues = append(jsonValues, ordered)
+		prettyValues = append(prettyValues, ordered.values)
+		serverID := strings.TrimSpace(fmt.Sprint(itemMap["server_id"]))
+		device := strings.TrimSpace(fmt.Sprint(itemMap["device"]))
+		if serverNames != nil && serverID != "" && serverID != "<nil>" && device != "" && device != "<nil>" {
+			server := serverID
+			if name := serverNames[serverID]; name != "" {
+				server = name
+			}
+			tableLines = append(tableLines, fmt.Sprintf("Attached to %s on %s ", server, device))
+		}
+	}
+	if len(tableLines) == 0 {
+		return tableValue{Value: jsonValues, Table: pythonRepr(jsonValues), Pretty: prettyValues}
+	}
+	return tableValue{Value: jsonValues, Table: strings.Join(tableLines, "\n"), Pretty: prettyValues}
+}
+
+func mapValueOrEmptyAny(value any) map[string]any {
+	switch typed := value.(type) {
+	case nil:
+		return map[string]any{}
+	case map[string]any:
+		return typed
+	case map[string]string:
+		values := make(map[string]any, len(typed))
+		for key, value := range typed {
+			values[key] = value
+		}
+		return values
+	default:
+		return map[string]any{}
+	}
+}
+
+func mapTableValue(value any, emptyTable string) tableValue {
+	values := mapValueOrEmptyAny(value)
+	table := pythonRepr(values)
+	if len(values) == 0 {
+		table = emptyTable
+	}
+	return tableValue{Value: values, Table: table, Pretty: values}
+}
+
+func volumeImageMetadataValue(value any) tableValue {
+	values := mapValueOrEmptyAny(value)
+	keys := []string{"signature_verified", "owner_specified.openstack.md5", "owner_specified.openstack.object", "owner_specified.openstack.sha256", "image_id", "image_name", "checksum", "container_format", "disk_format", "min_disk", "min_ram", "size"}
+	table := pythonDictRepr(values, keys)
+	if len(values) == 0 {
+		table = ""
+	}
+	return tableValue{Value: orderedMapFromKeys(values, keys), Table: table, Pretty: values}
+}
+
+func imagePropertiesValue(value map[string]any) tableValue {
+	keys := sortedMapKeys(value)
+	parts := make([]string, 0, len(keys))
+	for _, key := range keys {
+		parts = append(parts, fmt.Sprintf("%s='%s'", key, strings.ReplaceAll(valueString(value[key]), "'", "\\'")))
+	}
+	return tableValue{Value: orderedMapFromKeys(value, []string{"os_hidden"}), Table: strings.Join(parts, ", "), Pretty: value}
+}
+
+func flavorPropertiesValue(value any) tableValue {
+	values := mapValueOrEmptyAny(value)
+	table := pythonRepr(values)
+	if len(values) == 0 {
+		table = ""
+	}
+	return tableValue{Value: values, Table: table, Pretty: values}
+}
+
+func flavorRxTxValue(value any) any {
+	switch typed := value.(type) {
+	case float64:
+		text := decimalJSONNumber(typed)
+		return tableValue{Value: text, Table: string(text)}
+	case float32:
+		text := decimalJSONNumber(float64(typed))
+		return tableValue{Value: text, Table: string(text)}
+	default:
+		return value
+	}
+}
+
+func decimalJSONNumber(value float64) json.Number {
+	text := strconv.FormatFloat(value, 'f', -1, 64)
+	if !strings.Contains(text, ".") {
+		text += ".0"
+	}
+	return json.Number(text)
+}
+
+func flavorSwapValue(value any) any {
+	switch typed := value.(type) {
+	case string:
+		if typed == "" {
+			return 0
+		}
+		return rawNumber(typed)
+	default:
+		return rawNumber(value)
+	}
+}
+
+func blankEmptyListValue(value any) any {
+	if value == nil {
+		return tableValue{Value: []any{}, Table: ""}
+	}
+	reflected := reflect.ValueOf(value)
+	if reflected.IsValid() && reflected.Kind() == reflect.Slice && reflected.Len() == 0 {
+		return tableValue{Value: value, Table: ""}
+	}
+	return value
+}
+
+func blankEmptyMapValue(value any) any {
+	if value == nil {
+		return tableValue{Value: map[string]any{}, Table: ""}
+	}
+	reflected := reflect.ValueOf(value)
+	if reflected.IsValid() && reflected.Kind() == reflect.Map && reflected.Len() == 0 {
+		return tableValue{Value: value, Table: ""}
+	}
+	return value
+}
+
+func blankEmptyMapAsStringValue(value any) any {
+	if value == nil {
+		return tableValue{Value: "", Table: ""}
+	}
+	reflected := reflect.ValueOf(value)
+	if reflected.IsValid() && reflected.Kind() == reflect.Map && reflected.Len() == 0 {
+		return tableValue{Value: "", Table: ""}
+	}
+	return value
+}
+
+func blankEmptyStringListValue(value []string) any {
+	if len(value) == 0 {
+		return tableValue{Value: value, Table: ""}
+	}
+	return value
+}
+
+func adminStateValue(value any) any {
+	switch typed := value.(type) {
+	case bool:
+		if typed {
+			return tableValue{Value: typed, Table: "UP"}
+		}
+		return tableValue{Value: typed, Table: "DOWN"}
+	default:
+		return value
+	}
+}
+
+func routerExternalValue(value any) any {
+	switch typed := value.(type) {
+	case bool:
+		if typed {
+			return tableValue{Value: typed, Table: "External"}
+		}
+		return tableValue{Value: typed, Table: "Internal"}
+	default:
+		return value
+	}
+}
+
+func routerGatewayTableValue(value any) any {
+	gateway, ok := value.(map[string]any)
+	if !ok || len(gateway) == 0 {
+		return value
+	}
+	values := map[string]any{}
+	keys := []string{"network_id", "external_fixed_ips", "enable_snat", "qos_policy_id"}
+	for _, key := range keys {
+		if item, ok := gateway[key]; ok {
+			if key == "external_fixed_ips" {
+				item = orderedIPMapList(item, []string{"subnet_id", "ip_address"})
+			}
+			values[key] = item
+		}
+	}
+	ordered := orderedMapFromKeys(values, keys)
+	return tableValue{Value: ordered, Table: jsonLikeRepr(ordered), Pretty: value}
+}
+
+func routerInterfacesTableValue(value []map[string]string) tableValue {
+	values := make([]any, 0, len(value))
+	for _, item := range value {
+		values = append(values, orderedJSONObject{
+			keys: []string{"port_id", "ip_address", "subnet_id"},
+			values: map[string]any{
+				"port_id":    item["port_id"],
+				"ip_address": item["ip_address"],
+				"subnet_id":  item["subnet_id"],
+			},
+		})
+	}
+	return tableValue{Value: values, Table: jsonLikeRepr(values), Pretty: value}
+}
+
+func portFixedIPsTableValue(value any) tableValue {
+	values := orderedIPMapList(value, []string{"subnet_id", "ip_address"})
+	lines := make([]string, 0, len(values))
+	for _, item := range values {
+		ip := strings.TrimSpace(fmt.Sprint(item.values["ip_address"]))
+		subnet := strings.TrimSpace(fmt.Sprint(item.values["subnet_id"]))
+		switch {
+		case ip != "" && ip != "<nil>" && subnet != "" && subnet != "<nil>":
+			lines = append(lines, fmt.Sprintf("ip_address='%s', subnet_id='%s'", ip, subnet))
+		case ip != "" && ip != "<nil>":
+			lines = append(lines, fmt.Sprintf("ip_address='%s'", ip))
+		case subnet != "" && subnet != "<nil>":
+			lines = append(lines, fmt.Sprintf("subnet_id='%s'", subnet))
+		}
+	}
+	anyValues := make([]any, len(values))
+	for i, item := range values {
+		anyValues[i] = item
+	}
+	return tableValue{Value: anyValues, Table: strings.Join(lines, "\n"), Pretty: value}
+}
+
+func portFixedIPsValue(fixedIPs []ports.IP) tableValue {
+	tableLines := portFixedIPs(fixedIPs)
+	jsonValues := make([]any, 0, len(fixedIPs))
+	for _, item := range fixedIPs {
+		values := map[string]any{}
+		keys := []string{"subnet_id", "ip_address"}
+		values["subnet_id"] = item.SubnetID
+		values["ip_address"] = item.IPAddress
+		jsonValues = append(jsonValues, orderedJSONObject{keys: keys, values: values})
+	}
+	return tableValue{
+		Value:  jsonValues,
+		Table:  strings.Join(tableLines, ", "),
+		Pretty: prettyPortFixedIPAddresses(fixedIPs),
+	}
+}
+
+func orderedIPMapList(value any, keys []string) []orderedJSONObject {
+	items := anySlice(value)
+	values := make([]orderedJSONObject, 0, len(items))
+	for _, item := range items {
+		itemMap, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		orderedValues := map[string]any{}
+		for _, key := range keys {
+			orderedValues[key] = itemMap[key]
+		}
+		values = append(values, orderedJSONObject{keys: keys, values: orderedValues})
+	}
+	return values
+}
+
+func cinderBool(value any) any {
+	switch typed := value.(type) {
+	case bool:
+		return typed
+	case string:
+		if strings.EqualFold(typed, "true") {
+			return true
+		}
+		if strings.EqualFold(typed, "false") {
+			return false
+		}
+	}
+	return value
+}
+
+func jsonLikeRepr(value any) string {
+	switch typed := value.(type) {
+	case nil:
+		return "null"
+	case string:
+		encoded, _ := json.Marshal(typed)
+		return string(encoded)
+	case bool, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, uintptr, float32, float64:
+		encoded, _ := json.Marshal(typed)
+		return string(encoded)
+	case orderedJSONObject:
+		parts := make([]string, 0, len(typed.keys))
+		for _, key := range typed.keys {
+			value, ok := typed.values[key]
+			if !ok {
+				continue
+			}
+			encodedKey, _ := json.Marshal(key)
+			parts = append(parts, fmt.Sprintf("%s: %s", encodedKey, jsonLikeRepr(value)))
+		}
+		return "{" + strings.Join(parts, ", ") + "}"
+	case []orderedJSONObject:
+		parts := make([]string, 0, len(typed))
+		for _, item := range typed {
+			parts = append(parts, jsonLikeRepr(item))
+		}
+		return "[" + strings.Join(parts, ", ") + "]"
+	case []any:
+		parts := make([]string, 0, len(typed))
+		for _, item := range typed {
+			parts = append(parts, jsonLikeRepr(item))
+		}
+		return "[" + strings.Join(parts, ", ") + "]"
+	default:
+		encoded, err := json.Marshal(typed)
+		if err != nil {
+			return valueString(typed)
+		}
+		return string(encoded)
+	}
+}
+
+func orderedMapFromKeys(values map[string]any, preferred []string) orderedJSONObject {
+	keys := make([]string, 0, len(values))
+	seen := map[string]bool{}
+	for _, key := range preferred {
+		if _, ok := values[key]; ok {
+			keys = append(keys, key)
+			seen[key] = true
+		}
+	}
+	for _, key := range sortedMapKeys(values) {
+		if !seen[key] {
+			keys = append(keys, key)
+		}
+	}
+	return orderedJSONObject{keys: keys, values: values}
+}
+
+func sortedMapKeys(values map[string]any) []string {
+	keys := make([]string, 0, len(values))
+	for key := range values {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+func pythonDictRepr(values map[string]any, preferred []string) string {
+	if len(values) == 0 {
+		return "{}"
+	}
+	ordered := orderedMapFromKeys(values, preferred)
+	parts := make([]string, 0, len(ordered.keys))
+	for _, key := range ordered.keys {
+		parts = append(parts, fmt.Sprintf("'%s': %s", key, pythonRepr(ordered.values[key])))
+	}
+	return "{" + strings.Join(parts, ", ") + "}"
+}
+
+func pythonRepr(value any) string {
+	switch typed := value.(type) {
+	case nil:
+		return "None"
+	case string:
+		return "'" + strings.ReplaceAll(typed, "'", "\\'") + "'"
+	case prettyVolumeValue:
+		return pythonRepr(string(typed))
+	case bool:
+		if typed {
+			return "True"
+		}
+		return "False"
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, uintptr, float32, float64:
+		return valueString(typed)
+	case orderedJSONObject:
+		parts := make([]string, 0, len(typed.keys))
+		for _, key := range typed.keys {
+			parts = append(parts, fmt.Sprintf("'%s': %s", key, pythonRepr(typed.values[key])))
+		}
+		return "{" + strings.Join(parts, ", ") + "}"
+	case map[string]any:
+		return pythonDictRepr(typed, nil)
+	case map[string]string:
+		values := make(map[string]any, len(typed))
+		for key, value := range typed {
+			values[key] = value
+		}
+		return pythonDictRepr(values, nil)
+	case []any:
+		parts := make([]string, 0, len(typed))
+		for _, item := range typed {
+			parts = append(parts, pythonRepr(item))
+		}
+		return "[" + strings.Join(parts, ", ") + "]"
+	default:
+		reflected := reflect.ValueOf(value)
+		if reflected.IsValid() && reflected.Kind() == reflect.Slice {
+			parts := make([]string, 0, reflected.Len())
+			for i := 0; i < reflected.Len(); i++ {
+				parts = append(parts, pythonRepr(reflected.Index(i).Interface()))
+			}
+			return "[" + strings.Join(parts, ", ") + "]"
+		}
+		return valueString(value)
+	}
 }
 
 func subnetDHCPFilter(opts *Options) (bool, bool) {
@@ -18848,11 +19812,11 @@ func portFixedIPs(fixedIPs []ports.IP) []string {
 	for _, item := range fixedIPs {
 		switch {
 		case item.IPAddress != "" && item.SubnetID != "":
-			values = append(values, fmt.Sprintf("%s, subnet_id=%s", item.IPAddress, item.SubnetID))
+			values = append(values, fmt.Sprintf("ip_address='%s', subnet_id='%s'", item.IPAddress, item.SubnetID))
 		case item.IPAddress != "":
-			values = append(values, item.IPAddress)
+			values = append(values, fmt.Sprintf("ip_address='%s'", item.IPAddress))
 		case item.SubnetID != "":
-			values = append(values, fmt.Sprintf("subnet_id=%s", item.SubnetID))
+			values = append(values, fmt.Sprintf("subnet_id='%s'", item.SubnetID))
 		}
 	}
 	sort.Strings(values)

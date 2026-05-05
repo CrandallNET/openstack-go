@@ -1352,7 +1352,7 @@ func TestPrettyVolumeSemanticRoleStillColorsIDsAsGenericUUID(t *testing.T) {
 
 func TestPrettyVolumeListIDUsesGenericUUIDRole(t *testing.T) {
 	uuid := "52c4cf8d-4ef3-4479-b7b9-ffb814f9dd5b"
-	row := volumeListRow(volumes.Volume{ID: uuid, Name: "Rocky10-Boot"})
+	row := volumeListRow(volumes.Volume{ID: uuid, Name: "Rocky10-Boot"}, nil)
 	if role := prettySemanticRole(row["ID"]); role != "" {
 		t.Fatalf("expected volume list ID to use generic UUID styling, got semantic role %q", role)
 	}
