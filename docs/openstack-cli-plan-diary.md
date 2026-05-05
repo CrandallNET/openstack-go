@@ -1487,4 +1487,18 @@ Sources consulted:
 
 * Gophercloud v2.12.0 local module packages for Compute, Network, Block Storage API versions, common extensions, and Identity roles.
 * Local lifecycle safety decisions in `docs/openstack-cli-compatibility-plan.md`.
+
+## 2026-05-05: Server Command Expansion
+
+Decision: implement the Python OSC `server` namespace through Gophercloud typed helpers wherever available, and use narrow Nova or Neutron REST shims only for operations that the local Gophercloud v2.12.0 module does not expose as typed commands or where OSC needs cross-service behavior. Keep `server ssh` as a stub for now because Python OSC delegates to local SSH behavior and this project has a standing requirement that production CLI behavior be self-contained and not shell out to the operating system.
+
+Work done: added handlers and command-local flags for `server create/delete/set/unset`, lifecycle actions including start, stop, pause, unpause, suspend, resume, shelve, unshelve, reboot, rebuild, rescue, unrescue, resize, migrate, restore, lock, unlock, evacuate, and dump create, plus server image and backup creation, server network/port/fixed-IP/floating-IP/security-group/volume attach and detach commands, migration show/abort/force-complete, resize and migration confirm/revert aliases, and server volume set/update. `--wait` paths now use the existing Fancy progress helper only when `--pretty` is active.
+
+Compatibility note: output and lifecycle behavior are implemented but not yet golden-matched against live Python OSC for the write commands. The first implementation uses existing list/show renderers, name-or-ID lookup helpers, and service clients. It still needs disposable server lifecycle tests on each cloud after discovery picks current-safe image, flavor, network, keypair, and quota defaults immediately before the test run.
+
+Sources consulted:
+
+* Gophercloud package docs for [Compute servers](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servers), [Compute attach interfaces](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/compute/v2/attachinterfaces), [Compute volume attachments](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/compute/v2/volumeattach), and [Compute tags](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/compute/v2/tags).
+* Gophercloud package docs for [Networking ports](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/ports) and [Networking floating IPs](https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/floatingips).
+* Local OSC oracle help snapshots under `compat/osc/9.0.0/help/server/`.
 * Local keypair implementation in `internal/cli/core_read.go`.

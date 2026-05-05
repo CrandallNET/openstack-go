@@ -128,11 +128,20 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"router set", "router show", "router unset",
 		"security group create", "security group delete", "security group list", "security group set", "security group show", "security group unset",
 		"security group rule create", "security group rule delete", "security group rule list", "security group rule show",
+		"server add fixed ip", "server add floating ip", "server add network", "server add port", "server add security group", "server add volume",
+		"server backup create",
+		"server create", "server delete", "server dump create", "server evacuate",
 		"server event list", "server event show",
-		"server list", "server show",
 		"server group create", "server group delete", "server group list", "server group show",
-		"server migration list",
-		"server volume list",
+		"server image create",
+		"server list", "server lock", "server migrate", "server migrate confirm", "server migrate revert",
+		"server migration abort", "server migration confirm", "server migration force complete", "server migration list", "server migration revert", "server migration show",
+		"server pause", "server reboot", "server rebuild",
+		"server remove fixed ip", "server remove floating ip", "server remove network", "server remove port", "server remove security group", "server remove volume",
+		"server rescue", "server resize", "server resize confirm", "server resize revert", "server restore", "server resume",
+		"server set", "server shelve", "server show", "server start", "server stop", "server suspend",
+		"server unlock", "server unpause", "server unrescue", "server unset", "server unshelve",
+		"server volume list", "server volume set", "server volume update",
 		"subnet create", "subnet delete", "subnet list", "subnet set", "subnet show", "subnet unset",
 		"subnet pool create", "subnet pool delete", "subnet pool list", "subnet pool set", "subnet pool show", "subnet pool unset",
 		"trait list", "trait show",
@@ -1179,6 +1188,141 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 	case "server group create":
 		cmd.Flags().String("policy", "", "server group policy")
 		cmd.Flags().StringArray("rule", nil, "server group rule key=value")
+	case "server create":
+		cmd.Flags().String("flavor", "", "server flavor")
+		cmd.Flags().String("image", "", "server image")
+		cmd.Flags().String("image-property", "", "image property key=value")
+		cmd.Flags().String("volume", "", "boot volume")
+		cmd.Flags().String("snapshot", "", "boot snapshot")
+		cmd.Flags().Int("boot-from-volume", 0, "boot volume size")
+		cmd.Flags().StringArray("block-device-mapping", nil, "deprecated block device mapping")
+		cmd.Flags().StringArray("block-device", nil, "block device mapping")
+		cmd.Flags().Int("swap", 0, "swap size")
+		cmd.Flags().StringArray("ephemeral", nil, "ephemeral disk")
+		cmd.Flags().StringArray("network", nil, "network")
+		cmd.Flags().StringArray("port", nil, "port")
+		cmd.Flags().Bool("no-network", false, "do not attach a network")
+		cmd.Flags().Bool("auto-network", false, "automatically allocate network")
+		cmd.Flags().StringArray("nic", nil, "network interface")
+		cmd.Flags().String("password", "", "admin password")
+		cmd.Flags().Bool("no-security-group", false, "do not attach security groups")
+		cmd.Flags().StringArray("security-group", nil, "security group")
+		cmd.Flags().String("key-name", "", "keypair name")
+		cmd.Flags().StringArray("property", nil, "server metadata key=value")
+		cmd.Flags().StringArray("file", nil, "file injection destination=source")
+		cmd.Flags().String("user-data", "", "user data file")
+		cmd.Flags().String("description", "", "server description")
+		cmd.Flags().String("availability-zone", "", "availability zone")
+		cmd.Flags().String("host", "", "requested host")
+		cmd.Flags().String("hypervisor-hostname", "", "requested hypervisor hostname")
+		cmd.Flags().String("server-group", "", "server group")
+		cmd.Flags().StringArray("hint", nil, "scheduler hint key=value")
+		cmd.Flags().Bool("use-config-drive", false, "enable config drive")
+		cmd.Flags().Bool("no-config-drive", false, "disable config drive")
+		cmd.Flags().String("config-drive", "", "config drive")
+		cmd.Flags().Int("min", 0, "minimum number of servers")
+		cmd.Flags().Int("max", 0, "maximum number of servers")
+		cmd.Flags().StringArray("tag", nil, "server tag")
+		cmd.Flags().String("hostname", "", "server hostname")
+		cmd.Flags().Bool("wait", false, "wait for operation to complete")
+		cmd.Flags().StringArray("trusted-image-cert", nil, "trusted image certificate")
+	case "server delete":
+		cmd.Flags().Bool("force", false, "force delete")
+		cmd.Flags().Bool("all-projects", false, "delete in all projects")
+		cmd.Flags().Bool("wait", false, "wait for operation to complete")
+	case "server lock":
+		cmd.Flags().String("reason", "", "lock reason")
+	case "server migrate":
+		cmd.Flags().Bool("live-migration", false, "live migrate server")
+		cmd.Flags().String("host", "", "destination host")
+		cmd.Flags().Bool("shared-migration", false, "shared live migration")
+		cmd.Flags().Bool("block-migration", false, "block live migration")
+		cmd.Flags().Bool("disk-overcommit", false, "allow disk over-commit")
+		cmd.Flags().Bool("no-disk-overcommit", false, "disable disk over-commit")
+		cmd.Flags().Bool("wait", false, "wait for operation to complete")
+	case "server reboot":
+		cmd.Flags().Bool("hard", false, "hard reboot")
+		cmd.Flags().Bool("soft", false, "soft reboot")
+		cmd.Flags().Bool("wait", false, "wait for operation to complete")
+	case "server rebuild":
+		cmd.Flags().String("image", "", "server image")
+		cmd.Flags().String("name", "", "new server name")
+		cmd.Flags().String("password", "", "admin password")
+		cmd.Flags().StringArray("property", nil, "server metadata key=value")
+		cmd.Flags().String("description", "", "server description")
+		cmd.Flags().Bool("preserve-ephemeral", false, "preserve ephemeral disk")
+		cmd.Flags().Bool("no-preserve-ephemeral", false, "do not preserve ephemeral disk")
+		cmd.Flags().String("key-name", "", "keypair name")
+		cmd.Flags().Bool("no-key-name", false, "unset keypair name")
+		cmd.Flags().String("user-data", "", "user data file")
+		cmd.Flags().Bool("no-user-data", false, "remove user data")
+		cmd.Flags().StringArray("trusted-image-cert", nil, "trusted image certificate")
+		cmd.Flags().Bool("no-trusted-image-certs", false, "remove trusted image certificates")
+		cmd.Flags().String("hostname", "", "server hostname")
+		cmd.Flags().Bool("reimage-boot-volume", false, "reimage boot volume")
+		cmd.Flags().Bool("no-reimage-boot-volume", false, "do not reimage boot volume")
+		cmd.Flags().Bool("wait", false, "wait for operation to complete")
+	case "server resize":
+		cmd.Flags().String("flavor", "", "server flavor")
+		cmd.Flags().Bool("confirm", false, "confirm resize")
+		cmd.Flags().Bool("revert", false, "revert resize")
+		cmd.Flags().Bool("wait", false, "wait for operation to complete")
+	case "server rescue":
+		cmd.Flags().String("image", "", "rescue image")
+		cmd.Flags().String("password", "", "admin password")
+	case "server evacuate":
+		cmd.Flags().Bool("wait", false, "wait for operation to complete")
+		cmd.Flags().String("host", "", "destination host")
+		cmd.Flags().String("password", "", "admin password")
+		cmd.Flags().Bool("shared-storage", false, "shared storage")
+	case "server shelve":
+		cmd.Flags().Bool("offload", false, "offload after shelving")
+		cmd.Flags().Bool("wait", false, "wait for operation to complete")
+	case "server unshelve":
+		cmd.Flags().String("availability-zone", "", "availability zone")
+		cmd.Flags().Bool("no-availability-zone", false, "unset availability zone")
+		cmd.Flags().String("host", "", "destination host")
+		cmd.Flags().Bool("wait", false, "wait for operation to complete")
+	case "server set":
+		cmd.Flags().String("name", "", "new server name")
+		cmd.Flags().String("password", "", "admin password")
+		cmd.Flags().Bool("no-password", false, "clear stored admin password")
+		cmd.Flags().StringArray("property", nil, "server metadata key=value")
+		cmd.Flags().Bool("auto-approve", false, "auto approve state reset")
+		cmd.Flags().String("state", "", "server state")
+		cmd.Flags().String("description", "", "server description")
+		cmd.Flags().StringArray("tag", nil, "server tag")
+		cmd.Flags().String("hostname", "", "server hostname")
+	case "server unset":
+		cmd.Flags().StringArray("property", nil, "metadata property")
+		cmd.Flags().Bool("all-properties", false, "remove all metadata")
+		cmd.Flags().Bool("description", false, "unset description")
+		cmd.Flags().StringArray("tag", nil, "server tag")
+		cmd.Flags().Bool("all-tags", false, "remove all tags")
+	case "server image create":
+		cmd.Flags().String("name", "", "image name")
+		cmd.Flags().StringArray("property", nil, "image metadata key=value")
+		cmd.Flags().Bool("wait", false, "wait for operation to complete")
+	case "server backup create":
+		cmd.Flags().String("name", "", "image name")
+		cmd.Flags().String("type", "", "backup type")
+		cmd.Flags().Int("rotate", 0, "backup rotation count")
+		cmd.Flags().Bool("wait", false, "wait for operation to complete")
+	case "server add fixed ip":
+		cmd.Flags().String("fixed-ip-address", "", "fixed IP address")
+		cmd.Flags().String("tag", "", "interface tag")
+	case "server add network", "server add port":
+		cmd.Flags().String("tag", "", "interface tag")
+	case "server add floating ip":
+		cmd.Flags().String("fixed-ip-address", "", "fixed IP address")
+	case "server add volume":
+		cmd.Flags().String("device", "", "device name")
+		cmd.Flags().String("tag", "", "volume tag")
+		cmd.Flags().Bool("enable-delete-on-termination", false, "delete volume when server is destroyed")
+		cmd.Flags().Bool("disable-delete-on-termination", false, "preserve volume when server is destroyed")
+	case "server volume set", "server volume update":
+		cmd.Flags().Bool("delete-on-termination", false, "delete volume when server is destroyed")
+		cmd.Flags().Bool("preserve-on-termination", false, "preserve volume when server is destroyed")
 	case "server event list":
 		cmd.Flags().Bool("long", false, "list additional fields")
 		cmd.Flags().String("changes-since", "", "show events changed since this timestamp")

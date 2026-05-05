@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/ed25519"
 	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
 	"errors"
@@ -30,6 +31,7 @@ import (
 	"github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/volumes"
 	"github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/volumetypes"
 	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/aggregates"
+	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/attachinterfaces"
 	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/flavors"
 	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/hypervisors"
 	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/instanceactions"
@@ -38,6 +40,7 @@ import (
 	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servergroups"
 	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servers"
 	computeservices "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/services"
+	computetags "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/tags"
 	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/usage"
 	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/volumeattach"
 	"github.com/gophercloud/gophercloud/v2/openstack/identity/v3/projects"
@@ -1255,6 +1258,107 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return securityGroupRuleShow(cmd.Context(), stdout, opts, client, args)
+		case "server add fixed ip":
+			computeClient, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			networkClient, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return serverAddFixedIP(cmd.Context(), stdout, opts, computeClient, networkClient, args)
+		case "server add floating ip":
+			computeClient, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			networkClient, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return serverAddFloatingIP(cmd.Context(), opts, computeClient, networkClient, args)
+		case "server add network":
+			computeClient, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			networkClient, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return serverAddNetwork(cmd.Context(), opts, computeClient, networkClient, args)
+		case "server add port":
+			computeClient, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			networkClient, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return serverAddPort(cmd.Context(), opts, computeClient, networkClient, args)
+		case "server add security group":
+			computeClient, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			networkClient, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return serverSecurityGroupAction(cmd.Context(), opts, computeClient, networkClient, args, "addSecurityGroup")
+		case "server add volume":
+			computeClient, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			volumeClient, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return serverAddVolume(cmd.Context(), stdout, opts, computeClient, volumeClient, args)
+		case "server backup create":
+			computeClient, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			imageClient, _ := clients.imageV2()
+			return serverBackupCreate(cmd.Context(), stdout, opts, computeClient, imageClient, args)
+		case "server create":
+			computeClient, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			imageClient, _ := clients.imageV2()
+			networkClient, _ := clients.networkV2()
+			volumeClient, _ := clients.blockStorageV3()
+			return serverCreate(cmd.Context(), stdout, opts, computeClient, imageClient, networkClient, volumeClient, args)
+		case "server delete":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return serverDelete(cmd.Context(), stdout, opts, client, args)
+		case "server dump create":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return serverSimpleRawAction(cmd.Context(), client, args, "trigger_crash_dump")
+		case "server evacuate":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return serverEvacuate(cmd.Context(), stdout, opts, client, args)
+		case "server image create":
+			computeClient, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			imageClient, _ := clients.imageV2()
+			return serverImageCreate(cmd.Context(), stdout, opts, computeClient, imageClient, args)
 		case "server list":
 			client, err := clients.computeV2()
 			if err != nil {
@@ -1262,6 +1366,46 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 			}
 			imageClient, _ := clients.imageV2()
 			return computeServerList(cmd.Context(), stdout, opts, client, imageClient)
+		case "server lock":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return serverLock(cmd.Context(), opts, client, args)
+		case "server migrate":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return serverMigrate(cmd.Context(), stdout, opts, client, args)
+		case "server migrate confirm", "server migration confirm", "server resize confirm":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return serverSingleAction(cmd.Context(), client, args, func(ctx context.Context, client *gophercloud.ServiceClient, id string) error {
+				return servers.ConfirmResize(ctx, client, id).ExtractErr()
+			})
+		case "server migrate revert", "server migration revert", "server resize revert":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return serverSingleAction(cmd.Context(), client, args, func(ctx context.Context, client *gophercloud.ServiceClient, id string) error {
+				return servers.RevertResize(ctx, client, id).ExtractErr()
+			})
+		case "server migration abort":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return serverMigrationDeleteAction(cmd.Context(), client, args)
+		case "server migration force complete":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return serverMigrationForceComplete(cmd.Context(), client, args)
 		case "server show":
 			client, err := clients.computeV2()
 			if err != nil {
@@ -1326,12 +1470,204 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return serverMigrationList(cmd.Context(), stdout, opts, clients, client)
+		case "server migration show":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return serverMigrationShow(cmd.Context(), stdout, opts, client, args)
+		case "server pause":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return serverMultiAction(cmd.Context(), client, args, func(ctx context.Context, client *gophercloud.ServiceClient, id string) error {
+				return servers.Pause(ctx, client, id).ExtractErr()
+			})
+		case "server reboot":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return serverReboot(cmd.Context(), stdout, opts, client, args)
+		case "server rebuild":
+			computeClient, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			imageClient, _ := clients.imageV2()
+			return serverRebuild(cmd.Context(), stdout, opts, computeClient, imageClient, args)
+		case "server remove fixed ip":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return serverRemoveFixedIP(cmd.Context(), client, args)
+		case "server remove floating ip":
+			computeClient, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			networkClient, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return serverRemoveFloatingIP(cmd.Context(), computeClient, networkClient, args)
+		case "server remove network":
+			computeClient, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			networkClient, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return serverRemoveNetwork(cmd.Context(), computeClient, networkClient, args)
+		case "server remove port":
+			computeClient, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			networkClient, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return serverRemovePort(cmd.Context(), computeClient, networkClient, args)
+		case "server remove security group":
+			computeClient, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			networkClient, err := clients.networkV2()
+			if err != nil {
+				return err
+			}
+			return serverSecurityGroupAction(cmd.Context(), opts, computeClient, networkClient, args, "removeSecurityGroup")
+		case "server remove volume":
+			computeClient, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			volumeClient, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return serverRemoveVolume(cmd.Context(), computeClient, volumeClient, args)
+		case "server rescue":
+			computeClient, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			imageClient, _ := clients.imageV2()
+			return serverRescue(cmd.Context(), stdout, opts, computeClient, imageClient, args)
+		case "server resize":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return serverResize(cmd.Context(), stdout, opts, client, args)
+		case "server restore":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return serverSimpleRawAction(cmd.Context(), client, args, "restore")
+		case "server resume":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return serverMultiAction(cmd.Context(), client, args, func(ctx context.Context, client *gophercloud.ServiceClient, id string) error {
+				return servers.Resume(ctx, client, id).ExtractErr()
+			})
+		case "server set":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return serverSet(cmd.Context(), opts, client, args)
+		case "server shelve":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return serverShelve(cmd.Context(), stdout, opts, client, args)
+		case "server start":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return serverMultiAction(cmd.Context(), client, args, func(ctx context.Context, client *gophercloud.ServiceClient, id string) error {
+				return servers.Start(ctx, client, id).ExtractErr()
+			})
+		case "server stop":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return serverMultiAction(cmd.Context(), client, args, func(ctx context.Context, client *gophercloud.ServiceClient, id string) error {
+				return servers.Stop(ctx, client, id).ExtractErr()
+			})
+		case "server suspend":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return serverMultiAction(cmd.Context(), client, args, func(ctx context.Context, client *gophercloud.ServiceClient, id string) error {
+				return servers.Suspend(ctx, client, id).ExtractErr()
+			})
+		case "server unlock":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return serverMultiAction(cmd.Context(), client, args, func(ctx context.Context, client *gophercloud.ServiceClient, id string) error {
+				return servers.Unlock(ctx, client, id).ExtractErr()
+			})
+		case "server unpause":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return serverMultiAction(cmd.Context(), client, args, func(ctx context.Context, client *gophercloud.ServiceClient, id string) error {
+				return servers.Unpause(ctx, client, id).ExtractErr()
+			})
+		case "server unrescue":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return serverMultiAction(cmd.Context(), client, args, func(ctx context.Context, client *gophercloud.ServiceClient, id string) error {
+				return servers.Unrescue(ctx, client, id).ExtractErr()
+			})
+		case "server unset":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return serverUnset(cmd.Context(), opts, client, args)
+		case "server unshelve":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return serverUnshelve(cmd.Context(), stdout, opts, client, args)
 		case "server volume list":
 			client, err := clients.computeV2()
 			if err != nil {
 				return err
 			}
 			return serverVolumeList(cmd.Context(), stdout, opts, client, args)
+		case "server volume set", "server volume update":
+			computeClient, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			volumeClient, err := clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
+			return serverVolumeSet(cmd.Context(), opts, computeClient, volumeClient, args)
 		case "subnet create":
 			networkClient, err := clients.networkV2()
 			if err != nil {
@@ -1649,6 +1985,1008 @@ func computeServerShow(ctx context.Context, stdout io.Writer, opts *Options, cli
 		{"metadata", item.Metadata},
 		{"key_name", nilIfEmpty(item.KeyName)},
 	})
+}
+
+type serverActionFunc func(context.Context, *gophercloud.ServiceClient, string) error
+
+func serverMultiAction(ctx context.Context, client *gophercloud.ServiceClient, args []string, action serverActionFunc) error {
+	if len(args) < 1 {
+		return fmt.Errorf("server command requires <server>")
+	}
+	failures := 0
+	for _, value := range args {
+		server, err := findServer(ctx, client, value)
+		if err != nil {
+			failures++
+			continue
+		}
+		if err := action(ctx, client, server.ID); err != nil {
+			failures++
+		}
+	}
+	if failures > 0 {
+		return fmt.Errorf("%d of %d servers failed.", failures, len(args))
+	}
+	return nil
+}
+
+func serverSingleAction(ctx context.Context, client *gophercloud.ServiceClient, args []string, action serverActionFunc) error {
+	if len(args) < 1 {
+		return fmt.Errorf("server command requires <server>")
+	}
+	server, err := findServer(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	return action(ctx, client, server.ID)
+}
+
+func serverDelete(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("server delete requires <server>")
+	}
+	deleted := make([]string, 0, len(args))
+	failures := 0
+	for _, value := range args {
+		server, err := findServerForServerCommand(ctx, client, value, boolFlag(opts, "all-projects"))
+		if err != nil {
+			failures++
+			continue
+		}
+		if boolFlag(opts, "force") {
+			err = servers.ForceDelete(ctx, client, server.ID).ExtractErr()
+		} else {
+			err = servers.Delete(ctx, client, server.ID).ExtractErr()
+		}
+		if err != nil {
+			failures++
+			continue
+		}
+		deleted = append(deleted, server.ID)
+	}
+	if failures > 0 {
+		return fmt.Errorf("%d of %d servers failed to delete.", failures, len(args))
+	}
+	if boolFlag(opts, "wait") {
+		for _, id := range deleted {
+			if err := waitForServerGone(ctx, stdout, opts, client, id); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func serverReboot(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("server reboot requires <server>")
+	}
+	method := servers.SoftReboot
+	if boolFlag(opts, "hard") {
+		method = servers.HardReboot
+	}
+	server, err := findServer(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	if err := servers.Reboot(ctx, client, server.ID, servers.RebootOpts{Type: method}).ExtractErr(); err != nil {
+		return err
+	}
+	if boolFlag(opts, "wait") {
+		return waitForServerStatus(ctx, stdout, opts, client, server.ID, []string{"ACTIVE"}, []string{"ERROR"})
+	}
+	return nil
+}
+
+func serverResize(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("server resize requires <server>")
+	}
+	server, err := findServer(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	switch {
+	case boolFlag(opts, "confirm"):
+		return servers.ConfirmResize(ctx, client, server.ID).ExtractErr()
+	case boolFlag(opts, "revert"):
+		return servers.RevertResize(ctx, client, server.ID).ExtractErr()
+	}
+	flavorName := flagValue(opts, "flavor")
+	if flavorName == "" {
+		return fmt.Errorf("server resize requires --flavor, --confirm, or --revert")
+	}
+	flavor, err := findFlavor(ctx, client, flavorName)
+	if err != nil {
+		return err
+	}
+	if err := servers.Resize(ctx, client, server.ID, servers.ResizeOpts{FlavorRef: flavor.ID}).ExtractErr(); err != nil {
+		return err
+	}
+	if boolFlag(opts, "wait") {
+		return waitForServerStatus(ctx, stdout, opts, client, server.ID, []string{"VERIFY_RESIZE"}, []string{"ERROR"})
+	}
+	return nil
+}
+
+func serverMigrate(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("server migrate requires <server>")
+	}
+	server, err := findServer(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	if boolFlag(opts, "live-migration") {
+		var host *string
+		if value := flagValue(opts, "host"); value != "" {
+			host = &value
+		}
+		var block *bool
+		if boolFlag(opts, "block-migration") {
+			value := true
+			block = &value
+		} else if boolFlag(opts, "shared-migration") {
+			value := false
+			block = &value
+		}
+		var overcommit *bool
+		if boolFlag(opts, "disk-overcommit") {
+			value := true
+			overcommit = &value
+		} else if boolFlag(opts, "no-disk-overcommit") {
+			value := false
+			overcommit = &value
+		}
+		if err := servers.LiveMigrate(ctx, client, server.ID, servers.LiveMigrateOpts{Host: host, BlockMigration: block, DiskOverCommit: overcommit}).ExtractErr(); err != nil {
+			return err
+		}
+		if boolFlag(opts, "wait") {
+			return waitForServerStatus(ctx, stdout, opts, client, server.ID, []string{"ACTIVE"}, []string{"ERROR"})
+		}
+		return nil
+	}
+	body := any(nil)
+	if host := flagValue(opts, "host"); host != "" {
+		body = map[string]any{"host": host}
+	}
+	if err := serverRawAction(ctx, client, server.ID, "migrate", body, nil, http.StatusAccepted, http.StatusNoContent); err != nil {
+		return err
+	}
+	if boolFlag(opts, "wait") {
+		return waitForServerStatus(ctx, stdout, opts, client, server.ID, []string{"VERIFY_RESIZE"}, []string{"ERROR"})
+	}
+	return nil
+}
+
+func serverRebuild(ctx context.Context, stdout io.Writer, opts *Options, computeClient *gophercloud.ServiceClient, imageClient *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("server rebuild requires <server>")
+	}
+	server, err := findServer(ctx, computeClient, args[0])
+	if err != nil {
+		return err
+	}
+	imageID := ""
+	if imageValue := flagValue(opts, "image"); imageValue != "" {
+		imageID, err = resolveServerImageID(ctx, imageClient, imageValue)
+		if err != nil {
+			return err
+		}
+	} else if id, ok := server.Image["id"].(string); ok {
+		imageID = id
+	}
+	if imageID == "" && !boolFlag(opts, "reimage-boot-volume") {
+		return fmt.Errorf("server rebuild requires --image for servers without an image reference")
+	}
+	metadata, err := parseStringMap(flagValues(opts, "property"), "property")
+	if err != nil {
+		return err
+	}
+	rebuild := serverRebuildOpts{
+		RebuildOpts: servers.RebuildOpts{
+			AdminPass: flagValue(opts, "password"),
+			ImageRef:  imageID,
+			Name:      flagValue(opts, "name"),
+			Metadata:  metadata,
+		},
+		Description:              flagValue(opts, "description"),
+		KeyName:                  flagValue(opts, "key-name"),
+		UnsetKeyName:             boolFlag(opts, "no-key-name"),
+		TrustedImageCertificates: flagValues(opts, "trusted-image-cert"),
+		UnsetTrustedImageCerts:   boolFlag(opts, "no-trusted-image-certs"),
+		Hostname:                 flagValue(opts, "hostname"),
+		ReimageBootVolume:        boolFlag(opts, "reimage-boot-volume"),
+		NoReimageBootVolume:      boolFlag(opts, "no-reimage-boot-volume"),
+	}
+	if flagChanged(opts, "user-data") {
+		userData, err := os.ReadFile(expandUserPath(flagValue(opts, "user-data")))
+		if err != nil {
+			return err
+		}
+		rebuild.UserData = userData
+	}
+	if boolFlag(opts, "no-user-data") {
+		rebuild.UnsetUserData = true
+	}
+	rebuilt, err := servers.Rebuild(ctx, computeClient, server.ID, rebuild).Extract()
+	if err != nil {
+		return err
+	}
+	if boolFlag(opts, "wait") {
+		if err := waitForServerStatus(ctx, stdout, opts, computeClient, server.ID, []string{"ACTIVE"}, []string{"ERROR"}); err != nil {
+			return err
+		}
+		rebuilt, err = servers.Get(ctx, computeClient, server.ID).Extract()
+		if err != nil {
+			return err
+		}
+	}
+	return renderServerShow(stdout, opts, rebuilt, nil)
+}
+
+func serverRescue(ctx context.Context, stdout io.Writer, opts *Options, computeClient *gophercloud.ServiceClient, imageClient *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("server rescue requires <server>")
+	}
+	server, err := findServer(ctx, computeClient, args[0])
+	if err != nil {
+		return err
+	}
+	imageID := ""
+	if imageValue := flagValue(opts, "image"); imageValue != "" {
+		imageID, err = resolveServerImageID(ctx, imageClient, imageValue)
+		if err != nil {
+			return err
+		}
+	}
+	result := servers.Rescue(ctx, computeClient, server.ID, servers.RescueOpts{AdminPass: flagValue(opts, "password"), RescueImageRef: imageID})
+	if result.Err != nil {
+		return result.Err
+	}
+	body := mapAnyFromRaw(result.Body)
+	if len(body) == 0 {
+		_ = result.ExtractInto(&body)
+	}
+	fields := []outputField{}
+	if value, ok := body["adminPass"]; ok {
+		fields = []outputField{{"adminPass", value}}
+	}
+	if len(fields) == 0 {
+		return nil
+	}
+	return renderShowOutput(stdout, opts, fields)
+}
+
+func serverEvacuate(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("server evacuate requires <server>")
+	}
+	server, err := findServer(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	result := servers.Evacuate(ctx, client, server.ID, servers.EvacuateOpts{
+		Host:            flagValue(opts, "host"),
+		OnSharedStorage: boolFlag(opts, "shared-storage"),
+		AdminPass:       flagValue(opts, "password"),
+	})
+	adminPass, err := result.ExtractAdminPass()
+	if err != nil {
+		return err
+	}
+	if boolFlag(opts, "wait") {
+		if err := waitForServerStatus(ctx, stdout, opts, client, server.ID, []string{"ACTIVE"}, []string{"ERROR"}); err != nil {
+			return err
+		}
+	}
+	if adminPass == "" {
+		return nil
+	}
+	return renderShowOutput(stdout, opts, []outputField{{"adminPass", adminPass}})
+}
+
+func serverShelve(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("server shelve requires <server>")
+	}
+	for _, value := range args {
+		server, err := findServer(ctx, client, value)
+		if err != nil {
+			return err
+		}
+		if err := servers.Shelve(ctx, client, server.ID).ExtractErr(); err != nil {
+			return err
+		}
+		if boolFlag(opts, "offload") {
+			if err := servers.ShelveOffload(ctx, client, server.ID).ExtractErr(); err != nil {
+				return err
+			}
+		}
+		if boolFlag(opts, "wait") {
+			targets := []string{"SHELVED", "SHELVED_OFFLOADED"}
+			if boolFlag(opts, "offload") {
+				targets = []string{"SHELVED_OFFLOADED"}
+			}
+			if err := waitForServerStatus(ctx, stdout, opts, client, server.ID, targets, []string{"ERROR"}); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func serverUnshelve(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("server unshelve requires <server>")
+	}
+	if boolFlag(opts, "no-availability-zone") || flagValue(opts, "host") != "" {
+		client, _ = computeClientWithMinimumMicroversion(ctx, client, "2.91")
+	} else if flagValue(opts, "availability-zone") != "" {
+		client, _ = computeClientWithMinimumMicroversion(ctx, client, "2.77")
+	}
+	for _, value := range args {
+		server, err := findServer(ctx, client, value)
+		if err != nil {
+			return err
+		}
+		body := any(nil)
+		if boolFlag(opts, "no-availability-zone") || flagValue(opts, "host") != "" {
+			payload := map[string]any{}
+			if !boolFlag(opts, "no-availability-zone") && flagValue(opts, "availability-zone") != "" {
+				payload["availability_zone"] = flagValue(opts, "availability-zone")
+			}
+			if host := flagValue(opts, "host"); host != "" {
+				payload["host"] = host
+			}
+			body = payload
+		} else {
+			body = servers.UnshelveOpts{AvailabilityZone: flagValue(opts, "availability-zone")}
+		}
+		err = nil
+		if typed, ok := body.(servers.UnshelveOpts); ok {
+			err = servers.Unshelve(ctx, client, server.ID, typed).ExtractErr()
+		} else {
+			err = serverRawAction(ctx, client, server.ID, "unshelve", body, nil, http.StatusAccepted, http.StatusNoContent)
+		}
+		if err != nil {
+			return err
+		}
+		if boolFlag(opts, "wait") {
+			if err := waitForServerStatus(ctx, stdout, opts, client, server.ID, []string{"ACTIVE"}, []string{"ERROR"}); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func serverLock(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("server lock requires <server>")
+	}
+	for _, value := range args {
+		server, err := findServer(ctx, client, value)
+		if err != nil {
+			return err
+		}
+		if reason := flagValue(opts, "reason"); reason != "" {
+			if err := serverRawAction(ctx, client, server.ID, "lock", map[string]any{"locked_reason": reason}, nil, http.StatusAccepted, http.StatusNoContent); err != nil {
+				return err
+			}
+			continue
+		}
+		if err := servers.Lock(ctx, client, server.ID).ExtractErr(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func serverSet(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("server set requires <server>")
+	}
+	server, err := findServer(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	update := serverUpdateOpts{}
+	if flagChanged(opts, "name") {
+		update.Name = flagValue(opts, "name")
+	}
+	if flagChanged(opts, "hostname") {
+		hostname := flagValue(opts, "hostname")
+		update.Hostname = &hostname
+	}
+	if flagChanged(opts, "description") {
+		update.Description = valueStringPtr(flagValue(opts, "description"))
+	}
+	if update.hasValues() {
+		if _, err := servers.Update(ctx, client, server.ID, update).Extract(); err != nil {
+			return err
+		}
+	}
+	if flagChanged(opts, "password") {
+		if err := servers.ChangeAdminPassword(ctx, client, server.ID, flagValue(opts, "password")).ExtractErr(); err != nil {
+			return err
+		}
+	}
+	if boolFlag(opts, "no-password") {
+		if err := serverDeleteAdminPassword(ctx, client, server.ID); err != nil {
+			return err
+		}
+	}
+	if values := flagValues(opts, "property"); len(values) > 0 {
+		metadata, err := parseStringMap(values, "property")
+		if err != nil {
+			return err
+		}
+		if _, err := servers.UpdateMetadata(ctx, client, server.ID, servers.MetadataOpts(metadata)).Extract(); err != nil {
+			return err
+		}
+	}
+	if state := strings.ToLower(strings.TrimSpace(flagValue(opts, "state"))); state != "" {
+		if state != "active" && state != "error" {
+			return fmt.Errorf("argument --state: invalid choice: %q (choose from 'active', 'error')", state)
+		}
+		if err := servers.ResetState(ctx, client, server.ID, servers.ServerState(state)).ExtractErr(); err != nil {
+			return err
+		}
+	}
+	for _, tag := range flagValues(opts, "tag") {
+		if err := computetags.Add(ctx, client, server.ID, tag).ExtractErr(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func serverUnset(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("server unset requires <server>")
+	}
+	server, err := findServer(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	if boolFlag(opts, "all-properties") {
+		if _, err := servers.ResetMetadata(ctx, client, server.ID, servers.MetadataOpts{}).Extract(); err != nil {
+			return err
+		}
+	}
+	for _, key := range flagValues(opts, "property") {
+		if err := servers.DeleteMetadatum(ctx, client, server.ID, key).ExtractErr(); err != nil {
+			return err
+		}
+	}
+	if boolFlag(opts, "description") {
+		update := serverUpdateOpts{Description: valueStringPtr("")}
+		if _, err := servers.Update(ctx, client, server.ID, update).Extract(); err != nil {
+			return err
+		}
+	}
+	if boolFlag(opts, "all-tags") {
+		if err := computetags.DeleteAll(ctx, client, server.ID).ExtractErr(); err != nil {
+			return err
+		}
+	}
+	for _, tag := range flagValues(opts, "tag") {
+		if err := computetags.Delete(ctx, client, server.ID, tag).ExtractErr(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func serverCreate(ctx context.Context, stdout io.Writer, opts *Options, computeClient *gophercloud.ServiceClient, imageClient *gophercloud.ServiceClient, networkClient *gophercloud.ServiceClient, volumeClient *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("server create requires <server-name>")
+	}
+	if flagValue(opts, "flavor") == "" {
+		return fmt.Errorf("argument --flavor is required")
+	}
+	flavor, err := findFlavor(ctx, computeClient, flagValue(opts, "flavor"))
+	if err != nil {
+		return err
+	}
+	metadata, err := parseStringMap(flagValues(opts, "property"), "property")
+	if err != nil {
+		return err
+	}
+	networks, networkMode, err := serverCreateNetworks(ctx, opts, networkClient)
+	if err != nil {
+		return err
+	}
+	blockDevices, imageID, err := serverCreateBootSource(ctx, opts, imageClient, volumeClient)
+	if err != nil {
+		return err
+	}
+	if imageID == "" && len(blockDevices) == 0 {
+		return fmt.Errorf("server create requires --image, --image-property, --volume, --snapshot, or --block-device")
+	}
+	personality, err := serverPersonality(flagValues(opts, "file"))
+	if err != nil {
+		return err
+	}
+	var userData []byte
+	if userDataPath := flagValue(opts, "user-data"); userDataPath != "" {
+		userData, err = os.ReadFile(expandUserPath(userDataPath))
+		if err != nil {
+			return err
+		}
+	}
+	createOpts := serverCreateOpts{
+		CreateOpts: servers.CreateOpts{
+			Name:               args[0],
+			ImageRef:           imageID,
+			FlavorRef:          flavor.ID,
+			SecurityGroups:     flagValues(opts, "security-group"),
+			UserData:           userData,
+			AvailabilityZone:   flagValue(opts, "availability-zone"),
+			Metadata:           metadata,
+			Personality:        personality,
+			AdminPass:          flagValue(opts, "password"),
+			Min:                intFlag(opts, "min"),
+			Max:                intFlag(opts, "max"),
+			Tags:               flagValues(opts, "tag"),
+			Hostname:           flagValue(opts, "hostname"),
+			BlockDevice:        blockDevices,
+			HypervisorHostname: flagValue(opts, "hypervisor-hostname"),
+		},
+		Description:              flagValue(opts, "description"),
+		Host:                     flagValue(opts, "host"),
+		KeyName:                  flagValue(opts, "key-name"),
+		TrustedImageCertificates: flagValues(opts, "trusted-image-cert"),
+	}
+	if boolFlag(opts, "no-security-group") {
+		createOpts.SecurityGroups = []string{}
+		createOpts.NoSecurityGroups = true
+	}
+	if networkMode != nil {
+		createOpts.Networks = networkMode
+	} else if len(networks) > 0 {
+		createOpts.Networks = networks
+	}
+	if flagChanged(opts, "use-config-drive") || flagChanged(opts, "no-config-drive") {
+		value := boolFlag(opts, "use-config-drive")
+		createOpts.ConfigDrive = &value
+	}
+	if flagValue(opts, "config-drive") != "" {
+		value := true
+		createOpts.ConfigDrive = &value
+	}
+	hints, err := serverSchedulerHints(ctx, opts, computeClient)
+	if err != nil {
+		return err
+	}
+	created, err := servers.Create(ctx, computeClient, createOpts, hints).Extract()
+	if err != nil {
+		return err
+	}
+	if boolFlag(opts, "wait") {
+		if err := waitForServerStatus(ctx, stdout, opts, computeClient, created.ID, []string{"ACTIVE"}, []string{"ERROR"}); err != nil {
+			return err
+		}
+		created, err = servers.Get(ctx, computeClient, created.ID).Extract()
+		if err != nil {
+			return err
+		}
+	}
+	return renderServerShow(stdout, opts, created, nil)
+}
+
+func serverImageCreate(ctx context.Context, stdout io.Writer, opts *Options, computeClient *gophercloud.ServiceClient, imageClient *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("server image create requires <server>")
+	}
+	server, err := findServer(ctx, computeClient, args[0])
+	if err != nil {
+		return err
+	}
+	name := flagValue(opts, "name")
+	if name == "" {
+		name = server.Name
+	}
+	metadata, err := parseStringMap(flagValues(opts, "property"), "property")
+	if err != nil {
+		return err
+	}
+	result := servers.CreateImage(ctx, computeClient, server.ID, servers.CreateImageOpts{Name: name, Metadata: metadata})
+	imageID, err := result.ExtractImageID()
+	if err != nil {
+		return err
+	}
+	if boolFlag(opts, "wait") && imageClient != nil {
+		if err := waitForImageStatus(ctx, stdout, opts, imageClient, imageID, []string{"active"}, []string{"killed", "deleted"}); err != nil {
+			return err
+		}
+	}
+	return renderShowOutput(stdout, opts, []outputField{{"id", imageID}})
+}
+
+func serverBackupCreate(ctx context.Context, stdout io.Writer, opts *Options, computeClient *gophercloud.ServiceClient, imageClient *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("server backup create requires <server>")
+	}
+	server, err := findServer(ctx, computeClient, args[0])
+	if err != nil {
+		return err
+	}
+	name := flagValue(opts, "name")
+	if name == "" {
+		name = server.Name
+	}
+	backupType := flagValue(opts, "type")
+	rotate := intFlag(opts, "rotate")
+	if !flagChanged(opts, "rotate") {
+		rotate = 1
+	}
+	var body struct {
+		ImageID string `json:"image_id"`
+	}
+	resp, err := computeClient.Post(ctx, computeClient.ServiceURL("servers", url.PathEscape(server.ID), "action"), map[string]any{"createBackup": map[string]any{
+		"name":        name,
+		"backup_type": backupType,
+		"rotation":    rotate,
+	}}, &body, &gophercloud.RequestOpts{OkCodes: []int{http.StatusAccepted}})
+	_, header, err := gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return oscHTTPException(err)
+	}
+	imageID := body.ImageID
+	if imageID == "" {
+		if location := header.Get("Location"); location != "" {
+			if parsed, err := url.Parse(location); err == nil {
+				imageID = strings.Trim(strings.TrimPrefix(parsed.Path, "/"), "/")
+				if slash := strings.LastIndex(imageID, "/"); slash >= 0 {
+					imageID = imageID[slash+1:]
+				}
+			}
+		}
+	}
+	if boolFlag(opts, "wait") && imageClient != nil && imageID != "" {
+		if err := waitForImageStatus(ctx, stdout, opts, imageClient, imageID, []string{"active"}, []string{"killed", "deleted"}); err != nil {
+			return err
+		}
+	}
+	return renderShowOutput(stdout, opts, []outputField{{"id", imageID}})
+}
+
+func serverAddFixedIP(ctx context.Context, stdout io.Writer, opts *Options, computeClient *gophercloud.ServiceClient, networkClient *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("server add fixed ip requires <server> <network>")
+	}
+	if flagValue(opts, "tag") != "" {
+		computeClient, _ = computeClientWithMinimumMicroversion(ctx, computeClient, "2.49")
+	}
+	server, err := findServer(ctx, computeClient, args[0])
+	if err != nil {
+		return err
+	}
+	network, err := findNetwork(ctx, networkClient, args[1])
+	if err != nil {
+		return err
+	}
+	createOpts := serverAttachInterfaceOpts{NetworkID: network.ID, Tag: flagValue(opts, "tag")}
+	if ip := flagValue(opts, "fixed-ip-address"); ip != "" {
+		createOpts.FixedIPs = []attachinterfaces.FixedIP{{IPAddress: ip}}
+	}
+	item, err := attachinterfaces.Create(ctx, computeClient, server.ID, createOpts).Extract()
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, serverInterfaceFields(item))
+}
+
+func serverAddNetwork(ctx context.Context, opts *Options, computeClient *gophercloud.ServiceClient, networkClient *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("server add network requires <server> <network>")
+	}
+	if flagValue(opts, "tag") != "" {
+		computeClient, _ = computeClientWithMinimumMicroversion(ctx, computeClient, "2.49")
+	}
+	server, err := findServer(ctx, computeClient, args[0])
+	if err != nil {
+		return err
+	}
+	network, err := findNetwork(ctx, networkClient, args[1])
+	if err != nil {
+		return err
+	}
+	_, err = attachinterfaces.Create(ctx, computeClient, server.ID, serverAttachInterfaceOpts{NetworkID: network.ID, Tag: flagValue(opts, "tag")}).Extract()
+	return err
+}
+
+func serverAddPort(ctx context.Context, opts *Options, computeClient *gophercloud.ServiceClient, networkClient *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("server add port requires <server> <port>")
+	}
+	if flagValue(opts, "tag") != "" {
+		computeClient, _ = computeClientWithMinimumMicroversion(ctx, computeClient, "2.49")
+	}
+	server, err := findServer(ctx, computeClient, args[0])
+	if err != nil {
+		return err
+	}
+	port, err := findPort(ctx, networkClient, args[1])
+	if err != nil {
+		return err
+	}
+	_, err = attachinterfaces.Create(ctx, computeClient, server.ID, serverAttachInterfaceOpts{PortID: port.ID, Tag: flagValue(opts, "tag")}).Extract()
+	return err
+}
+
+func serverRemovePort(ctx context.Context, computeClient *gophercloud.ServiceClient, networkClient *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("server remove port requires <server> <port>")
+	}
+	server, err := findServer(ctx, computeClient, args[0])
+	if err != nil {
+		return err
+	}
+	port, err := findPort(ctx, networkClient, args[1])
+	if err != nil {
+		return err
+	}
+	return attachinterfaces.Delete(ctx, computeClient, server.ID, port.ID).ExtractErr()
+}
+
+func serverRemoveNetwork(ctx context.Context, computeClient *gophercloud.ServiceClient, networkClient *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("server remove network requires <server> <network>")
+	}
+	server, err := findServer(ctx, computeClient, args[0])
+	if err != nil {
+		return err
+	}
+	network, err := findNetwork(ctx, networkClient, args[1])
+	if err != nil {
+		return err
+	}
+	page, err := ports.List(networkClient, ports.ListOpts{DeviceID: server.ID, NetworkID: network.ID}).AllPages(ctx)
+	if err != nil {
+		return err
+	}
+	items, err := ports.ExtractPorts(page)
+	if err != nil {
+		return err
+	}
+	if len(items) == 0 {
+		return fmt.Errorf("No ports found for server %s on network %s", server.ID, network.ID)
+	}
+	for _, port := range items {
+		if err := attachinterfaces.Delete(ctx, computeClient, server.ID, port.ID).ExtractErr(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func serverAddVolume(ctx context.Context, stdout io.Writer, opts *Options, computeClient *gophercloud.ServiceClient, volumeClient *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("server add volume requires <server> <volume>")
+	}
+	if flagValue(opts, "tag") != "" {
+		computeClient, _ = computeClientWithMinimumMicroversion(ctx, computeClient, "2.49")
+	}
+	if boolFlag(opts, "enable-delete-on-termination") || boolFlag(opts, "disable-delete-on-termination") {
+		computeClient, _ = computeClientWithMinimumMicroversion(ctx, computeClient, "2.79")
+	}
+	server, err := findServer(ctx, computeClient, args[0])
+	if err != nil {
+		return err
+	}
+	volume, err := findVolume(ctx, volumeClient, args[1])
+	if err != nil {
+		return err
+	}
+	createOpts := volumeattach.CreateOpts{
+		Device:   flagValue(opts, "device"),
+		VolumeID: volume.ID,
+		Tag:      flagValue(opts, "tag"),
+	}
+	if boolFlag(opts, "enable-delete-on-termination") {
+		createOpts.DeleteOnTermination = true
+	}
+	item, err := volumeattach.Create(ctx, computeClient, server.ID, createOpts).Extract()
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, serverVolumeAttachmentFields(item))
+}
+
+func serverRemoveVolume(ctx context.Context, computeClient *gophercloud.ServiceClient, volumeClient *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("server remove volume requires <server> <volume>")
+	}
+	server, err := findServer(ctx, computeClient, args[0])
+	if err != nil {
+		return err
+	}
+	volume, err := findVolume(ctx, volumeClient, args[1])
+	if err != nil {
+		return err
+	}
+	return volumeattach.Delete(ctx, computeClient, server.ID, volume.ID).ExtractErr()
+}
+
+func serverVolumeSet(ctx context.Context, opts *Options, computeClient *gophercloud.ServiceClient, volumeClient *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("server volume set requires <server> <volume>")
+	}
+	if !flagChanged(opts, "delete-on-termination") && !flagChanged(opts, "preserve-on-termination") {
+		return nil
+	}
+	computeClient, err := computeClientWithMinimumMicroversion(ctx, computeClient, "2.85")
+	if err != nil {
+		return err
+	}
+	server, err := findServer(ctx, computeClient, args[0])
+	if err != nil {
+		return err
+	}
+	volume, err := findVolume(ctx, volumeClient, args[1])
+	if err != nil {
+		return err
+	}
+	value := boolFlag(opts, "delete-on-termination")
+	if boolFlag(opts, "preserve-on-termination") {
+		value = false
+	}
+	requestURL := computeClient.ServiceURL("servers", url.PathEscape(server.ID), "os-volume_attachments", url.PathEscape(volume.ID))
+	resp, err := computeClient.Put(ctx, requestURL, map[string]any{
+		"volumeAttachment": map[string]any{"delete_on_termination": value},
+	}, nil, &gophercloud.RequestOpts{OkCodes: []int{http.StatusOK, http.StatusAccepted, http.StatusNoContent}})
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	return oscHTTPException(err)
+}
+
+func serverAddFloatingIP(ctx context.Context, opts *Options, computeClient *gophercloud.ServiceClient, networkClient *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("server add floating ip requires <server> <ip-address>")
+	}
+	server, err := findServer(ctx, computeClient, args[0])
+	if err != nil {
+		return err
+	}
+	fip, err := findFloatingIP(ctx, networkClient, args[1])
+	if err != nil {
+		return err
+	}
+	portID, fixedIP, err := serverPortForFloatingIP(ctx, networkClient, server.ID, flagValue(opts, "fixed-ip-address"))
+	if err != nil {
+		return err
+	}
+	update := floatingips.UpdateOpts{PortID: &portID}
+	if fixedIP != "" {
+		update.FixedIP = fixedIP
+	}
+	_, err = floatingips.Update(ctx, networkClient, fip.ID, update).Extract()
+	return err
+}
+
+func serverRemoveFloatingIP(ctx context.Context, computeClient *gophercloud.ServiceClient, networkClient *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("server remove floating ip requires <server> <ip-address>")
+	}
+	if _, err := findServer(ctx, computeClient, args[0]); err != nil {
+		return err
+	}
+	fip, err := findFloatingIP(ctx, networkClient, args[1])
+	if err != nil {
+		return err
+	}
+	empty := ""
+	_, err = floatingips.Update(ctx, networkClient, fip.ID, floatingips.UpdateOpts{PortID: &empty}).Extract()
+	return err
+}
+
+func serverRemoveFixedIP(ctx context.Context, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("server remove fixed ip requires <server> <ip-address>")
+	}
+	server, err := findServer(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	return serverRawAction(ctx, client, server.ID, "removeFixedIp", map[string]any{"address": args[1]}, nil, http.StatusAccepted, http.StatusNoContent)
+}
+
+func serverSecurityGroupAction(ctx context.Context, opts *Options, computeClient *gophercloud.ServiceClient, networkClient *gophercloud.ServiceClient, args []string, action string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("server security group command requires <server> <security-group>")
+	}
+	server, err := findServer(ctx, computeClient, args[0])
+	if err != nil {
+		return err
+	}
+	for _, value := range args[1:] {
+		groupName := value
+		if networkClient != nil {
+			group, err := findSecurityGroup(ctx, networkClient, value)
+			if err == nil && group.Name != "" {
+				groupName = group.Name
+			}
+		}
+		if err := serverRawAction(ctx, computeClient, server.ID, action, map[string]any{"name": groupName}, nil, http.StatusAccepted, http.StatusNoContent); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func serverSimpleRawAction(ctx context.Context, client *gophercloud.ServiceClient, args []string, action string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("server command requires <server>")
+	}
+	for _, value := range args {
+		server, err := findServer(ctx, client, value)
+		if err != nil {
+			return err
+		}
+		if err := serverRawAction(ctx, client, server.ID, action, nil, nil, http.StatusAccepted, http.StatusNoContent); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func serverMigrationShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("server migration show requires <server> <migration>")
+	}
+	client, err := computeClientWithMinimumMicroversion(ctx, client, "2.24")
+	if err != nil {
+		return err
+	}
+	server, err := findServer(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	var body struct {
+		Migration map[string]any `json:"migration"`
+	}
+	resp, err := client.Get(ctx, client.ServiceURL("servers", url.PathEscape(server.ID), "migrations", url.PathEscape(args[1])), &body, &gophercloud.RequestOpts{OkCodes: []int{http.StatusOK}})
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return oscHTTPException(err)
+	}
+	return renderShowOutput(stdout, opts, sortedFieldsFromMap(body.Migration, false))
+}
+
+func serverMigrationDeleteAction(ctx context.Context, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("server migration abort requires <server> <migration>")
+	}
+	client, err := computeClientWithMinimumMicroversion(ctx, client, "2.24")
+	if err != nil {
+		return err
+	}
+	server, err := findServer(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	resp, err := client.Delete(ctx, client.ServiceURL("servers", url.PathEscape(server.ID), "migrations", url.PathEscape(args[1])), &gophercloud.RequestOpts{OkCodes: []int{http.StatusAccepted, http.StatusNoContent}})
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	return oscHTTPException(err)
+}
+
+func serverMigrationForceComplete(ctx context.Context, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("server migration force complete requires <server> <migration>")
+	}
+	client, err := computeClientWithMinimumMicroversion(ctx, client, "2.22")
+	if err != nil {
+		return err
+	}
+	server, err := findServer(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	resp, err := client.Post(ctx, client.ServiceURL("servers", url.PathEscape(server.ID), "migrations", url.PathEscape(args[1]), "action"), map[string]any{"force_complete": nil}, nil, &gophercloud.RequestOpts{OkCodes: []int{http.StatusAccepted, http.StatusNoContent}})
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	return oscHTTPException(err)
 }
 
 func aggregateList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
@@ -14741,6 +16079,179 @@ func extractComputeServerVolumeAttachments(page pagination.Page) ([]computeServe
 	return body.VolumeAttachments, err
 }
 
+type serverCreateOpts struct {
+	servers.CreateOpts
+	Description              string
+	Host                     string
+	KeyName                  string
+	NoSecurityGroups         bool
+	TrustedImageCertificates []string
+}
+
+func (opts serverCreateOpts) ToServerCreateMap() (map[string]any, error) {
+	body, err := opts.CreateOpts.ToServerCreateMap()
+	if err != nil {
+		return nil, err
+	}
+	serverBody, _ := body["server"].(map[string]any)
+	if opts.Description != "" {
+		serverBody["description"] = opts.Description
+	}
+	if opts.Host != "" {
+		serverBody["host"] = opts.Host
+	}
+	if opts.KeyName != "" {
+		serverBody["key_name"] = opts.KeyName
+	}
+	if opts.NoSecurityGroups {
+		serverBody["security_groups"] = []any{}
+	}
+	if len(opts.TrustedImageCertificates) > 0 {
+		serverBody["trusted_image_certificates"] = opts.TrustedImageCertificates
+	}
+	return body, nil
+}
+
+type serverRebuildOpts struct {
+	servers.RebuildOpts
+	Description              string
+	KeyName                  string
+	UnsetKeyName             bool
+	UserData                 []byte
+	UnsetUserData            bool
+	TrustedImageCertificates []string
+	UnsetTrustedImageCerts   bool
+	Hostname                 string
+	ReimageBootVolume        bool
+	NoReimageBootVolume      bool
+}
+
+func (opts serverRebuildOpts) ToServerRebuildMap() (map[string]any, error) {
+	body, err := opts.RebuildOpts.ToServerRebuildMap()
+	if err != nil {
+		return nil, err
+	}
+	rebuildBody, _ := body["rebuild"].(map[string]any)
+	if opts.Description != "" {
+		rebuildBody["description"] = opts.Description
+	}
+	if opts.KeyName != "" {
+		rebuildBody["key_name"] = opts.KeyName
+	}
+	if opts.UnsetKeyName {
+		rebuildBody["key_name"] = nil
+	}
+	if opts.UserData != nil {
+		rebuildBody["user_data"] = base64.StdEncoding.EncodeToString(opts.UserData)
+	}
+	if opts.UnsetUserData {
+		rebuildBody["user_data"] = nil
+	}
+	if len(opts.TrustedImageCertificates) > 0 {
+		rebuildBody["trusted_image_certificates"] = opts.TrustedImageCertificates
+	}
+	if opts.UnsetTrustedImageCerts {
+		rebuildBody["trusted_image_certificates"] = nil
+	}
+	if opts.Hostname != "" {
+		rebuildBody["hostname"] = opts.Hostname
+	}
+	if opts.ReimageBootVolume {
+		rebuildBody["reimage_boot_volume"] = true
+	}
+	if opts.NoReimageBootVolume {
+		rebuildBody["reimage_boot_volume"] = false
+	}
+	return body, nil
+}
+
+type serverUpdateOpts struct {
+	Name        string
+	Hostname    *string
+	Description *string
+}
+
+func (opts serverUpdateOpts) ToServerUpdateMap() (map[string]any, error) {
+	values := map[string]any{}
+	if opts.Name != "" {
+		values["name"] = opts.Name
+	}
+	if opts.Hostname != nil {
+		values["hostname"] = *opts.Hostname
+	}
+	if opts.Description != nil {
+		values["description"] = *opts.Description
+	}
+	return map[string]any{"server": values}, nil
+}
+
+func (opts serverUpdateOpts) hasValues() bool {
+	return opts.Name != "" || opts.Hostname != nil || opts.Description != nil
+}
+
+type serverAttachInterfaceOpts struct {
+	PortID    string                     `json:"port_id,omitempty"`
+	NetworkID string                     `json:"net_id,omitempty"`
+	FixedIPs  []attachinterfaces.FixedIP `json:"fixed_ips,omitempty"`
+	Tag       string                     `json:"tag,omitempty"`
+}
+
+func (opts serverAttachInterfaceOpts) ToAttachInterfacesCreateMap() (map[string]any, error) {
+	return gophercloud.BuildRequestBody(opts, "interfaceAttachment")
+}
+
+func renderServerShow(stdout io.Writer, opts *Options, item *servers.Server, imageNames map[string]string) error {
+	addresses := any(serverNetworksSummary(item.Addresses))
+	if prettyOutput(opts) {
+		addresses = prettyNetworkAddresses(serverNetworks(item.Addresses))
+	}
+	fields := []outputField{
+		{"id", item.ID},
+		{"name", item.Name},
+		{"status", item.Status},
+		{"project_id", item.TenantID},
+		{"user_id", item.UserID},
+		{"created", item.Created},
+		{"updated", item.Updated},
+		{"image", serverImage(item.Image, imageNames)},
+		{"flavor", serverFlavor(item.Flavor, nil)},
+		{"addresses", addresses},
+		{"metadata", item.Metadata},
+		{"key_name", nilIfEmpty(item.KeyName)},
+	}
+	if item.AdminPass != "" {
+		fields = append(fields, outputField{"adminPass", item.AdminPass})
+	}
+	return renderShowOutput(stdout, opts, fields)
+}
+
+func serverInterfaceFields(item *attachinterfaces.Interface) []outputField {
+	if item == nil {
+		return nil
+	}
+	return []outputField{
+		{"fixed_ips", item.FixedIPs},
+		{"mac_addr", item.MACAddr},
+		{"net_id", item.NetID},
+		{"port_id", item.PortID},
+		{"port_state", item.PortState},
+	}
+}
+
+func serverVolumeAttachmentFields(item *volumeattach.VolumeAttachment) []outputField {
+	if item == nil {
+		return nil
+	}
+	return []outputField{
+		{"device", item.Device},
+		{"id", item.ID},
+		{"serverId", item.ServerID},
+		{"volumeId", item.VolumeID},
+		{"tag", stringPtrValue(item.Tag)},
+		{"delete_on_termination", boolPtrValue(item.DeleteOnTermination)},
+	}
+}
+
 func serverEventDetails(events *[]instanceactions.Event) []map[string]any {
 	if events == nil {
 		return nil
@@ -14759,6 +16270,538 @@ func serverEventDetails(events *[]instanceactions.Event) []map[string]any {
 		})
 	}
 	return rows
+}
+
+func serverRawAction(ctx context.Context, client *gophercloud.ServiceClient, serverID string, action string, payload any, out any, okCodes ...int) error {
+	if len(okCodes) == 0 {
+		okCodes = []int{http.StatusOK, http.StatusAccepted, http.StatusNoContent}
+	}
+	body := map[string]any{action: payload}
+	resp, err := client.Post(ctx, client.ServiceURL("servers", url.PathEscape(serverID), "action"), body, out, &gophercloud.RequestOpts{OkCodes: okCodes})
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	return oscHTTPException(err)
+}
+
+func serverDeleteAdminPassword(ctx context.Context, client *gophercloud.ServiceClient, serverID string) error {
+	resp, err := client.Delete(ctx, client.ServiceURL("servers", url.PathEscape(serverID), "os-server-password"), &gophercloud.RequestOpts{OkCodes: []int{http.StatusNoContent, http.StatusAccepted}})
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	return oscHTTPException(err)
+}
+
+func findServerForServerCommand(ctx context.Context, client *gophercloud.ServiceClient, value string, allProjects bool) (*servers.Server, error) {
+	result := servers.Get(ctx, client, value)
+	if result.Err == nil {
+		return result.Extract()
+	}
+	page, err := servers.List(client, servers.ListOpts{Name: value, AllTenants: allProjects}).AllPages(ctx)
+	if err != nil {
+		return nil, result.Err
+	}
+	items, err := extractServers(page)
+	if err != nil {
+		return nil, err
+	}
+	return singleByName(value, items, func(item servers.Server) string { return item.Name })
+}
+
+func waitForServerStatus(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, serverID string, targets []string, failures []string) error {
+	deadline := time.Now().Add(30 * time.Minute)
+	target := upperStringSet(targets)
+	failed := upperStringSet(failures)
+	for {
+		item, err := servers.Get(ctx, client, serverID).Extract()
+		if err != nil {
+			return err
+		}
+		status := strings.ToUpper(item.Status)
+		if target[status] {
+			if prettyOutput(opts) {
+				_ = renderPrettyProgress(stdout, opts, "complete", 1)
+			}
+			return nil
+		}
+		if failed[status] {
+			return fmt.Errorf("server %s entered %s status", serverID, item.Status)
+		}
+		if time.Now().After(deadline) {
+			return fmt.Errorf("timed out waiting for server %s", serverID)
+		}
+		if prettyOutput(opts) {
+			percent := float64(item.Progress) / 100
+			if percent <= 0 {
+				percent = 0.25
+			}
+			_ = renderPrettyProgress(stdout, opts, "waiting", percent)
+		}
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(5 * time.Second):
+		}
+	}
+}
+
+func waitForServerGone(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, serverID string) error {
+	deadline := time.Now().Add(30 * time.Minute)
+	for {
+		result := servers.Get(ctx, client, serverID)
+		if result.Err != nil {
+			if codeErr, ok := unexpectedResponseCode(result.Err); ok && codeErr.Actual == http.StatusNotFound {
+				if prettyOutput(opts) {
+					_ = renderPrettyProgress(stdout, opts, "deleted", 1)
+				}
+				return nil
+			}
+			return result.Err
+		}
+		if time.Now().After(deadline) {
+			return fmt.Errorf("timed out waiting for server %s delete", serverID)
+		}
+		if prettyOutput(opts) {
+			_ = renderPrettyProgress(stdout, opts, "deleting", 0.5)
+		}
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(5 * time.Second):
+		}
+	}
+}
+
+func waitForImageStatus(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, imageID string, targets []string, failures []string) error {
+	deadline := time.Now().Add(30 * time.Minute)
+	target := lowerStringSet(targets)
+	failed := lowerStringSet(failures)
+	for {
+		image, err := images.Get(ctx, client, imageID).Extract()
+		if err != nil {
+			return err
+		}
+		status := strings.ToLower(string(image.Status))
+		if target[status] {
+			if prettyOutput(opts) {
+				_ = renderPrettyProgress(stdout, opts, "complete", 1)
+			}
+			return nil
+		}
+		if failed[status] {
+			return fmt.Errorf("image %s entered %s status", imageID, image.Status)
+		}
+		if time.Now().After(deadline) {
+			return fmt.Errorf("timed out waiting for image %s", imageID)
+		}
+		if prettyOutput(opts) {
+			_ = renderPrettyProgress(stdout, opts, "waiting", 0.5)
+		}
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(5 * time.Second):
+		}
+	}
+}
+
+func upperStringSet(values []string) map[string]bool {
+	result := map[string]bool{}
+	for _, value := range values {
+		result[strings.ToUpper(value)] = true
+	}
+	return result
+}
+
+func lowerStringSet(values []string) map[string]bool {
+	result := map[string]bool{}
+	for _, value := range values {
+		result[strings.ToLower(value)] = true
+	}
+	return result
+}
+
+func parseStringMap(values []string, option string) (map[string]string, error) {
+	if len(values) == 0 {
+		return nil, nil
+	}
+	result := map[string]string{}
+	for _, value := range values {
+		key, raw, ok := strings.Cut(value, "=")
+		if !ok || strings.TrimSpace(key) == "" {
+			return nil, fmt.Errorf("invalid %s %q, expected <key>=<value>", option, value)
+		}
+		result[strings.TrimSpace(key)] = raw
+	}
+	return result, nil
+}
+
+func valueStringPtr(value string) *string {
+	return &value
+}
+
+func serverCreateNetworks(ctx context.Context, opts *Options, networkClient *gophercloud.ServiceClient) ([]servers.Network, any, error) {
+	if boolFlag(opts, "no-network") {
+		return nil, "none", nil
+	}
+	if boolFlag(opts, "auto-network") {
+		return nil, "auto", nil
+	}
+	var result []servers.Network
+	for _, value := range flagValues(opts, "network") {
+		networkID := value
+		if networkClient != nil {
+			if network, err := findNetwork(ctx, networkClient, value); err == nil {
+				networkID = network.ID
+			}
+		}
+		result = append(result, servers.Network{UUID: networkID})
+	}
+	for _, value := range flagValues(opts, "port") {
+		portID := value
+		if networkClient != nil {
+			if port, err := findPort(ctx, networkClient, value); err == nil {
+				portID = port.ID
+			}
+		}
+		result = append(result, servers.Network{Port: portID})
+	}
+	for _, value := range flagValues(opts, "nic") {
+		trimmed := strings.TrimSpace(value)
+		if trimmed == "none" || trimmed == "auto" {
+			return nil, trimmed, nil
+		}
+		entry, err := parseSingleKeyValueEntry(value, "nic")
+		if err != nil {
+			return nil, nil, err
+		}
+		network := servers.Network{UUID: entry["net-id"], Port: entry["port-id"], Tag: entry["tag"]}
+		if network.UUID != "" && networkClient != nil {
+			if resolved, err := findNetwork(ctx, networkClient, network.UUID); err == nil {
+				network.UUID = resolved.ID
+			}
+		}
+		if network.Port != "" && networkClient != nil {
+			if resolved, err := findPort(ctx, networkClient, network.Port); err == nil {
+				network.Port = resolved.ID
+			}
+		}
+		if ip := entry["v4-fixed-ip"]; ip != "" {
+			network.FixedIP = ip
+		}
+		if ip := entry["v6-fixed-ip"]; ip != "" {
+			network.FixedIP = ip
+		}
+		result = append(result, network)
+	}
+	return result, nil, nil
+}
+
+func serverCreateBootSource(ctx context.Context, opts *Options, imageClient *gophercloud.ServiceClient, volumeClient *gophercloud.ServiceClient) ([]servers.BlockDevice, string, error) {
+	var blockDevices []servers.BlockDevice
+	imageID := ""
+	var err error
+	if imageValue := flagValue(opts, "image"); imageValue != "" {
+		imageID, err = resolveServerImageID(ctx, imageClient, imageValue)
+		if err != nil {
+			return nil, "", err
+		}
+	}
+	if imageProperty := flagValue(opts, "image-property"); imageProperty != "" {
+		imageID, err = resolveServerImageByProperty(ctx, imageClient, imageProperty)
+		if err != nil {
+			return nil, "", err
+		}
+	}
+	if flagChanged(opts, "boot-from-volume") {
+		if imageID == "" {
+			return nil, "", fmt.Errorf("--boot-from-volume requires --image or --image-property")
+		}
+		blockDevices = append(blockDevices, servers.BlockDevice{
+			SourceType:          servers.SourceImage,
+			DestinationType:     servers.DestinationVolume,
+			UUID:                imageID,
+			BootIndex:           0,
+			VolumeSize:          intFlag(opts, "boot-from-volume"),
+			DeleteOnTermination: false,
+		})
+		imageID = ""
+	}
+	if volumeValue := flagValue(opts, "volume"); volumeValue != "" {
+		volumeID := volumeValue
+		if volumeClient != nil {
+			volume, err := findVolume(ctx, volumeClient, volumeValue)
+			if err != nil {
+				return nil, "", err
+			}
+			volumeID = volume.ID
+		}
+		blockDevices = append(blockDevices, servers.BlockDevice{SourceType: servers.SourceVolume, DestinationType: servers.DestinationVolume, UUID: volumeID, BootIndex: 0})
+		imageID = ""
+	}
+	if snapshotValue := flagValue(opts, "snapshot"); snapshotValue != "" {
+		snapshotID := snapshotValue
+		if volumeClient != nil {
+			snapshot, err := findVolumeSnapshot(ctx, volumeClient, snapshotValue)
+			if err != nil {
+				return nil, "", err
+			}
+			snapshotID = snapshot.ID
+		}
+		blockDevices = append(blockDevices, servers.BlockDevice{SourceType: servers.SourceSnapshot, DestinationType: servers.DestinationVolume, UUID: snapshotID, BootIndex: 0})
+		imageID = ""
+	}
+	for _, value := range flagValues(opts, "block-device") {
+		devices, err := serverBlockDevicesFromValue(value)
+		if err != nil {
+			return nil, "", err
+		}
+		blockDevices = append(blockDevices, devices...)
+	}
+	for _, value := range flagValues(opts, "block-device-mapping") {
+		device, err := serverBlockDeviceMapping(value)
+		if err != nil {
+			return nil, "", err
+		}
+		blockDevices = append(blockDevices, device)
+	}
+	if flagChanged(opts, "swap") {
+		blockDevices = append(blockDevices, servers.BlockDevice{SourceType: servers.SourceBlank, DestinationType: servers.DestinationLocal, GuestFormat: "swap", VolumeSize: intFlag(opts, "swap"), BootIndex: -1})
+	}
+	for _, value := range flagValues(opts, "ephemeral") {
+		device, err := serverEphemeralBlockDevice(value)
+		if err != nil {
+			return nil, "", err
+		}
+		blockDevices = append(blockDevices, device)
+	}
+	return blockDevices, imageID, nil
+}
+
+func resolveServerImageID(ctx context.Context, imageClient *gophercloud.ServiceClient, value string) (string, error) {
+	if value == "" {
+		return "", nil
+	}
+	if imageClient == nil {
+		return value, nil
+	}
+	image, err := findImage(ctx, imageClient, value)
+	if err != nil {
+		return "", err
+	}
+	return image.ID, nil
+}
+
+func resolveServerImageByProperty(ctx context.Context, imageClient *gophercloud.ServiceClient, property string) (string, error) {
+	if imageClient == nil {
+		return "", fmt.Errorf("--image-property requires image service access")
+	}
+	key, value, ok := strings.Cut(property, "=")
+	if !ok || strings.TrimSpace(key) == "" {
+		return "", fmt.Errorf("invalid image property %q, expected <key>=<value>", property)
+	}
+	page, err := images.List(imageClient, images.ListOpts{}).AllPages(ctx)
+	if err != nil {
+		return "", err
+	}
+	items, err := images.ExtractImages(page)
+	if err != nil {
+		return "", err
+	}
+	var matches []images.Image
+	for _, item := range items {
+		if valueString(item.Properties[strings.TrimSpace(key)]) == value {
+			matches = append(matches, item)
+		}
+	}
+	item, err := singleMatch(property, matches)
+	if err != nil {
+		return "", err
+	}
+	return item.ID, nil
+}
+
+func serverPersonality(values []string) (servers.Personality, error) {
+	if len(values) == 0 {
+		return nil, nil
+	}
+	result := servers.Personality{}
+	for _, value := range values {
+		dest, source, ok := strings.Cut(value, "=")
+		if !ok || strings.TrimSpace(dest) == "" || strings.TrimSpace(source) == "" {
+			return nil, fmt.Errorf("invalid file %q, expected <dest>=<source>", value)
+		}
+		contents, err := os.ReadFile(expandUserPath(source))
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, &servers.File{Path: dest, Contents: contents})
+	}
+	return result, nil
+}
+
+func serverSchedulerHints(ctx context.Context, opts *Options, client *gophercloud.ServiceClient) (servers.SchedulerHintOpts, error) {
+	values, err := parseJSONKeyValueMap(flagValues(opts, "hint"), "hint")
+	if err != nil {
+		return servers.SchedulerHintOpts{}, err
+	}
+	hints := servers.SchedulerHintOpts{AdditionalProperties: values}
+	if groupValue := flagValue(opts, "server-group"); groupValue != "" {
+		group, err := findServerGroup(ctx, client, groupValue)
+		if err != nil {
+			return hints, err
+		}
+		hints.Group = group.ID
+	}
+	return hints, nil
+}
+
+func parseSingleKeyValueEntry(value string, option string) (map[string]string, error) {
+	entries, err := parseKeyValueEntries([]string{value}, option)
+	if err != nil {
+		return nil, err
+	}
+	if len(entries) == 0 {
+		return map[string]string{}, nil
+	}
+	return entries[0], nil
+}
+
+func serverBlockDevicesFromValue(value string) ([]servers.BlockDevice, error) {
+	trimmed := strings.TrimSpace(value)
+	var raw any
+	if strings.HasPrefix(trimmed, "{") || strings.HasPrefix(trimmed, "[") {
+		if err := json.Unmarshal([]byte(trimmed), &raw); err != nil {
+			return nil, err
+		}
+	} else if data, err := os.ReadFile(expandUserPath(trimmed)); err == nil {
+		if err := json.Unmarshal(data, &raw); err != nil {
+			return nil, err
+		}
+	} else {
+		entry, err := parseSingleKeyValueEntry(value, "block-device")
+		if err != nil {
+			return nil, err
+		}
+		return []servers.BlockDevice{serverBlockDeviceFromMap(entry)}, nil
+	}
+	switch typed := raw.(type) {
+	case []any:
+		devices := make([]servers.BlockDevice, 0, len(typed))
+		for _, item := range typed {
+			devices = append(devices, serverBlockDeviceFromAnyMap(mapAnyFromRaw(item)))
+		}
+		return devices, nil
+	case map[string]any:
+		return []servers.BlockDevice{serverBlockDeviceFromAnyMap(typed)}, nil
+	default:
+		return nil, fmt.Errorf("invalid block device %q", value)
+	}
+}
+
+func serverBlockDeviceFromMap(entry map[string]string) servers.BlockDevice {
+	anyEntry := map[string]any{}
+	for key, value := range entry {
+		anyEntry[key] = value
+	}
+	return serverBlockDeviceFromAnyMap(anyEntry)
+}
+
+func serverBlockDeviceFromAnyMap(entry map[string]any) servers.BlockDevice {
+	device := servers.BlockDevice{
+		UUID:            valueString(entry["uuid"]),
+		SourceType:      servers.SourceType(valueString(entry["source_type"])),
+		DestinationType: servers.DestinationType(valueString(entry["destination_type"])),
+		GuestFormat:     valueString(entry["guest_format"]),
+		DeviceType:      valueString(entry["device_type"]),
+		DiskBus:         valueString(entry["disk_bus"]),
+		VolumeType:      valueString(entry["volume_type"]),
+		Tag:             valueString(entry["tag"]),
+	}
+	if value := valueString(entry["boot_index"]); value != "" {
+		device.BootIndex, _ = strconv.Atoi(value)
+	}
+	if value := valueString(entry["volume_size"]); value != "" {
+		device.VolumeSize, _ = strconv.Atoi(value)
+	}
+	if value := valueString(entry["delete_on_termination"]); value != "" {
+		device.DeleteOnTermination = truthyString(value)
+	}
+	if device.SourceType == "" {
+		device.SourceType = servers.SourceVolume
+	}
+	if device.DestinationType == "" {
+		device.DestinationType = servers.DestinationVolume
+	}
+	return device
+}
+
+func serverBlockDeviceMapping(value string) (servers.BlockDevice, error) {
+	_, mapping, ok := strings.Cut(value, "=")
+	if !ok || strings.TrimSpace(mapping) == "" {
+		return servers.BlockDevice{}, fmt.Errorf("invalid block device mapping %q", value)
+	}
+	parts := strings.Split(mapping, ":")
+	if len(parts) < 1 || strings.TrimSpace(parts[0]) == "" {
+		return servers.BlockDevice{}, fmt.Errorf("invalid block device mapping %q", value)
+	}
+	device := servers.BlockDevice{UUID: parts[0], SourceType: servers.SourceVolume, DestinationType: servers.DestinationVolume, BootIndex: -1}
+	if len(parts) > 1 && parts[1] != "" {
+		device.SourceType = servers.SourceType(parts[1])
+	}
+	if len(parts) > 2 && parts[2] != "" {
+		device.VolumeSize, _ = strconv.Atoi(parts[2])
+	}
+	if len(parts) > 3 && parts[3] != "" {
+		device.DeleteOnTermination = truthyString(parts[3])
+	}
+	return device, nil
+}
+
+func serverEphemeralBlockDevice(value string) (servers.BlockDevice, error) {
+	entry, err := parseSingleKeyValueEntry(value, "ephemeral")
+	if err != nil {
+		return servers.BlockDevice{}, err
+	}
+	size, _ := strconv.Atoi(entry["size"])
+	return servers.BlockDevice{SourceType: servers.SourceBlank, DestinationType: servers.DestinationLocal, GuestFormat: entry["format"], VolumeSize: size, BootIndex: -1}, nil
+}
+
+func truthyString(value string) bool {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "1", "t", "true", "yes", "y":
+		return true
+	default:
+		return false
+	}
+}
+
+func serverPortForFloatingIP(ctx context.Context, networkClient *gophercloud.ServiceClient, serverID string, fixedIP string) (string, string, error) {
+	opts := ports.ListOpts{DeviceID: serverID}
+	if fixedIP != "" {
+		opts.FixedIPs = []ports.FixedIPOpts{{IPAddress: fixedIP}}
+	}
+	page, err := ports.List(networkClient, opts).AllPages(ctx)
+	if err != nil {
+		return "", "", err
+	}
+	items, err := ports.ExtractPorts(page)
+	if err != nil {
+		return "", "", err
+	}
+	if len(items) == 0 {
+		return "", "", fmt.Errorf("No ports found for server %s", serverID)
+	}
+	for _, port := range items {
+		if fixedIP == "" {
+			if len(port.FixedIPs) > 0 {
+				return port.ID, port.FixedIPs[0].IPAddress, nil
+			}
+			return port.ID, "", nil
+		}
+		for _, ip := range port.FixedIPs {
+			if ip.IPAddress == fixedIP {
+				return port.ID, fixedIP, nil
+			}
+		}
+	}
+	return "", "", fmt.Errorf("No port found for server %s fixed IP %s", serverID, fixedIP)
 }
 
 func usageDateRange(opts *Options) (time.Time, time.Time, error) {

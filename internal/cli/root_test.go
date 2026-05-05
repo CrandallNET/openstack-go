@@ -113,7 +113,7 @@ func TestStubCommand(t *testing.T) {
 }
 
 func TestGeneratedStubCommandIgnoresCommandFlags(t *testing.T) {
-	stdout, stderr, err := executeForTest("server", "start", "--wait")
+	stdout, stderr, err := executeForTest("server", "ssh", "--bogus")
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -162,8 +162,11 @@ func TestCommandListJSONMarksServiceStubs(t *testing.T) {
 	if stderr != "" {
 		t.Fatalf("expected empty stderr, got %q", stderr)
 	}
-	if !strings.Contains(stdout, `"server start (Not Implemented Yet)"`) {
-		t.Fatalf("expected server start to be marked unimplemented, got:\n%s", stdout)
+	if !strings.Contains(stdout, `"server ssh (Not Implemented Yet)"`) {
+		t.Fatalf("expected server ssh to be marked unimplemented, got:\n%s", stdout)
+	}
+	if strings.Contains(stdout, `"server start (Not Implemented Yet)"`) {
+		t.Fatalf("expected server start to be marked implemented, got:\n%s", stdout)
 	}
 }
 
