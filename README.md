@@ -68,6 +68,14 @@ Run basic smoke checks:
 ./bin/openstack module list --max-width 52
 ```
 
+Run static Python-vs-Go compatibility checks that do not require cloud credentials:
+
+```sh
+make compat-static
+```
+
+This compares the pinned Python OSC oracle with `./bin/openstack` for required parser, help, completion, and local-output cases. It also reports known gaps, such as root help and parser error text, without failing the target. Use `make compat-static-all` to additionally compare `--help` output for every cataloged command.
+
 Regenerate compatibility artifacts after changing the local Python OSC oracle or matrix generator:
 
 ```sh

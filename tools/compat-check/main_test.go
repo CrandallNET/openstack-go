@@ -1,0 +1,62 @@
+package main
+
+import (
+	"os"
+	"strings"
+	"testing"
+)
+
+func TestCompareResultsRequiresExitStdoutAndStderrParity(t *testing.T) {
+	base := commandResult{Stdout: "out\n", Stderr: "err\n", ExitCode: 2}
+	if matched, diff := compareResults(base, base); !matched || diff != "" {
+		t.Fatalf("expected identical results to match, matched=%v diff=%q", matched, diff)
+	}
+
+	changedExit := base
+	changedExit.ExitCode = 1
+	if matched, diff := compareResults(base, changedExit); matched || !strings.Contains(diff, "exit code") {
+		t.Fatalf("expected exit code mismatch, matched=%v diff=%q", matched, diff)
+	}
+
+	changedStdout := base
+	changedStdout.Stdout = "different\n"
+	if matched, diff := compareResults(base, changedStdout); matched || !strings.Contains(diff, "stdout line 1") {
+		t.Fatalf("expected stdout mismatch, matched=%v diff=%q", matched, diff)
+	}
+
+	changedStderr := base
+	changedStderr.Stderr = "different\n"
+	if matched, diff := compareResults(base, changedStderr); matched || !strings.Contains(diff, "stderr line 1") {
+		t.Fatalf("expected stderr mismatch, matched=%v diff=%q", matched, diff)
+	}
+}
+
+func TestRequiredFailuresIgnoresKnownGaps(t *testing.T) {
+	results := []checkResult{
+		{Case: checkCase{Name: "pass"}, Matched: true},
+		{Case: checkCase{Name: "known", KnownGap: true}, Matched: false},
+		{Case: checkCase{Name: "required"}, Matched: false},
+	}
+	if got := requiredFailures(results); got != 1 {
+		t.Fatalf("expected one required failure, got %d", got)
+	}
+}
+
+func TestReadCommandsSortsFlattenedCatalog(t *testing.T) {
+	path := t.TempDir() + "/commands.json"
+	data := `[
+  {"Command Group": "g2", "Commands": ["server list"]},
+  {"Command Group": "g1", "Commands": ["command list", "aggregate list"]}
+]`
+	if err := os.WriteFile(path, []byte(data), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	commands, err := readCommands(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"aggregate list", "command list", "server list"}
+	if strings.Join(commands, "|") != strings.Join(want, "|") {
+		t.Fatalf("commands mismatch: got %v want %v", commands, want)
+	}
+}

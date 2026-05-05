@@ -1394,3 +1394,17 @@ Sources consulted:
 * Upstream `bubble-table` README at https://github.com/Evertras/bubble-table/tree/main.
 * Upstream `bubble-table` module source in the local Go module cache.
 * Local implementation file `internal/cli/output.go`.
+
+## 2026-05-04: Static Oracle Compatibility Harness
+
+Decision: add a dedicated `tools/compat-check` harness for no-cloud Python-vs-Go compatibility checks. This is separate from `tools/matrix` because it executes commands and compares stdout, stderr, and exit status, while the matrix generator only reports planned or recorded status.
+
+Work done: added `tools/compat-check`, `make compat-static`, and `make compat-static-all`. The default target compares required static cases for completion, `command list`, and representative leaf help output against the pinned Python OSC oracle. Known gaps, including root help, invalid command errors, invalid flag errors, and `module list`, are reported without failing the target so the harness can be used immediately while still making those gaps visible.
+
+Implementation note: the harness reads the oracle path from `compat/osc/9.0.0/metadata.json`, disables color and Go-only pretty defaults for both commands, and normalizes line endings before comparison. `--all-help` adds every cataloged leaf command's `--help` output to the comparison set.
+
+Sources consulted:
+
+* Local Python OSC oracle metadata in `compat/osc/9.0.0/metadata.json`.
+* Local generated command catalog in `compat/osc/9.0.0/commands.json`.
+* Local CLI entry point in `cmd/openstack/main.go`.
