@@ -60,6 +60,10 @@ compat-static-all: build ## Run static checks plus --help parity for every catal
 discover-cloud: ## Discover non-secret live cloud capabilities; set CLOUD=name[,name].
 	$(GO) run ./tools/cloud-discovery --cloud "$(CLOUD)"
 
+.PHONY: lifecycle-smoke
+lifecycle-smoke: ## Run a low-risk keypair lifecycle smoke test; set CLOUD=name.
+	$(GO) run ./tools/lifecycle-smoke --cloud "$(CLOUD)"
+
 .PHONY: os-test
 os-test: ## Display supported Fancy operating-system image colors.
 	$(GO) run ./tools/os-test

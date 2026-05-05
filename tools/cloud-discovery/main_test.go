@@ -35,3 +35,37 @@ func TestSelectedFixtureSetSortsLimitsAndMarksFirstCandidate(t *testing.T) {
 		t.Fatalf("second fixture mismatch: %+v", set.Items[1])
 	}
 }
+
+func TestSelectedFixtureSetReportsEmptyCandidates(t *testing.T) {
+	set := selectedFixtureSet(nil, 2)
+	if set.Status != "empty" || set.Error == "" {
+		t.Fatalf("expected empty fixture status with reason, got %+v", set)
+	}
+}
+
+func TestDiscoverEligibilityRecordsSkipReasons(t *testing.T) {
+	report := discoveryReport{
+		Services: []serviceSummary{{Type: "identity"}, {Type: "compute"}, {Type: "volumev3"}},
+		Fixtures: fixtureSummary{
+			Images:      fixtureSet{Status: "ok", Items: []fixtureItem{{ID: "image"}}},
+			Flavors:     fixtureSet{Status: "empty", Error: "no candidates discovered"},
+			Networks:    fixtureSet{Status: "ok", Items: []fixtureItem{{ID: "network"}}},
+			VolumeTypes: fixtureSet{Status: "ok", Items: []fixtureItem{{ID: "volume-type"}}},
+			Roles:       fixtureSet{Status: "skipped", Error: "forbidden"},
+		},
+	}
+	suites := discoverEligibility(report)
+	byName := map[string]eligibility{}
+	for _, suite := range suites {
+		byName[suite.Suite] = suite
+	}
+	if byName["volume read"].Status != "ok" {
+		t.Fatalf("expected volumev3 alias to satisfy block-storage, got %+v", byName["volume read"])
+	}
+	if byName["compute lifecycle"].Status != "skipped" || len(byName["compute lifecycle"].SkipReasons) == 0 {
+		t.Fatalf("expected compute lifecycle skip reason, got %+v", byName["compute lifecycle"])
+	}
+	if byName["admin identity read"].Status != "skipped" || len(byName["admin identity read"].SkipReasons) == 0 {
+		t.Fatalf("expected admin identity skip reason, got %+v", byName["admin identity read"])
+	}
+}

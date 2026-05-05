@@ -1456,3 +1456,35 @@ Sources consulted:
 * Local compatibility harness in `tools/compat-check`.
 * Pinned Python OSC oracle at `/Users/ken/.local/bin/openstack`.
 * Live `cloud6` compatibility run using default table output.
+
+## 2026-05-05: Parser Error Parity And Fixture-Aware Checks
+
+Decision: move invalid command and invalid flag behavior from known gaps into required static compatibility checks once the Go CLI can match Python OSC stdout, stderr, and exit code. Keep root help as a known gap for live static comparison because repeated Python OSC `--help` runs showed auth plugin option groups can appear in different orders between invocations, while the Go CLI must emit a deterministic embedded snapshot.
+
+Work done: root `--help` now uses the embedded OSC help snapshot, invalid flags render the captured argparse-style usage block plus `unrecognized arguments`, and invalid commands use Cliff-style fuzzy suggestions with exit code `2`. `tools/compat-check` now treats invalid command and invalid flag cases as required checks.
+
+Work done: `tools/compat-check` now supports live fixture placeholders such as `{server}`, `{volume}`, `{network}`, `{project}`, and `{security_group}`. Placeholders are resolved through the Python oracle on the selected `--live-cloud`, and unavailable fixtures are reported as `SKIP` with a reason instead of being confused with compatibility failures.
+
+Live observations on `cloud6`: `server show {server}`, `volume show {volume}`, and `network show {network}` resolved real fixture IDs. The comparison then exposed default-output mismatches in those show commands, so they remain unpromoted.
+
+Sources consulted:
+
+* Local Cliff `App.get_fuzzy_matches` and `CommandManager.find_command` source from `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/cliff`.
+* Local Python OSC oracle at `/Users/ken/.local/bin/openstack`.
+* Local compatibility harness in `tools/compat-check`.
+
+## 2026-05-05: Discovery Details And Keypair Lifecycle Smoke
+
+Decision: extend live cloud discovery before broadening lifecycle coverage. The report should remain non-secret and read-only, but should include enough detail to explain why a suite is runnable or skipped on each cloud.
+
+Work done: `tools/cloud-discovery` now records Compute, Network, and Block Storage API version details, extension probes, role fixture visibility where Keystone permits it, and structured test eligibility with skip reasons. Discovery reports were refreshed for `cloud6`, `flex-sjc`, `flex-dfw`, and `flex-iad`.
+
+Decision: use keypairs for the first wired lifecycle smoke. Keypairs are project-scoped, low-risk, cheap to create, easy to clean up by unique name, and do not require image, flavor, network, or volume fixtures.
+
+Work done: added `tools/lifecycle-smoke` and `make lifecycle-smoke CLOUD=name`. The smoke test preflights keypair listing, creates a unique `golang-osc-test-*` keypair using a generated public-key fixture, shows it, deletes it, and retains JSON diagnostics under `compat/lifecycle-diagnostics/` only on failure unless `--keep-success` is used. `make lifecycle-smoke CLOUD=cloud6` passed.
+
+Sources consulted:
+
+* Gophercloud v2.12.0 local module packages for Compute, Network, Block Storage API versions, common extensions, and Identity roles.
+* Local lifecycle safety decisions in `docs/openstack-cli-compatibility-plan.md`.
+* Local keypair implementation in `internal/cli/core_read.go`.

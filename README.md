@@ -74,13 +74,15 @@ Run static Python-vs-Go compatibility checks that do not require cloud credentia
 make compat-static
 ```
 
-This compares the pinned Python OSC oracle with `./bin/openstack` for required parser, help, completion, and local-output cases. It also reports known gaps, such as root help and parser error text, without failing the target. Use `make compat-static-all` to additionally compare `--help` output for every cataloged command.
+This compares the pinned Python OSC oracle with `./bin/openstack` for required parser, help, completion, and local-output cases. It also reports known gaps, such as nondeterministic Python OSC root help and intentionally different Go plugin module reporting, without failing the target. Use `make compat-static-all` to additionally compare `--help` output for every cataloged command.
 
 To compare selected live read commands against the same cloud state:
 
 ```sh
 go run ./tools/compat-check --live-cloud cloud6 --live-command "flavor list,image list,network list"
 ```
+
+Live command checks support fixture placeholders resolved from the Python oracle before comparison. For example, `server show {server}` uses the first ID from `openstack server list -f json` on the selected cloud. If a fixture is unavailable, the case is reported as `SKIP` with a reason.
 
 Discover non-secret live cloud capabilities and fixture candidates:
 
@@ -90,6 +92,14 @@ make discover-cloud CLOUD=cloud6,flex-sjc,flex-dfw,flex-iad
 ```
 
 Discovery writes JSON reports under `compat/live-clouds/`. These reports intentionally omit secrets and should be refreshed before lifecycle tests because cloud state can change.
+
+Run the first low-risk write lifecycle smoke test:
+
+```sh
+make lifecycle-smoke CLOUD=cloud6
+```
+
+The lifecycle smoke currently creates, shows, and deletes a uniquely named keypair. Failure diagnostics are retained under `compat/lifecycle-diagnostics/`; successful runs print a concise pass line and do not retain diagnostics unless `tools/lifecycle-smoke --keep-success` is used.
 
 Regenerate compatibility artifacts after changing the local Python OSC oracle or matrix generator:
 

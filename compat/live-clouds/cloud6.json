@@ -1,6 +1,6 @@
 {
   "cloud": "cloud6",
-  "generated_at": "2026-05-05T05:05:42Z",
+  "generated_at": "2026-05-05T06:43:43Z",
   "status": "ok",
   "auth": {
     "identity_endpoint": "http://10.10.1.36:5000",
@@ -199,6 +199,399 @@
       ]
     }
   ],
+  "apis": [
+    {
+      "service": "block-storage",
+      "type": "volumev3",
+      "status": "ok",
+      "endpoint": "http://10.10.1.36:8776/v3/17613f25c8d742f8ab589c0fa7b6a66b/",
+      "versions": [
+        {
+          "id": "v3.0",
+          "status": "CURRENT",
+          "min_version": "3.0",
+          "max_version": "3.71",
+          "updated": "2023-08-31T00:00:00Z"
+        }
+      ]
+    },
+    {
+      "service": "compute",
+      "type": "compute",
+      "status": "ok",
+      "endpoint": "http://10.10.1.36:8774/v2.1/",
+      "versions": [
+        {
+          "id": "v2.0",
+          "status": "SUPPORTED",
+          "updated": "2011-01-21T11:33:21Z"
+        },
+        {
+          "id": "v2.1",
+          "status": "CURRENT",
+          "min_version": "2.1",
+          "max_version": "2.100",
+          "updated": "2013-07-23T11:33:21Z"
+        }
+      ]
+    },
+    {
+      "service": "network",
+      "type": "network",
+      "status": "ok",
+      "endpoint": "http://10.10.1.36:9696/",
+      "resource_base": "http://10.10.1.36:9696/v2.0/",
+      "versions": [
+        {
+          "id": "v2.0",
+          "status": "CURRENT"
+        }
+      ]
+    }
+  ],
+  "extensions": [
+    {
+      "service": "block-storage",
+      "type": "volumev3",
+      "status": "ok",
+      "items": [
+        {
+          "alias": "OS-SCH-HNT",
+          "name": "SchedulerHints",
+          "updated": "2013-04-18T00:00:00+00:00"
+        },
+        {
+          "alias": "backups",
+          "name": "Backups",
+          "updated": "2012-12-12T00:00:00+00:00"
+        },
+        {
+          "alias": "capabilities",
+          "name": "Capabilities",
+          "updated": "2015-08-31T00:00:00+00:00"
+        },
+        {
+          "alias": "cgsnapshots",
+          "name": "Cgsnapshots",
+          "updated": "2014-08-18T00:00:00+00:00"
+        },
+        {
+          "alias": "consistencygroups",
+          "name": "Consistencygroups",
+          "updated": "2014-08-18T00:00:00+00:00"
+        },
+        {
+          "alias": "encryption",
+          "name": "VolumeTypeEncryption",
+          "updated": "2013-07-01T00:00:00+00:00"
+        },
+        {
+          "alias": "os-admin-actions",
+          "name": "AdminActions",
+          "updated": "2012-08-25T00:00:00+00:00"
+        },
+        {
+          "alias": "os-availability-zone",
+          "name": "AvailabilityZones",
+          "updated": "2013-06-27T00:00:00+00:00"
+        },
+        {
+          "alias": "os-extended-services",
+          "name": "ExtendedServices",
+          "updated": "2014-01-10T00:00:00-00:00"
+        },
+        {
+          "alias": "os-extended-snapshot-attributes",
+          "name": "ExtendedSnapshotAttributes",
+          "updated": "2012-06-19T00:00:00+00:00"
+        },
+        {
+          "alias": "os-hosts",
+          "name": "Hosts",
+          "updated": "2011-06-29T00:00:00+00:00"
+        },
+        {
+          "alias": "os-quota-class-sets",
+          "name": "QuotaClasses",
+          "updated": "2012-03-12T00:00:00+00:00"
+        },
+        {
+          "alias": "os-quota-sets",
+          "name": "Quotas",
+          "updated": "2011-08-08T00:00:00+00:00"
+        },
+        {
+          "alias": "os-services",
+          "name": "Services",
+          "updated": "2012-10-28T00:00:00-00:00"
+        },
+        {
+          "alias": "os-snapshot-actions",
+          "name": "SnapshotActions",
+          "updated": "2013-07-16T00:00:00+00:00"
+        },
+        {
+          "alias": "os-snapshot-manage",
+          "name": "SnapshotManage",
+          "updated": "2014-12-31T00:00:00+00:00"
+        },
+        {
+          "alias": "os-snapshot-unmanage",
+          "name": "SnapshotUnmanage",
+          "updated": "2014-12-31T00:00:00+00:00"
+        },
+        {
+          "alias": "os-types-extra-specs",
+          "name": "TypesExtraSpecs",
+          "updated": "2011-08-24T00:00:00+00:00"
+        },
+        {
+          "alias": "os-types-manage",
+          "name": "TypesManage",
+          "updated": "2011-08-24T00:00:00+00:00"
+        },
+        {
+          "alias": "os-used-limits",
+          "name": "UsedLimits",
+          "updated": "2013-10-03T00:00:00+00:00"
+        }
+      ]
+    },
+    {
+      "service": "compute",
+      "type": "compute",
+      "status": "ok",
+      "items": [
+        {
+          "alias": "NMN",
+          "name": "Multinic",
+          "namespace": "http://docs.openstack.org/compute/ext/fake_xml",
+          "updated": "2014-12-03T00:00:00Z"
+        },
+        {
+          "alias": "OS-DCF",
+          "name": "DiskConfig",
+          "namespace": "http://docs.openstack.org/compute/ext/fake_xml",
+          "updated": "2014-12-03T00:00:00Z"
+        },
+        {
+          "alias": "OS-EXT-AZ",
+          "name": "ExtendedAvailabilityZone",
+          "namespace": "http://docs.openstack.org/compute/ext/fake_xml",
+          "updated": "2014-12-03T00:00:00Z"
+        },
+        {
+          "alias": "OS-EXT-IMG-SIZE",
+          "name": "ImageSize",
+          "namespace": "http://docs.openstack.org/compute/ext/fake_xml",
+          "updated": "2014-12-03T00:00:00Z"
+        },
+        {
+          "alias": "OS-EXT-IPS",
+          "name": "ExtendedIps",
+          "namespace": "http://docs.openstack.org/compute/ext/fake_xml",
+          "updated": "2014-12-03T00:00:00Z"
+        },
+        {
+          "alias": "OS-EXT-IPS-MAC",
+          "name": "ExtendedIpsMac",
+          "namespace": "http://docs.openstack.org/compute/ext/fake_xml",
+          "updated": "2014-12-03T00:00:00Z"
+        },
+        {
+          "alias": "OS-EXT-SRV-ATTR",
+          "name": "ExtendedServerAttributes",
+          "namespace": "http://docs.openstack.org/compute/ext/fake_xml",
+          "updated": "2014-12-03T00:00:00Z"
+        },
+        {
+          "alias": "OS-EXT-STS",
+          "name": "ExtendedStatus",
+          "namespace": "http://docs.openstack.org/compute/ext/fake_xml",
+          "updated": "2014-12-03T00:00:00Z"
+        },
+        {
+          "alias": "OS-FLV-DISABLED",
+          "name": "FlavorDisabled",
+          "namespace": "http://docs.openstack.org/compute/ext/fake_xml",
+          "updated": "2014-12-03T00:00:00Z"
+        },
+        {
+          "alias": "OS-FLV-EXT-DATA",
+          "name": "FlavorExtraData",
+          "namespace": "http://docs.openstack.org/compute/ext/fake_xml",
+          "updated": "2014-12-03T00:00:00Z"
+        },
+        {
+          "alias": "OS-SCH-HNT",
+          "name": "SchedulerHints",
+          "namespace": "http://docs.openstack.org/compute/ext/fake_xml",
+          "updated": "2014-12-03T00:00:00Z"
+        },
+        {
+          "alias": "OS-SRV-USG",
+          "name": "ServerUsage",
+          "namespace": "http://docs.openstack.org/compute/ext/fake_xml",
+          "updated": "2014-12-03T00:00:00Z"
+        },
+        {
+          "alias": "os-access-ips",
+          "name": "AccessIPs",
+          "namespace": "http://docs.openstack.org/compute/ext/fake_xml",
+          "updated": "2014-12-03T00:00:00Z"
+        },
+        {
+          "alias": "os-admin-actions",
+          "name": "AdminActions",
+          "namespace": "http://docs.openstack.org/compute/ext/fake_xml",
+          "updated": "2014-12-03T00:00:00Z"
+        },
+        {
+          "alias": "os-admin-password",
+          "name": "AdminPassword",
+          "namespace": "http://docs.openstack.org/compute/ext/fake_xml",
+          "updated": "2014-12-03T00:00:00Z"
+        },
+        {
+          "alias": "os-agents",
+          "name": "Agents",
+          "namespace": "http://docs.openstack.org/compute/ext/fake_xml",
+          "updated": "2014-12-03T00:00:00Z"
+        },
+        {
+          "alias": "os-aggregates",
+          "name": "Aggregates",
+          "namespace": "http://docs.openstack.org/compute/ext/fake_xml",
+          "updated": "2014-12-03T00:00:00Z"
+        },
+        {
+          "alias": "os-assisted-volume-snapshots",
+          "name": "AssistedVolumeSnapshots",
+          "namespace": "http://docs.openstack.org/compute/ext/fake_xml",
+          "updated": "2014-12-03T00:00:00Z"
+        },
+        {
+          "alias": "os-attach-interfaces",
+          "name": "AttachInterfaces",
+          "namespace": "http://docs.openstack.org/compute/ext/fake_xml",
+          "updated": "2014-12-03T00:00:00Z"
+        },
+        {
+          "alias": "os-availability-zone",
+          "name": "AvailabilityZone",
+          "namespace": "http://docs.openstack.org/compute/ext/fake_xml",
+          "updated": "2014-12-03T00:00:00Z"
+        }
+      ]
+    },
+    {
+      "service": "network",
+      "type": "network",
+      "status": "ok",
+      "items": [
+        {
+          "alias": "address-group",
+          "name": "Address group",
+          "updated": "2020-07-15T10:00:00-00:00"
+        },
+        {
+          "alias": "address-scope",
+          "name": "Address scope",
+          "updated": "2015-07-26T10:00:00-00:00"
+        },
+        {
+          "alias": "agent",
+          "name": "agent",
+          "updated": "2013-02-03T10:00:00-00:00"
+        },
+        {
+          "alias": "agent-resources-synced",
+          "name": "Agent's Resource View Synced to Placement",
+          "updated": "2018-12-19T00:00:00-00:00"
+        },
+        {
+          "alias": "allowed-address-pairs",
+          "name": "Allowed Address Pairs",
+          "updated": "2013-07-23T10:00:00-00:00"
+        },
+        {
+          "alias": "auto-allocated-topology",
+          "name": "Auto Allocated Topology Services",
+          "updated": "2016-01-01T00:00:00-00:00"
+        },
+        {
+          "alias": "availability_zone",
+          "name": "Availability Zone",
+          "updated": "2015-01-01T10:00:00-00:00"
+        },
+        {
+          "alias": "availability_zone_filter",
+          "name": "Availability Zone Filter Extension",
+          "updated": "2018-06-22T10:00:00-00:00"
+        },
+        {
+          "alias": "binding",
+          "name": "Port Binding",
+          "updated": "2014-02-03T10:00:00-00:00"
+        },
+        {
+          "alias": "binding-extended",
+          "name": "Port Bindings Extended",
+          "updated": "2017-07-17T10:00:00-00:00"
+        },
+        {
+          "alias": "default-subnetpools",
+          "name": "Default Subnetpools",
+          "updated": "2016-02-18T18:00:00-00:00"
+        },
+        {
+          "alias": "dhcp_agent_scheduler",
+          "name": "DHCP Agent Scheduler",
+          "updated": "2013-02-07T10:00:00-00:00"
+        },
+        {
+          "alias": "dvr",
+          "name": "Distributed Virtual Router",
+          "updated": "2014-06-1T10:00:00-00:00"
+        },
+        {
+          "alias": "empty-string-filtering",
+          "name": "Empty String Filtering Extension",
+          "updated": "2018-05-01T10:00:00-00:00"
+        },
+        {
+          "alias": "ext-gw-mode",
+          "name": "Neutron L3 Configurable external gateway mode",
+          "updated": "2013-03-28T10:00:00-00:00"
+        },
+        {
+          "alias": "external-net",
+          "name": "Neutron external network",
+          "updated": "2013-01-14T10:00:00-00:00"
+        },
+        {
+          "alias": "extra_dhcp_opt",
+          "name": "Neutron Extra DHCP options",
+          "updated": "2013-03-17T12:00:00-00:00"
+        },
+        {
+          "alias": "extraroute",
+          "name": "Neutron Extra Route",
+          "updated": "2013-02-01T10:00:00-00:00"
+        },
+        {
+          "alias": "extraroute-atomic",
+          "name": "Atomically add/remove extra routes",
+          "updated": "2019-07-10T00:00:00+00:00"
+        },
+        {
+          "alias": "filter-validation",
+          "name": "Filter parameters validation",
+          "updated": "2018-07-04T10:00:00-00:00"
+        }
+      ]
+    }
+  ],
   "fixtures": {
     "images": {
       "status": "ok",
@@ -306,10 +699,142 @@
       ]
     },
     "roles": {
-      "status": "not-implemented",
-      "error": "role discovery is not implemented yet"
+      "status": "ok",
+      "items": [
+        {
+          "id": "7c517e7d952f4e09aebe5d37a1e414da",
+          "name": "admin",
+          "selected": true
+        },
+        {
+          "id": "45e2d21ab7084d7db8eb779df0f22dea",
+          "name": "heat_stack_owner"
+        },
+        {
+          "id": "379bdc5c5a7a43e4a4621a752377a265",
+          "name": "heat_stack_user"
+        },
+        {
+          "id": "18b6a9de3360407eaf6765675a76d323",
+          "name": "manager"
+        },
+        {
+          "id": "4c1b1522c4f947eaa4fe165f29116603",
+          "name": "member"
+        },
+        {
+          "id": "70e13c6b605445f7926efd11976740c0",
+          "name": "reader"
+        },
+        {
+          "id": "dc9f196a583445dd8574cb9d7457c24c",
+          "name": "service"
+        }
+      ]
     }
   },
+  "test_eligibility": [
+    {
+      "suite": "identity read",
+      "status": "ok",
+      "required_services": [
+        "identity"
+      ]
+    },
+    {
+      "suite": "admin identity read",
+      "status": "ok",
+      "required_services": [
+        "identity"
+      ],
+      "required_fixtures": [
+        "roles"
+      ]
+    },
+    {
+      "suite": "compute read",
+      "status": "ok",
+      "required_services": [
+        "compute"
+      ]
+    },
+    {
+      "suite": "compute lifecycle",
+      "status": "ok",
+      "required_services": [
+        "compute",
+        "image",
+        "network"
+      ],
+      "required_fixtures": [
+        "images",
+        "flavors",
+        "networks"
+      ]
+    },
+    {
+      "suite": "network read",
+      "status": "ok",
+      "required_services": [
+        "network"
+      ]
+    },
+    {
+      "suite": "network lifecycle",
+      "status": "ok",
+      "required_services": [
+        "network"
+      ]
+    },
+    {
+      "suite": "volume read",
+      "status": "ok",
+      "required_services": [
+        "block-storage"
+      ]
+    },
+    {
+      "suite": "volume lifecycle",
+      "status": "ok",
+      "required_services": [
+        "block-storage"
+      ],
+      "required_fixtures": [
+        "volume_types"
+      ]
+    },
+    {
+      "suite": "image read",
+      "status": "ok",
+      "required_services": [
+        "image"
+      ]
+    },
+    {
+      "suite": "image lifecycle",
+      "status": "ok",
+      "required_services": [
+        "image"
+      ]
+    },
+    {
+      "suite": "object store read",
+      "status": "skipped",
+      "required_services": [
+        "object-store"
+      ],
+      "skip_reasons": [
+        "missing service \"object-store\""
+      ]
+    },
+    {
+      "suite": "placement read",
+      "status": "ok",
+      "required_services": [
+        "placement"
+      ]
+    }
+  ],
   "notes": [
     "Discovery artifacts must not include tokens, passwords, application credential secrets, clouds.yaml contents, or debug logs.",
     "Fixture candidates are discovered at run time and should be re-queried before lifecycle tests because cloud state can change."
