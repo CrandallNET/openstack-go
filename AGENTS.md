@@ -33,7 +33,7 @@ Dependency choices must be documented in the diary. Prefer established, popular,
 
 ## Progress Tracking
 
-Update the plan's work table when work starts, completes, blocks, or changes scope. A work item should move to `done` only when the named artifact exists and the validation described in the row has passed.
+Update the plan's work table when work starts, completes, blocks, or changes scope. A work item should move to `done` only when the named artifact exists and the validation described in the row has passed. For command compatibility work, `done` requires output parity testing against the Python OSC oracle, any fixes found by that testing, and validation against mocked or live OpenStack endpoints as appropriate. Implementation coverage alone is not finished work.
 
 Do not leave progress only in chat. If a task changes the project state, update the plan, the diary, or both.
 

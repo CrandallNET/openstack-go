@@ -1514,13 +1514,13 @@ Sources consulted:
 * Charmbracelet Harmonica docs: [github.com/charmbracelet/harmonica](https://github.com/charmbracelet/harmonica) and [pkg.go.dev/github.com/charmbracelet/harmonica](https://pkg.go.dev/github.com/charmbracelet/harmonica).
 * Bubbles progress source and docs in the pinned local module, especially `SetPercent`, `Update`, and `ViewAs`: [pkg.go.dev/charm.land/bubbles/v2/progress](https://pkg.go.dev/charm.land/bubbles/v2/progress).
 
-## 2026-05-05: Volume Command Completion
+## 2026-05-05: Volume Command Implementation Coverage
 
-Decision: finish the pinned `openstack.volume.v3` command surface by wiring every Volume v3 catalog command to either a typed Gophercloud package or a narrow Cinder REST shim through the authenticated Block Storage service client. This keeps production behavior self-contained in Go and preserves the existing rule that Python OSC is only an oracle, not a runtime dependency.
+Decision: implement the pinned `openstack.volume.v3` command surface by wiring every Volume v3 catalog command to either a typed Gophercloud package or a narrow Cinder REST shim through the authenticated Block Storage service client. This keeps production behavior self-contained in Go and preserves the existing rule that Python OSC is only an oracle, not a runtime dependency.
 
 Work done: implemented the remaining Volume v3 command families: block storage cleanup, cluster set, log-level set, manageable volume and snapshot lists, consistency groups, consistency group snapshots, volume groups, volume group snapshots, volume group types, host freeze/thaw, message delete, volume migrate, volume revert, backend capability display, remote-source volume and snapshot management, attachment mutations, backup mutations, QoS mutations, transfer mutations, service set, volume type mutations, and volume/snapshot set/unset/delete/create paths. The command registry now reports the Python Volume v3 command list without `(Not Implemented Yet)` markers, and the matrix generator marks the implemented commands and Cinder shim coverage.
 
-Validation: `go test ./internal/cli`, `go test ./...`, `make build`, `make matrix`, `./bin/openstack command list -f json --group openstack.volume.v3`, `/Users/ken/.local/bin/openstack command list -f json --group openstack.volume.v3`, and `OS_CLOUD=cloud6 ./bin/openstack volume list -f json` passed. The command-list outputs for the Go CLI and Python oracle contained the same Volume v3 commands.
+Implementation validation: `go test ./internal/cli`, `go test ./...`, `make build`, `make matrix`, `./bin/openstack command list -f json --group openstack.volume.v3`, `/Users/ken/.local/bin/openstack command list -f json --group openstack.volume.v3`, and `OS_CLOUD=cloud6 ./bin/openstack volume list -f json` passed. The command-list outputs for the Go CLI and Python oracle contained the same Volume v3 commands. This is not full completion: the Volume v3 command family still needs output parity testing, parity fixes, mocked Cinder endpoint tests for raw shims, and safe live lifecycle validation before it can be called finished or `done`.
 
 Sources consulted:
 
