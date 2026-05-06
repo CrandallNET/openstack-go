@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"net/netip"
 	"os"
 	"path/filepath"
 	"strings"
@@ -840,6 +841,34 @@ func TestPrettyListFormatsServerNetworksVertically(t *testing.T) {
 	}
 	if strings.Contains(output, "testNet=172.16.86.110, 172.17.36.42") {
 		t.Fatalf("expected pretty server networks to avoid comma-delimited summary, got:\n%s", output)
+	}
+}
+
+func TestPrettyServerNetworksRelabelBySubnetCIDR(t *testing.T) {
+	addresses := map[string]any{
+		"testNet": []any{
+			map[string]any{"addr": "172.17.36.42"},
+			map[string]any{"addr": "172.16.86.110"},
+		},
+	}
+	labels := []serverNetworkLabel{
+		{Prefix: netip.MustParsePrefix("172.16.86.0/24"), Name: "os6-lan"},
+		{Prefix: netip.MustParsePrefix("172.17.36.0/24"), Name: "testNet"},
+	}
+
+	pretty := serverPrettyNetworkAddresses(addresses, labels).PrettyString()
+	for _, want := range []string{"os6-lan: 172.16.86.110", "testNet: 172.17.36.42"} {
+		if !strings.Contains(pretty, want) {
+			t.Fatalf("expected pretty network labels to include %q, got:\n%s", want, pretty)
+		}
+	}
+	if strings.Contains(pretty, "testNet: 172.16.86.110") {
+		t.Fatalf("expected os6-lan subnet IP to be relabeled, got:\n%s", pretty)
+	}
+
+	defaultValue := valueString(serverAddressesValue(addresses, labels))
+	if got, want := defaultValue, "testNet=172.16.86.110, 172.17.36.42"; got != want {
+		t.Fatalf("default server address label should remain OSC-compatible: got %q want %q", got, want)
 	}
 }
 

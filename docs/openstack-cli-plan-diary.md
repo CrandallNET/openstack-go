@@ -1604,3 +1604,17 @@ Sources consulted:
 * Local matrix generator in `tools/matrix`.
 * Local Python OSC quota source at `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/common/quota.py`.
 * Live `cloud6` data from the configured `clouds.yaml`.
+
+## 2026-05-06: Pretty Server Network Labels
+
+Decision: keep default `server list` and `server show` address output tied to Nova/Python OSC compatibility, but let Pretty enrich network labels through Neutron subnet data when it is available. This handles clouds where Nova's server address map groups multiple fixed IPs under one label even though the IPs belong to different Neutron networks.
+
+Work done: Pretty server network output now builds a subnet CIDR to network-name map from Neutron and relabels each address by the subnet containing that IP. If Neutron is unavailable, the subnet cannot be parsed, or no subnet matches, Pretty falls back to the original Nova label. Default table and JSON output remain unchanged.
+
+Validation: `go test ./internal/cli`, `go test ./...`, `make build`, `OS_CLOUD=cloud6 ./bin/openstack --pretty server list`, and `OS_CLOUD=cloud6 ./bin/openstack server list -f json` passed. The live Pretty output relabeled `172.16.86.110` and `172.16.86.177` as `os6-lan` while leaving `172.17.36.42` and `172.17.36.118` as `testNet`; JSON still matched the Nova/Python OSC label shape.
+
+Sources consulted:
+
+* Local Python OSC oracle at `/Users/ken/.local/bin/openstack`.
+* Local Go CLI binary at `./bin/openstack`.
+* Live `cloud6` Neutron `network list`, `subnet list`, and `port list --fixed-ip` data from the configured `clouds.yaml`.

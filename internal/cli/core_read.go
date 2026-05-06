@@ -1464,7 +1464,8 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			imageClient, _ := clients.imageV2()
-			return computeServerList(cmd.Context(), stdout, opts, client, imageClient)
+			networkClient, _ := clients.networkV2()
+			return computeServerList(cmd.Context(), stdout, opts, client, imageClient, networkClient)
 		case "server lock":
 			client, err := clients.computeV2()
 			if err != nil {
@@ -1510,7 +1511,8 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 			if err != nil {
 				return err
 			}
-			return computeServerShow(cmd.Context(), stdout, opts, client, args)
+			networkClient, _ := clients.networkV2()
+			return computeServerShow(cmd.Context(), stdout, opts, client, networkClient, args)
 		case "server event list":
 			client, err := clients.computeV2()
 			if err != nil {
@@ -2314,7 +2316,7 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 	}
 }
 
-func computeServerList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, imageClient *gophercloud.ServiceClient) error {
+func computeServerList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, imageClient *gophercloud.ServiceClient, networkClient *gophercloud.ServiceClient) error {
 	page, err := servers.List(client, servers.ListOpts{}).AllPages(ctx)
 	if err != nil {
 		return err
@@ -2325,12 +2327,13 @@ func computeServerList(ctx context.Context, stdout io.Writer, opts *Options, cli
 	}
 	flavorNames := flavorNameMap(ctx, client)
 	imageNames := imageNameMap(ctx, imageClient)
+	networkLabels := serverNetworkLabelsForPretty(ctx, opts, networkClient)
 	rows := make([]outputRow, 0, len(items))
 	for _, item := range items {
 		networks := tableValue{
 			Value:  serverNetworksInAPISliceOrder(item.Addresses),
 			Table:  serverNetworksSummary(item.Addresses),
-			Pretty: prettyNetworkAddresses(serverNetworks(item.Addresses)),
+			Pretty: serverPrettyNetworkAddresses(item.Addresses, networkLabels),
 		}
 		rows = append(rows, outputRow{
 			"ID":       item.ID,
@@ -2344,7 +2347,7 @@ func computeServerList(ctx context.Context, stdout io.Writer, opts *Options, cli
 	return renderListOutput(stdout, opts, []string{"ID", "Name", "Status", "Networks", "Image", "Flavor"}, rows)
 }
 
-func computeServerShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+func computeServerShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, networkClient *gophercloud.ServiceClient, args []string) error {
 	if len(args) < 1 {
 		return fmt.Errorf("server show requires <server>")
 	}
@@ -2359,11 +2362,11 @@ func computeServerShow(ctx context.Context, stdout io.Writer, opts *Options, cli
 	}
 	if raw, err := computeServerRaw(ctx, client, item.ID); err == nil {
 		enrichServerRaw(ctx, client, raw)
-		return renderShowOutput(stdout, opts, serverRawFields(raw))
+		return renderShowOutput(stdout, opts, serverRawFields(raw, serverNetworkLabelsForPretty(ctx, opts, networkClient)))
 	}
 	addresses := any(serverNetworksSummary(item.Addresses))
 	if prettyOutput(opts) {
-		addresses = prettyNetworkAddresses(serverNetworks(item.Addresses))
+		addresses = serverPrettyNetworkAddresses(item.Addresses, serverNetworkLabelsForPretty(ctx, opts, networkClient))
 	}
 	return renderShowOutput(stdout, opts, []outputField{
 		{"id", item.ID},
@@ -2393,7 +2396,7 @@ func computeServerRaw(ctx context.Context, client *gophercloud.ServiceClient, id
 	return body.Server, nil
 }
 
-func serverRawFields(raw map[string]any) []outputField {
+func serverRawFields(raw map[string]any, networkLabels []serverNetworkLabel) []outputField {
 	return []outputField{
 		{"OS-DCF:diskConfig", raw["OS-DCF:diskConfig"]},
 		{"OS-EXT-AZ:availability_zone", raw["OS-EXT-AZ:availability_zone"]},
@@ -2414,7 +2417,7 @@ func serverRawFields(raw map[string]any) []outputField {
 		{"OS-SRV-USG:terminated_at", raw["OS-SRV-USG:terminated_at"]},
 		{"accessIPv4", raw["accessIPv4"]},
 		{"accessIPv6", raw["accessIPv6"]},
-		{"addresses", serverAddressesValue(raw["addresses"])},
+		{"addresses", serverAddressesValue(raw["addresses"], networkLabels)},
 		{"config_drive", raw["config_drive"]},
 		{"created", raw["created"]},
 		{"description", raw["description"]},
@@ -2512,7 +2515,7 @@ func serverPowerStateValue(value any) any {
 	return tableValue{Value: value, Table: label, Pretty: label}
 }
 
-func serverAddressesValue(value any) any {
+func serverAddressesValue(value any, networkLabels []serverNetworkLabel) any {
 	addresses, ok := value.(map[string]any)
 	if !ok {
 		return value
@@ -2520,7 +2523,7 @@ func serverAddressesValue(value any) any {
 	return tableValue{
 		Value:  serverNetworksInAPISliceOrder(addresses),
 		Table:  serverNetworksSummary(addresses),
-		Pretty: prettyNetworkAddresses(serverNetworks(addresses)),
+		Pretty: serverPrettyNetworkAddresses(addresses, networkLabels),
 	}
 }
 
@@ -18387,6 +18390,95 @@ func serverNetworks(addresses map[string]any) map[string][]string {
 		sort.Strings(values)
 	}
 	return networks
+}
+
+type serverNetworkLabel struct {
+	Prefix netip.Prefix
+	Name   string
+}
+
+func serverNetworkLabelsForPretty(ctx context.Context, opts *Options, client *gophercloud.ServiceClient) []serverNetworkLabel {
+	if !prettyOutput(opts) || client == nil {
+		return nil
+	}
+	return serverNetworkLabels(ctx, client)
+}
+
+func serverNetworkLabels(ctx context.Context, client *gophercloud.ServiceClient) []serverNetworkLabel {
+	networkPage, err := networks.List(client, networks.ListOpts{}).AllPages(ctx)
+	if err != nil {
+		return nil
+	}
+	networkItems, err := networks.ExtractNetworks(networkPage)
+	if err != nil {
+		return nil
+	}
+	networkNames := make(map[string]string, len(networkItems))
+	for _, item := range networkItems {
+		networkNames[item.ID] = item.Name
+	}
+
+	subnetPage, err := subnets.List(client, subnets.ListOpts{}).AllPages(ctx)
+	if err != nil {
+		return nil
+	}
+	subnetItems, err := subnets.ExtractSubnets(subnetPage)
+	if err != nil {
+		return nil
+	}
+	labels := make([]serverNetworkLabel, 0, len(subnetItems))
+	for _, item := range subnetItems {
+		prefix, err := netip.ParsePrefix(item.CIDR)
+		if err != nil {
+			continue
+		}
+		name := firstNonEmpty(networkNames[item.NetworkID], item.NetworkID)
+		if name == "" {
+			continue
+		}
+		labels = append(labels, serverNetworkLabel{Prefix: prefix, Name: name})
+	}
+	sort.Slice(labels, func(i, j int) bool {
+		return labels[i].Prefix.Bits() > labels[j].Prefix.Bits()
+	})
+	return labels
+}
+
+func serverPrettyNetworkAddresses(addresses map[string]any, labels []serverNetworkLabel) prettyNetworkAddresses {
+	return prettyNetworkAddresses(relabelServerNetworks(serverNetworks(addresses), labels))
+}
+
+func relabelServerNetworks(values map[string][]string, labels []serverNetworkLabel) map[string][]string {
+	if len(labels) == 0 {
+		return values
+	}
+	relabeled := make(map[string][]string, len(values))
+	for originalName, addresses := range values {
+		for _, address := range addresses {
+			name := serverNetworkNameForAddress(address, labels)
+			if name == "" {
+				name = originalName
+			}
+			relabeled[name] = append(relabeled[name], address)
+		}
+	}
+	for _, addresses := range relabeled {
+		sort.Strings(addresses)
+	}
+	return relabeled
+}
+
+func serverNetworkNameForAddress(address string, labels []serverNetworkLabel) string {
+	addr, err := netip.ParseAddr(address)
+	if err != nil {
+		return ""
+	}
+	for _, label := range labels {
+		if label.Prefix.Contains(addr) {
+			return label.Name
+		}
+	}
+	return ""
 }
 
 func serverNetworksInAPISliceOrder(addresses map[string]any) map[string][]string {
