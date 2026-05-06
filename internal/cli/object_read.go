@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/http"
 	"net/url"
 	"os"
 	"strings"
@@ -384,7 +385,7 @@ func objectProperties(opts *Options) (map[string]string, error) {
 }
 
 func objectStoreAccountShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
-	result := accounts.Get(ctx, client, nil)
+	result := objectStorageAccountGet(ctx, client)
 	item, err := result.Extract()
 	if err != nil {
 		return err
@@ -401,4 +402,18 @@ func objectStoreAccountShow(ctx context.Context, stdout io.Writer, opts *Options
 		{"quota_bytes", item.QuotaBytes},
 		{"metadata", metadata},
 	})
+}
+
+func objectStorageAccountGet(ctx context.Context, client *gophercloud.ServiceClient) accounts.GetResult {
+	resp, err := client.Head(ctx, client.Endpoint, &gophercloud.RequestOpts{OkCodes: []int{http.StatusOK, http.StatusNoContent}})
+	_, header, err := gophercloud.ParseResponse(resp, err)
+	status := 0
+	if resp != nil {
+		status = resp.StatusCode
+	}
+	return accounts.GetResult{HeaderResult: gophercloud.HeaderResult{Result: gophercloud.Result{
+		StatusCode: status,
+		Header:     header,
+		Err:        err,
+	}}}
 }

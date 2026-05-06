@@ -53,7 +53,7 @@ func main() {
 	var diagnosticsDir string
 	var keepSuccess bool
 
-	flag.StringVar(&suite, "suite", "keypair", "lifecycle suite to run: keypair, server, volume, or quota")
+	flag.StringVar(&suite, "suite", "keypair", "lifecycle suite to run: keypair, server, volume, quota, image, network, or object")
 	flag.StringVar(&cloud, "cloud", os.Getenv("OS_CLOUD"), "cloud name to test")
 	flag.StringVar(&prefix, "prefix", "golang-osc-test", "unique resource prefix")
 	flag.StringVar(&diagnosticsDir, "diagnostics-dir", "compat/lifecycle-diagnostics", "directory for retained failure diagnostics")
@@ -76,6 +76,12 @@ func main() {
 		diagnostics, err = runVolumeLifecycle(cloud, prefix)
 	case "quota":
 		diagnostics, err = runQuotaLifecycle(cloud, prefix)
+	case "image":
+		diagnostics, err = runImageLifecycle(cloud, prefix)
+	case "network":
+		diagnostics, err = runNetworkLifecycle(cloud, prefix)
+	case "object":
+		diagnostics, err = runObjectLifecycle(cloud, prefix)
 	default:
 		fmt.Fprintf(os.Stderr, "lifecycle-smoke: unknown suite %q\n", suite)
 		os.Exit(1)

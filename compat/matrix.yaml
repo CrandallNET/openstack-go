@@ -61,7 +61,7 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/security/addressgroups"
     shim: false
     plugin_scope: false
@@ -69,12 +69,13 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 network lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable network lifecycle suite for the tested default or JSON command path. Broader flag, extension, and cloud coverage still need completion."
   - command: "address group delete"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/security/addressgroups"
     shim: false
     plugin_scope: false
@@ -82,7 +83,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 network lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable network lifecycle suite for the tested default or JSON command path. Broader flag, extension, and cloud coverage still need completion."
   - command: "address group list"
     group: "openstack.network.v2"
     service: "network"
@@ -100,7 +102,7 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/security/addressgroups"
     shim: false
     plugin_scope: false
@@ -108,7 +110,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 network lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable network lifecycle suite for the tested default or JSON command path. Broader flag, extension, and cloud coverage still need completion."
   - command: "address group show"
     group: "openstack.network.v2"
     service: "network"
@@ -125,7 +128,7 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/security/addressgroups"
     shim: false
     plugin_scope: false
@@ -133,12 +136,13 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 network lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable network lifecycle suite for the tested default or JSON command path. Broader flag, extension, and cloud coverage still need completion."
   - command: "address scope create"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/addressscopes"
     shim: false
     plugin_scope: false
@@ -146,12 +150,13 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 network lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable network lifecycle suite for the tested default or JSON command path. Broader flag, extension, and cloud coverage still need completion."
   - command: "address scope delete"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/addressscopes"
     shim: false
     plugin_scope: false
@@ -159,7 +164,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 network lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable network lifecycle suite for the tested default or JSON command path. Broader flag, extension, and cloud coverage still need completion."
   - command: "address scope list"
     group: "openstack.network.v2"
     service: "network"
@@ -177,7 +183,7 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/addressscopes"
     shim: false
     plugin_scope: false
@@ -185,7 +191,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 network lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable network lifecycle suite for the tested default or JSON command path. Broader flag, extension, and cloud coverage still need completion."
   - command: "address scope show"
     group: "openstack.network.v2"
     service: "network"
@@ -935,7 +942,7 @@ commands:
     group: "openstack.object_store.v1"
     service: "object-store"
     api: "v1"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/containers"
     shim: false
     plugin_scope: false
@@ -943,12 +950,13 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: flex-dfw object lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against flex-dfw in the disposable object-store lifecycle suite for the tested default, JSON, or stdout command path. Broader flag and cloud coverage still need completion."
   - command: "container delete"
     group: "openstack.object_store.v1"
     service: "object-store"
     api: "v1"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/containers; recursive object deletion via github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/objects"
     shim: false
     plugin_scope: false
@@ -956,7 +964,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: flex-dfw object lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against flex-dfw in the disposable object-store lifecycle suite for the tested default, JSON, or stdout command path. Broader flag and cloud coverage still need completion."
   - command: "container list"
     group: "openstack.object_store.v1"
     service: "object-store"
@@ -985,7 +994,7 @@ commands:
     group: "openstack.object_store.v1"
     service: "object-store"
     api: "v1"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/containers"
     shim: false
     plugin_scope: false
@@ -993,7 +1002,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: flex-dfw object lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against flex-dfw in the disposable object-store lifecycle suite for the tested default, JSON, or stdout command path. Broader flag and cloud coverage still need completion."
   - command: "container show"
     group: "openstack.object_store.v1"
     service: "object-store"
@@ -1011,7 +1021,7 @@ commands:
     group: "openstack.object_store.v1"
     service: "object-store"
     api: "v1"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/containers"
     shim: false
     plugin_scope: false
@@ -1019,7 +1029,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: flex-dfw object lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against flex-dfw in the disposable object-store lifecycle suite for the tested default, JSON, or stdout command path. Broader flag and cloud coverage still need completion."
   - command: "credential create"
     group: "openstack.identity.v3"
     service: "identity"
@@ -1962,19 +1973,20 @@ commands:
     group: "openstack.image.v2"
     service: "image"
     api: "v2"
-    status: "implemented"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/image/v2/members"
     shim: false
     plugin_scope: false
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion. Live fixture still needed before this row can be marked cloud-verified."
+      - "compat-live: cloud6 image lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable image lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
   - command: "image create"
     group: "openstack.image.v2"
     service: "image"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/image/v2/images; github.com/gophercloud/gophercloud/v2/openstack/image/v2/imagedata; github.com/gophercloud/gophercloud/v2/openstack/image/v2/imageimport"
     shim: false
     plugin_scope: false
@@ -1982,12 +1994,13 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 image lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable image lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
   - command: "image delete"
     group: "openstack.image.v2"
     service: "image"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/image/v2/images; Glance multi-store delete via gophercloud.ServiceClient"
     shim: true
     plugin_scope: false
@@ -1995,12 +2008,13 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 image lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable image lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
   - command: "image import"
     group: "openstack.image.v2"
     service: "image"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "Glance image import via gophercloud.ServiceClient; typed Gophercloud imageimport helper does not cover stores or remote import options in v2.12.0"
     shim: true
     plugin_scope: false
@@ -2008,7 +2022,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 image lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable image lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
   - command: "image import info"
     group: "openstack.image.v2"
     service: "image"
@@ -2066,7 +2081,7 @@ commands:
     group: "openstack.image.v2"
     service: "image"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "Glance metadef namespaces via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
     shim: true
     plugin_scope: false
@@ -2074,12 +2089,13 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 image lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable image lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
   - command: "image metadef namespace delete"
     group: "openstack.image.v2"
     service: "image"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "Glance metadef namespaces via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
     shim: true
     plugin_scope: false
@@ -2087,7 +2103,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 image lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable image lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
   - command: "image metadef namespace list"
     group: "openstack.image.v2"
     service: "image"
@@ -2105,7 +2122,7 @@ commands:
     group: "openstack.image.v2"
     service: "image"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "Glance metadef namespaces via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
     shim: true
     plugin_scope: false
@@ -2113,7 +2130,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 image lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable image lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
   - command: "image metadef namespace show"
     group: "openstack.image.v2"
     service: "image"
@@ -2131,7 +2149,7 @@ commands:
     group: "openstack.image.v2"
     service: "image"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "Glance metadef objects via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
     shim: true
     plugin_scope: false
@@ -2139,12 +2157,13 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 image lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable image lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
   - command: "image metadef object delete"
     group: "openstack.image.v2"
     service: "image"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "Glance metadef objects via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
     shim: true
     plugin_scope: false
@@ -2152,7 +2171,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 image lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable image lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
   - command: "image metadef object list"
     group: "openstack.image.v2"
     service: "image"
@@ -2196,7 +2216,7 @@ commands:
     group: "openstack.image.v2"
     service: "image"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "Glance metadef objects via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
     shim: true
     plugin_scope: false
@@ -2204,12 +2224,13 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 image lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable image lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
   - command: "image metadef property create"
     group: "openstack.image.v2"
     service: "image"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "Glance metadef namespace properties via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
     shim: true
     plugin_scope: false
@@ -2217,12 +2238,13 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 image lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable image lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
   - command: "image metadef property delete"
     group: "openstack.image.v2"
     service: "image"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "Glance metadef namespace properties via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
     shim: true
     plugin_scope: false
@@ -2230,7 +2252,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 image lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable image lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
   - command: "image metadef property list"
     group: "openstack.image.v2"
     service: "image"
@@ -2248,7 +2271,7 @@ commands:
     group: "openstack.image.v2"
     service: "image"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "Glance metadef namespace properties via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
     shim: true
     plugin_scope: false
@@ -2256,7 +2279,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 image lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable image lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
   - command: "image metadef property show"
     group: "openstack.image.v2"
     service: "image"
@@ -2274,7 +2298,7 @@ commands:
     group: "openstack.image.v2"
     service: "image"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "Glance metadef namespace resource type associations via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
     shim: true
     plugin_scope: false
@@ -2282,12 +2306,13 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 image lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable image lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
   - command: "image metadef resource type association delete"
     group: "openstack.image.v2"
     service: "image"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "Glance metadef namespace resource type associations via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
     shim: true
     plugin_scope: false
@@ -2295,7 +2320,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 image lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable image lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
   - command: "image metadef resource type association list"
     group: "openstack.image.v2"
     service: "image"
@@ -2326,14 +2352,15 @@ commands:
     group: "openstack.image.v2"
     service: "image"
     api: "v2"
-    status: "implemented"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/image/v2/members"
     shim: false
     plugin_scope: false
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion. Live fixture still needed before this row can be marked cloud-verified."
+      - "compat-live: cloud6 image lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable image lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
   - command: "image save"
     group: "openstack.image.v2"
     service: "image"
@@ -2351,7 +2378,7 @@ commands:
     group: "openstack.image.v2"
     service: "image"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/image/v2/images; github.com/gophercloud/gophercloud/v2/openstack/image/v2/members; image activation via gophercloud.ServiceClient"
     shim: true
     plugin_scope: false
@@ -2359,7 +2386,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 image lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable image lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
   - command: "image show"
     group: "openstack.image.v2"
     service: "image"
@@ -2379,7 +2407,7 @@ commands:
     group: "openstack.image.v2"
     service: "image"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/image/v2/imagedata"
     shim: false
     plugin_scope: false
@@ -2387,7 +2415,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 image lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable image lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
   - command: "image stores list"
     group: "openstack.image.v2"
     service: "image"
@@ -2430,7 +2459,7 @@ commands:
     group: "openstack.image.v2"
     service: "image"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/image/v2/images; image tag delete via gophercloud.ServiceClient"
     shim: true
     plugin_scope: false
@@ -2438,7 +2467,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 image lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable image lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
   - command: "implied role create"
     group: "openstack.identity.v3"
     service: "identity"
@@ -2912,7 +2942,7 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/networks; standard tags via gophercloud.ServiceClient"
     shim: false
     plugin_scope: false
@@ -2920,12 +2950,13 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 network lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable network lifecycle suite for the tested default or JSON command path. Broader flag, extension, and cloud coverage still need completion."
   - command: "network delete"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/networks"
     shim: false
     plugin_scope: false
@@ -2933,7 +2964,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 network lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable network lifecycle suite for the tested default or JSON command path. Broader flag, extension, and cloud coverage still need completion."
   - command: "network flavor add profile"
     group: "openstack.network.v2"
     service: "network"
@@ -3570,7 +3602,7 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/networks; standard tags via gophercloud.ServiceClient"
     shim: false
     plugin_scope: false
@@ -3578,7 +3610,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 network lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable network lifecycle suite for the tested default or JSON command path. Broader flag, extension, and cloud coverage still need completion."
   - command: "network show"
     group: "openstack.network.v2"
     service: "network"
@@ -3689,7 +3722,7 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/networks; standard tags via gophercloud.ServiceClient"
     shim: false
     plugin_scope: false
@@ -3697,12 +3730,13 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 network lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable network lifecycle suite for the tested default or JSON command path. Broader flag, extension, and cloud coverage still need completion."
   - command: "object create"
     group: "openstack.object_store.v1"
     service: "object-store"
     api: "v1"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/objects"
     shim: false
     plugin_scope: false
@@ -3710,12 +3744,13 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: flex-dfw object lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against flex-dfw in the disposable object-store lifecycle suite for the tested default, JSON, or stdout command path. Broader flag and cloud coverage still need completion."
   - command: "object delete"
     group: "openstack.object_store.v1"
     service: "object-store"
     api: "v1"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/objects"
     shim: false
     plugin_scope: false
@@ -3723,7 +3758,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: flex-dfw object lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against flex-dfw in the disposable object-store lifecycle suite for the tested default, JSON, or stdout command path. Broader flag and cloud coverage still need completion."
   - command: "object list"
     group: "openstack.object_store.v1"
     service: "object-store"
@@ -3741,7 +3777,7 @@ commands:
     group: "openstack.object_store.v1"
     service: "object-store"
     api: "v1"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/objects"
     shim: false
     plugin_scope: false
@@ -3749,12 +3785,13 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: flex-dfw object lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against flex-dfw in the disposable object-store lifecycle suite for the tested default, JSON, or stdout command path. Broader flag and cloud coverage still need completion."
   - command: "object set"
     group: "openstack.object_store.v1"
     service: "object-store"
     api: "v1"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/objects"
     shim: false
     plugin_scope: false
@@ -3762,7 +3799,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: flex-dfw object lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against flex-dfw in the disposable object-store lifecycle suite for the tested default, JSON, or stdout command path. Broader flag and cloud coverage still need completion."
   - command: "object show"
     group: "openstack.object_store.v1"
     service: "object-store"
@@ -3815,7 +3853,7 @@ commands:
     group: "openstack.object_store.v1"
     service: "object-store"
     api: "v1"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/objects"
     shim: false
     plugin_scope: false
@@ -3823,7 +3861,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: flex-dfw object lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against flex-dfw in the disposable object-store lifecycle suite for the tested default, JSON, or stdout command path. Broader flag and cloud coverage still need completion."
   - command: "policy create"
     group: "openstack.identity.v3"
     service: "identity"
@@ -3887,7 +3926,7 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/ports; standard tags and extension fields via gophercloud.ServiceClient"
     shim: false
     plugin_scope: false
@@ -3895,12 +3934,13 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 network lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable network lifecycle suite for the tested default or JSON command path. Broader flag, extension, and cloud coverage still need completion."
   - command: "port delete"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/ports"
     shim: false
     plugin_scope: false
@@ -3908,7 +3948,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 network lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable network lifecycle suite for the tested default or JSON command path. Broader flag, extension, and cloud coverage still need completion."
   - command: "port list"
     group: "openstack.network.v2"
     service: "network"
@@ -3928,7 +3969,7 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/ports; standard tags and extension fields via gophercloud.ServiceClient"
     shim: false
     plugin_scope: false
@@ -3936,7 +3977,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 network lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable network lifecycle suite for the tested default or JSON command path. Broader flag, extension, and cloud coverage still need completion."
   - command: "port show"
     group: "openstack.network.v2"
     service: "network"
@@ -3956,7 +3998,7 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/ports; standard tags and extension fields via gophercloud.ServiceClient"
     shim: false
     plugin_scope: false
@@ -3964,7 +4006,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 network lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable network lifecycle suite for the tested default or JSON command path. Broader flag, extension, and cloud coverage still need completion."
   - command: "project cleanup"
     group: "openstack.common"
     service: "common"
@@ -4652,7 +4695,7 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/routers"
     shim: false
     plugin_scope: false
@@ -4660,12 +4703,13 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 network lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable network lifecycle suite for the tested default or JSON command path. Broader flag, extension, and cloud coverage still need completion."
   - command: "router add route"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "Neutron router add_extraroutes action via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
     shim: true
     plugin_scope: false
@@ -4673,12 +4717,13 @@ commands:
     tests:
       - "unit: command registry"
       - "live: cloud6 router extra-route lifecycle smoke"
-    notes: "Implemented through Neutron add_extraroutes and remove_extraroutes action endpoints. Disposable route add, remove, repeated missing-route remove, and cleanup passed on cloud6."
+      - "compat-live: cloud6 network lifecycle write-output parity"
+    notes: "Implemented through Neutron add_extraroutes and remove_extraroutes action endpoints. Python-vs-Go write-output parity for paired route add and remove actions is recorded against cloud6 in the disposable network lifecycle suite."
   - command: "router add subnet"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/routers"
     shim: false
     plugin_scope: false
@@ -4686,12 +4731,13 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 network lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable network lifecycle suite for the tested default or JSON command path. Broader flag, extension, and cloud coverage still need completion."
   - command: "router create"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/routers; standard tags via gophercloud.ServiceClient"
     shim: false
     plugin_scope: false
@@ -4699,12 +4745,13 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 network lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable network lifecycle suite for the tested default or JSON command path. Broader flag, extension, and cloud coverage still need completion."
   - command: "router delete"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/routers"
     shim: false
     plugin_scope: false
@@ -4712,7 +4759,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 network lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable network lifecycle suite for the tested default or JSON command path. Broader flag, extension, and cloud coverage still need completion."
   - command: "router list"
     group: "openstack.network.v2"
     service: "network"
@@ -4800,7 +4848,7 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/routers"
     shim: false
     plugin_scope: false
@@ -4808,12 +4856,13 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 network lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable network lifecycle suite for the tested default or JSON command path. Broader flag, extension, and cloud coverage still need completion."
   - command: "router remove route"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "Neutron router remove_extraroutes action via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
     shim: true
     plugin_scope: false
@@ -4821,12 +4870,13 @@ commands:
     tests:
       - "unit: command registry"
       - "live: cloud6 router extra-route lifecycle smoke"
-    notes: "Implemented through Neutron add_extraroutes and remove_extraroutes action endpoints. Disposable route add, remove, repeated missing-route remove, and cleanup passed on cloud6."
+      - "compat-live: cloud6 network lifecycle write-output parity"
+    notes: "Implemented through Neutron add_extraroutes and remove_extraroutes action endpoints. Python-vs-Go write-output parity for paired route add and remove actions is recorded against cloud6 in the disposable network lifecycle suite."
   - command: "router remove subnet"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/routers"
     shim: false
     plugin_scope: false
@@ -4834,12 +4884,13 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 network lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable network lifecycle suite for the tested default or JSON command path. Broader flag, extension, and cloud coverage still need completion."
   - command: "router set"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/routers; standard tags via gophercloud.ServiceClient"
     shim: false
     plugin_scope: false
@@ -4847,7 +4898,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 network lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable network lifecycle suite for the tested default or JSON command path. Broader flag, extension, and cloud coverage still need completion."
   - command: "router show"
     group: "openstack.network.v2"
     service: "network"
@@ -4867,7 +4919,7 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/routers; standard tags via gophercloud.ServiceClient"
     shim: false
     plugin_scope: false
@@ -4875,12 +4927,13 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 network lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable network lifecycle suite for the tested default or JSON command path. Broader flag, extension, and cloud coverage still need completion."
   - command: "security group create"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/security/groups; standard tags via gophercloud.ServiceClient"
     shim: false
     plugin_scope: false
@@ -4888,12 +4941,13 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 network lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable network lifecycle suite for the tested default or JSON command path. Broader flag, extension, and cloud coverage still need completion."
   - command: "security group delete"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/security/groups"
     shim: false
     plugin_scope: false
@@ -4901,7 +4955,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 network lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable network lifecycle suite for the tested default or JSON command path. Broader flag, extension, and cloud coverage still need completion."
   - command: "security group list"
     group: "openstack.network.v2"
     service: "network"
@@ -4921,7 +4976,7 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/security/rules"
     shim: false
     plugin_scope: false
@@ -4929,12 +4984,13 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 network lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable network lifecycle suite for the tested default or JSON command path. Broader flag, extension, and cloud coverage still need completion."
   - command: "security group rule delete"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/security/rules"
     shim: false
     plugin_scope: false
@@ -4942,7 +4998,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 network lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable network lifecycle suite for the tested default or JSON command path. Broader flag, extension, and cloud coverage still need completion."
   - command: "security group rule list"
     group: "openstack.network.v2"
     service: "network"
@@ -4977,7 +5034,7 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/security/groups; standard tags via gophercloud.ServiceClient"
     shim: false
     plugin_scope: false
@@ -4985,7 +5042,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 network lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable network lifecycle suite for the tested default or JSON command path. Broader flag, extension, and cloud coverage still need completion."
   - command: "security group show"
     group: "openstack.network.v2"
     service: "network"
@@ -5005,7 +5063,7 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "Neutron standard tags via gophercloud.ServiceClient"
     shim: false
     plugin_scope: false
@@ -5013,7 +5071,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 network lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable network lifecycle suite for the tested default or JSON command path. Broader flag, extension, and cloud coverage still need completion."
   - command: "server add fixed ip"
     group: "openstack.compute.v2"
     service: "compute"
@@ -5050,8 +5109,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-      - "compat-live: cloud6 lifecycle write-output parity"
-    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
+      - "compat-live: cloud6 server lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable server lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
   - command: "server add port"
     group: "openstack.compute.v2"
     service: "compute"
@@ -5064,8 +5123,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-      - "compat-live: cloud6 lifecycle write-output parity"
-    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
+      - "compat-live: cloud6 server lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable server lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
   - command: "server add security group"
     group: "openstack.compute.v2"
     service: "compute"
@@ -5078,8 +5137,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-      - "compat-live: cloud6 lifecycle write-output parity"
-    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
+      - "compat-live: cloud6 server lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable server lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
   - command: "server add volume"
     group: "openstack.compute.v2"
     service: "compute"
@@ -5092,8 +5151,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-      - "compat-live: cloud6 lifecycle write-output parity"
-    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
+      - "compat-live: cloud6 server lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable server lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
   - command: "server backup create"
     group: "openstack.compute.v2"
     service: "compute"
@@ -5118,8 +5177,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-      - "compat-live: cloud6 lifecycle write-output parity"
-    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
+      - "compat-live: cloud6 server lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable server lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
   - command: "server delete"
     group: "openstack.compute.v2"
     service: "compute"
@@ -5132,8 +5191,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-      - "compat-live: cloud6 lifecycle write-output parity"
-    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
+      - "compat-live: cloud6 server lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable server lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
   - command: "server dump create"
     group: "openstack.compute.v2"
     service: "compute"
@@ -5277,8 +5336,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-      - "compat-live: cloud6 lifecycle write-output parity"
-    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
+      - "compat-live: cloud6 server lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable server lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
   - command: "server migrate"
     group: "openstack.compute.v2"
     service: "compute"
@@ -5400,8 +5459,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-      - "compat-live: cloud6 lifecycle write-output parity"
-    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
+      - "compat-live: cloud6 server lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable server lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
   - command: "server reboot"
     group: "openstack.compute.v2"
     service: "compute"
@@ -5414,8 +5473,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-      - "compat-live: cloud6 lifecycle write-output parity"
-    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
+      - "compat-live: cloud6 server lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable server lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
   - command: "server rebuild"
     group: "openstack.compute.v2"
     service: "compute"
@@ -5428,8 +5487,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-      - "compat-live: cloud6 lifecycle write-output parity"
-    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
+      - "compat-live: cloud6 server lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable server lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
   - command: "server remove fixed ip"
     group: "openstack.compute.v2"
     service: "compute"
@@ -5466,8 +5525,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-      - "compat-live: cloud6 lifecycle write-output parity"
-    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
+      - "compat-live: cloud6 server lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable server lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
   - command: "server remove port"
     group: "openstack.compute.v2"
     service: "compute"
@@ -5480,8 +5539,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-      - "compat-live: cloud6 lifecycle write-output parity"
-    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
+      - "compat-live: cloud6 server lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable server lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
   - command: "server remove security group"
     group: "openstack.compute.v2"
     service: "compute"
@@ -5494,8 +5553,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-      - "compat-live: cloud6 lifecycle write-output parity"
-    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
+      - "compat-live: cloud6 server lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable server lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
   - command: "server remove volume"
     group: "openstack.compute.v2"
     service: "compute"
@@ -5508,8 +5567,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-      - "compat-live: cloud6 lifecycle write-output parity"
-    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
+      - "compat-live: cloud6 server lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable server lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
   - command: "server rescue"
     group: "openstack.compute.v2"
     service: "compute"
@@ -5522,8 +5581,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-      - "compat-live: cloud6 lifecycle write-output parity"
-    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
+      - "compat-live: cloud6 server lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable server lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
   - command: "server resize"
     group: "openstack.compute.v2"
     service: "compute"
@@ -5584,8 +5643,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-      - "compat-live: cloud6 lifecycle write-output parity"
-    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
+      - "compat-live: cloud6 server lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable server lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
   - command: "server set"
     group: "openstack.compute.v2"
     service: "compute"
@@ -5598,8 +5657,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-      - "compat-live: cloud6 lifecycle write-output parity"
-    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
+      - "compat-live: cloud6 server lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable server lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
   - command: "server shelve"
     group: "openstack.compute.v2"
     service: "compute"
@@ -5652,8 +5711,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-      - "compat-live: cloud6 lifecycle write-output parity"
-    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
+      - "compat-live: cloud6 server lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable server lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
   - command: "server stop"
     group: "openstack.compute.v2"
     service: "compute"
@@ -5666,8 +5725,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-      - "compat-live: cloud6 lifecycle write-output parity"
-    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
+      - "compat-live: cloud6 server lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable server lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
   - command: "server suspend"
     group: "openstack.compute.v2"
     service: "compute"
@@ -5680,8 +5739,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-      - "compat-live: cloud6 lifecycle write-output parity"
-    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
+      - "compat-live: cloud6 server lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable server lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
   - command: "server unlock"
     group: "openstack.compute.v2"
     service: "compute"
@@ -5694,8 +5753,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-      - "compat-live: cloud6 lifecycle write-output parity"
-    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
+      - "compat-live: cloud6 server lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable server lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
   - command: "server unpause"
     group: "openstack.compute.v2"
     service: "compute"
@@ -5708,8 +5767,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-      - "compat-live: cloud6 lifecycle write-output parity"
-    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
+      - "compat-live: cloud6 server lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable server lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
   - command: "server unrescue"
     group: "openstack.compute.v2"
     service: "compute"
@@ -5722,8 +5781,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-      - "compat-live: cloud6 lifecycle write-output parity"
-    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
+      - "compat-live: cloud6 server lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable server lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
   - command: "server unset"
     group: "openstack.compute.v2"
     service: "compute"
@@ -5736,8 +5795,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-      - "compat-live: cloud6 lifecycle write-output parity"
-    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
+      - "compat-live: cloud6 server lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable server lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
   - command: "server unshelve"
     group: "openstack.compute.v2"
     service: "compute"
@@ -5775,8 +5834,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-      - "compat-live: cloud6 lifecycle write-output parity"
-    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
+      - "compat-live: cloud6 server lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable server lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
   - command: "server volume update"
     group: "openstack.compute.v2"
     service: "compute"
@@ -5789,8 +5848,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-      - "compat-live: cloud6 lifecycle write-output parity"
-    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
+      - "compat-live: cloud6 server lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable server lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
   - command: "service create"
     group: "openstack.identity.v3"
     service: "identity"
@@ -5913,7 +5972,7 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/subnets; standard tags via gophercloud.ServiceClient"
     shim: false
     plugin_scope: false
@@ -5921,12 +5980,13 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 network lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable network lifecycle suite for the tested default or JSON command path. Broader flag, extension, and cloud coverage still need completion."
   - command: "subnet delete"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/subnets"
     shim: false
     plugin_scope: false
@@ -5934,7 +5994,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 network lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable network lifecycle suite for the tested default or JSON command path. Broader flag, extension, and cloud coverage still need completion."
   - command: "subnet list"
     group: "openstack.network.v2"
     service: "network"
@@ -6034,7 +6095,7 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/subnets; standard tags via gophercloud.ServiceClient"
     shim: false
     plugin_scope: false
@@ -6042,7 +6103,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 network lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable network lifecycle suite for the tested default or JSON command path. Broader flag, extension, and cloud coverage still need completion."
   - command: "subnet show"
     group: "openstack.network.v2"
     service: "network"
@@ -6062,7 +6124,7 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/subnets; standard tags via gophercloud.ServiceClient"
     shim: false
     plugin_scope: false
@@ -6070,7 +6132,8 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud lifecycle smoke"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 network lifecycle write-output parity"
+    notes: "Python-vs-Go write-output parity recorded against cloud6 in the disposable network lifecycle suite for the tested default or JSON command path. Broader flag, extension, and cloud coverage still need completion."
   - command: "tap flow create"
     group: "openstack.network.v2"
     service: "network"

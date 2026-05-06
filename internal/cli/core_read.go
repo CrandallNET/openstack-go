@@ -5810,7 +5810,7 @@ func imageMetadefObjectUpdate(ctx context.Context, opts *Options, client *gopher
 	if len(args) < 2 {
 		return fmt.Errorf("image metadef object update requires <namespace> <object>")
 	}
-	request := map[string]any{}
+	request := map[string]any{"name": args[1]}
 	if value := flagValue(opts, "name"); value != "" {
 		request["name"] = value
 	}
@@ -9847,12 +9847,26 @@ func routerRawFields(raw map[string]any, interfaces []map[string]string) []outpu
 		{"created_at", raw["created_at"]},
 		{"description", raw["description"]},
 		{"distributed", raw["distributed"]},
-		{"enable_ndp_proxy", raw["enable_ndp_proxy"]},
-		{"external_gateway_info", routerGatewayTableValue(raw["external_gateway_info"])},
-		{"flavor_id", raw["flavor_id"]},
-		{"ha", raw["ha"]},
-		{"id", raw["id"]},
 	}
+	if _, ok := raw["enable_default_route_bfd"]; ok {
+		fields = append(fields, outputField{"enable_default_route_bfd", raw["enable_default_route_bfd"]})
+	}
+	if _, ok := raw["enable_default_route_ecmp"]; ok {
+		fields = append(fields, outputField{"enable_default_route_ecmp", raw["enable_default_route_ecmp"]})
+	}
+	fields = append(fields,
+		outputField{"enable_ndp_proxy", raw["enable_ndp_proxy"]},
+		outputField{"external_gateway_info", routerGatewayTableValue(raw["external_gateway_info"])},
+		outputField{"flavor_id", raw["flavor_id"]},
+	)
+	if _, ok := raw["gw_port_id"]; ok {
+		fields = append(fields, outputField{"gw_port_id", raw["gw_port_id"]})
+	}
+	fields = append(fields, outputField{"ha", raw["ha"]})
+	if _, ok := raw["ha_vr_id"]; ok {
+		fields = append(fields, outputField{"ha_vr_id", rawNumber(raw["ha_vr_id"])})
+	}
+	fields = append(fields, outputField{"id", raw["id"]})
 	if interfaces != nil {
 		fields = append(fields, outputField{"interfaces_info", routerInterfacesTableValue(interfaces)})
 	}
@@ -19336,7 +19350,7 @@ func imagePropertiesValue(value map[string]any) tableValue {
 	for _, key := range keys {
 		parts = append(parts, fmt.Sprintf("%s='%s'", key, strings.ReplaceAll(valueString(value[key]), "'", "\\'")))
 	}
-	return tableValue{Value: orderedMapFromKeys(value, []string{"os_hidden"}), Table: strings.Join(parts, ", "), Pretty: value}
+	return tableValue{Value: orderedMapFromKeys(value, []string{"os_hidden", "os_hash_algo", "os_hash_value"}), Table: strings.Join(parts, ", "), Pretty: value}
 }
 
 func flavorPropertiesValue(value any) tableValue {

@@ -2,10 +2,12 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
 	"regexp"
+	"sort"
 	"strings"
 )
 
@@ -19,10 +21,15 @@ var parityUUIDPattern = regexp.MustCompile(`\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9
 var parityHexIDPattern = regexp.MustCompile(`\b[0-9a-fA-F]{32,64}\b`)
 var parityTimestampPattern = regexp.MustCompile(`\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?`)
 var parityIPv4Pattern = regexp.MustCompile(`\b(?:\d{1,3}\.){3}\d{1,3}\b`)
+var parityMACPattern = regexp.MustCompile(`\b[0-9a-fA-F]{2}(?::[0-9a-fA-F]{2}){5}\b`)
+var paritySwiftTransactionPattern = regexp.MustCompile(`\btx[A-Za-z0-9-]+\b`)
 var parityInstanceNamePattern = regexp.MustCompile(`\binstance-[0-9a-fA-F-]+\b`)
 var parityReservationPattern = regexp.MustCompile(`\br-[A-Za-z0-9]+\b`)
 var parityAdminPassPattern = regexp.MustCompile(`("adminPass":\s*)"[^"]*"`)
 var parityCinderAuthPattern = regexp.MustCompile(`("(?:auth_username|auth_password)":\s*)"[^"]*"`)
+var parityNeutronRevisionPattern = regexp.MustCompile(`("revision_number":\s*)\d+`)
+var parityNeutronSegmentationPattern = regexp.MustCompile(`("provider:segmentation_id":\s*)\d+`)
+var parityNeutronStandardAttrPattern = regexp.MustCompile(`("standard_attr_id":\s*)\d+`)
 
 func runOracleCLI(cloud string, extraEnv map[string]string, args ...string) stepResult {
 	oracle := os.Getenv("OSC_ORACLE")
@@ -119,11 +126,62 @@ func normalizeParityOutput(value string, replacements []parityReplacement, goSid
 	value = parityUUIDPattern.ReplaceAllString(value, "<uuid>")
 	value = parityHexIDPattern.ReplaceAllString(value, "<hex-id>")
 	value = parityIPv4Pattern.ReplaceAllString(value, "<ip>")
+	value = parityMACPattern.ReplaceAllString(value, "<mac>")
+	value = paritySwiftTransactionPattern.ReplaceAllString(value, "<swift-tx>")
 	value = parityInstanceNamePattern.ReplaceAllString(value, "<instance>")
 	value = parityReservationPattern.ReplaceAllString(value, "<reservation>")
 	value = parityAdminPassPattern.ReplaceAllString(value, `${1}"<admin-pass>"`)
 	value = parityCinderAuthPattern.ReplaceAllString(value, `${1}"<cinder-auth>"`)
+	value = parityNeutronRevisionPattern.ReplaceAllString(value, `${1}"<revision>"`)
+	value = parityNeutronSegmentationPattern.ReplaceAllString(value, `${1}"<segment>"`)
+	value = parityNeutronStandardAttrPattern.ReplaceAllString(value, `${1}"<standard-attr>"`)
+	if canonical, ok := canonicalParityJSON(value); ok {
+		value = canonical
+	}
 	return value
+}
+
+func canonicalParityJSON(value string) (string, bool) {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" || (trimmed[0] != '{' && trimmed[0] != '[') {
+		return value, false
+	}
+	decoder := json.NewDecoder(strings.NewReader(trimmed))
+	decoder.UseNumber()
+	var decoded any
+	if err := decoder.Decode(&decoded); err != nil {
+		return value, false
+	}
+	canonical := canonicalParityValue(decoded)
+	encoded, err := json.MarshalIndent(canonical, "", "  ")
+	if err != nil {
+		return value, false
+	}
+	return string(encoded) + "\n", true
+}
+
+func canonicalParityValue(value any) any {
+	switch typed := value.(type) {
+	case map[string]any:
+		result := make(map[string]any, len(typed))
+		for key, item := range typed {
+			result[key] = canonicalParityValue(item)
+		}
+		return result
+	case []any:
+		result := make([]any, 0, len(typed))
+		for _, item := range typed {
+			result = append(result, canonicalParityValue(item))
+		}
+		sort.SliceStable(result, func(i int, j int) bool {
+			left, _ := json.Marshal(result[i])
+			right, _ := json.Marshal(result[j])
+			return string(left) < string(right)
+		})
+		return result
+	default:
+		return value
+	}
 }
 
 func exitCode(err error) int {

@@ -410,8 +410,9 @@ func newCommandEntry(group string, command string) commandEntry {
 		if coreGoldenMatched()[command] {
 			entry.Status = "golden-matched"
 			if coreWriteCommands()[command] {
-				entry.Tests = append(entry.Tests, "compat-live: cloud6 lifecycle write-output parity")
-				entry.Notes = "Python-vs-Go write-output parity recorded against cloud6 in the disposable lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
+				testEvidence, noteEvidence := writeParityEvidence(command)
+				entry.Tests = append(entry.Tests, testEvidence)
+				entry.Notes = noteEvidence
 				if command == "quota delete" || command == "quota set" {
 					entry.Notes = "Python-vs-Go quota mutation output parity recorded against cloud6. The lifecycle creates a dedicated test project, mutates only that project's Compute, Volume, and Network quotas, verifies aggregate quota show JSON before and after reset, and deletes the test project."
 				}
@@ -431,6 +432,10 @@ func newCommandEntry(group string, command string) commandEntry {
 		if command == "router add route" || command == "router remove route" {
 			entry.Tests = []string{"unit: command registry", "live: cloud6 router extra-route lifecycle smoke"}
 			entry.Notes = "Implemented through Neutron add_extraroutes and remove_extraroutes action endpoints. Disposable route add, remove, repeated missing-route remove, and cleanup passed on cloud6."
+			if coreGoldenMatched()[command] {
+				entry.Tests = append(entry.Tests, "compat-live: cloud6 network lifecycle write-output parity")
+				entry.Notes = "Implemented through Neutron add_extraroutes and remove_extraroutes action endpoints. Python-vs-Go write-output parity for paired route add and remove actions is recorded against cloud6 in the disposable network lifecycle suite."
+			}
 		}
 		if strings.HasPrefix(command, "network qos policy ") {
 			entry.Tests = []string{"unit: command registry"}
@@ -1347,92 +1352,193 @@ func coreCloudVerified() map[string]bool {
 
 func coreGoldenMatched() map[string]bool {
 	return map[string]bool{
-		"aggregate list":                         true,
-		"compute service list":                   true,
-		"flavor list":                            true,
-		"flavor show":                            true,
-		"hypervisor list":                        true,
-		"hypervisor show":                        true,
-		"hypervisor stats show":                  true,
-		"image list":                             true,
-		"image show":                             true,
-		"ip availability list":                   true,
-		"ip availability show":                   true,
-		"keypair list":                           true,
-		"keypair show":                           true,
-		"network agent list":                     true,
-		"network agent show":                     true,
-		"network list":                           true,
-		"network show":                           true,
-		"port list":                              true,
-		"port show":                              true,
-		"router list":                            true,
-		"router show":                            true,
-		"security group list":                    true,
-		"security group show":                    true,
-		"security group rule list":               true,
-		"security group rule show":               true,
-		"server group list":                      true,
-		"server add network":                     true,
-		"server add port":                        true,
-		"server add security group":              true,
-		"server add volume":                      true,
-		"server create":                          true,
-		"server delete":                          true,
-		"server list":                            true,
-		"server lock":                            true,
-		"server pause":                           true,
-		"server reboot":                          true,
-		"server rebuild":                         true,
-		"server remove network":                  true,
-		"server remove port":                     true,
-		"server remove security group":           true,
-		"server remove volume":                   true,
-		"server rescue":                          true,
-		"server resume":                          true,
-		"server set":                             true,
-		"server show":                            true,
-		"server start":                           true,
-		"server stop":                            true,
-		"server suspend":                         true,
-		"server unlock":                          true,
-		"server unpause":                         true,
-		"server unrescue":                        true,
-		"server unset":                           true,
-		"server volume set":                      true,
-		"server volume update":                   true,
-		"subnet list":                            true,
-		"subnet pool list":                       true,
-		"subnet show":                            true,
-		"block storage log level list":           true,
-		"block storage resource filter list":     true,
-		"block storage resource filter show":     true,
-		"block storage snapshot manageable list": true,
-		"block storage volume manageable list":   true,
-		"quota delete":                           true,
-		"quota set":                              true,
-		"volume attachment list":                 true,
-		"volume attachment complete":             true,
-		"volume attachment create":               true,
-		"volume attachment delete":               true,
-		"volume attachment set":                  true,
-		"volume attachment show":                 true,
-		"volume backend capability show":         true,
-		"volume backend pool list":               true,
-		"volume backup list":                     true,
-		"volume group list":                      true,
-		"volume group type list":                 true,
-		"volume list":                            true,
-		"volume message list":                    true,
-		"volume message show":                    true,
-		"volume qos list":                        true,
-		"volume service list":                    true,
-		"volume show":                            true,
-		"volume snapshot list":                   true,
-		"volume summary":                         true,
-		"volume transfer request list":           true,
-		"volume type list":                       true,
-		"volume type show":                       true,
+		"aggregate list":                                 true,
+		"address group create":                           true,
+		"address group delete":                           true,
+		"address group set":                              true,
+		"address group unset":                            true,
+		"address scope create":                           true,
+		"address scope delete":                           true,
+		"address scope set":                              true,
+		"compute service list":                           true,
+		"container create":                               true,
+		"container delete":                               true,
+		"container set":                                  true,
+		"container unset":                                true,
+		"flavor list":                                    true,
+		"flavor show":                                    true,
+		"hypervisor list":                                true,
+		"hypervisor show":                                true,
+		"hypervisor stats show":                          true,
+		"image add project":                              true,
+		"image create":                                   true,
+		"image delete":                                   true,
+		"image import":                                   true,
+		"image list":                                     true,
+		"image metadef namespace create":                 true,
+		"image metadef namespace delete":                 true,
+		"image metadef namespace set":                    true,
+		"image metadef object create":                    true,
+		"image metadef object delete":                    true,
+		"image metadef object update":                    true,
+		"image metadef property create":                  true,
+		"image metadef property delete":                  true,
+		"image metadef property set":                     true,
+		"image metadef resource type association create": true,
+		"image metadef resource type association delete": true,
+		"image remove project":                           true,
+		"image set":                                      true,
+		"image show":                                     true,
+		"image stage":                                    true,
+		"image unset":                                    true,
+		"ip availability list":                           true,
+		"ip availability show":                           true,
+		"keypair list":                                   true,
+		"keypair show":                                   true,
+		"network agent list":                             true,
+		"network create":                                 true,
+		"network delete":                                 true,
+		"network set":                                    true,
+		"network agent show":                             true,
+		"network list":                                   true,
+		"network show":                                   true,
+		"network unset":                                  true,
+		"object create":                                  true,
+		"object delete":                                  true,
+		"object save":                                    true,
+		"object set":                                     true,
+		"object unset":                                   true,
+		"port create":                                    true,
+		"port delete":                                    true,
+		"port list":                                      true,
+		"port set":                                       true,
+		"port show":                                      true,
+		"port unset":                                     true,
+		"router list":                                    true,
+		"router add port":                                true,
+		"router add route":                               true,
+		"router add subnet":                              true,
+		"router create":                                  true,
+		"router delete":                                  true,
+		"router remove port":                             true,
+		"router remove route":                            true,
+		"router remove subnet":                           true,
+		"router set":                                     true,
+		"router show":                                    true,
+		"router unset":                                   true,
+		"security group create":                          true,
+		"security group delete":                          true,
+		"security group list":                            true,
+		"security group set":                             true,
+		"security group show":                            true,
+		"security group unset":                           true,
+		"security group rule create":                     true,
+		"security group rule delete":                     true,
+		"security group rule list":                       true,
+		"security group rule show":                       true,
+		"server group list":                              true,
+		"server add network":                             true,
+		"server add port":                                true,
+		"server add security group":                      true,
+		"server add volume":                              true,
+		"server create":                                  true,
+		"server delete":                                  true,
+		"server list":                                    true,
+		"server lock":                                    true,
+		"server pause":                                   true,
+		"server reboot":                                  true,
+		"server rebuild":                                 true,
+		"server remove network":                          true,
+		"server remove port":                             true,
+		"server remove security group":                   true,
+		"server remove volume":                           true,
+		"server rescue":                                  true,
+		"server resume":                                  true,
+		"server set":                                     true,
+		"server show":                                    true,
+		"server start":                                   true,
+		"server stop":                                    true,
+		"server suspend":                                 true,
+		"server unlock":                                  true,
+		"server unpause":                                 true,
+		"server unrescue":                                true,
+		"server unset":                                   true,
+		"server volume set":                              true,
+		"server volume update":                           true,
+		"subnet list":                                    true,
+		"subnet create":                                  true,
+		"subnet delete":                                  true,
+		"subnet set":                                     true,
+		"subnet pool list":                               true,
+		"subnet show":                                    true,
+		"subnet unset":                                   true,
+		"block storage log level list":                   true,
+		"block storage resource filter list":             true,
+		"block storage resource filter show":             true,
+		"block storage snapshot manageable list":         true,
+		"block storage volume manageable list":           true,
+		"quota delete":                                   true,
+		"quota set":                                      true,
+		"volume attachment list":                         true,
+		"volume attachment complete":                     true,
+		"volume attachment create":                       true,
+		"volume attachment delete":                       true,
+		"volume attachment set":                          true,
+		"volume attachment show":                         true,
+		"volume backend capability show":                 true,
+		"volume backend pool list":                       true,
+		"volume backup list":                             true,
+		"volume group list":                              true,
+		"volume group type list":                         true,
+		"volume list":                                    true,
+		"volume message list":                            true,
+		"volume message show":                            true,
+		"volume qos list":                                true,
+		"volume service list":                            true,
+		"volume show":                                    true,
+		"volume snapshot list":                           true,
+		"volume summary":                                 true,
+		"volume transfer request list":                   true,
+		"volume type list":                               true,
+		"volume type show":                               true,
+	}
+}
+
+func writeParityEvidence(command string) (string, string) {
+	switch {
+	case command == "container create" ||
+		command == "container delete" ||
+		command == "container set" ||
+		command == "container unset" ||
+		strings.HasPrefix(command, "object "):
+		return "compat-live: flex-dfw object lifecycle write-output parity",
+			"Python-vs-Go write-output parity recorded against flex-dfw in the disposable object-store lifecycle suite for the tested default, JSON, or stdout command path. Broader flag and cloud coverage still need completion."
+	case strings.HasPrefix(command, "image "):
+		return "compat-live: cloud6 image lifecycle write-output parity",
+			"Python-vs-Go write-output parity recorded against cloud6 in the disposable image lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
+	case command == "address group create" ||
+		command == "address group delete" ||
+		command == "address group set" ||
+		command == "address group unset" ||
+		command == "address scope create" ||
+		command == "address scope delete" ||
+		command == "address scope set" ||
+		strings.HasPrefix(command, "network ") ||
+		strings.HasPrefix(command, "port ") ||
+		strings.HasPrefix(command, "router ") ||
+		strings.HasPrefix(command, "security group ") ||
+		strings.HasPrefix(command, "subnet "):
+		return "compat-live: cloud6 network lifecycle write-output parity",
+			"Python-vs-Go write-output parity recorded against cloud6 in the disposable network lifecycle suite for the tested default or JSON command path. Broader flag, extension, and cloud coverage still need completion."
+	case strings.HasPrefix(command, "volume "):
+		return "compat-live: cloud6 volume lifecycle write-output parity",
+			"Python-vs-Go write-output parity recorded against cloud6 in the disposable volume lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
+	case strings.HasPrefix(command, "server "):
+		return "compat-live: cloud6 server lifecycle write-output parity",
+			"Python-vs-Go write-output parity recorded against cloud6 in the disposable server lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
+	default:
+		return "compat-live: cloud6 lifecycle write-output parity",
+			"Python-vs-Go write-output parity recorded against cloud6 in the disposable lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
 	}
 }
 
