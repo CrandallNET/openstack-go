@@ -132,3 +132,17 @@ func firstNetworkID(jsonText string) string {
 	}
 	return ""
 }
+
+func pairedValue(token string, goValue string, oracleValue string) parityReplacement {
+	return parityReplacement{Go: goValue, Oracle: oracleValue, Token: token}
+}
+
+func appendPairedValues(values []parityReplacement, pairs ...parityReplacement) []parityReplacement {
+	for _, pair := range pairs {
+		if strings.TrimSpace(pair.Go) == "" && strings.TrimSpace(pair.Oracle) == "" {
+			continue
+		}
+		values = append(values, pair)
+	}
+	return values
+}

@@ -409,8 +409,16 @@ func newCommandEntry(group string, command string) commandEntry {
 		}
 		if coreGoldenMatched()[command] {
 			entry.Status = "golden-matched"
-			entry.Tests = append(entry.Tests, "compat-live: cloud6 default table output", "compat-live: cloud6 JSON output")
-			entry.Notes = "Python-vs-Go default table and JSON output parity recorded against cloud6 with the live compatibility harness. Broader flag and cloud coverage still need completion."
+			if coreWriteCommands()[command] {
+				entry.Tests = append(entry.Tests, "compat-live: cloud6 lifecycle write-output parity")
+				entry.Notes = "Python-vs-Go write-output parity recorded against cloud6 in the disposable lifecycle suite for the tested default or JSON command path. Broader flag and cloud coverage still need completion."
+				if command == "quota delete" || command == "quota set" {
+					entry.Notes = "Python-vs-Go quota mutation output parity recorded against cloud6. The lifecycle creates a dedicated test project, mutates only that project's Compute, Volume, and Network quotas, verifies aggregate quota show JSON before and after reset, and deletes the test project."
+				}
+			} else {
+				entry.Tests = append(entry.Tests, "compat-live: cloud6 default table output", "compat-live: cloud6 JSON output")
+				entry.Notes = "Python-vs-Go default table and JSON output parity recorded against cloud6 with the live compatibility harness. Broader flag and cloud coverage still need completion."
+			}
 		}
 		if strings.HasPrefix(command, "floating ip port forwarding ") {
 			entry.Tests = []string{"unit: command registry", "unit: floating ip port forwarding port range validation"}
@@ -1365,8 +1373,34 @@ func coreGoldenMatched() map[string]bool {
 		"security group rule list":               true,
 		"security group rule show":               true,
 		"server group list":                      true,
+		"server add network":                     true,
+		"server add port":                        true,
+		"server add security group":              true,
+		"server add volume":                      true,
+		"server create":                          true,
+		"server delete":                          true,
 		"server list":                            true,
+		"server lock":                            true,
+		"server pause":                           true,
+		"server reboot":                          true,
+		"server rebuild":                         true,
+		"server remove network":                  true,
+		"server remove port":                     true,
+		"server remove security group":           true,
+		"server remove volume":                   true,
+		"server rescue":                          true,
+		"server resume":                          true,
+		"server set":                             true,
 		"server show":                            true,
+		"server start":                           true,
+		"server stop":                            true,
+		"server suspend":                         true,
+		"server unlock":                          true,
+		"server unpause":                         true,
+		"server unrescue":                        true,
+		"server unset":                           true,
+		"server volume set":                      true,
+		"server volume update":                   true,
 		"subnet list":                            true,
 		"subnet pool list":                       true,
 		"subnet show":                            true,
@@ -1375,7 +1409,13 @@ func coreGoldenMatched() map[string]bool {
 		"block storage resource filter show":     true,
 		"block storage snapshot manageable list": true,
 		"block storage volume manageable list":   true,
+		"quota delete":                           true,
+		"quota set":                              true,
 		"volume attachment list":                 true,
+		"volume attachment complete":             true,
+		"volume attachment create":               true,
+		"volume attachment delete":               true,
+		"volume attachment set":                  true,
 		"volume attachment show":                 true,
 		"volume backend capability show":         true,
 		"volume backend pool list":               true,

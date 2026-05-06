@@ -183,26 +183,84 @@ func (run *volumeLifecycle) volumeAttachmentLifecycle(id string, volumeID string
 		run.skip("volume attachment create/set/complete/delete", "no disposable server fixture was available")
 		return
 	}
-	attachment := run.optional("create volume attachment", "volume", "attachment", "create", "--no-connect", volumeID, serverID, "-f", "json")
-	if attachment.ExitCode != 0 {
+
+	oracleVolumeName := id + "-attachment-oracle-volume"
+	oracleVolumeArgs := []string{"volume", "create", "--size", "1", "--description", "golang-osc volume attachment parity volume", "--property", "golang_osc_test=" + id}
+	if volumeType := run.diagnostics.Fixtures["fixture_volume_type"]; volumeType != "" {
+		oracleVolumeArgs = append(oracleVolumeArgs, "--type", volumeType)
+	}
+	oracleVolumeArgs = append(oracleVolumeArgs, oracleVolumeName, "-f", "json")
+	oracleVolume := run.optional("create oracle volume attachment volume", oracleVolumeArgs...)
+	if oracleVolume.ExitCode != 0 {
 		return
 	}
-	attachmentID := jsonStringField(attachment.Stdout, "id", "ID")
+	oracleVolumeID := jsonStringField(oracleVolume.Stdout, "id", "ID")
+	if oracleVolumeID == "" {
+		run.skip("oracle volume attachment follow-up", "volume create did not return an id")
+		return
+	}
+	run.diagnostics.Fixtures["oracle_volume_attachment_volume_id"] = oracleVolumeID
+	run.addCleanup("cleanup oracle volume attachment volume", "volume", "delete", oracleVolumeID)
+	run.mustWaitStatus("wait oracle attachment volume available", []string{"volume", "show", oracleVolumeID, "-f", "json"}, "status", []string{"available"}, 3*time.Minute)
+
+	goAttachmentArgs := []string{"volume", "attachment", "create", "--no-connect", volumeID, serverID, "-f", "json"}
+	goAttachment := runCLIWithEnv(run.cloud, nil, goAttachmentArgs...)
+	goAttachment.Name = "oracle parity volume attachment create output"
+	attachmentID := jsonStringField(goAttachment.Stdout, "id", "ID")
 	if attachmentID == "" {
 		run.skip("volume attachment follow-up", "volume attachment create did not return an id")
 		return
 	}
 	run.diagnostics.Fixtures["volume_attachment_id"] = attachmentID
 	run.addCleanup("cleanup volume attachment", "volume", "attachment", "delete", attachmentID)
+	oracleAttachmentArgs := []string{"volume", "attachment", "create", "--no-connect", oracleVolumeID, serverID, "-f", "json"}
+	oracleAttachment := runOracleCLI(run.cloud, nil, oracleAttachmentArgs...)
+	oracleAttachmentID := jsonStringField(oracleAttachment.Stdout, "id", "ID")
+	if oracleAttachment.ExitCode == 0 && oracleAttachmentID != "" {
+		run.diagnostics.Fixtures["oracle_volume_attachment_id"] = oracleAttachmentID
+		run.addCleanup("cleanup oracle volume attachment", "volume", "attachment", "delete", oracleAttachmentID)
+	}
+	attachmentReplacements := appendPairedValues(nil,
+		pairedValue("<volume-id>", volumeID, oracleVolumeID),
+		pairedValue("<attachment-id>", attachmentID, oracleAttachmentID),
+	)
+	attachmentCreateParity := compareStepResults(goAttachment, oracleAttachment, attachmentReplacements)
+	attachmentCreateParity.Name = "oracle parity volume attachment create output"
+	run.diagnostics.Steps = append(run.diagnostics.Steps, attachmentCreateParity)
+	if attachmentCreateParity.Error != "" {
+		_ = run.cleanupAll()
+		panic(volumeLifecycleFailure{name: "oracle parity volume attachment create output"})
+	}
 	run.must("show volume attachment", "volume", "attachment", "show", attachmentID, "-f", "json")
 	run.must("list volume attachments", "volume", "attachment", "list", "-f", "json")
-	run.optional("set volume attachment connector", "volume", "attachment", "set", "--host", "golang-osc-lifecycle", "--ip", "127.0.0.1", "--initiator", "iqn.1993-08.org.debian:01:golang-osc", attachmentID, "-f", "json")
-	if result := run.optional("complete volume attachment", "volume", "attachment", "complete", attachmentID); result.ExitCode == 0 {
+	run.mustOraclePair("oracle parity volume attachment set output", nil,
+		[]string{"volume", "attachment", "set", "--host", "golang-osc-lifecycle", "--ip", "127.0.0.1", "--initiator", "iqn.1993-08.org.debian:01:golang-osc", attachmentID, "-f", "json"},
+		[]string{"volume", "attachment", "set", "--host", "golang-osc-lifecycle", "--ip", "127.0.0.1", "--initiator", "iqn.1993-08.org.debian:01:golang-osc", oracleAttachmentID, "-f", "json"},
+		attachmentReplacements,
+	)
+	if result := run.optionalOraclePair("oracle parity volume attachment complete output", nil,
+		[]string{"volume", "attachment", "complete", attachmentID},
+		[]string{"volume", "attachment", "complete", oracleAttachmentID},
+		attachmentReplacements,
+	); result.ExitCode == 0 {
+		if result.Error != "" {
+			_ = run.cleanupAll()
+			panic(volumeLifecycleFailure{name: "oracle parity volume attachment complete output"})
+		}
 		run.skip("volume attachment complete cleanup note", "attachment complete succeeded; delete cleanup will return the volume to a deletable state")
 	}
-	run.must("delete volume attachment", "volume", "attachment", "delete", attachmentID)
+	run.mustOraclePair("oracle parity volume attachment delete output", nil,
+		[]string{"volume", "attachment", "delete", attachmentID},
+		[]string{"volume", "attachment", "delete", oracleAttachmentID},
+		attachmentReplacements,
+	)
 	run.dropCleanup("cleanup volume attachment")
+	run.dropCleanup("cleanup oracle volume attachment")
 	run.mustWaitStatus("wait volume available after attachment delete", []string{"volume", "show", volumeID, "-f", "json"}, "status", []string{"available"}, 3*time.Minute)
+	run.mustWaitStatus("wait oracle volume available after attachment delete", []string{"volume", "show", oracleVolumeID, "-f", "json"}, "status", []string{"available"}, 3*time.Minute)
+	run.must("delete oracle volume attachment volume", "volume", "delete", oracleVolumeID)
+	run.dropCleanup("cleanup oracle volume attachment volume")
+	run.mustWaitDeleted("wait oracle volume attachment volume deleted", []string{"volume", "show", oracleVolumeID, "-f", "json"}, 2*time.Minute)
 	run.must("delete volume attachment server", "server", "delete", "--wait", serverID)
 	run.dropCleanup("cleanup volume attachment server")
 }
@@ -402,6 +460,56 @@ func (run *volumeLifecycle) mustWithEnv(name string, env map[string]string, args
 	if result.ExitCode != 0 {
 		_ = run.cleanupAll()
 		panic(volumeLifecycleFailure{name: name})
+	}
+	return result
+}
+
+func (run *volumeLifecycle) mustOracle(name string, env map[string]string, args ...string) stepResult {
+	result := compareWithOracle(run.cloud, env, args...)
+	result.Name = name
+	run.diagnostics.Steps = append(run.diagnostics.Steps, result)
+	if result.Error != "" {
+		_ = run.cleanupAll()
+		panic(volumeLifecycleFailure{name: name})
+	}
+	return result
+}
+
+func (run *volumeLifecycle) mustOracleExisting(name string, goResult stepResult, env map[string]string, oracleArgs []string, replacements []parityReplacement) stepResult {
+	result := compareExistingWithOracle(run.cloud, env, goResult, oracleArgs, replacements)
+	result.Name = name
+	run.diagnostics.Steps = append(run.diagnostics.Steps, result)
+	if result.Error != "" {
+		_ = run.cleanupAll()
+		panic(volumeLifecycleFailure{name: name})
+	}
+	return result
+}
+
+func (run *volumeLifecycle) mustOraclePair(name string, env map[string]string, goArgs []string, oracleArgs []string, replacements []parityReplacement) stepResult {
+	result := compareWithOracleArgs(run.cloud, env, goArgs, oracleArgs, replacements)
+	result.Name = name
+	run.diagnostics.Steps = append(run.diagnostics.Steps, result)
+	if result.Error != "" {
+		_ = run.cleanupAll()
+		panic(volumeLifecycleFailure{name: name})
+	}
+	return result
+}
+
+func (run *volumeLifecycle) optionalOraclePair(name string, env map[string]string, goArgs []string, oracleArgs []string, replacements []parityReplacement) stepResult {
+	goResult := runCLIWithEnv(run.cloud, env, goArgs...)
+	if goResult.ExitCode != 0 {
+		goResult.Name = name
+		run.diagnostics.Steps = append(run.diagnostics.Steps, goResult)
+		run.skip(name+" follow-up", strings.TrimSpace(firstNonEmptyString(goResult.Error, goResult.Stderr, goResult.Stdout)))
+		return goResult
+	}
+	result := compareExistingWithOracle(run.cloud, env, goResult, oracleArgs, replacements)
+	result.Name = name
+	run.diagnostics.Steps = append(run.diagnostics.Steps, result)
+	if result.Error != "" {
+		run.skip(name+" follow-up", strings.TrimSpace(firstNonEmptyString(result.Error, result.OracleStderr, result.Stderr, result.OracleStdout, result.Stdout)))
 	}
 	return result
 }

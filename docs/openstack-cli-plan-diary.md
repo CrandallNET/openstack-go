@@ -1618,3 +1618,21 @@ Sources consulted:
 * Local Python OSC oracle at `/Users/ken/.local/bin/openstack`.
 * Local Go CLI binary at `./bin/openstack`.
 * Live `cloud6` Neutron `network list`, `subnet list`, and `port list --fixed-ip` data from the configured `clouds.yaml`.
+
+## 2026-05-06: Write Output Parity Lifecycle Pass
+
+Decision: mutating command output parity needs paired disposable resources when the Python oracle and Go CLI cannot safely run the same mutation against the same resource. The lifecycle runner now compares the Go command against the Python command on parallel test-created resources, normalizing only values proven to be cloud-generated or resource-specific, such as UUIDs, timestamps, Nova instance names, reservation IDs, generated admin passwords, IP addresses, Cinder attachment IDs, target IQNs, and Cinder connector credentials.
+
+Work done: added paired Python-vs-Go write-output comparisons to the server lifecycle for safe server create/delete, set/unset, lock/unlock, reboot, stop/start, rebuild, pause/unpause, suspend/resume, rescue/unrescue, server volume add/remove/set/update, security-group add/remove, port add/remove, and network add/remove paths. Added paired Volume attachment output comparisons for `volume attachment create`, `volume attachment set`, `volume attachment complete`, and `volume attachment delete`. The quota lifecycle now compares `quota set` and `quota delete` output for the dedicated test project while keeping the existing aggregate `quota show -f json` oracle checks before and after reset.
+
+Parity fixes found by the new checks: `server create --wait -f json` and `server rebuild --wait -f json` now render from the raw server detail path used by `server show`, with `server create` preserving `adminPass`. Create/rebuild output applies Python OSC's create-style `null` handling for empty `kernel_id`, `ramdisk_id`, access IPs, `config_drive`, `launch_index`, `locked`, `progress`, and empty `server_groups`, without changing `server show` output. Default table `server show` now renders empty `server_groups` as `[]`, matching Python OSC. `server reboot --wait` now prints `Complete`; `server delete --wait` remains silent, matching the oracle behavior observed on `cloud6`.
+
+Validation: `make server-lifecycle CLOUD=cloud6`, `make volume-lifecycle CLOUD=cloud6`, and `make quota-lifecycle CLOUD=cloud6` passed after the parity fixes. `go test ./internal/cli`, `go test ./tools/lifecycle-smoke`, `go test ./tools/matrix`, and `make matrix` passed. `make matrix` now reports 89 `golden-matched`, 207 `cloud-verified`, 105 `implemented`, 192 `unknown`, and 1 `blocked` row.
+
+Sources consulted:
+
+* Local Python OSC oracle at `/Users/ken/.local/bin/openstack`.
+* Local Go CLI binary at `./bin/openstack`.
+* Local lifecycle suite in `tools/lifecycle-smoke`.
+* Local matrix generator in `tools/matrix`.
+* Live `cloud6` data from the configured `clouds.yaml`.

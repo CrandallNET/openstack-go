@@ -86,9 +86,6 @@ func runServerLifecycle(cloud string, prefix string) (diagnostics lifecycleDiagn
 		"--description", "golang-osc lifecycle server",
 		"--wait",
 	}
-	if serverGroupID != "" {
-		createArgs = append(createArgs, "--server-group", serverGroupID)
-	}
 	createArgs = append(createArgs, serverName, "-f", "json")
 	created := run.must("create server", createArgs...)
 	serverID := jsonStringField(created.Stdout, "id", "ID")
@@ -98,32 +95,99 @@ func runServerLifecycle(cloud string, prefix string) (diagnostics lifecycleDiagn
 	}
 	diagnostics.Fixtures["server_id"] = serverID
 	run.addCleanup("cleanup server", "server", "delete", "--wait", serverID)
+
+	oracleServerName := id + "-oracle-server"
+	oracleCreateArgs := []string{
+		"server", "create",
+		"--flavor", diagnostics.Fixtures["flavor_id"],
+		"--image", diagnostics.Fixtures["image_id"],
+		"--network", diagnostics.Fixtures["network_id"],
+		"--key-name", keyName,
+		"--property", "golang_osc_test=" + id,
+		"--description", "golang-osc lifecycle server",
+		"--wait",
+		oracleServerName,
+		"-f", "json",
+	}
+	oracleCreated := runOracleCLI(cloud, nil, oracleCreateArgs...)
+	oracleServerID := jsonStringField(oracleCreated.Stdout, "id", "ID")
+	if oracleCreated.ExitCode == 0 && oracleServerID != "" {
+		diagnostics.Fixtures["oracle_server_id"] = oracleServerID
+		run.addCleanup("cleanup oracle server", "server", "delete", "--wait", oracleServerID)
+	}
+	createParityReplacements := appendPairedValues(nil,
+		pairedValue("<server-name>", serverName, oracleServerName),
+		pairedValue("<server-id>", serverID, oracleServerID),
+	)
+	createParity := compareStepResults(created, oracleCreated, createParityReplacements)
+	createParity.Name = "oracle parity server create json"
+	diagnostics.Steps = append(diagnostics.Steps, createParity)
+	if createParity.Error != "" {
+		_ = run.cleanupAll()
+		return diagnostics, fmt.Errorf("server lifecycle failed at oracle parity server create json")
+	}
+
+	serverParityReplacements := appendPairedValues(createParityReplacements,
+		pairedValue("<renamed-server-name>", id+"-server-renamed", id+"-oracle-server-renamed"),
+	)
 	run.mustWaitStatus("wait server active after create", []string{"server", "show", serverID, "-f", "json"}, "status", []string{"ACTIVE"}, 5*time.Minute)
+	run.mustWaitStatus("wait oracle server active after create", []string{"server", "show", oracleServerID, "-f", "json"}, "status", []string{"ACTIVE"}, 5*time.Minute)
 	run.must("show server", "server", "show", serverID, "-f", "json")
 	run.must("list servers", "server", "list", "-f", "json")
 	run.mustOracle("oracle parity server show json", nil, "server", "show", serverID, "-f", "json")
 	run.mustOracle("oracle parity server show table", nil, "server", "show", serverID)
 	run.eventReadLifecycle(serverID)
 
-	run.must("set server properties", "server", "set", "--name", id+"-server-renamed", "--description", "golang-osc lifecycle server updated", "--property", "phase=set", "--tag", "golang-osc-lifecycle", serverID)
-	run.must("unset server properties", "server", "unset", "--property", "phase", "--tag", "golang-osc-lifecycle", "--description", serverID)
-	run.must("lock server", "server", "lock", serverID)
-	run.must("unlock server", "server", "unlock", serverID)
-	run.must("hard reboot server", "server", "reboot", "--hard", "--wait", serverID)
+	run.mustOraclePair("oracle parity server set output", nil,
+		[]string{"server", "set", "--name", id + "-server-renamed", "--description", "golang-osc lifecycle server updated", "--property", "phase=set", "--tag", "golang-osc-lifecycle", serverID},
+		[]string{"server", "set", "--name", id + "-oracle-server-renamed", "--description", "golang-osc lifecycle server updated", "--property", "phase=set", "--tag", "golang-osc-lifecycle", oracleServerID},
+		serverParityReplacements,
+	)
+	run.mustOraclePair("oracle parity server unset output", nil,
+		[]string{"server", "unset", "--property", "phase", "--tag", "golang-osc-lifecycle", "--description", serverID},
+		[]string{"server", "unset", "--property", "phase", "--tag", "golang-osc-lifecycle", "--description", oracleServerID},
+		serverParityReplacements,
+	)
+	run.mustOraclePair("oracle parity server lock output", nil,
+		[]string{"server", "lock", serverID},
+		[]string{"server", "lock", oracleServerID},
+		serverParityReplacements,
+	)
+	run.mustOraclePair("oracle parity server unlock output", nil,
+		[]string{"server", "unlock", serverID},
+		[]string{"server", "unlock", oracleServerID},
+		serverParityReplacements,
+	)
+	run.mustOraclePair("oracle parity server reboot output", nil,
+		[]string{"server", "reboot", "--hard", "--wait", serverID},
+		[]string{"server", "reboot", "--hard", "--wait", oracleServerID},
+		serverParityReplacements,
+	)
 	run.mustWaitStatus("wait server active after reboot", []string{"server", "show", serverID, "-f", "json"}, "status", []string{"ACTIVE"}, 3*time.Minute)
-	run.must("stop server", "server", "stop", serverID)
+	run.mustWaitStatus("wait oracle server active after reboot", []string{"server", "show", oracleServerID, "-f", "json"}, "status", []string{"ACTIVE"}, 3*time.Minute)
+	run.mustOraclePair("oracle parity server stop output", nil,
+		[]string{"server", "stop", serverID},
+		[]string{"server", "stop", oracleServerID},
+		serverParityReplacements,
+	)
 	run.mustWaitStatus("wait server shutoff", []string{"server", "show", serverID, "-f", "json"}, "status", []string{"SHUTOFF"}, 3*time.Minute)
-	run.must("start server", "server", "start", serverID)
+	run.mustWaitStatus("wait oracle server shutoff", []string{"server", "show", oracleServerID, "-f", "json"}, "status", []string{"SHUTOFF"}, 3*time.Minute)
+	run.mustOraclePair("oracle parity server start output", nil,
+		[]string{"server", "start", serverID},
+		[]string{"server", "start", oracleServerID},
+		serverParityReplacements,
+	)
 	run.mustWaitStatus("wait server active after start", []string{"server", "show", serverID, "-f", "json"}, "status", []string{"ACTIVE"}, 3*time.Minute)
+	run.mustWaitStatus("wait oracle server active after start", []string{"server", "show", oracleServerID, "-f", "json"}, "status", []string{"ACTIVE"}, 3*time.Minute)
 
-	run.rebuildLifecycle(serverID)
-	run.pauseLifecycle(serverID)
-	run.suspendLifecycle(serverID)
-	run.rescueLifecycle(serverID)
+	run.rebuildLifecycle(serverID, oracleServerID, serverParityReplacements)
+	run.pauseLifecycle(serverID, oracleServerID, serverParityReplacements)
+	run.suspendLifecycle(serverID, oracleServerID, serverParityReplacements)
+	run.rescueLifecycle(serverID, oracleServerID, serverParityReplacements)
 	run.resizeLifecycle(serverID)
-	run.serverVolumeLifecycle(id, serverID)
-	run.serverSecurityGroupLifecycle(id, serverID)
-	run.serverPortLifecycle(id, serverID)
+	run.serverVolumeLifecycle(id, serverID, oracleServerID, serverParityReplacements)
+	run.serverSecurityGroupLifecycle(id, serverID, oracleServerID, serverParityReplacements)
+	run.serverPortLifecycle(id, serverID, oracleServerID, serverParityReplacements)
 	run.serverImageLifecycle(id, serverID)
 	run.shelveLifecycle(serverID)
 
@@ -133,9 +197,15 @@ func runServerLifecycle(cloud string, prefix string) (diagnostics lifecycleDiagn
 	run.recordRiskSkipped("server evacuate", "evacuation is an admin recovery operation for failed hosts and is not safe as a routine lifecycle action")
 	run.recordRiskSkipped("server dump create", "triggering a crash dump deliberately crashes the disposable guest and needs an isolated crash-test fixture")
 
-	run.must("delete server", "server", "delete", "--wait", serverID)
+	run.mustOraclePair("oracle parity server delete output", nil,
+		[]string{"server", "delete", "--wait", serverID},
+		[]string{"server", "delete", "--wait", oracleServerID},
+		serverParityReplacements,
+	)
 	run.dropCleanup("cleanup server")
+	run.dropCleanup("cleanup oracle server")
 	run.mustWaitDeleted("wait server deleted", []string{"server", "show", serverID, "-f", "json"}, 3*time.Minute)
+	run.mustWaitDeleted("wait oracle server deleted", []string{"server", "show", oracleServerID, "-f", "json"}, 3*time.Minute)
 	if err := run.cleanupAll(); err != nil {
 		diagnostics.CleanupRequired = true
 		return diagnostics, err
@@ -159,26 +229,51 @@ func (run *serverLifecycle) eventReadLifecycle(serverID string) {
 	run.skip("show server event", "server event list did not return a request id")
 }
 
-func (run *serverLifecycle) rebuildLifecycle(serverID string) {
-	result := run.optional("rebuild server", "server", "rebuild", "--image", run.diagnostics.Fixtures["image_id"], "--description", "golang-osc lifecycle rebuilt", "--wait", serverID, "-f", "json")
-	if result.ExitCode == 0 {
+func (run *serverLifecycle) rebuildLifecycle(serverID string, oracleServerID string, replacements []parityReplacement) {
+	result := run.optionalOraclePair("oracle parity server rebuild output", nil,
+		[]string{"server", "rebuild", "--image", run.diagnostics.Fixtures["image_id"], "--description", "golang-osc lifecycle rebuilt", "--wait", serverID, "-f", "json"},
+		[]string{"server", "rebuild", "--image", run.diagnostics.Fixtures["image_id"], "--description", "golang-osc lifecycle rebuilt", "--wait", oracleServerID, "-f", "json"},
+		replacements,
+	)
+	if result.ExitCode == 0 && result.Error == "" {
 		run.mustWaitStatus("wait server active after rebuild", []string{"server", "show", serverID, "-f", "json"}, "status", []string{"ACTIVE"}, 5*time.Minute)
+		run.mustWaitStatus("wait oracle server active after rebuild", []string{"server", "show", oracleServerID, "-f", "json"}, "status", []string{"ACTIVE"}, 5*time.Minute)
 	}
 }
 
-func (run *serverLifecycle) pauseLifecycle(serverID string) {
-	if result := run.optional("pause server", "server", "pause", serverID); result.ExitCode == 0 {
+func (run *serverLifecycle) pauseLifecycle(serverID string, oracleServerID string, replacements []parityReplacement) {
+	if result := run.optionalOraclePair("oracle parity server pause output", nil,
+		[]string{"server", "pause", serverID},
+		[]string{"server", "pause", oracleServerID},
+		replacements,
+	); result.ExitCode == 0 && result.Error == "" {
 		run.mustWaitStatus("wait server paused", []string{"server", "show", serverID, "-f", "json"}, "status", []string{"PAUSED"}, 2*time.Minute)
-		run.must("unpause server", "server", "unpause", serverID)
+		run.mustWaitStatus("wait oracle server paused", []string{"server", "show", oracleServerID, "-f", "json"}, "status", []string{"PAUSED"}, 2*time.Minute)
+		run.mustOraclePair("oracle parity server unpause output", nil,
+			[]string{"server", "unpause", serverID},
+			[]string{"server", "unpause", oracleServerID},
+			replacements,
+		)
 		run.mustWaitStatus("wait server active after unpause", []string{"server", "show", serverID, "-f", "json"}, "status", []string{"ACTIVE"}, 2*time.Minute)
+		run.mustWaitStatus("wait oracle server active after unpause", []string{"server", "show", oracleServerID, "-f", "json"}, "status", []string{"ACTIVE"}, 2*time.Minute)
 	}
 }
 
-func (run *serverLifecycle) suspendLifecycle(serverID string) {
-	if result := run.optional("suspend server", "server", "suspend", serverID); result.ExitCode == 0 {
+func (run *serverLifecycle) suspendLifecycle(serverID string, oracleServerID string, replacements []parityReplacement) {
+	if result := run.optionalOraclePair("oracle parity server suspend output", nil,
+		[]string{"server", "suspend", serverID},
+		[]string{"server", "suspend", oracleServerID},
+		replacements,
+	); result.ExitCode == 0 && result.Error == "" {
 		run.mustWaitStatus("wait server suspended", []string{"server", "show", serverID, "-f", "json"}, "status", []string{"SUSPENDED"}, 2*time.Minute)
-		run.must("resume server", "server", "resume", serverID)
+		run.mustWaitStatus("wait oracle server suspended", []string{"server", "show", oracleServerID, "-f", "json"}, "status", []string{"SUSPENDED"}, 2*time.Minute)
+		run.mustOraclePair("oracle parity server resume output", nil,
+			[]string{"server", "resume", serverID},
+			[]string{"server", "resume", oracleServerID},
+			replacements,
+		)
 		run.mustWaitStatus("wait server active after resume", []string{"server", "show", serverID, "-f", "json"}, "status", []string{"ACTIVE"}, 2*time.Minute)
+		run.mustWaitStatus("wait oracle server active after resume", []string{"server", "show", oracleServerID, "-f", "json"}, "status", []string{"ACTIVE"}, 2*time.Minute)
 	}
 }
 
@@ -211,11 +306,21 @@ func (run *serverLifecycle) shelveLifecycle(serverID string) {
 	}
 }
 
-func (run *serverLifecycle) rescueLifecycle(serverID string) {
-	if result := run.optional("rescue server", "server", "rescue", "--image", run.diagnostics.Fixtures["image_id"], serverID, "-f", "json"); result.ExitCode == 0 {
+func (run *serverLifecycle) rescueLifecycle(serverID string, oracleServerID string, replacements []parityReplacement) {
+	if result := run.optionalOraclePair("oracle parity server rescue output", nil,
+		[]string{"server", "rescue", "--image", run.diagnostics.Fixtures["image_id"], serverID, "-f", "json"},
+		[]string{"server", "rescue", "--image", run.diagnostics.Fixtures["image_id"], oracleServerID, "-f", "json"},
+		replacements,
+	); result.ExitCode == 0 && result.Error == "" {
 		run.mustWaitStatus("wait server rescue", []string{"server", "show", serverID, "-f", "json"}, "status", []string{"RESCUE"}, 3*time.Minute)
-		run.must("unrescue server", "server", "unrescue", serverID)
+		run.mustWaitStatus("wait oracle server rescue", []string{"server", "show", oracleServerID, "-f", "json"}, "status", []string{"RESCUE"}, 3*time.Minute)
+		run.mustOraclePair("oracle parity server unrescue output", nil,
+			[]string{"server", "unrescue", serverID},
+			[]string{"server", "unrescue", oracleServerID},
+			replacements,
+		)
 		run.mustWaitStatus("wait server active after unrescue", []string{"server", "show", serverID, "-f", "json"}, "status", []string{"ACTIVE"}, 3*time.Minute)
+		run.mustWaitStatus("wait oracle server active after unrescue", []string{"server", "show", oracleServerID, "-f", "json"}, "status", []string{"ACTIVE"}, 3*time.Minute)
 	}
 }
 
@@ -235,12 +340,14 @@ func (run *serverLifecycle) resizeLifecycle(serverID string) {
 	}
 }
 
-func (run *serverLifecycle) serverVolumeLifecycle(id string, serverID string) {
+func (run *serverLifecycle) serverVolumeLifecycle(id string, serverID string, oracleServerID string, replacements []parityReplacement) {
 	createArgs := []string{"volume", "create", "--size", "1", "--description", "golang-osc server lifecycle attachment volume", "--property", "golang_osc_test=" + id}
 	if volumeType := run.diagnostics.Fixtures["volume_type"]; volumeType != "" {
 		createArgs = append(createArgs, "--type", volumeType)
 	}
-	createArgs = append(createArgs, id+"-server-volume", "-f", "json")
+	goVolumeName := id + "-server-volume"
+	oracleVolumeName := id + "-oracle-server-volume"
+	createArgs = append(createArgs, goVolumeName, "-f", "json")
 	volume := run.optional("create server attachment volume", createArgs...)
 	if volume.ExitCode != 0 {
 		return
@@ -253,20 +360,70 @@ func (run *serverLifecycle) serverVolumeLifecycle(id string, serverID string) {
 	run.diagnostics.Fixtures["server_volume_id"] = volumeID
 	run.addCleanup("cleanup server attachment volume", "volume", "delete", volumeID)
 	run.mustWaitStatus("wait attachment volume available", []string{"volume", "show", volumeID, "-f", "json"}, "status", []string{"available"}, 3*time.Minute)
-	if result := run.optional("add volume to server", "server", "add", "volume", serverID, volumeID, "-f", "json"); result.ExitCode == 0 {
+
+	oracleVolumeArgs := []string{"volume", "create", "--size", "1", "--description", "golang-osc server lifecycle attachment volume", "--property", "golang_osc_test=" + id}
+	if volumeType := run.diagnostics.Fixtures["volume_type"]; volumeType != "" {
+		oracleVolumeArgs = append(oracleVolumeArgs, "--type", volumeType)
+	}
+	oracleVolumeArgs = append(oracleVolumeArgs, oracleVolumeName, "-f", "json")
+	oracleVolume := run.optional("create oracle server attachment volume", oracleVolumeArgs...)
+	if oracleVolume.ExitCode != 0 {
+		return
+	}
+	oracleVolumeID := jsonStringField(oracleVolume.Stdout, "id", "ID")
+	if oracleVolumeID == "" {
+		run.skip("oracle server volume follow-up", "volume create did not return an id")
+		return
+	}
+	run.diagnostics.Fixtures["oracle_server_volume_id"] = oracleVolumeID
+	run.addCleanup("cleanup oracle server attachment volume", "volume", "delete", oracleVolumeID)
+	run.mustWaitStatus("wait oracle attachment volume available", []string{"volume", "show", oracleVolumeID, "-f", "json"}, "status", []string{"available"}, 3*time.Minute)
+	volumeReplacements := appendPairedValues(append([]parityReplacement(nil), replacements...),
+		pairedValue("<volume-id>", volumeID, oracleVolumeID),
+		pairedValue("<volume-name>", goVolumeName, oracleVolumeName),
+	)
+
+	if result := run.optionalOraclePair("oracle parity server add volume output", nil,
+		[]string{"server", "add", "volume", serverID, volumeID, "-f", "json"},
+		[]string{"server", "add", "volume", oracleServerID, oracleVolumeID, "-f", "json"},
+		volumeReplacements,
+	); result.ExitCode == 0 {
 		run.mustWaitStatus("wait attachment volume in-use", []string{"volume", "show", volumeID, "-f", "json"}, "status", []string{"in-use"}, 3*time.Minute)
+		run.mustWaitStatus("wait oracle attachment volume in-use", []string{"volume", "show", oracleVolumeID, "-f", "json"}, "status", []string{"in-use"}, 3*time.Minute)
+		if result.Error != "" {
+			run.run("detach server attachment volume after parity failure", "server", "remove", "volume", serverID, volumeID)
+			run.run("detach oracle server attachment volume after parity failure", "server", "remove", "volume", oracleServerID, oracleVolumeID)
+			_ = run.cleanupAll()
+			panic(serverLifecycleFailure{name: "oracle parity server add volume output"})
+		}
 		run.must("list server volumes", "server", "volume", "list", serverID, "-f", "json")
-		run.optional("set server volume preserve", "server", "volume", "set", "--preserve-on-termination", serverID, volumeID)
-		run.optional("update server volume preserve alias", "server", "volume", "update", "--preserve-on-termination", serverID, volumeID)
-		run.must("remove volume from server", "server", "remove", "volume", serverID, volumeID)
+		run.mustOraclePair("oracle parity server volume set output", nil,
+			[]string{"server", "volume", "set", "--preserve-on-termination", serverID, volumeID},
+			[]string{"server", "volume", "set", "--preserve-on-termination", oracleServerID, oracleVolumeID},
+			volumeReplacements,
+		)
+		run.mustOraclePair("oracle parity server volume update output", nil,
+			[]string{"server", "volume", "update", "--preserve-on-termination", serverID, volumeID},
+			[]string{"server", "volume", "update", "--preserve-on-termination", oracleServerID, oracleVolumeID},
+			volumeReplacements,
+		)
+		run.mustOraclePair("oracle parity server remove volume output", nil,
+			[]string{"server", "remove", "volume", serverID, volumeID},
+			[]string{"server", "remove", "volume", oracleServerID, oracleVolumeID},
+			volumeReplacements,
+		)
 		run.mustWaitStatus("wait attachment volume available after detach", []string{"volume", "show", volumeID, "-f", "json"}, "status", []string{"available"}, 3*time.Minute)
+		run.mustWaitStatus("wait oracle attachment volume available after detach", []string{"volume", "show", oracleVolumeID, "-f", "json"}, "status", []string{"available"}, 3*time.Minute)
 	}
 	run.must("delete server attachment volume", "volume", "delete", volumeID)
 	run.dropCleanup("cleanup server attachment volume")
 	run.mustWaitDeleted("wait server attachment volume deleted", []string{"volume", "show", volumeID, "-f", "json"}, 2*time.Minute)
+	run.must("delete oracle server attachment volume", "volume", "delete", oracleVolumeID)
+	run.dropCleanup("cleanup oracle server attachment volume")
+	run.mustWaitDeleted("wait oracle server attachment volume deleted", []string{"volume", "show", oracleVolumeID, "-f", "json"}, 2*time.Minute)
 }
 
-func (run *serverLifecycle) serverSecurityGroupLifecycle(id string, serverID string) {
+func (run *serverLifecycle) serverSecurityGroupLifecycle(id string, serverID string, oracleServerID string, replacements []parityReplacement) {
 	securityGroup := run.optional("create server security group", "security", "group", "create", "--description", "golang-osc server lifecycle security group", id+"-sg", "-f", "json")
 	if securityGroup.ExitCode != 0 {
 		return
@@ -277,14 +434,31 @@ func (run *serverLifecycle) serverSecurityGroupLifecycle(id string, serverID str
 		return
 	}
 	run.addCleanup("cleanup server security group", "security", "group", "delete", securityGroupID)
-	if result := run.optional("add server security group", "server", "add", "security", "group", serverID, securityGroupID); result.ExitCode == 0 {
-		run.must("remove server security group", "server", "remove", "security", "group", serverID, securityGroupID)
+	securityGroupReplacements := appendPairedValues(append([]parityReplacement(nil), replacements...),
+		pairedValue("<security-group-id>", securityGroupID, securityGroupID),
+	)
+	if result := run.optionalOraclePair("oracle parity server add security group output", nil,
+		[]string{"server", "add", "security", "group", serverID, securityGroupID},
+		[]string{"server", "add", "security", "group", oracleServerID, securityGroupID},
+		securityGroupReplacements,
+	); result.ExitCode == 0 {
+		if result.Error != "" {
+			run.run("remove server security group after parity failure", "server", "remove", "security", "group", serverID, securityGroupID)
+			run.run("remove oracle server security group after parity failure", "server", "remove", "security", "group", oracleServerID, securityGroupID)
+			_ = run.cleanupAll()
+			panic(serverLifecycleFailure{name: "oracle parity server add security group output"})
+		}
+		run.mustOraclePair("oracle parity server remove security group output", nil,
+			[]string{"server", "remove", "security", "group", serverID, securityGroupID},
+			[]string{"server", "remove", "security", "group", oracleServerID, securityGroupID},
+			securityGroupReplacements,
+		)
 	}
 	run.must("delete server security group", "security", "group", "delete", securityGroupID)
 	run.dropCleanup("cleanup server security group")
 }
 
-func (run *serverLifecycle) serverPortLifecycle(id string, serverID string) {
+func (run *serverLifecycle) serverPortLifecycle(id string, serverID string, oracleServerID string, replacements []parityReplacement) {
 	networkID := firstNonEmptyString(run.diagnostics.Fixtures["alternate_network_id"], run.diagnostics.Fixtures["network_id"])
 	port := run.optional("create server attach port", "port", "create", "--network", networkID, id+"-port", "-f", "json")
 	if port.ExitCode != 0 {
@@ -296,15 +470,62 @@ func (run *serverLifecycle) serverPortLifecycle(id string, serverID string) {
 		return
 	}
 	run.addCleanup("cleanup server attach port", "port", "delete", portID)
-	if result := run.optional("add port to server", "server", "add", "port", serverID, portID); result.ExitCode == 0 {
-		run.must("remove port from server", "server", "remove", "port", serverID, portID)
+	oraclePort := run.optional("create oracle server attach port", "port", "create", "--network", networkID, id+"-oracle-port", "-f", "json")
+	if oraclePort.ExitCode != 0 {
+		return
+	}
+	oraclePortID := jsonStringField(oraclePort.Stdout, "id", "ID")
+	if oraclePortID == "" {
+		run.skip("oracle server port follow-up", "port create did not return an id")
+		return
+	}
+	run.addCleanup("cleanup oracle server attach port", "port", "delete", oraclePortID)
+	portReplacements := appendPairedValues(append([]parityReplacement(nil), replacements...),
+		pairedValue("<port-id>", portID, oraclePortID),
+		pairedValue("<port-name>", id+"-port", id+"-oracle-port"),
+	)
+	if result := run.optionalOraclePair("oracle parity server add port output", nil,
+		[]string{"server", "add", "port", serverID, portID},
+		[]string{"server", "add", "port", oracleServerID, oraclePortID},
+		portReplacements,
+	); result.ExitCode == 0 {
+		if result.Error != "" {
+			run.run("remove server port after parity failure", "server", "remove", "port", serverID, portID)
+			run.run("remove oracle server port after parity failure", "server", "remove", "port", oracleServerID, oraclePortID)
+			_ = run.cleanupAll()
+			panic(serverLifecycleFailure{name: "oracle parity server add port output"})
+		}
+		run.mustOraclePair("oracle parity server remove port output", nil,
+			[]string{"server", "remove", "port", serverID, portID},
+			[]string{"server", "remove", "port", oracleServerID, oraclePortID},
+			portReplacements,
+		)
 	}
 	run.must("delete server attach port", "port", "delete", portID)
 	run.dropCleanup("cleanup server attach port")
+	run.must("delete oracle server attach port", "port", "delete", oraclePortID)
+	run.dropCleanup("cleanup oracle server attach port")
 
 	if alternate := run.diagnostics.Fixtures["alternate_network_id"]; alternate != "" {
-		if result := run.optional("add network to server", "server", "add", "network", serverID, alternate); result.ExitCode == 0 {
-			run.must("remove network from server", "server", "remove", "network", serverID, alternate)
+		networkReplacements := appendPairedValues(append([]parityReplacement(nil), replacements...),
+			pairedValue("<network-id>", alternate, alternate),
+		)
+		if result := run.optionalOraclePair("oracle parity server add network output", nil,
+			[]string{"server", "add", "network", serverID, alternate},
+			[]string{"server", "add", "network", oracleServerID, alternate},
+			networkReplacements,
+		); result.ExitCode == 0 {
+			if result.Error != "" {
+				run.run("remove server network after parity failure", "server", "remove", "network", serverID, alternate)
+				run.run("remove oracle server network after parity failure", "server", "remove", "network", oracleServerID, alternate)
+				_ = run.cleanupAll()
+				panic(serverLifecycleFailure{name: "oracle parity server add network output"})
+			}
+			run.mustOraclePair("oracle parity server remove network output", nil,
+				[]string{"server", "remove", "network", serverID, alternate},
+				[]string{"server", "remove", "network", oracleServerID, alternate},
+				networkReplacements,
+			)
 		}
 	} else {
 		run.skip("server add/remove network", "no alternate network fixture was available")
@@ -390,6 +611,45 @@ func (run *serverLifecycle) mustOracle(name string, env map[string]string, args 
 	if result.Error != "" {
 		_ = run.cleanupAll()
 		panic(serverLifecycleFailure{name: name})
+	}
+	return result
+}
+
+func (run *serverLifecycle) mustOracleExisting(name string, goResult stepResult, env map[string]string, oracleArgs []string, replacements []parityReplacement) stepResult {
+	result := compareExistingWithOracle(run.cloud, env, goResult, oracleArgs, replacements)
+	result.Name = name
+	run.diagnostics.Steps = append(run.diagnostics.Steps, result)
+	if result.Error != "" {
+		_ = run.cleanupAll()
+		panic(serverLifecycleFailure{name: name})
+	}
+	return result
+}
+
+func (run *serverLifecycle) mustOraclePair(name string, env map[string]string, goArgs []string, oracleArgs []string, replacements []parityReplacement) stepResult {
+	result := compareWithOracleArgs(run.cloud, env, goArgs, oracleArgs, replacements)
+	result.Name = name
+	run.diagnostics.Steps = append(run.diagnostics.Steps, result)
+	if result.Error != "" {
+		_ = run.cleanupAll()
+		panic(serverLifecycleFailure{name: name})
+	}
+	return result
+}
+
+func (run *serverLifecycle) optionalOraclePair(name string, env map[string]string, goArgs []string, oracleArgs []string, replacements []parityReplacement) stepResult {
+	goResult := runCLIWithEnv(run.cloud, env, goArgs...)
+	if goResult.ExitCode != 0 {
+		goResult.Name = name
+		run.diagnostics.Steps = append(run.diagnostics.Steps, goResult)
+		run.skip(name+" follow-up", strings.TrimSpace(firstNonEmptyString(goResult.Error, goResult.Stderr, goResult.Stdout)))
+		return goResult
+	}
+	result := compareExistingWithOracle(run.cloud, env, goResult, oracleArgs, replacements)
+	result.Name = name
+	run.diagnostics.Steps = append(run.diagnostics.Steps, result)
+	if result.Error != "" {
+		run.skip(name+" follow-up", strings.TrimSpace(firstNonEmptyString(result.Error, result.OracleStderr, result.Stderr, result.OracleStdout, result.Stdout)))
 	}
 	return result
 }

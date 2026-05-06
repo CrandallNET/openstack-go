@@ -5,7 +5,24 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"regexp"
+	"strings"
 )
+
+type parityReplacement struct {
+	Go     string
+	Oracle string
+	Token  string
+}
+
+var parityUUIDPattern = regexp.MustCompile(`\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\b`)
+var parityHexIDPattern = regexp.MustCompile(`\b[0-9a-fA-F]{32,64}\b`)
+var parityTimestampPattern = regexp.MustCompile(`\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?`)
+var parityIPv4Pattern = regexp.MustCompile(`\b(?:\d{1,3}\.){3}\d{1,3}\b`)
+var parityInstanceNamePattern = regexp.MustCompile(`\binstance-[0-9a-fA-F-]+\b`)
+var parityReservationPattern = regexp.MustCompile(`\br-[A-Za-z0-9]+\b`)
+var parityAdminPassPattern = regexp.MustCompile(`("adminPass":\s*)"[^"]*"`)
+var parityCinderAuthPattern = regexp.MustCompile(`("(?:auth_username|auth_password)":\s*)"[^"]*"`)
 
 func runOracleCLI(cloud string, extraEnv map[string]string, args ...string) stepResult {
 	oracle := os.Getenv("OSC_ORACLE")
@@ -36,6 +53,24 @@ func runOracleCLI(cloud string, extraEnv map[string]string, args ...string) step
 func compareWithOracle(cloud string, extraEnv map[string]string, args ...string) stepResult {
 	goResult := runCLIWithEnv(cloud, extraEnv, args...)
 	oracleResult := runOracleCLI(cloud, extraEnv, args...)
+	return compareStepResults(goResult, oracleResult, nil)
+}
+
+func compareWithOracleArgs(cloud string, extraEnv map[string]string, goArgs []string, oracleArgs []string, replacements []parityReplacement) stepResult {
+	goResult := runCLIWithEnv(cloud, extraEnv, goArgs...)
+	if goResult.ExitCode != 0 {
+		return goResult
+	}
+	oracleResult := runOracleCLI(cloud, extraEnv, oracleArgs...)
+	return compareStepResults(goResult, oracleResult, replacements)
+}
+
+func compareExistingWithOracle(cloud string, extraEnv map[string]string, goResult stepResult, oracleArgs []string, replacements []parityReplacement) stepResult {
+	oracleResult := runOracleCLI(cloud, extraEnv, oracleArgs...)
+	return compareStepResults(goResult, oracleResult, replacements)
+}
+
+func compareStepResults(goResult stepResult, oracleResult stepResult, replacements []parityReplacement) stepResult {
 	goResult.OracleArgs = oracleResult.Args
 	goResult.OracleExitCode = oracleResult.ExitCode
 	goResult.OracleStdout = oracleResult.Stdout
@@ -45,15 +80,50 @@ func compareWithOracle(cloud string, extraEnv map[string]string, args ...string)
 		goResult.Error = fmt.Sprintf("oracle exit code differs: go=%d oracle=%d", goResult.ExitCode, oracleResult.ExitCode)
 		return goResult
 	}
-	if goResult.Stdout != oracleResult.Stdout {
+	goStdout := normalizeParityOutput(goResult.Stdout, replacements, true)
+	oracleStdout := normalizeParityOutput(oracleResult.Stdout, replacements, false)
+	goStderr := normalizeParityOutput(goResult.Stderr, replacements, true)
+	oracleStderr := normalizeParityOutput(oracleResult.Stderr, replacements, false)
+	if goStdout != oracleStdout {
 		goResult.Error = "oracle stdout differs"
 		return goResult
 	}
-	if goResult.Stderr != oracleResult.Stderr {
+	if goStderr != oracleStderr {
 		goResult.Error = "oracle stderr differs"
 		return goResult
 	}
 	return goResult
+}
+
+func normalizeParityOutput(value string, replacements []parityReplacement, goSide bool) string {
+	value = strings.ReplaceAll(value, "\r\n", "\n")
+	value = strings.ReplaceAll(value, "\r", "\n")
+	if replacements == nil {
+		return value
+	}
+	for _, replacement := range replacements {
+		token := replacement.Token
+		if token == "" {
+			token = "<value>"
+		}
+		sideValue := replacement.Oracle
+		if goSide {
+			sideValue = replacement.Go
+		}
+		if strings.TrimSpace(sideValue) == "" {
+			continue
+		}
+		value = strings.ReplaceAll(value, sideValue, token)
+	}
+	value = parityTimestampPattern.ReplaceAllString(value, "<timestamp>")
+	value = parityUUIDPattern.ReplaceAllString(value, "<uuid>")
+	value = parityHexIDPattern.ReplaceAllString(value, "<hex-id>")
+	value = parityIPv4Pattern.ReplaceAllString(value, "<ip>")
+	value = parityInstanceNamePattern.ReplaceAllString(value, "<instance>")
+	value = parityReservationPattern.ReplaceAllString(value, "<reservation>")
+	value = parityAdminPassPattern.ReplaceAllString(value, `${1}"<admin-pass>"`)
+	value = parityCinderAuthPattern.ReplaceAllString(value, `${1}"<cinder-auth>"`)
+	return value
 }
 
 func exitCode(err error) int {

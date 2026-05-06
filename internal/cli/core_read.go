@@ -2446,6 +2446,28 @@ func serverRawFields(raw map[string]any, networkLabels []serverNetworkLabel) []o
 	}
 }
 
+func serverCreateRawFields(raw map[string]any, networkLabels []serverNetworkLabel) []outputField {
+	fields := serverRawFields(raw, networkLabels)
+	result := make([]outputField, 0, len(fields)+1)
+	for _, field := range fields {
+		switch field.Name {
+		case "OS-EXT-SRV-ATTR:kernel_id", "OS-EXT-SRV-ATTR:ramdisk_id", "accessIPv4", "accessIPv6", "config_drive":
+			field.Value = nilIfEmptyAny(field.Value)
+		case "OS-EXT-SRV-ATTR:launch_index", "progress":
+			field.Value = nilIfZeroOrEmpty(field.Value)
+		case "locked":
+			field.Value = nilIfFalse(field.Value)
+		case "server_groups":
+			field.Value = serverGroupsShowValue(raw["server_groups"])
+		}
+		result = append(result, field)
+		if field.Name == "addresses" && !emptyServerShowValue(raw["adminPass"]) {
+			result = append(result, outputField{"adminPass", raw["adminPass"]})
+		}
+	}
+	return result
+}
+
 func enrichServerRaw(ctx context.Context, client *gophercloud.ServiceClient, raw map[string]any) {
 	flavor, ok := raw["flavor"].(map[string]any)
 	if !ok {
@@ -2672,8 +2694,18 @@ func serverPythonListTableValue(value any) tableValue {
 	table := ""
 	if len(values) > 0 {
 		table = pythonRepr(values)
+	} else if value != nil {
+		table = "[]"
 	}
 	return tableValue{Value: values, Table: table, Pretty: values}
+}
+
+func serverGroupsShowValue(value any) any {
+	values := anySlice(value)
+	if len(values) == 0 {
+		return nil
+	}
+	return serverPythonListTableValue(value)
 }
 
 func serverShowKeyValueToken(key string, value any) string {
@@ -2693,6 +2725,63 @@ func emptyServerShowValue(value any) bool {
 	}
 	text := strings.TrimSpace(valueString(value))
 	return text == "" || text == "None"
+}
+
+func nilIfEmptyAny(value any) any {
+	if emptyServerShowValue(value) {
+		return nil
+	}
+	return value
+}
+
+func nilIfZeroOrEmpty(value any) any {
+	if emptyServerShowValue(value) {
+		return nil
+	}
+	number := rawNumber(value)
+	switch typed := number.(type) {
+	case int:
+		if typed == 0 {
+			return nil
+		}
+	case int8:
+		if typed == 0 {
+			return nil
+		}
+	case int16:
+		if typed == 0 {
+			return nil
+		}
+	case int32:
+		if typed == 0 {
+			return nil
+		}
+	case int64:
+		if typed == 0 {
+			return nil
+		}
+	case float32:
+		if typed == 0 {
+			return nil
+		}
+	case float64:
+		if typed == 0 {
+			return nil
+		}
+	case string:
+		if strings.TrimSpace(typed) == "0" {
+			return nil
+		}
+	}
+	return number
+}
+
+func nilIfFalse(value any) any {
+	typed, ok := value.(bool)
+	if ok && !typed {
+		return nil
+	}
+	return value
 }
 
 func intFromAny(value any) (int, bool) {
@@ -2824,7 +2913,10 @@ func serverReboot(ctx context.Context, stdout io.Writer, opts *Options, client *
 		return err
 	}
 	if boolFlag(opts, "wait") {
-		return waitForServerStatus(ctx, stdout, opts, client, server.ID, "Rebooting", []string{"ACTIVE"}, []string{"ERROR"})
+		if err := waitForServerStatus(ctx, stdout, opts, client, server.ID, "Rebooting", []string{"ACTIVE"}, []string{"ERROR"}); err != nil {
+			return err
+		}
+		renderWaitComplete(stdout, opts)
 	}
 	return nil
 }
@@ -2964,6 +3056,7 @@ func serverRebuild(ctx context.Context, stdout io.Writer, opts *Options, compute
 	if err != nil {
 		return err
 	}
+	adminPass := rebuilt.AdminPass
 	if boolFlag(opts, "wait") {
 		if err := waitForServerStatus(ctx, stdout, opts, computeClient, server.ID, "Rebuilding", []string{"ACTIVE"}, []string{"ERROR"}); err != nil {
 			return err
@@ -2972,6 +3065,19 @@ func serverRebuild(ctx context.Context, stdout io.Writer, opts *Options, compute
 		if err != nil {
 			return err
 		}
+	}
+	showClient := computeClient
+	if os.Getenv("OS_COMPUTE_API_VERSION") == "" {
+		if withMinimum, err := computeClientWithMinimumMicroversion(ctx, computeClient, "2.96"); err == nil {
+			showClient = withMinimum
+		}
+	}
+	if raw, err := computeServerRaw(ctx, showClient, server.ID); err == nil {
+		enrichServerRaw(ctx, showClient, raw)
+		if adminPass != "" {
+			raw["adminPass"] = adminPass
+		}
+		return renderShowOutput(stdout, opts, serverCreateRawFields(raw, nil))
 	}
 	return renderServerShow(stdout, opts, rebuilt, nil)
 }
@@ -3315,6 +3421,7 @@ func serverCreate(ctx context.Context, stdout io.Writer, opts *Options, computeC
 	if err != nil {
 		return err
 	}
+	adminPass := created.AdminPass
 	if boolFlag(opts, "wait") {
 		if err := waitForServerStatus(ctx, stdout, opts, computeClient, created.ID, "Creating", []string{"ACTIVE"}, []string{"ERROR"}); err != nil {
 			return err
@@ -3323,6 +3430,19 @@ func serverCreate(ctx context.Context, stdout io.Writer, opts *Options, computeC
 		if err != nil {
 			return err
 		}
+	}
+	showClient := computeClient
+	if os.Getenv("OS_COMPUTE_API_VERSION") == "" {
+		if withMinimum, err := computeClientWithMinimumMicroversion(ctx, computeClient, "2.96"); err == nil {
+			showClient = withMinimum
+		}
+	}
+	if raw, err := computeServerRaw(ctx, showClient, created.ID); err == nil {
+		enrichServerRaw(ctx, showClient, raw)
+		if adminPass != "" {
+			raw["adminPass"] = adminPass
+		}
+		return renderShowOutput(stdout, opts, serverCreateRawFields(raw, serverNetworkLabelsForPretty(ctx, opts, networkClient)))
 	}
 	return renderServerShow(stdout, opts, created, nil)
 }
@@ -20630,6 +20750,13 @@ func nextPrettyWaitProgress(reportedPercent int, current float64) float64 {
 		return 0.95
 	}
 	return next
+}
+
+func renderWaitComplete(stdout io.Writer, opts *Options) {
+	if prettyOutput(opts) {
+		return
+	}
+	fmt.Fprintln(stdout, "Complete")
 }
 
 func waitForServerGone(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, serverID string) error {

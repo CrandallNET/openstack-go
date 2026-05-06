@@ -58,7 +58,7 @@ func runQuotaLifecycle(cloud string, prefix string) (diagnostics lifecycleDiagno
 	run.must("show initial quotas", "quota", "show", projectID, "-f", "json")
 	run.mustOracle("oracle parity initial quota show json", nil, "quota", "show", projectID, "-f", "json")
 
-	run.must("set project quotas", "quota", "set",
+	run.mustOracle("oracle parity quota set output", nil, "quota", "set",
 		"--instances", "9",
 		"--cores", "19",
 		"--ram", "51199",
@@ -78,19 +78,19 @@ func runQuotaLifecycle(cloud string, prefix string) (diagnostics lifecycleDiagno
 	run.must("show quotas after set", "quota", "show", projectID, "-f", "json")
 	run.mustOracle("oracle parity quota show after set json", nil, "quota", "show", projectID, "-f", "json")
 
-	run.must("delete compute quota", "quota", "delete", "--compute", projectID)
+	run.mustOracle("oracle parity quota delete compute output", nil, "quota", "delete", "--compute", projectID)
 	run.must("show compute quota after delete", "quota", "show", "--compute", projectID, "-f", "json")
-	run.must("reset compute quota values", "quota", "set", "--instances", "9", "--cores", "19", "--ram", "51199", projectID)
+	run.mustOracle("oracle parity quota reset compute output", nil, "quota", "set", "--instances", "9", "--cores", "19", "--ram", "51199", projectID)
 
-	run.must("delete volume quota", "quota", "delete", "--volume", projectID)
+	run.mustOracle("oracle parity quota delete volume output", nil, "quota", "delete", "--volume", projectID)
 	run.must("show volume quota after delete", "quota", "show", "--volume", projectID, "-f", "json")
-	run.must("reset volume quota values", "quota", "set", "--volumes", "9", "--snapshots", "9", "--gigabytes", "999", projectID)
+	run.mustOracle("oracle parity quota reset volume output", nil, "quota", "set", "--volumes", "9", "--snapshots", "9", "--gigabytes", "999", projectID)
 
-	run.must("delete network quota", "quota", "delete", "--network", projectID)
+	run.mustOracle("oracle parity quota delete network output", nil, "quota", "delete", "--network", projectID)
 	run.must("show network quota after delete", "quota", "show", "--network", projectID, "-f", "json")
-	run.must("reset network quota values", "quota", "set", "--floating-ips", "49", "--secgroup-rules", "99", "--secgroups", "9", "--networks", "99", "--subnets", "99", "--ports", "499", "--routers", "9", "--rbac-policies", "9", projectID)
+	run.mustOracle("oracle parity quota reset network output", nil, "quota", "set", "--floating-ips", "49", "--secgroup-rules", "99", "--secgroups", "9", "--networks", "99", "--subnets", "99", "--ports", "499", "--routers", "9", "--rbac-policies", "9", projectID)
 
-	run.must("delete all quotas", "quota", "delete", projectID)
+	run.mustOracle("oracle parity quota delete all output", nil, "quota", "delete", projectID)
 	run.must("show quotas after delete all", "quota", "show", projectID, "-f", "json")
 	run.mustOracle("oracle parity quota show after delete all json", nil, "quota", "show", projectID, "-f", "json")
 	run.recordRiskSkipped("quota set --class and --default", "changes default quota class state rather than only the dedicated test project")
