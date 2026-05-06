@@ -13,3 +13,4 @@ dist/
 *.log
 test-output/
 artifacts/
+compat/lifecycle-diagnostics/

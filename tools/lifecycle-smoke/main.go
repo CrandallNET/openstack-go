@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -30,20 +31,25 @@ type lifecycleDiagnostics struct {
 }
 
 type stepResult struct {
-	Name     string   `json:"name"`
-	Args     []string `json:"args"`
-	ExitCode int      `json:"exit_code"`
-	Stdout   string   `json:"stdout,omitempty"`
-	Stderr   string   `json:"stderr,omitempty"`
-	Error    string   `json:"error,omitempty"`
+	Name       string   `json:"name"`
+	Args       []string `json:"args,omitempty"`
+	Env        []string `json:"env,omitempty"`
+	ExitCode   int      `json:"exit_code,omitempty"`
+	Stdout     string   `json:"stdout,omitempty"`
+	Stderr     string   `json:"stderr,omitempty"`
+	Error      string   `json:"error,omitempty"`
+	Skipped    bool     `json:"skipped,omitempty"`
+	SkipReason string   `json:"skip_reason,omitempty"`
 }
 
 func main() {
+	var suite string
 	var cloud string
 	var prefix string
 	var diagnosticsDir string
 	var keepSuccess bool
 
+	flag.StringVar(&suite, "suite", "keypair", "lifecycle suite to run: keypair or volume")
 	flag.StringVar(&cloud, "cloud", os.Getenv("OS_CLOUD"), "cloud name to test")
 	flag.StringVar(&prefix, "prefix", "golang-osc-test", "unique resource prefix")
 	flag.StringVar(&diagnosticsDir, "diagnostics-dir", "compat/lifecycle-diagnostics", "directory for retained failure diagnostics")
@@ -55,7 +61,17 @@ func main() {
 		os.Exit(1)
 	}
 
-	diagnostics, err := runKeypairLifecycle(cloud, prefix)
+	var diagnostics lifecycleDiagnostics
+	var err error
+	switch suite {
+	case "keypair":
+		diagnostics, err = runKeypairLifecycle(cloud, prefix)
+	case "volume":
+		diagnostics, err = runVolumeLifecycle(cloud, prefix)
+	default:
+		fmt.Fprintf(os.Stderr, "lifecycle-smoke: unknown suite %q\n", suite)
+		os.Exit(1)
+	}
 	if err != nil {
 		diagnostics.Status = "failed"
 	} else {
@@ -72,7 +88,7 @@ func main() {
 		diagnostics.DiagnosticsPath = path
 	}
 
-	fmt.Printf("%s keypair lifecycle: %s\n", cloud, diagnostics.Status)
+	fmt.Printf("%s %s lifecycle: %s\n", cloud, suite, diagnostics.Status)
 	if diagnostics.DiagnosticsPath != "" {
 		fmt.Printf("diagnostics: %s\n", diagnostics.DiagnosticsPath)
 	}
@@ -142,6 +158,36 @@ func runKeypairLifecycle(cloud string, prefix string) (lifecycleDiagnostics, err
 }
 
 func runCLI(cloud string, args ...string) stepResult {
+	return runCLIWithEnv(cloud, nil, args...)
+}
+
+func runCLIWithEnv(cloud string, extraEnv map[string]string, args ...string) stepResult {
+	var envKeys []string
+	for key, value := range extraEnv {
+		envKeys = append(envKeys, key+"="+value)
+	}
+	sort.Strings(envKeys)
+	if len(extraEnv) > 0 {
+		saved := map[string]*string{}
+		for key, value := range extraEnv {
+			if current, ok := os.LookupEnv(key); ok {
+				currentCopy := current
+				saved[key] = &currentCopy
+			} else {
+				saved[key] = nil
+			}
+			_ = os.Setenv(key, value)
+		}
+		defer func() {
+			for key, value := range saved {
+				if value == nil {
+					_ = os.Unsetenv(key)
+				} else {
+					_ = os.Setenv(key, *value)
+				}
+			}
+		}()
+	}
 	fullArgs := append([]string{"--os-cloud", cloud}, args...)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -151,6 +197,7 @@ func runCLI(cloud string, args ...string) stepResult {
 	}
 	result := stepResult{
 		Args:     fullArgs,
+		Env:      envKeys,
 		ExitCode: cli.ExitCode(err),
 		Stdout:   stdout.String(),
 		Stderr:   stderr.String(),

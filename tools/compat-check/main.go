@@ -209,6 +209,25 @@ func liveCommandEnv(args []string) []string {
 	if len(args) >= 2 && args[0] == "volume" && args[1] == "message" {
 		return []string{"OS_VOLUME_API_VERSION=3.3"}
 	}
+	if len(args) >= 3 && args[0] == "block" && args[1] == "storage" {
+		switch args[2] {
+		case "cluster":
+			return []string{"OS_VOLUME_API_VERSION=3.7"}
+		case "volume", "snapshot":
+			if len(args) >= 5 && args[3] == "manageable" && args[4] == "list" {
+				return []string{"OS_VOLUME_API_VERSION=3.8"}
+			}
+		case "cleanup":
+			return []string{"OS_VOLUME_API_VERSION=3.24"}
+		case "log":
+			return []string{"OS_VOLUME_API_VERSION=3.32"}
+		case "resource":
+			return []string{"OS_VOLUME_API_VERSION=3.33"}
+		}
+	}
+	if len(args) >= 3 && args[0] == "volume" && args[1] == "group" {
+		return []string{"OS_VOLUME_API_VERSION=3.14"}
+	}
 	return nil
 }
 

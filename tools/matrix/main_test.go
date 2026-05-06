@@ -34,8 +34,8 @@ func TestNewCommandEntryMarksImplementedModuleList(t *testing.T) {
 
 func TestNewCommandEntryMarksCinderResourceFilterShim(t *testing.T) {
 	entry := newCommandEntry("openstack.volume.v3", "block storage resource filter list")
-	if entry.Status != "cloud-verified" {
-		t.Fatalf("expected resource filter list to be cloud-verified, got %q", entry.Status)
+	if entry.Status != "golden-matched" {
+		t.Fatalf("expected resource filter list to be golden-matched, got %q", entry.Status)
 	}
 	if !entry.Shim {
 		t.Fatal("expected resource filter list to be marked as a shim")
@@ -75,8 +75,8 @@ func TestNewCommandEntryMarksCinderMessageShim(t *testing.T) {
 
 func TestNewCommandEntryMarksCinderGroupTypeShowImplemented(t *testing.T) {
 	entry := newCommandEntry("openstack.volume.v3", "volume group type show")
-	if entry.Status != "implemented" {
-		t.Fatalf("expected volume group type show to be implemented, got %q", entry.Status)
+	if entry.Status != "cloud-verified" {
+		t.Fatalf("expected volume group type show to be cloud-verified, got %q", entry.Status)
 	}
 	if !entry.Shim {
 		t.Fatal("expected volume group type show to be marked as a shim")

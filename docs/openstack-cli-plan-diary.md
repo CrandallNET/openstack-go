@@ -1563,3 +1563,23 @@ Sources consulted:
 * Local compatibility harness in `tools/compat-check`.
 * Local matrix generator in `tools/matrix`.
 * Live `cloud6` data from the configured `clouds.yaml`.
+
+## 2026-05-06: Volume Lifecycle and Read Parity Validation
+
+Decision: treat the Volume command family as implemented but split validation status by safety and available cloud fixtures. Commands that mutate only test-created Cinder resources can be exercised by the routine lifecycle suite. Commands that change real service state, backend state, logging levels, migrations, failover state, existing messages, or backend-local unmanaged storage remain implemented but intentionally unpromoted until there is a scoped fixture or explicit approval for that run.
+
+Work done: added a `--suite` selector to `tools/lifecycle-smoke`, added `make volume-lifecycle`, and implemented a Volume v3 lifecycle suite. The suite preflights Cinder service, backend pool, resource filter, manageable resource, backend capability, and volume type state. It creates unique `golang-osc-test-*` resources, records selected fixtures, waits for asynchronous status changes, cleans up in reverse order, and records structured diagnostics under `compat/lifecycle-diagnostics/`. That diagnostics directory is now ignored so cloud-specific run details are not committed accidentally.
+
+Lifecycle coverage now includes normal `volume create/delete/set/unset`, `volume snapshot create/delete/set/unset`, `volume revert`, `volume transfer request create/delete/accept`, `volume qos create/delete/set/unset`, `volume group type create/delete/set`, `volume group create/delete/set`, `consistency group create/delete/set`, and the associated list/show paths. The suite also records deliberate skips for attachment mutations until a disposable server fixture exists, backup mutations while `cinder-backup` is down on `cloud6`, volume type mutations while both Python OSC and the Go CLI hit a Cinder HTTP 500 deleting a test-created type because `__DEFAULT__` is missing, group snapshot creation while `cloud6` rejects the empty source group, manage-existing remote-source calls without backend-local unmanaged storage fixtures, and real service/backend/admin mutations that are not scoped to test-created resources.
+
+Parity fixes: Cinder group updates now accept empty Cinder responses instead of failing with EOF. Resource filter list/show keeps API order for JSON but sorts default-table output to match Python OSC. Manageable volume and snapshot list output now uses Python-style repr strings in table output while preserving JSON objects. Backend capability show now follows Python-compatible property ordering for common capability keys. Volume summary renders empty metadata as blank in the default table while preserving `{}` in JSON. The live compatibility harness also now supplies the Cinder microversions Python OSC requires for cluster, manageable resource, cleanup, log-level, resource filter, message, and group commands.
+
+Validation: `go test ./tools/lifecycle-smoke`, `go test ./internal/cli ./tools/compat-check ./tools/lifecycle-smoke`, `make build`, and `make check` passed. `env OS_CLOUD=cloud6 make volume-lifecycle CLOUD=cloud6` passed, and a retained successful run wrote `compat/lifecycle-diagnostics/golang-osc-test-01f14f2262fd8ad6.json`. The expanded live Python-vs-Go read parity suite passed on `cloud6` for default table and JSON output for `block storage resource filter list`, `block storage resource filter show volume`, `block storage volume manageable list dell6.crandall.haus@lvm-1`, `block storage snapshot manageable list dell6.crandall.haus@lvm-1`, `volume backend capability show dell6.crandall.haus@lvm-1`, `block storage log level list`, and `volume summary`; the run reported 24 passes, 0 required failures, and the two existing static known gaps for root help ordering and Go module reporting.
+
+Sources consulted:
+
+* Local Python OSC oracle at `/Users/ken/.local/bin/openstack`.
+* Local Go CLI binary at `./bin/openstack`.
+* Local lifecycle suite in `tools/lifecycle-smoke`.
+* Local compatibility harness in `tools/compat-check`.
+* Live `cloud6` data from the configured `clouds.yaml`.

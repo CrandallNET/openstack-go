@@ -11954,7 +11954,7 @@ func volumeSummary(ctx context.Context, stdout io.Writer, opts *Options, client 
 		if metadata == nil {
 			metadata = map[string]any{}
 		}
-		fields = append(fields, outputField{"Metadata", metadata})
+		fields = append(fields, outputField{"Metadata", mapTableValue(metadata, "")})
 	}
 	return renderShowOutput(stdout, opts, fields)
 }
@@ -12217,7 +12217,7 @@ func blockStorageResourceFilterList(ctx context.Context, stdout io.Writer, opts 
 	for _, item := range items {
 		rows = append(rows, outputRow{
 			"Resource": item.Resource,
-			"Filters":  item.Filters,
+			"Filters":  blockStorageResourceFiltersValue(item.Filters),
 		})
 	}
 	return renderListOutput(stdout, opts, []string{"Resource", "Filters"}, rows)
@@ -12237,8 +12237,15 @@ func blockStorageResourceFilterShow(ctx context.Context, stdout io.Writer, opts 
 	item := items[0]
 	return renderShowOutput(stdout, opts, []outputField{
 		{"Resource", item.Resource},
-		{"Filters", item.Filters},
+		{"Filters", blockStorageResourceFiltersValue(item.Filters)},
 	})
+}
+
+func blockStorageResourceFiltersValue(filters []string) tableValue {
+	value := append([]string(nil), filters...)
+	tableFilters := append([]string(nil), filters...)
+	sort.Strings(tableFilters)
+	return tableValue{Value: value, Table: strings.Join(tableFilters, ", "), Pretty: tableFilters}
 }
 
 func listBlockStorageResourceFilters(ctx context.Context, client *gophercloud.ServiceClient, resource string) ([]blockStorageResourceFilterRecord, error) {
@@ -12400,12 +12407,12 @@ func blockStorageManageableList(ctx context.Context, stdout io.Writer, opts *Opt
 	rows := make([]outputRow, 0, len(items))
 	for _, item := range items {
 		row := outputRow{
-			"reference":      item.Reference,
+			"reference":      blockStorageManageableReferenceValue(item.Reference),
 			"size":           item.Size,
 			"safe_to_manage": item.SafeToManage,
 		}
 		if resource == "snapshots" {
-			row["source_reference"] = item.SourceReference
+			row["source_reference"] = blockStorageManageableReferenceValue(item.SourceReference)
 		}
 		if boolFlag(opts, "long") {
 			row["reason_not_safe"] = item.ReasonNotSafe
@@ -12415,6 +12422,10 @@ func blockStorageManageableList(ctx context.Context, stdout io.Writer, opts *Opt
 		rows = append(rows, row)
 	}
 	return renderListOutput(stdout, opts, columns, rows)
+}
+
+func blockStorageManageableReferenceValue(value any) tableValue {
+	return tableValue{Value: value, Table: pythonRepr(value), Pretty: value}
 }
 
 type consistencyGroupRecord struct {
@@ -13001,11 +13012,7 @@ func volumeBackendCapabilityShow(ctx context.Context, stdout io.Writer, opts *Op
 		return err
 	}
 	properties, _ := raw["properties"].(map[string]any)
-	keys := make([]string, 0, len(properties))
-	for key := range properties {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
+	keys := orderedBackendCapabilityKeys(properties)
 	rows := make([]outputRow, 0, len(keys))
 	for _, key := range keys {
 		property := mapAnyFromRaw(properties[key])
@@ -13017,6 +13024,26 @@ func volumeBackendCapabilityShow(ctx context.Context, stdout io.Writer, opts *Op
 		})
 	}
 	return renderListOutput(stdout, opts, []string{"Title", "Key", "Type", "Description"}, rows)
+}
+
+func orderedBackendCapabilityKeys(properties map[string]any) []string {
+	preferred := []string{"thin_provisioning", "compression", "qos", "replication_enabled"}
+	keys := make([]string, 0, len(properties))
+	seen := map[string]bool{}
+	for _, key := range preferred {
+		if _, ok := properties[key]; ok {
+			keys = append(keys, key)
+			seen[key] = true
+		}
+	}
+	remaining := make([]string, 0, len(properties)-len(keys))
+	for key := range properties {
+		if !seen[key] {
+			remaining = append(remaining, key)
+		}
+	}
+	sort.Strings(remaining)
+	return append(keys, remaining...)
 }
 
 type volumeGroupRecord struct {
@@ -13240,17 +13267,13 @@ func volumeGroupSet(ctx context.Context, stdout io.Writer, opts *Options, client
 		update["description"] = flagValue(opts, "description")
 	}
 	if len(update) > 0 {
-		var response struct {
-			Group volumeGroupRecord `json:"group"`
-		}
-		resp, err := client.Put(ctx, client.ServiceURL("groups", url.PathEscape(group.ID)), map[string]any{"group": update}, &response, &gophercloud.RequestOpts{
+		resp, err := client.Put(ctx, client.ServiceURL("groups", url.PathEscape(group.ID)), map[string]any{"group": update}, nil, &gophercloud.RequestOpts{
 			OkCodes: []int{http.StatusOK, http.StatusAccepted},
 		})
 		_, _, err = gophercloud.ParseResponse(resp, err)
 		if err != nil {
 			return oscHTTPException(err)
 		}
-		group = response.Group
 	}
 	if boolFlag(opts, "enable-replication") || boolFlag(opts, "disable-replication") {
 		client, err = blockStorageClientWithExplicitMinimumMicroversion(client, "3.38", "volume group set --enable-replication/--disable-replication")
