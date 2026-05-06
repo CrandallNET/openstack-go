@@ -44,9 +44,11 @@ func runVolumeLifecycle(cloud string, prefix string) (diagnostics lifecycleDiagn
 		}
 	}()
 
-	preflight := run.must("preflight volume service list", "volume", "service", "list", "-f", "json")
-	run.recordFirstServiceFixture(preflight.Stdout)
-	run.must("preflight volume backend pool list", "volume", "backend", "pool", "list", "-f", "json")
+	preflight := run.optional("preflight volume service list", "volume", "service", "list", "-f", "json")
+	if preflight.ExitCode == 0 {
+		run.recordFirstServiceFixture(preflight.Stdout)
+	}
+	run.optional("preflight volume backend pool list", "volume", "backend", "pool", "list", "-f", "json")
 	types := run.must("preflight volume type list", "volume", "type", "list", "-f", "json")
 	run.recordVolumeTypeFixture(types.Stdout)
 	run.optional("preflight block storage resource filter list", "block", "storage", "resource", "filter", "list", "-f", "json")
@@ -73,6 +75,7 @@ func runVolumeLifecycle(cloud string, prefix string) (diagnostics lifecycleDiagn
 	run.mustWaitStatus("wait volume available after create", []string{"volume", "show", volumeID, "-f", "json"}, "status", []string{"available", "in-use"}, 3*time.Minute)
 	run.must("show volume", "volume", "show", volumeID, "-f", "json")
 	run.must("list volumes", "volume", "list", "-f", "json")
+	run.volumeAttachmentLifecycle(id, volumeID)
 	run.must("set volume metadata", "volume", "set", "--name", id+"-volume-renamed", "--description", "golang-osc lifecycle volume updated", "--property", "phase=set", volumeID)
 	run.must("unset volume metadata", "volume", "unset", "--property", "phase", volumeID)
 	run.must("set volume read-only", "volume", "set", "--read-only", volumeID)
@@ -129,7 +132,6 @@ func runVolumeLifecycle(cloud string, prefix string) (diagnostics lifecycleDiagn
 	run.consistencyGroupLifecycle(id, firstNonEmptyString(volumeTypeID, fixtureVolumeType), volumeID)
 	run.backupLifecycleIfAvailable(id, volumeID)
 
-	run.recordRiskSkipped("volume attachment create/set/complete/delete", "requires a dedicated disposable server fixture; the read paths are covered separately and this suite avoids mutating existing servers")
 	run.recordRiskSkipped("volume service set", "would disable or re-enable real Cinder services rather than only test-created resources")
 	run.recordRiskSkipped("volume host set", "would freeze or thaw a real Cinder host rather than only test-created resources")
 	run.recordRiskSkipped("block storage cleanup", "operates on real Cinder worker state and is not scoped to a test-created resource")
@@ -173,6 +175,66 @@ func (run *volumeLifecycle) volumeTypeLifecycle(id string) string {
 	run.must("set volume type properties", "volume", "type", "set", "--description", "golang-osc lifecycle type updated", "--property", "phase=set", volumeTypeID)
 	run.must("unset volume type properties", "volume", "type", "unset", "--property", "phase", volumeTypeID)
 	return volumeTypeID
+}
+
+func (run *volumeLifecycle) volumeAttachmentLifecycle(id string, volumeID string) {
+	serverID := run.createAttachmentServerFixture(id)
+	if serverID == "" {
+		run.skip("volume attachment create/set/complete/delete", "no disposable server fixture was available")
+		return
+	}
+	attachment := run.optional("create volume attachment", "volume", "attachment", "create", "--no-connect", volumeID, serverID, "-f", "json")
+	if attachment.ExitCode != 0 {
+		return
+	}
+	attachmentID := jsonStringField(attachment.Stdout, "id", "ID")
+	if attachmentID == "" {
+		run.skip("volume attachment follow-up", "volume attachment create did not return an id")
+		return
+	}
+	run.diagnostics.Fixtures["volume_attachment_id"] = attachmentID
+	run.addCleanup("cleanup volume attachment", "volume", "attachment", "delete", attachmentID)
+	run.must("show volume attachment", "volume", "attachment", "show", attachmentID, "-f", "json")
+	run.must("list volume attachments", "volume", "attachment", "list", "-f", "json")
+	run.optional("set volume attachment connector", "volume", "attachment", "set", "--host", "golang-osc-lifecycle", "--ip", "127.0.0.1", "--initiator", "iqn.1993-08.org.debian:01:golang-osc", attachmentID, "-f", "json")
+	if result := run.optional("complete volume attachment", "volume", "attachment", "complete", attachmentID); result.ExitCode == 0 {
+		run.skip("volume attachment complete cleanup note", "attachment complete succeeded; delete cleanup will return the volume to a deletable state")
+	}
+	run.must("delete volume attachment", "volume", "attachment", "delete", attachmentID)
+	run.dropCleanup("cleanup volume attachment")
+	run.mustWaitStatus("wait volume available after attachment delete", []string{"volume", "show", volumeID, "-f", "json"}, "status", []string{"available"}, 3*time.Minute)
+	run.must("delete volume attachment server", "server", "delete", "--wait", serverID)
+	run.dropCleanup("cleanup volume attachment server")
+}
+
+func (run *volumeLifecycle) createAttachmentServerFixture(id string) string {
+	image := run.optional("preflight attachment image list", "image", "list", "-f", "json")
+	flavor := run.optional("preflight attachment flavor list", "flavor", "list", "-f", "json")
+	network := run.optional("preflight attachment network list", "network", "list", "-f", "json")
+	if image.ExitCode != 0 || flavor.ExitCode != 0 || network.ExitCode != 0 {
+		return ""
+	}
+	imageID := firstActiveImageID(image.Stdout)
+	flavorID := smallestFlavorID(flavor.Stdout)
+	networkID := firstNetworkID(network.Stdout)
+	if imageID == "" || flavorID == "" || networkID == "" {
+		return ""
+	}
+	run.diagnostics.Fixtures["attachment_server_image_id"] = imageID
+	run.diagnostics.Fixtures["attachment_server_flavor_id"] = flavorID
+	run.diagnostics.Fixtures["attachment_server_network_id"] = networkID
+	server := run.optional("create volume attachment server", "server", "create", "--flavor", flavorID, "--image", imageID, "--network", networkID, "--property", "golang_osc_test="+id, "--description", "golang-osc volume attachment lifecycle server", "--wait", id+"-attachment-server", "-f", "json")
+	if server.ExitCode != 0 {
+		return ""
+	}
+	serverID := jsonStringField(server.Stdout, "id", "ID")
+	if serverID == "" {
+		run.skip("volume attachment server follow-up", "server create did not return an id")
+		return ""
+	}
+	run.diagnostics.Fixtures["attachment_server_id"] = serverID
+	run.addCleanup("cleanup volume attachment server", "server", "delete", "--wait", serverID)
+	return serverID
 }
 
 func (run *volumeLifecycle) qosLifecycle(id string, volumeTypeID string) {
@@ -515,37 +577,4 @@ type volumeLifecycleFailure struct {
 
 func (err volumeLifecycleFailure) Error() string {
 	return "volume lifecycle failed at " + err.name
-}
-
-func jsonStringField(jsonText string, names ...string) string {
-	var values map[string]any
-	if err := json.Unmarshal([]byte(jsonText), &values); err != nil {
-		return ""
-	}
-	for _, name := range names {
-		if value, ok := values[name]; ok {
-			text := strings.TrimSpace(fmt.Sprint(value))
-			if text != "" && text != "<nil>" {
-				return text
-			}
-		}
-	}
-	return ""
-}
-
-func looksDeleted(result stepResult) bool {
-	text := strings.ToLower(result.Error + "\n" + result.Stderr + "\n" + result.Stdout)
-	return strings.Contains(text, "not found") ||
-		strings.Contains(text, "could not find") ||
-		strings.Contains(text, "no ") ||
-		strings.Contains(text, "404")
-}
-
-func firstNonEmptyString(values ...string) string {
-	for _, value := range values {
-		if strings.TrimSpace(value) != "" {
-			return value
-		}
-	}
-	return "command is unavailable on this cloud"
 }

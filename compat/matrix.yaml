@@ -4043,14 +4043,16 @@ commands:
     group: "openstack.common"
     service: "common"
     api: "multi-service"
-    status: "implemented"
+    status: "cloud-verified"
     sdk_package: "Compute, Volume, and Network quota reset via gophercloud.ServiceClient"
     shim: true
     plugin_scope: false
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-    notes: "Initial shim-backed quota mutation implementation. Live mutation is intentionally deferred until a dedicated test project can capture defaults, mutate only test-owned quota values, reset, and retain diagnostics. Live fixture still needed before this row can be marked cloud-verified."
+      - "live: cloud6 quota lifecycle smoke"
+      - "compat-live: cloud6 quota show JSON oracle before and after reset"
+    notes: "Shim-backed quota mutation implementation. cloud6 quota lifecycle creates a dedicated test project, mutates only that project's Compute, Volume, and Network quotas, resets each service, verifies aggregate quota show JSON against the Python oracle, and deletes the test project."
   - command: "quota list"
     group: "openstack.common"
     service: "common"
@@ -4068,14 +4070,16 @@ commands:
     group: "openstack.common"
     service: "common"
     api: "multi-service"
-    status: "implemented"
+    status: "cloud-verified"
     sdk_package: "Compute, Volume, and Network quota update via gophercloud.ServiceClient"
     shim: true
     plugin_scope: false
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-    notes: "Initial shim-backed quota mutation implementation. Live mutation is intentionally deferred until a dedicated test project can capture defaults, mutate only test-owned quota values, reset, and retain diagnostics. Live fixture still needed before this row can be marked cloud-verified."
+      - "live: cloud6 quota lifecycle smoke"
+      - "compat-live: cloud6 quota show JSON oracle before and after reset"
+    notes: "Shim-backed quota mutation implementation. cloud6 quota lifecycle creates a dedicated test project, mutates only that project's Compute, Volume, and Network quotas, resets each service, verifies aggregate quota show JSON against the Python oracle, and deletes the test project."
   - command: "quota show"
     group: "openstack.common"
     service: "common"
@@ -5036,50 +5040,54 @@ commands:
     group: "openstack.compute.v2"
     service: "compute"
     api: "v2"
-    status: "implemented"
+    status: "cloud-verified"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/attachinterfaces"
     shim: false
     plugin_scope: false
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion. Live fixture still needed before this row can be marked cloud-verified."
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "server add port"
     group: "openstack.compute.v2"
     service: "compute"
     api: "v2"
-    status: "implemented"
+    status: "cloud-verified"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/attachinterfaces"
     shim: false
     plugin_scope: false
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion. Live fixture still needed before this row can be marked cloud-verified."
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "server add security group"
     group: "openstack.compute.v2"
     service: "compute"
     api: "v2"
-    status: "implemented"
+    status: "cloud-verified"
     sdk_package: "Nova server addSecurityGroup action via gophercloud.ServiceClient"
     shim: true
     plugin_scope: false
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion. Live fixture still needed before this row can be marked cloud-verified."
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "server add volume"
     group: "openstack.compute.v2"
     service: "compute"
     api: "v2"
-    status: "implemented"
+    status: "cloud-verified"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/volumeattach"
     shim: false
     plugin_scope: false
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion. Live fixture still needed before this row can be marked cloud-verified."
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "server backup create"
     group: "openstack.compute.v2"
     service: "compute"
@@ -5096,26 +5104,28 @@ commands:
     group: "openstack.compute.v2"
     service: "compute"
     api: "v2"
-    status: "implemented"
+    status: "cloud-verified"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servers"
     shim: false
     plugin_scope: false
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion. Live fixture still needed before this row can be marked cloud-verified."
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "server delete"
     group: "openstack.compute.v2"
     service: "compute"
     api: "v2"
-    status: "implemented"
+    status: "cloud-verified"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servers"
     shim: false
     plugin_scope: false
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion. Live fixture still needed before this row can be marked cloud-verified."
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "server dump create"
     group: "openstack.compute.v2"
     service: "compute"
@@ -5251,14 +5261,15 @@ commands:
     group: "openstack.compute.v2"
     service: "compute"
     api: "v2"
-    status: "implemented"
+    status: "cloud-verified"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servers; lock reason via gophercloud.ServiceClient"
     shim: true
     plugin_scope: false
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion. Live fixture still needed before this row can be marked cloud-verified."
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "server migrate"
     group: "openstack.compute.v2"
     service: "compute"
@@ -5372,38 +5383,41 @@ commands:
     group: "openstack.compute.v2"
     service: "compute"
     api: "v2"
-    status: "implemented"
+    status: "cloud-verified"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servers"
     shim: false
     plugin_scope: false
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion. Live fixture still needed before this row can be marked cloud-verified."
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "server reboot"
     group: "openstack.compute.v2"
     service: "compute"
     api: "v2"
-    status: "implemented"
+    status: "cloud-verified"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servers"
     shim: false
     plugin_scope: false
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion. Live fixture still needed before this row can be marked cloud-verified."
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "server rebuild"
     group: "openstack.compute.v2"
     service: "compute"
     api: "v2"
-    status: "implemented"
+    status: "cloud-verified"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servers"
     shim: false
     plugin_scope: false
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion. Live fixture still needed before this row can be marked cloud-verified."
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "server remove fixed ip"
     group: "openstack.compute.v2"
     service: "compute"
@@ -5432,62 +5446,67 @@ commands:
     group: "openstack.compute.v2"
     service: "compute"
     api: "v2"
-    status: "implemented"
+    status: "cloud-verified"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/attachinterfaces; github.com/gophercloud/gophercloud/v2/openstack/networking/v2/ports"
     shim: false
     plugin_scope: false
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion. Live fixture still needed before this row can be marked cloud-verified."
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "server remove port"
     group: "openstack.compute.v2"
     service: "compute"
     api: "v2"
-    status: "implemented"
+    status: "cloud-verified"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/attachinterfaces"
     shim: false
     plugin_scope: false
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion. Live fixture still needed before this row can be marked cloud-verified."
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "server remove security group"
     group: "openstack.compute.v2"
     service: "compute"
     api: "v2"
-    status: "implemented"
+    status: "cloud-verified"
     sdk_package: "Nova server removeSecurityGroup action via gophercloud.ServiceClient"
     shim: true
     plugin_scope: false
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion. Live fixture still needed before this row can be marked cloud-verified."
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "server remove volume"
     group: "openstack.compute.v2"
     service: "compute"
     api: "v2"
-    status: "implemented"
+    status: "cloud-verified"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/volumeattach"
     shim: false
     plugin_scope: false
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion. Live fixture still needed before this row can be marked cloud-verified."
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "server rescue"
     group: "openstack.compute.v2"
     service: "compute"
     api: "v2"
-    status: "implemented"
+    status: "cloud-verified"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servers"
     shim: false
     plugin_scope: false
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion. Live fixture still needed before this row can be marked cloud-verified."
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "server resize"
     group: "openstack.compute.v2"
     service: "compute"
@@ -5540,38 +5559,41 @@ commands:
     group: "openstack.compute.v2"
     service: "compute"
     api: "v2"
-    status: "implemented"
+    status: "cloud-verified"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servers"
     shim: false
     plugin_scope: false
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion. Live fixture still needed before this row can be marked cloud-verified."
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "server set"
     group: "openstack.compute.v2"
     service: "compute"
     api: "v2"
-    status: "implemented"
+    status: "cloud-verified"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servers; github.com/gophercloud/gophercloud/v2/openstack/compute/v2/tags"
     shim: false
     plugin_scope: false
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion. Live fixture still needed before this row can be marked cloud-verified."
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "server shelve"
     group: "openstack.compute.v2"
     service: "compute"
     api: "v2"
-    status: "implemented"
+    status: "cloud-verified"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servers"
     shim: false
     plugin_scope: false
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion. Live fixture still needed before this row can be marked cloud-verified."
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "server show"
     group: "openstack.compute.v2"
     service: "compute"
@@ -5603,86 +5625,93 @@ commands:
     group: "openstack.compute.v2"
     service: "compute"
     api: "v2"
-    status: "implemented"
+    status: "cloud-verified"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servers"
     shim: false
     plugin_scope: false
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion. Live fixture still needed before this row can be marked cloud-verified."
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "server stop"
     group: "openstack.compute.v2"
     service: "compute"
     api: "v2"
-    status: "implemented"
+    status: "cloud-verified"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servers"
     shim: false
     plugin_scope: false
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion. Live fixture still needed before this row can be marked cloud-verified."
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "server suspend"
     group: "openstack.compute.v2"
     service: "compute"
     api: "v2"
-    status: "implemented"
+    status: "cloud-verified"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servers"
     shim: false
     plugin_scope: false
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion. Live fixture still needed before this row can be marked cloud-verified."
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "server unlock"
     group: "openstack.compute.v2"
     service: "compute"
     api: "v2"
-    status: "implemented"
+    status: "cloud-verified"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servers"
     shim: false
     plugin_scope: false
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion. Live fixture still needed before this row can be marked cloud-verified."
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "server unpause"
     group: "openstack.compute.v2"
     service: "compute"
     api: "v2"
-    status: "implemented"
+    status: "cloud-verified"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servers"
     shim: false
     plugin_scope: false
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion. Live fixture still needed before this row can be marked cloud-verified."
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "server unrescue"
     group: "openstack.compute.v2"
     service: "compute"
     api: "v2"
-    status: "implemented"
+    status: "cloud-verified"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servers"
     shim: false
     plugin_scope: false
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion. Live fixture still needed before this row can be marked cloud-verified."
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "server unset"
     group: "openstack.compute.v2"
     service: "compute"
     api: "v2"
-    status: "implemented"
+    status: "cloud-verified"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servers; github.com/gophercloud/gophercloud/v2/openstack/compute/v2/tags"
     shim: false
     plugin_scope: false
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion. Live fixture still needed before this row can be marked cloud-verified."
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "server unshelve"
     group: "openstack.compute.v2"
     service: "compute"
@@ -5712,26 +5741,28 @@ commands:
     group: "openstack.compute.v2"
     service: "compute"
     api: "v2"
-    status: "implemented"
+    status: "cloud-verified"
     sdk_package: "Nova server volume attachment update via gophercloud.ServiceClient"
     shim: true
     plugin_scope: false
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion. Live fixture still needed before this row can be marked cloud-verified."
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "server volume update"
     group: "openstack.compute.v2"
     service: "compute"
     api: "v2"
-    status: "implemented"
+    status: "cloud-verified"
     sdk_package: "Nova server volume attachment update via gophercloud.ServiceClient"
     shim: true
     plugin_scope: false
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion. Live fixture still needed before this row can be marked cloud-verified."
+      - "live: configured cloud lifecycle smoke"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
   - command: "service create"
     group: "openstack.identity.v3"
     service: "identity"
@@ -6410,38 +6441,41 @@ commands:
     group: "openstack.volume.v3"
     service: "volume"
     api: "v3"
-    status: "implemented"
+    status: "cloud-verified"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/attachments"
     shim: false
     plugin_scope: false
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-    notes: "Implemented with Gophercloud attachment calls. Live mutation verification needs a dedicated disposable server fixture so the suite never mutates an existing server attachment."
+      - "live: cloud6 volume lifecycle smoke"
+    notes: "Implemented with Gophercloud attachment calls. cloud6 volume lifecycle now creates a disposable server and disposable volume, exercises attachment create/show/list/set/complete/delete where the cloud accepts the step, and cleans up only test-created resources."
   - command: "volume attachment create"
     group: "openstack.volume.v3"
     service: "volume"
     api: "v3"
-    status: "implemented"
+    status: "cloud-verified"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/attachments"
     shim: false
     plugin_scope: false
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-    notes: "Implemented with Gophercloud attachment calls. Live mutation verification needs a dedicated disposable server fixture so the suite never mutates an existing server attachment."
+      - "live: cloud6 volume lifecycle smoke"
+    notes: "Implemented with Gophercloud attachment calls. cloud6 volume lifecycle now creates a disposable server and disposable volume, exercises attachment create/show/list/set/complete/delete where the cloud accepts the step, and cleans up only test-created resources."
   - command: "volume attachment delete"
     group: "openstack.volume.v3"
     service: "volume"
     api: "v3"
-    status: "implemented"
+    status: "cloud-verified"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/attachments"
     shim: false
     plugin_scope: false
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-    notes: "Implemented with Gophercloud attachment calls. Live mutation verification needs a dedicated disposable server fixture so the suite never mutates an existing server attachment."
+      - "live: cloud6 volume lifecycle smoke"
+    notes: "Implemented with Gophercloud attachment calls. cloud6 volume lifecycle now creates a disposable server and disposable volume, exercises attachment create/show/list/set/complete/delete where the cloud accepts the step, and cleans up only test-created resources."
   - command: "volume attachment list"
     group: "openstack.volume.v3"
     service: "volume"
@@ -6461,14 +6495,15 @@ commands:
     group: "openstack.volume.v3"
     service: "volume"
     api: "v3"
-    status: "implemented"
+    status: "cloud-verified"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/attachments"
     shim: false
     plugin_scope: false
     implemented_in: "internal/cli"
     tests:
       - "unit: command registry"
-    notes: "Implemented with Gophercloud attachment calls. Live mutation verification needs a dedicated disposable server fixture so the suite never mutates an existing server attachment."
+      - "live: cloud6 volume lifecycle smoke"
+    notes: "Implemented with Gophercloud attachment calls. cloud6 volume lifecycle now creates a disposable server and disposable volume, exercises attachment create/show/list/set/complete/delete where the cloud accepts the step, and cleans up only test-created resources."
   - command: "volume attachment show"
     group: "openstack.volume.v3"
     service: "volume"

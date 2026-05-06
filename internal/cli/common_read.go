@@ -15,6 +15,7 @@ import (
 	"github.com/gophercloud/gophercloud/v2"
 	volumeaz "github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/availabilityzones"
 	volumelimits "github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/limits"
+	"github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/volumetypes"
 	"github.com/gophercloud/gophercloud/v2/openstack/common/extensions"
 	computeaz "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/availabilityzones"
 	computelimits "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/limits"
@@ -197,38 +198,44 @@ func quotaShow(ctx context.Context, stdout io.Writer, opts *Options, clients *op
 	}
 
 	var rows []outputRow
+	var computeRows []outputRow
+	var volumeRows []outputRow
+	var networkRows []outputRow
 	if compute {
 		client, err := clients.computeV2()
 		if err != nil {
 			return err
 		}
-		serviceRows, err := computeQuotaRows(ctx, client, projectID, usage)
+		computeRows, err = computeQuotaRows(ctx, client, projectID, usage)
 		if err != nil {
 			return err
 		}
-		rows = append(rows, serviceRows...)
+		rows = append(rows, computeRows...)
 	}
 	if volume {
 		client, err := clients.blockStorageV3()
 		if err != nil {
 			return err
 		}
-		serviceRows, err := volumeQuotaRows(ctx, client, projectID, usage, boolFlag(opts, "default"))
+		volumeRows, err = volumeQuotaRows(ctx, client, projectID, usage, boolFlag(opts, "default"))
 		if err != nil {
 			return err
 		}
-		rows = append(rows, serviceRows...)
+		rows = append(rows, volumeRows...)
 	}
 	if network {
 		client, err := clients.networkV2()
 		if err != nil {
 			return err
 		}
-		serviceRows, err := networkQuotaRows(ctx, client, projectID, usage)
+		networkRows, err = networkQuotaRows(ctx, client, projectID, usage)
 		if err != nil {
 			return err
 		}
-		rows = append(rows, serviceRows...)
+		rows = append(rows, networkRows...)
+	}
+	if compute && volume && network {
+		rows = aggregateQuotaShowRows(computeRows, volumeRows, networkRows)
 	}
 
 	columns := []string{"Resource", "Limit"}
@@ -1057,7 +1064,7 @@ func volumeQuotaRows(ctx context.Context, client *gophercloud.ServiceClient, pro
 		{Key: "gigabytes", Name: "gigabytes"},
 		{Key: "backups", Name: "backups"},
 	}
-	extras := quotaExtraFields(quota, []string{"volumes_", "gigabytes_", "snapshots_"})
+	extras := quotaVolumeTypeFields(quota, quotaVolumeTypeNames(ctx, client))
 	fields = append(fields, extras...)
 	fields = append(fields,
 		quotaField{Key: "groups", Name: "groups"},
@@ -1180,20 +1187,149 @@ func quotaUsageRows(quota map[string]any, fields []quotaField) []outputRow {
 	return rows
 }
 
-func quotaExtraFields(quota map[string]any, prefixes []string) []quotaField {
-	var keys []string
+func aggregateQuotaShowRows(computeRows []outputRow, volumeRows []outputRow, networkRows []outputRow) []outputRow {
+	var rows []outputRow
+	compute := quotaRowsByResource(computeRows)
+	network := quotaRowsByResource(networkRows)
+
+	rows = appendQuotaResources(rows, compute, []string{
+		"cores",
+		"instances",
+		"ram",
+		"fixed_ips",
+	})
+	rows = appendQuotaResources(rows, network, []string{"networks"})
+	rows = appendQuotaResources(rows, quotaRowsByResource(volumeRows), []string{
+		"volumes",
+		"snapshots",
+		"gigabytes",
+		"backups",
+	})
+	rows = appendQuotaRowsMatching(rows, volumeRows, func(resource string) bool {
+		return strings.HasPrefix(resource, "volumes_") ||
+			strings.HasPrefix(resource, "gigabytes_") ||
+			strings.HasPrefix(resource, "snapshots_")
+	})
+	rows = appendQuotaResources(rows, quotaRowsByResource(volumeRows), []string{"groups"})
+	rows = appendQuotaResources(rows, network, []string{
+		"check_limit",
+		"health_monitors",
+		"listeners",
+		"load_balancers",
+		"l7_policies",
+		"pools",
+		"ports",
+		"project_id",
+		"rbac_policies",
+		"routers",
+		"subnets",
+		"subnet_pools",
+	})
+	rows = appendQuotaResources(rows, compute, []string{
+		"injected-file-size",
+		"injected-path-size",
+		"injected-files",
+		"key-pairs",
+		"properties",
+		"server-group-members",
+		"server-groups",
+	})
+	rows = appendQuotaResources(rows, network, []string{
+		"floating-ips",
+		"secgroup-rules",
+		"secgroups",
+	})
+	rows = appendQuotaResources(rows, quotaRowsByResource(volumeRows), []string{
+		"backup-gigabytes",
+		"per-volume-gigabytes",
+	})
+	return rows
+}
+
+func quotaRowsByResource(rows []outputRow) map[string]outputRow {
+	index := make(map[string]outputRow, len(rows))
+	for _, row := range rows {
+		resource := valueString(row["Resource"])
+		if resource != "" {
+			index[resource] = row
+		}
+	}
+	return index
+}
+
+func appendQuotaResources(rows []outputRow, index map[string]outputRow, resources []string) []outputRow {
+	for _, resource := range resources {
+		if row, ok := index[resource]; ok {
+			rows = append(rows, row)
+		}
+	}
+	return rows
+}
+
+func appendQuotaRowsMatching(rows []outputRow, source []outputRow, match func(string) bool) []outputRow {
+	for _, row := range source {
+		resource := valueString(row["Resource"])
+		if match(resource) {
+			rows = append(rows, row)
+		}
+	}
+	return rows
+}
+
+func quotaVolumeTypeNames(ctx context.Context, client *gophercloud.ServiceClient) []string {
+	page, err := volumetypes.List(client, volumetypes.ListOpts{}).AllPages(ctx)
+	if err != nil {
+		return nil
+	}
+	items, err := volumetypes.ExtractVolumeTypes(page)
+	if err != nil {
+		return nil
+	}
+	names := make([]string, 0, len(items))
+	for _, item := range items {
+		if item.Name != "" {
+			names = append(names, item.Name)
+		}
+	}
+	return names
+}
+
+func quotaVolumeTypeFields(quota map[string]any, typeNames []string) []quotaField {
+	prefixes := []string{"volumes_", "gigabytes_", "snapshots_"}
+	typeSeen := map[string]bool{}
 	for key := range quota {
 		for _, prefix := range prefixes {
 			if strings.HasPrefix(key, prefix) {
-				keys = append(keys, key)
+				typeSeen[strings.TrimPrefix(key, prefix)] = true
 				break
 			}
 		}
 	}
-	sort.Strings(keys)
-	fields := make([]quotaField, 0, len(keys))
-	for _, key := range keys {
-		fields = append(fields, quotaField{Key: key, Name: key})
+	orderedTypes := make([]string, 0, len(typeSeen))
+	usedTypes := map[string]bool{}
+	for _, name := range typeNames {
+		if typeSeen[name] && !usedTypes[name] {
+			orderedTypes = append(orderedTypes, name)
+			usedTypes[name] = true
+		}
+	}
+	var remaining []string
+	for name := range typeSeen {
+		if !usedTypes[name] {
+			remaining = append(remaining, name)
+		}
+	}
+	sort.Strings(remaining)
+	orderedTypes = append(orderedTypes, remaining...)
+
+	fields := make([]quotaField, 0, len(orderedTypes)*len(prefixes))
+	for _, typeName := range orderedTypes {
+		for _, prefix := range prefixes {
+			key := prefix + typeName
+			if _, ok := quota[key]; ok {
+				fields = append(fields, quotaField{Key: key, Name: key})
+			}
+		}
 	}
 	return fields
 }

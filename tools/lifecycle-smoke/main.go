@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 	"time"
 
@@ -31,15 +30,20 @@ type lifecycleDiagnostics struct {
 }
 
 type stepResult struct {
-	Name       string   `json:"name"`
-	Args       []string `json:"args,omitempty"`
-	Env        []string `json:"env,omitempty"`
-	ExitCode   int      `json:"exit_code,omitempty"`
-	Stdout     string   `json:"stdout,omitempty"`
-	Stderr     string   `json:"stderr,omitempty"`
-	Error      string   `json:"error,omitempty"`
-	Skipped    bool     `json:"skipped,omitempty"`
-	SkipReason string   `json:"skip_reason,omitempty"`
+	Name           string   `json:"name"`
+	Args           []string `json:"args,omitempty"`
+	Env            []string `json:"env,omitempty"`
+	ExitCode       int      `json:"exit_code,omitempty"`
+	Stdout         string   `json:"stdout,omitempty"`
+	Stderr         string   `json:"stderr,omitempty"`
+	Error          string   `json:"error,omitempty"`
+	OracleArgs     []string `json:"oracle_args,omitempty"`
+	OracleExitCode int      `json:"oracle_exit_code,omitempty"`
+	OracleStdout   string   `json:"oracle_stdout,omitempty"`
+	OracleStderr   string   `json:"oracle_stderr,omitempty"`
+	OracleError    string   `json:"oracle_error,omitempty"`
+	Skipped        bool     `json:"skipped,omitempty"`
+	SkipReason     string   `json:"skip_reason,omitempty"`
 }
 
 func main() {
@@ -49,7 +53,7 @@ func main() {
 	var diagnosticsDir string
 	var keepSuccess bool
 
-	flag.StringVar(&suite, "suite", "keypair", "lifecycle suite to run: keypair or volume")
+	flag.StringVar(&suite, "suite", "keypair", "lifecycle suite to run: keypair, server, volume, or quota")
 	flag.StringVar(&cloud, "cloud", os.Getenv("OS_CLOUD"), "cloud name to test")
 	flag.StringVar(&prefix, "prefix", "golang-osc-test", "unique resource prefix")
 	flag.StringVar(&diagnosticsDir, "diagnostics-dir", "compat/lifecycle-diagnostics", "directory for retained failure diagnostics")
@@ -66,8 +70,12 @@ func main() {
 	switch suite {
 	case "keypair":
 		diagnostics, err = runKeypairLifecycle(cloud, prefix)
+	case "server":
+		diagnostics, err = runServerLifecycle(cloud, prefix)
 	case "volume":
 		diagnostics, err = runVolumeLifecycle(cloud, prefix)
+	case "quota":
+		diagnostics, err = runQuotaLifecycle(cloud, prefix)
 	default:
 		fmt.Fprintf(os.Stderr, "lifecycle-smoke: unknown suite %q\n", suite)
 		os.Exit(1)
@@ -162,11 +170,7 @@ func runCLI(cloud string, args ...string) stepResult {
 }
 
 func runCLIWithEnv(cloud string, extraEnv map[string]string, args ...string) stepResult {
-	var envKeys []string
-	for key, value := range extraEnv {
-		envKeys = append(envKeys, key+"="+value)
-	}
-	sort.Strings(envKeys)
+	env := envKeys(extraEnv)
 	if len(extraEnv) > 0 {
 		saved := map[string]*string{}
 		for key, value := range extraEnv {
@@ -197,7 +201,7 @@ func runCLIWithEnv(cloud string, extraEnv map[string]string, args ...string) ste
 	}
 	result := stepResult{
 		Args:     fullArgs,
-		Env:      envKeys,
+		Env:      env,
 		ExitCode: cli.ExitCode(err),
 		Stdout:   stdout.String(),
 		Stderr:   stderr.String(),

@@ -2430,10 +2430,10 @@ func serverRawFields(raw map[string]any) []outputField {
 		{"pinned_availability_zone", raw["pinned_availability_zone"]},
 		{"progress", rawNumber(raw["progress"])},
 		{"project_id", firstPresent(raw, "project_id", "tenant_id")},
-		{"properties", mapTableValue(raw["metadata"], "")},
-		{"scheduler_hints", mapTableValue(raw["scheduler_hints"], "")},
+		{"properties", serverPropertyTableValue(raw["metadata"])},
+		{"scheduler_hints", serverSchedulerHintsTableValue(raw["scheduler_hints"])},
 		{"security_groups", serverKeyValueList(raw["security_groups"], []string{"name"})},
-		{"server_groups", raw["server_groups"]},
+		{"server_groups", serverPythonListTableValue(raw["server_groups"])},
 		{"status", raw["status"]},
 		{"tags", blankEmptyListValue(raw["tags"])},
 		{"trusted_image_certificates", raw["trusted_image_certificates"]},
@@ -2583,7 +2583,8 @@ func serverImageShowValue(value any) any {
 		if len(typed) == 0 {
 			return "N/A (booted from volume)"
 		}
-		return tableValue{Value: value, Table: valueString(serverImage(typed, nil)), Pretty: serverImage(typed, nil)}
+		display := serverImageShowString(typed, nil)
+		return tableValue{Value: display, Table: display, Pretty: display}
 	default:
 		return value
 	}
@@ -2625,6 +2626,51 @@ func serverKeyValueListWithJSONKeys(value any, tableKeys []string, jsonKeys []st
 		}
 	}
 	return tableValue{Value: jsonValues, Table: strings.Join(lines, "\n"), Pretty: value}
+}
+
+func serverPropertyTableValue(value any) tableValue {
+	values := mapValueOrEmptyAny(value)
+	parts := make([]string, 0, len(values))
+	for _, key := range sortedMapKeys(values) {
+		if emptyServerShowValue(values[key]) {
+			continue
+		}
+		parts = append(parts, serverShowQuotedKeyValueToken(key, values[key]))
+	}
+	return tableValue{Value: values, Table: strings.Join(parts, ", "), Pretty: values}
+}
+
+func serverSchedulerHintsTableValue(value any) tableValue {
+	values := mapValueOrEmptyAny(value)
+	parts := make([]string, 0, len(values))
+	for _, key := range sortedMapKeys(values) {
+		if emptyServerShowValue(values[key]) {
+			continue
+		}
+		parts = append(parts, key+"="+serverSchedulerHintTableString(values[key]))
+	}
+	return tableValue{Value: values, Table: strings.Join(parts, ", "), Pretty: values}
+}
+
+func serverSchedulerHintTableString(value any) string {
+	values := anySlice(value)
+	if len(values) == 0 {
+		return valueString(value)
+	}
+	parts := make([]string, 0, len(values))
+	for _, item := range values {
+		parts = append(parts, valueString(item))
+	}
+	return strings.Join(parts, ", ")
+}
+
+func serverPythonListTableValue(value any) tableValue {
+	values := anySlice(value)
+	table := ""
+	if len(values) > 0 {
+		table = pythonRepr(values)
+	}
+	return tableValue{Value: values, Table: table, Pretty: values}
 }
 
 func serverShowKeyValueToken(key string, value any) string {
@@ -18217,18 +18263,63 @@ func serverImage(image map[string]any, imageNames map[string]string) any {
 	if len(image) == 0 {
 		return "N/A (booted from volume)"
 	}
-	if id, ok := image["id"].(string); ok && id != "" {
-		if name := imageNames[id]; name != "" {
-			return name
-		}
-	}
-	if name, ok := image["name"].(string); ok && name != "" {
+	if name := serverImageName(image, imageNames); name != "" {
 		return name
 	}
 	if id, ok := image["id"].(string); ok && id != "" {
 		return id
 	}
 	return image
+}
+
+func serverImageShowString(image map[string]any, imageNames map[string]string) string {
+	if len(image) == 0 {
+		return "N/A (booted from volume)"
+	}
+	id := stringValue(image["id"])
+	name := serverImageName(image, imageNames)
+	switch {
+	case name != "" && id != "":
+		return fmt.Sprintf("%s (%s)", name, id)
+	case name != "":
+		return name
+	case id != "":
+		return id
+	default:
+		return valueString(image)
+	}
+}
+
+func serverImageName(image map[string]any, imageNames map[string]string) string {
+	id := stringValue(image["id"])
+	if id != "" && imageNames != nil {
+		if name := imageNames[id]; name != "" {
+			return name
+		}
+	}
+	if name := stringValue(image["name"]); name != "" {
+		return name
+	}
+	if name := serverImageNameFromProperties(image); name != "" {
+		return name
+	}
+	return ""
+}
+
+func serverImageNameFromProperties(image map[string]any) string {
+	properties, ok := image["properties"].(map[string]any)
+	if !ok {
+		return ""
+	}
+	object := stringValue(properties["owner_specified.openstack.object"])
+	if object == "" {
+		return ""
+	}
+	object = strings.TrimRight(object, "/")
+	if index := strings.LastIndex(object, "/"); index >= 0 && index < len(object)-1 {
+		return object[index+1:]
+	}
+	return object
 }
 
 func serverFlavor(flavor map[string]any, flavorNames map[string]string) any {
@@ -20386,15 +20477,15 @@ func waitForServerStatus(ctx context.Context, stdout io.Writer, opts *Options, c
 	prettyProgress := 0.0
 	prettyProgressLineOpen := false
 	for {
-		item, err := servers.Get(ctx, client, serverID).Extract()
+		raw, err := computeServerRaw(ctx, client, serverID)
 		if err != nil {
 			if prettyProgressLineOpen {
 				_ = finishPrettyProgressLine(stdout)
 			}
 			return err
 		}
-		status := strings.ToUpper(item.Status)
-		if target[status] {
+		status := strings.ToUpper(stringValue(raw["status"]))
+		if target[status] && serverRawTaskStateCleared(raw) {
 			if prettyOutput(opts) {
 				_ = renderPrettyProgressAnimated(stdout, opts, "Complete", prettyProgress, 1, true)
 			}
@@ -20404,7 +20495,7 @@ func waitForServerStatus(ctx context.Context, stdout io.Writer, opts *Options, c
 			if prettyProgressLineOpen {
 				_ = finishPrettyProgressLine(stdout)
 			}
-			return fmt.Errorf("server %s entered %s status", serverID, item.Status)
+			return fmt.Errorf("server %s entered %s status", serverID, status)
 		}
 		if time.Now().After(deadline) {
 			if prettyProgressLineOpen {
@@ -20414,7 +20505,8 @@ func waitForServerStatus(ctx context.Context, stdout io.Writer, opts *Options, c
 		}
 		if prettyOutput(opts) {
 			previousProgress := prettyProgress
-			prettyProgress = nextPrettyWaitProgress(item.Progress, prettyProgress)
+			progress, _ := intFromAny(raw["progress"])
+			prettyProgress = nextPrettyWaitProgress(progress, prettyProgress)
 			_ = renderPrettyProgressAnimated(stdout, opts, actionLabel, previousProgress, prettyProgress, false)
 			prettyProgressLineOpen = true
 		}
@@ -20427,6 +20519,11 @@ func waitForServerStatus(ctx context.Context, stdout io.Writer, opts *Options, c
 		case <-time.After(serverStatusPollInterval):
 		}
 	}
+}
+
+func serverRawTaskStateCleared(raw map[string]any) bool {
+	value, ok := raw["OS-EXT-STS:task_state"]
+	return !ok || emptyServerShowValue(value)
 }
 
 func nextPrettyWaitProgress(reportedPercent int, current float64) float64 {

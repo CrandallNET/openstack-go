@@ -535,6 +535,77 @@ func TestPrettyShowFormatsStructsAsStructuredBlocks(t *testing.T) {
 	}
 }
 
+func TestServerImageShowValueRendersOSCDisplayString(t *testing.T) {
+	imageID := "da8beb8e-7301-49a3-b952-ebde206f9a0b"
+	display := "cirros (" + imageID + ")"
+	value := serverImageShowValue(map[string]any{
+		"id": imageID,
+		"properties": map[string]any{
+			"owner_specified.openstack.object": "images/cirros",
+		},
+	})
+	if got := valueString(value); got != display {
+		t.Fatalf("server image table display mismatch: got %q want %q", got, display)
+	}
+
+	var stdout bytes.Buffer
+	err := renderShowOutput(&stdout, &Options{Format: "json"}, []outputField{{Name: "image", Value: value}})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	var decoded map[string]string
+	if err := json.Unmarshal(stdout.Bytes(), &decoded); err != nil {
+		t.Fatalf("expected image output to decode as JSON object, got %v:\n%s", err, stdout.String())
+	}
+	if got := decoded["image"]; got != display {
+		t.Fatalf("server image JSON display mismatch: got %q want %q", got, display)
+	}
+}
+
+func TestServerShowTableValuesMatchOSCRepresentations(t *testing.T) {
+	groupID := "f3adc01c-13d6-4087-bf56-3f2b9c22fd10"
+	cases := []struct {
+		name  string
+		value any
+		want  string
+	}{
+		{
+			name:  "properties",
+			value: serverPropertyTableValue(map[string]any{"golang_osc_test": "golang-osc-test"}),
+			want:  "golang_osc_test='golang-osc-test'",
+		},
+		{
+			name:  "scheduler_hints",
+			value: serverSchedulerHintsTableValue(map[string]any{"group": []any{groupID}}),
+			want:  "group=" + groupID,
+		},
+		{
+			name:  "server_groups",
+			value: serverPythonListTableValue([]any{groupID}),
+			want:  "['" + groupID + "']",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := valueString(tc.value); got != tc.want {
+				t.Fatalf("%s table value mismatch: got %q want %q", tc.name, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestServerRawTaskStateMustClearForWaitCompletion(t *testing.T) {
+	if serverRawTaskStateCleared(map[string]any{"OS-EXT-STS:task_state": "shelving_offloading"}) {
+		t.Fatalf("expected non-empty task_state to keep server wait open")
+	}
+	if !serverRawTaskStateCleared(map[string]any{"OS-EXT-STS:task_state": nil}) {
+		t.Fatalf("expected nil task_state to complete server wait")
+	}
+	if !serverRawTaskStateCleared(map[string]any{}) {
+		t.Fatalf("expected missing task_state to complete server wait")
+	}
+}
+
 func TestPrettyStructuredObjectListsAvoidStandaloneMarkers(t *testing.T) {
 	text, ok := prettyStructuredString([]map[string]any{{
 		"attachment_id": "1f7222ef-c386-4523-9788-eb62f293e883",
@@ -1305,6 +1376,26 @@ func TestPrettyPaletteColorsDomainValues(t *testing.T) {
 	}
 }
 
+func TestPrettyStatusColorsComputeLifecycleStates(t *testing.T) {
+	cases := []struct {
+		status string
+		want   string
+	}{
+		{status: "ACTIVE", want: prettyBooleanTrueStyle.Render("ACTIVE")},
+		{status: "SHELVING_OFFLOADING", want: prettyWarningStyle.Render("SHELVING_OFFLOADING")},
+		{status: "unshelving", want: prettyWarningStyle.Render("unshelving")},
+		{status: "SHELVED", want: prettyErrorStyle.Render("SHELVED")},
+		{status: "SHELVED_OFFLOADED", want: prettyErrorStyle.Render("SHELVED_OFFLOADED")},
+		{status: "PAUSED", want: prettyErrorStyle.Render("PAUSED")},
+		{status: "RESCUE", want: prettyErrorStyle.Render("RESCUE")},
+	}
+	for _, tc := range cases {
+		if got := prettyColorizeByName("Status", tc.status); got != tc.want {
+			t.Fatalf("expected status %q color mismatch: got %q want %q", tc.status, got, tc.want)
+		}
+	}
+}
+
 func TestPrettyValueStylesAreNotBoldExceptLabels(t *testing.T) {
 	values := []string{
 		prettyBooleanFalseStyle.Render("False"),
@@ -1649,6 +1740,128 @@ func TestOpenStackFaultMessageFormatsFlatGlanceError(t *testing.T) {
 	if got, want := openStackFaultMessage(body), "404 Not Found: Caching via API is not supported at this site."; got != want {
 		t.Fatalf("fault message mismatch: got %q want %q", got, want)
 	}
+}
+
+func TestQuotaVolumeTypeFieldsFollowVolumeTypeOrder(t *testing.T) {
+	fields := quotaVolumeTypeFields(map[string]any{
+		"volumes_LVM":          -1,
+		"gigabytes_LVM":        -1,
+		"snapshots_LVM":        -1,
+		"volumes_debug":        -1,
+		"gigabytes_debug":      -1,
+		"snapshots_debug":      -1,
+		"volumes_alpha":        -1,
+		"gigabytes_alpha":      -1,
+		"snapshots_alpha":      -1,
+		"volumes_incomplete":   -1,
+		"gigabytes_incomplete": -1,
+	}, []string{"debug", "LVM"})
+	got := make([]string, 0, len(fields))
+	for _, field := range fields {
+		got = append(got, field.Name)
+	}
+	want := []string{
+		"volumes_debug",
+		"gigabytes_debug",
+		"snapshots_debug",
+		"volumes_LVM",
+		"gigabytes_LVM",
+		"snapshots_LVM",
+		"volumes_alpha",
+		"gigabytes_alpha",
+		"snapshots_alpha",
+		"volumes_incomplete",
+		"gigabytes_incomplete",
+	}
+	if strings.Join(got, "|") != strings.Join(want, "|") {
+		t.Fatalf("volume type quota field order mismatch: got %#v want %#v", got, want)
+	}
+}
+
+func TestAggregateQuotaShowRowsMatchesOSCServiceMergeOrder(t *testing.T) {
+	computeRows := []outputRow{
+		{"Resource": "cores", "Limit": 20},
+		{"Resource": "instances", "Limit": 10},
+		{"Resource": "ram", "Limit": 51200},
+		{"Resource": "fixed_ips", "Limit": nil},
+		{"Resource": "floating_ips", "Limit": nil},
+		{"Resource": "networks", "Limit": nil},
+		{"Resource": "security_group_rules", "Limit": nil},
+		{"Resource": "security_groups", "Limit": nil},
+		{"Resource": "injected-file-size", "Limit": 10240},
+		{"Resource": "injected-path-size", "Limit": 255},
+		{"Resource": "injected-files", "Limit": 5},
+		{"Resource": "key-pairs", "Limit": 100},
+		{"Resource": "properties", "Limit": 128},
+		{"Resource": "server-group-members", "Limit": 10},
+		{"Resource": "server-groups", "Limit": 10},
+	}
+	volumeRows := []outputRow{
+		{"Resource": "volumes", "Limit": 10},
+		{"Resource": "snapshots", "Limit": 10},
+		{"Resource": "gigabytes", "Limit": 1000},
+		{"Resource": "backups", "Limit": 10},
+		{"Resource": "volumes_LVM", "Limit": -1},
+		{"Resource": "gigabytes_LVM", "Limit": -1},
+		{"Resource": "snapshots_LVM", "Limit": -1},
+		{"Resource": "groups", "Limit": 10},
+		{"Resource": "backup-gigabytes", "Limit": 1000},
+		{"Resource": "per-volume-gigabytes", "Limit": -1},
+	}
+	networkRows := []outputRow{
+		{"Resource": "check_limit", "Limit": nil},
+		{"Resource": "networks", "Limit": 100},
+		{"Resource": "ports", "Limit": 500},
+		{"Resource": "floating-ips", "Limit": 50},
+		{"Resource": "secgroup-rules", "Limit": 100},
+		{"Resource": "secgroups", "Limit": 10},
+	}
+
+	rows := aggregateQuotaShowRows(computeRows, volumeRows, networkRows)
+	got := quotaResourceNames(rows)
+	want := []string{
+		"cores",
+		"instances",
+		"ram",
+		"fixed_ips",
+		"networks",
+		"volumes",
+		"snapshots",
+		"gigabytes",
+		"backups",
+		"volumes_LVM",
+		"gigabytes_LVM",
+		"snapshots_LVM",
+		"groups",
+		"check_limit",
+		"ports",
+		"injected-file-size",
+		"injected-path-size",
+		"injected-files",
+		"key-pairs",
+		"properties",
+		"server-group-members",
+		"server-groups",
+		"floating-ips",
+		"secgroup-rules",
+		"secgroups",
+		"backup-gigabytes",
+		"per-volume-gigabytes",
+	}
+	if strings.Join(got, "|") != strings.Join(want, "|") {
+		t.Fatalf("quota aggregate order mismatch: got %#v want %#v", got, want)
+	}
+	if rows[4]["Limit"] != 100 {
+		t.Fatalf("expected Neutron networks limit to replace Nova placeholder, got %#v", rows[4]["Limit"])
+	}
+}
+
+func quotaResourceNames(rows []outputRow) []string {
+	names := make([]string, 0, len(rows))
+	for _, row := range rows {
+		names = append(names, valueString(row["Resource"]))
+	}
+	return names
 }
 
 func TestServerMigrationListColumnsMatchMicroversion(t *testing.T) {

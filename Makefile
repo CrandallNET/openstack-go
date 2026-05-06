@@ -61,12 +61,20 @@ discover-cloud: ## Discover non-secret live cloud capabilities; set CLOUD=name[,
 	$(GO) run ./tools/cloud-discovery --cloud "$(CLOUD)"
 
 .PHONY: lifecycle-smoke
-lifecycle-smoke: ## Run a lifecycle smoke test; set CLOUD=name and optionally SUITE=keypair|volume.
+lifecycle-smoke: ## Run a lifecycle smoke test; set CLOUD=name and optionally SUITE=keypair|server|volume|quota.
 	$(GO) run ./tools/lifecycle-smoke --cloud "$(CLOUD)" --suite "$(or $(SUITE),keypair)"
+
+.PHONY: server-lifecycle
+server-lifecycle: ## Run the Compute server disposable lifecycle suite; set CLOUD=name.
+	$(GO) run ./tools/lifecycle-smoke --cloud "$(CLOUD)" --suite server
 
 .PHONY: volume-lifecycle
 volume-lifecycle: ## Run the Volume v3 disposable lifecycle suite; set CLOUD=name.
 	$(GO) run ./tools/lifecycle-smoke --cloud "$(CLOUD)" --suite volume
+
+.PHONY: quota-lifecycle
+quota-lifecycle: ## Run the quota lifecycle suite against a dedicated test project; set CLOUD=name.
+	$(GO) run ./tools/lifecycle-smoke --cloud "$(CLOUD)" --suite quota
 
 .PHONY: os-test
 os-test: ## Display supported Fancy operating-system image colors.

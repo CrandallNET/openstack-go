@@ -392,12 +392,15 @@ func newCommandEntry(group string, command string) commandEntry {
 			entry.Notes = "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion."
 		}
 		if command == "quota delete" || command == "quota set" {
-			entry.Notes = "Initial shim-backed quota mutation implementation. Live mutation is intentionally deferred until a dedicated test project can capture defaults, mutate only test-owned quota values, reset, and retain diagnostics."
+			entry.Tests = []string{"unit: command registry", "live: cloud6 quota lifecycle smoke", "compat-live: cloud6 quota show JSON oracle before and after reset"}
+			entry.Notes = "Shim-backed quota mutation implementation. cloud6 quota lifecycle creates a dedicated test project, mutates only that project's Compute, Volume, and Network quotas, resets each service, verifies aggregate quota show JSON against the Python oracle, and deletes the test project."
 		}
 		if coreCloudVerified()[command] {
 			entry.Status = "cloud-verified"
 			if coreWriteCommands()[command] {
-				entry.Tests = append(entry.Tests, "live: configured cloud lifecycle smoke")
+				if !hasTest(entry.Tests, "live: cloud6 quota lifecycle smoke") {
+					entry.Tests = append(entry.Tests, "live: configured cloud lifecycle smoke")
+				}
 			} else {
 				entry.Tests = append(entry.Tests, "live: configured cloud read smoke")
 			}
@@ -446,8 +449,8 @@ func newCommandEntry(group string, command string) commandEntry {
 			entry.Notes = "Implemented with Gophercloud backup calls. Disposable live verification requires cinder-backup; cloud6 reports cinder-backup down, so the volume lifecycle suite records these commands as skipped there."
 		}
 		if strings.HasPrefix(command, "volume attachment ") && command != "volume attachment list" && command != "volume attachment show" {
-			entry.Tests = []string{"unit: command registry"}
-			entry.Notes = "Implemented with Gophercloud attachment calls. Live mutation verification needs a dedicated disposable server fixture so the suite never mutates an existing server attachment."
+			entry.Tests = []string{"unit: command registry", "live: cloud6 volume lifecycle smoke"}
+			entry.Notes = "Implemented with Gophercloud attachment calls. cloud6 volume lifecycle now creates a disposable server and disposable volume, exercises attachment create/show/list/set/complete/delete where the cloud accepts the step, and cleans up only test-created resources."
 		}
 		if command == "block storage cleanup" ||
 			command == "block storage cluster set" ||
@@ -476,6 +479,15 @@ func newCommandEntry(group string, command string) commandEntry {
 		}
 	}
 	return entry
+}
+
+func hasTest(tests []string, value string) bool {
+	for _, test := range tests {
+		if test == value {
+			return true
+		}
+	}
+	return false
 }
 
 func identityReadPackages() map[string]string {
@@ -1164,7 +1176,9 @@ func coreCloudVerified() map[string]bool {
 		"port set":                               true,
 		"port show":                              true,
 		"port unset":                             true,
+		"quota delete":                           true,
 		"quota list":                             true,
+		"quota set":                              true,
 		"quota show":                             true,
 		"resource class list":                    true,
 		"resource class show":                    true,
@@ -1198,15 +1212,42 @@ func coreCloudVerified() map[string]bool {
 		"security group rule delete":             true,
 		"security group rule list":               true,
 		"security group rule show":               true,
+		"server add network":                     true,
+		"server add port":                        true,
+		"server add security group":              true,
+		"server add volume":                      true,
+		"server create":                          true,
+		"server delete":                          true,
 		"server event list":                      true,
 		"server event show":                      true,
 		"server group create":                    true,
 		"server group delete":                    true,
+		"server group show":                      true,
+		"server lock":                            true,
+		"server pause":                           true,
+		"server reboot":                          true,
+		"server rebuild":                         true,
+		"server remove network":                  true,
+		"server remove port":                     true,
+		"server remove security group":           true,
+		"server remove volume":                   true,
+		"server rescue":                          true,
+		"server resume":                          true,
+		"server set":                             true,
+		"server shelve":                          true,
+		"server start":                           true,
+		"server stop":                            true,
+		"server suspend":                         true,
+		"server unlock":                          true,
+		"server unpause":                         true,
+		"server unrescue":                        true,
+		"server unset":                           true,
 		"server list":                            true,
 		"server show":                            true,
 		"server group list":                      true,
-		"server group show":                      true,
 		"server volume list":                     true,
+		"server volume set":                      true,
+		"server volume update":                   true,
 		"server migration list":                  true,
 		"subnet create":                          true,
 		"subnet delete":                          true,
@@ -1225,7 +1266,11 @@ func coreCloudVerified() map[string]bool {
 		"usage list":                             true,
 		"usage show":                             true,
 		"versions show":                          true,
+		"volume attachment complete":             true,
+		"volume attachment create":               true,
+		"volume attachment delete":               true,
 		"volume attachment list":                 true,
+		"volume attachment set":                  true,
 		"volume attachment show":                 true,
 		"volume backend capability show":         true,
 		"volume backend pool list":               true,

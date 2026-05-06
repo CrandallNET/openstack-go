@@ -1583,3 +1583,24 @@ Sources consulted:
 * Local lifecycle suite in `tools/lifecycle-smoke`.
 * Local compatibility harness in `tools/compat-check`.
 * Live `cloud6` data from the configured `clouds.yaml`.
+
+## 2026-05-06: Server, Volume Attachment, Quota Lifecycle Closure
+
+Decision: keep lifecycle suites bounded by the test harness when a CLI wait path can otherwise spend a long time waiting for a cloud state that may never arrive on the current cloud. The production CLI wait behavior remains compatible, but the lifecycle suite should turn cloud-specific no-progress cases into structured skips with cleanup instead of tying up a run for the full internal wait window.
+
+Work done: added `server` and `quota` suites to `tools/lifecycle-smoke`, added `make server-lifecycle` and `make quota-lifecycle`, and extended the existing Volume suite with a disposable server fixture for Cinder attachment mutation tests. The server suite dynamically discovers image, flavor, network, alternate network, alternate flavor, and volume type fixtures; creates only `golang-osc-test-*` resources; validates server create/delete, server group create/delete/show, event list/show, set/unset, lock/unlock, reboot, stop/start, rebuild, pause/unpause, suspend/resume, rescue/unrescue, volume attach/detach/list/set/update, security-group add/remove, port add/remove, and network add/remove where fixtures are available; and records skips for unsafe or cloud-blocked actions.
+
+Quota work: the quota suite creates a dedicated Keystone project, mutates only that project's Compute, Volume, and Network quotas, verifies aggregate `quota show -f json` against the Python oracle before and after reset, resets each service, deletes the test project, and records `quota set --class` and `--default` as intentionally skipped because those paths change default quota-class state rather than only a test-owned project. The aggregate quota renderer now mirrors Python OSC's merged service row order, including Neutron replacing Nova's placeholder `networks` row and Cinder volume-type quotas following live `volume type list` order.
+
+Pretty output update: status colorization now includes Compute lifecycle states such as `SHELVING_OFFLOADING`, `UNSHELVING`, `SHELVED`, and `SHELVED_OFFLOADED`. Transitional states use the warning color; inactive or intervention states such as `SHELVED_OFFLOADED`, `SHELVED`, `PAUSED`, and `RESCUE` use the error color.
+
+Validation: `env OS_CLOUD=cloud6 make server-lifecycle CLOUD=cloud6`, `env OS_CLOUD=cloud6 make volume-lifecycle CLOUD=cloud6`, and `env OS_CLOUD=cloud6 make quota-lifecycle CLOUD=cloud6` passed on the current tree. `go test ./internal/cli`, `go test ./tools/lifecycle-smoke`, `go test ./tools/matrix`, `make build`, and `make matrix` passed. The matrix now reports 594 commands with 57 `golden-matched`, 239 `cloud-verified`, 105 `implemented`, 192 `unknown`, and 1 `blocked` row.
+
+Sources consulted:
+
+* Local Python OSC oracle at `/Users/ken/.local/bin/openstack`.
+* Local Go CLI binary at `./bin/openstack`.
+* Local lifecycle suite in `tools/lifecycle-smoke`.
+* Local matrix generator in `tools/matrix`.
+* Local Python OSC quota source at `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/common/quota.py`.
+* Live `cloud6` data from the configured `clouds.yaml`.
