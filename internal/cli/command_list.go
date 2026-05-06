@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strings"
 
 	"charm.land/bubbles/v2/table"
 	"github.com/crandallnet/golang-osc/compat/osc"
@@ -77,16 +78,70 @@ func renderCommandListTable(stdout io.Writer, opts *Options, rows []osc.CommandG
 }
 
 func renderCommandListPretty(stdout io.Writer, opts *Options, rows []osc.CommandGroup) error {
-	tableRows := make([]table.Row, 0, len(rows))
+	groupedRows := commandListPrettyRows(rows)
+	tableRows := make([]table.Row, 0, len(groupedRows))
+	for _, row := range groupedRows {
+		tableRows = append(tableRows, table.Row{row.CommandGroup, row.Command, row.Subcommands})
+	}
+	columns := []string{"Command Group", "Command", "Subcommands"}
+	return renderPrettyTable(stdout, opts, columns, tableRows, prettyListCellColorizer(columns), prettyListCellContext(columns))
+}
+
+type commandListPrettyRow struct {
+	CommandGroup string
+	Command      string
+	Subcommands  string
+}
+
+func commandListPrettyRows(rows []osc.CommandGroup) []commandListPrettyRow {
+	tableRows := []commandListPrettyRow{}
 	for _, row := range rows {
-		for i, command := range row.Commands {
+		grouped := groupPrettyCommands(row.Commands)
+		for i, command := range grouped {
 			group := ""
 			if i == 0 {
 				group = row.CommandGroup
 			}
-			tableRows = append(tableRows, table.Row{group, command})
+			tableRows = append(tableRows, commandListPrettyRow{
+				CommandGroup: group,
+				Command:      command.Command,
+				Subcommands:  strings.Join(command.Subcommands, "\n"),
+			})
 		}
 	}
-	columns := []string{"Command Group", "Commands"}
-	return renderPrettyTable(stdout, opts, columns, tableRows, prettyListCellColorizer(columns), prettyListCellContext(columns))
+	return tableRows
+}
+
+type prettyCommandGroup struct {
+	Command     string
+	Subcommands []string
+}
+
+func groupPrettyCommands(commands []string) []prettyCommandGroup {
+	ordered := []prettyCommandGroup{}
+	indexes := map[string]int{}
+	for _, command := range commands {
+		root, subcommand := splitPrettyCommand(command)
+		index, ok := indexes[root]
+		if !ok {
+			index = len(ordered)
+			indexes[root] = index
+			ordered = append(ordered, prettyCommandGroup{Command: root})
+		}
+		ordered[index].Subcommands = append(ordered[index].Subcommands, subcommand)
+	}
+	return ordered
+}
+
+func splitPrettyCommand(command string) (string, string) {
+	implementedSuffix := ""
+	if strings.HasSuffix(command, notImplementedSuffix) {
+		command = strings.TrimSuffix(command, notImplementedSuffix)
+		implementedSuffix = notImplementedSuffix
+	}
+	root, subcommand, ok := strings.Cut(command, " ")
+	if !ok {
+		return command, strings.TrimSpace(implementedSuffix)
+	}
+	return root, subcommand + implementedSuffix
 }

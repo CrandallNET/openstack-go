@@ -1654,3 +1654,16 @@ Sources consulted:
 * Local lifecycle suite in `tools/lifecycle-smoke`.
 * Local matrix generator in `tools/matrix`.
 * Live `cloud6` and `flex-dfw` data from the configured `clouds.yaml`.
+
+## 2026-05-06: Pretty Command List Grouping
+
+Decision: keep default `openstack command list` output compatible with Python OSC, but make Pretty mode group related command families into a more scannable table. Pretty now renders `Command Group`, `Command`, and `Subcommands`; command paths are grouped by their first word, so families such as `server`, `network`, `volume`, `image`, and `router` occupy one logical row with multiline subcommands.
+
+Work done: changed only the Pretty renderer path for `command list`. The default table, JSON, and value formats still use the OSC-compatible command list rows. Added unit coverage for grouping behavior and updated the Pretty renderer smoke test.
+
+Validation: `go test ./internal/cli`, `go test ./...`, `make build`, `git diff --check`, `./bin/openstack --pretty command list --group openstack.compute.v2`, `./bin/openstack command list --group openstack.compute.v2`, and `./bin/openstack command list --group openstack.compute.v2 -f json` passed.
+
+Sources consulted:
+
+* Local Go CLI binary at `./bin/openstack`.
+* Local command list renderer in `internal/cli/command_list.go`.

@@ -975,7 +975,7 @@ func TestCommandListPrettyUsesPrettyRenderer(t *testing.T) {
 	if stderr != "" {
 		t.Fatalf("expected empty stderr, got %q", stderr)
 	}
-	for _, want := range []string{"Command Group", "openstack.cli", "command list", "module list"} {
+	for _, want := range []string{"Command Group", "Command", "Subcommands", "openstack.cli", "command", "module", "list"} {
 		if !strings.Contains(stdout, want) {
 			t.Fatalf("pretty command list output missing %q:\n%s", want, stdout)
 		}
