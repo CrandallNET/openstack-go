@@ -1667,3 +1667,16 @@ Sources consulted:
 
 * Local Go CLI binary at `./bin/openstack`.
 * Local command list renderer in `internal/cli/command_list.go`.
+
+## 2026-05-06: Pretty Compact Mode
+
+Decision: add `--compact` and `OS_COMPACT=1` as Go-only Pretty controls. The option is parsed globally but intentionally ignored by non-Pretty output formats so the Python-compatible default table, JSON, value, CSV, YAML, and shell output surfaces do not change.
+
+Work done: added `Options.Compact`, the global `--compact` flag, and `OS_COMPACT` default handling. Pretty table rendering now uses an explicit row-separation mode; normal Pretty keeps row separators, while compact Pretty removes the extra separator rows entirely. Non-TTY Pretty also drops spacer rows in compact mode.
+
+Validation: `go test ./internal/cli` passed after adding tests for `OS_COMPACT`, default-output no-op behavior, and TTY row-separator removal.
+
+Sources consulted:
+
+* Local Pretty renderer in `internal/cli/output.go`.
+* Local parser setup in `internal/cli/root.go`.

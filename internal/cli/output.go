@@ -83,6 +83,14 @@ const (
 	prettyTableRowSeparator
 )
 
+type prettyTableRowSeparation int
+
+const (
+	prettyTableSeparateNone prettyTableRowSeparation = iota
+	prettyTableSeparateSpacer
+	prettyTableSeparateRule
+)
+
 type prettyVolumeValue string
 
 func (value prettyVolumeValue) PrettyString() string {
@@ -292,9 +300,13 @@ func renderPrettyTable(stdout io.Writer, opts *Options, headers []string, rows [
 	termWidth := prettyOutputWidth(stdout, opts, color)
 	columns := prettyTableColumns(headers, rows, termWidth, color)
 	if !color {
-		return renderPrettyBubblesTable(stdout, columns, rows, nil, nil, color)
+		return renderPrettyBubblesTable(stdout, columns, rows, nil, nil, color, opts.Compact)
 	}
-	wrappedRows, rowKinds := prettyWrapRowsWithKinds(rows, columns, colorizer, context, true)
+	separation := prettyTableSeparateRule
+	if opts.Compact {
+		separation = prettyTableSeparateNone
+	}
+	wrappedRows, rowKinds := prettyWrapRowsWithKinds(rows, columns, colorizer, context, separation)
 	model := bubbletable.New(prettyBubbleTableColumns(columns)).
 		WithRows(prettyBubbleTableRows(wrappedRows, len(columns))).
 		WithBaseStyle(bubblelipgloss.NewStyle().
@@ -315,8 +327,12 @@ func renderPrettyTable(stdout io.Writer, opts *Options, headers []string, rows [
 	return err
 }
 
-func renderPrettyBubblesTable(stdout io.Writer, columns []table.Column, rows []table.Row, colorizer prettyCellColorizer, context prettyCellContext, color bool) error {
-	wrappedRows := prettyWrapRows(rows, columns, colorizer, context)
+func renderPrettyBubblesTable(stdout io.Writer, columns []table.Column, rows []table.Row, colorizer prettyCellColorizer, context prettyCellContext, color bool, compact bool) error {
+	separation := prettyTableSeparateSpacer
+	if compact {
+		separation = prettyTableSeparateNone
+	}
+	wrappedRows, _ := prettyWrapRowsWithKinds(rows, columns, colorizer, context, separation)
 	model := table.New(
 		table.WithColumns(columns),
 		table.WithRows(wrappedRows),
@@ -563,11 +579,11 @@ func prettyNaturalWidths(headers []string, rows []table.Row) []int {
 }
 
 func prettyWrapRows(rows []table.Row, columns []table.Column, colorizer prettyCellColorizer, context prettyCellContext) []table.Row {
-	wrappedRows, _ := prettyWrapRowsWithKinds(rows, columns, colorizer, context, false)
+	wrappedRows, _ := prettyWrapRowsWithKinds(rows, columns, colorizer, context, prettyTableSeparateSpacer)
 	return wrappedRows
 }
 
-func prettyWrapRowsWithKinds(rows []table.Row, columns []table.Column, colorizer prettyCellColorizer, context prettyCellContext, useSeparators bool) ([]table.Row, []prettyTableRowKind) {
+func prettyWrapRowsWithKinds(rows []table.Row, columns []table.Column, colorizer prettyCellColorizer, context prettyCellContext, separation prettyTableRowSeparation) ([]table.Row, []prettyTableRowKind) {
 	wrappedRows := make([]table.Row, 0, len(rows)*2)
 	rowKinds := make([]prettyTableRowKind, 0, len(rows)*2)
 	for rowIndex, row := range rows {
@@ -598,9 +614,9 @@ func prettyWrapRowsWithKinds(rows []table.Row, columns []table.Column, colorizer
 			wrappedRows = append(wrappedRows, wrappedRow)
 			rowKinds = append(rowKinds, prettyTableRowContent)
 		}
-		if rowIndex < len(rows)-1 {
+		if rowIndex < len(rows)-1 && separation != prettyTableSeparateNone {
 			wrappedRows = append(wrappedRows, make(table.Row, len(columns)))
-			if useSeparators {
+			if separation == prettyTableSeparateRule {
 				rowKinds = append(rowKinds, prettyTableRowSeparator)
 			} else {
 				rowKinds = append(rowKinds, prettyTableRowSpacer)

@@ -401,6 +401,49 @@ func TestOSPrettyEnvDoesNotOverrideExplicitFormat(t *testing.T) {
 	}
 }
 
+func TestOSCompactEnvCompactsPrettyOutput(t *testing.T) {
+	t.Setenv("OS_PRETTY", "1")
+	t.Setenv("OS_COMPACT", "0")
+	normal, stderr, err := executeForTest("command", "list", "--group", "openstack.compute.v2")
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if stderr != "" {
+		t.Fatalf("expected empty stderr, got %q", stderr)
+	}
+	t.Setenv("OS_COMPACT", "1")
+	compact, stderr, err := executeForTest("command", "list", "--group", "openstack.compute.v2")
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if stderr != "" {
+		t.Fatalf("expected empty stderr, got %q", stderr)
+	}
+	if len(strings.Split(strings.TrimRight(compact, "\n"), "\n")) >= len(strings.Split(strings.TrimRight(normal, "\n"), "\n")) {
+		t.Fatalf("expected OS_COMPACT=1 to reduce Pretty output height\nnormal:\n%s\ncompact:\n%s", normal, compact)
+	}
+}
+
+func TestCompactFlagIsNoopForDefaultOutput(t *testing.T) {
+	normal, stderr, err := executeForTest("command", "list", "--group", "openstack.cli")
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if stderr != "" {
+		t.Fatalf("expected empty stderr, got %q", stderr)
+	}
+	compact, stderr, err := executeForTest("command", "list", "--group", "openstack.cli", "--compact")
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if stderr != "" {
+		t.Fatalf("expected empty stderr, got %q", stderr)
+	}
+	if compact != normal {
+		t.Fatalf("expected --compact to be ignored for default output\nnormal:\n%s\ncompact:\n%s", normal, compact)
+	}
+}
+
 func TestPrettyFlagOverridesExplicitFormat(t *testing.T) {
 	stdout, stderr, err := executeForTest("-f", "json", "--pretty", "configuration", "show")
 	if err != nil {
@@ -666,7 +709,7 @@ func TestPrettyWrapRowsCanMarkSeparatorsBetweenEntries(t *testing.T) {
 		[]table.Column{{Title: "ID", Width: 8}, {Title: "Name", Width: 8}},
 		nil,
 		nil,
-		true,
+		prettyTableSeparateRule,
 	)
 	if len(rows) != 3 {
 		t.Fatalf("expected separator row between pretty entries, got %#v", rows)
@@ -737,6 +780,43 @@ func TestPrettyApplyBubbleTableSeparatorsReplacesMarkedRows(t *testing.T) {
 	}
 	if want := "├────┤"; !strings.Contains(lines[4], want) {
 		t.Fatalf("expected marked spacer to become separator %q, got %q in:\n%s", want, lines[4], got)
+	}
+}
+
+func TestPrettyCompactRemovesTTYRowSeparators(t *testing.T) {
+	t.Setenv("NO_COLOR", "")
+	t.Setenv("CLICOLOR", "1")
+	previousWidth := tableTerminalWidth
+	previousTTY := tableWriterIsTerminal
+	tableTerminalWidth = func(stdout io.Writer) (int, bool) {
+		return 80, true
+	}
+	tableWriterIsTerminal = func(stdout io.Writer) bool {
+		return true
+	}
+	defer func() {
+		tableTerminalWidth = previousWidth
+		tableWriterIsTerminal = previousTTY
+	}()
+
+	var normal bytes.Buffer
+	if err := renderListOutput(&normal, &Options{Format: "pretty"}, []string{"Name", "Status"}, []outputRow{
+		{"Name": "alpha", "Status": "ACTIVE"},
+		{"Name": "beta", "Status": "SHUTOFF"},
+	}); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	var compact bytes.Buffer
+	if err := renderListOutput(&compact, &Options{Format: "pretty", Compact: true}, []string{"Name", "Status"}, []outputRow{
+		{"Name": "alpha", "Status": "ACTIVE"},
+		{"Name": "beta", "Status": "SHUTOFF"},
+	}); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	normalSeparators := strings.Count(stripANSI(normal.String()), "├")
+	compactSeparators := strings.Count(stripANSI(compact.String()), "├")
+	if compactSeparators >= normalSeparators {
+		t.Fatalf("expected compact Pretty output to remove row separators\nnormal:\n%s\ncompact:\n%s", normal.String(), compact.String())
 	}
 }
 
