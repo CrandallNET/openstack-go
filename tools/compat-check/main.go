@@ -49,22 +49,54 @@ type checkResult struct {
 }
 
 var placeholderPattern = regexp.MustCompile(`\{([a-zA-Z0-9_-]+)\}`)
+var isoTimestampPattern = regexp.MustCompile(`\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?`)
+var tableVolatileFields = map[string]*regexp.Regexp{
+	"host_time":         regexp.MustCompile(`(\|\s*host_time\s*\|\s*)[^|]*(\s*\|)`),
+	"last_heartbeat_at": regexp.MustCompile(`(\|\s*last_heartbeat_at\s*\|\s*)[^|]*(\s*\|)`),
+	"load_average":      regexp.MustCompile(`(\|\s*load_average\s*\|\s*)[^|]*(\s*\|)`),
+	"uptime":            regexp.MustCompile(`(\|\s*uptime\s*\|\s*)[^|]*(\s*\|)`),
+}
+var jsonVolatileFields = map[string]*regexp.Regexp{
+	"host_time":         regexp.MustCompile(`("host_time":\s*)"[^"]*"`),
+	"last_heartbeat_at": regexp.MustCompile(`("last_heartbeat_at":\s*)"[^"]*"`),
+	"load_average":      regexp.MustCompile(`("load_average":\s*)"[^"]*"`),
+	"uptime":            regexp.MustCompile(`("uptime":\s*)"[^"]*"`),
+}
 
 var liveFixtureCommands = map[string][]string{
-	"flavor":         {"flavor", "list", "-f", "json"},
-	"floating_ip":    {"floating", "ip", "list", "-f", "json"},
-	"group":          {"group", "list", "-f", "json"},
-	"image":          {"image", "list", "-f", "json"},
-	"keypair":        {"keypair", "list", "-f", "json"},
-	"network":        {"network", "list", "-f", "json"},
-	"port":           {"port", "list", "-f", "json"},
-	"project":        {"project", "list", "-f", "json"},
-	"router":         {"router", "list", "-f", "json"},
-	"security_group": {"security", "group", "list", "-f", "json"},
-	"server":         {"server", "list", "-f", "json"},
-	"subnet":         {"subnet", "list", "-f", "json"},
-	"user":           {"user", "list", "-f", "json"},
-	"volume":         {"volume", "list", "-f", "json"},
+	"aggregate":           {"aggregate", "list", "-f", "json"},
+	"flavor":              {"flavor", "list", "-f", "json"},
+	"floating_ip":         {"floating", "ip", "list", "-f", "json"},
+	"group":               {"group", "list", "-f", "json"},
+	"hypervisor":          {"hypervisor", "list", "-f", "json"},
+	"image":               {"image", "list", "-f", "json"},
+	"ip_availability":     {"ip", "availability", "list", "-f", "json"},
+	"keypair":             {"keypair", "list", "-f", "json"},
+	"network":             {"network", "list", "-f", "json"},
+	"network_agent":       {"network", "agent", "list", "-f", "json"},
+	"port":                {"port", "list", "-f", "json"},
+	"project":             {"project", "list", "-f", "json"},
+	"router":              {"router", "list", "-f", "json"},
+	"security_group":      {"security", "group", "list", "-f", "json"},
+	"security_group_rule": {"security", "group", "rule", "list", "-f", "json"},
+	"server":              {"server", "list", "-f", "json"},
+	"server_group":        {"server", "group", "list", "-f", "json"},
+	"subnet":              {"subnet", "list", "-f", "json"},
+	"subnet_pool":         {"subnet", "pool", "list", "-f", "json"},
+	"user":                {"user", "list", "-f", "json"},
+	"volume":              {"volume", "list", "-f", "json"},
+	"volume_attachment":   {"volume", "attachment", "list", "-f", "json"},
+	"volume_backup":       {"volume", "backup", "list", "-f", "json"},
+	"volume_group":        {"volume", "group", "list", "-f", "json"},
+	"volume_group_type":   {"volume", "group", "type", "list", "-f", "json"},
+	"volume_message":      {"volume", "message", "list", "-f", "json"},
+	"volume_qos":          {"volume", "qos", "list", "-f", "json"},
+	"volume_snapshot":     {"volume", "snapshot", "list", "-f", "json"},
+	"volume_type":         {"volume", "type", "list", "-f", "json"},
+}
+
+var liveFixtureEnv = map[string][]string{
+	"volume_message": {"OS_VOLUME_API_VERSION=3.3"},
 }
 
 func main() {
@@ -120,12 +152,14 @@ func main() {
 		resolver := newFixtureResolver(oraclePath, liveCloud, timeout)
 		for _, command := range splitComma(liveCommands) {
 			args := strings.Fields(command)
-			resolvedArgs, skipReason := resolver.resolveArgs(args)
+			resolvedArgs, fixtureEnv, skipReason := resolver.resolveArgs(args)
+			env := append([]string{"OS_CLOUD=" + liveCloud}, liveCommandEnv(args)...)
+			env = appendUniqueEnv(env, fixtureEnv...)
 			if skipReason != "" {
 				cases = append(cases, checkCase{
 					Name:   "live:" + liveCloud + ":" + command,
 					Args:   args,
-					Env:    []string{"OS_CLOUD=" + liveCloud},
+					Env:    env,
 					Skip:   true,
 					Reason: skipReason,
 				})
@@ -134,7 +168,7 @@ func main() {
 			cases = append(cases, checkCase{
 				Name: "live:" + liveCloud + ":" + command,
 				Args: resolvedArgs,
-				Env:  []string{"OS_CLOUD=" + liveCloud},
+				Env:  env,
 			})
 		}
 	}
@@ -169,6 +203,28 @@ func defaultCases(includeKnownGaps bool) []checkCase {
 		)
 	}
 	return cases
+}
+
+func liveCommandEnv(args []string) []string {
+	if len(args) >= 2 && args[0] == "volume" && args[1] == "message" {
+		return []string{"OS_VOLUME_API_VERSION=3.3"}
+	}
+	return nil
+}
+
+func appendUniqueEnv(env []string, values ...string) []string {
+	seen := make(map[string]bool, len(env)+len(values))
+	for _, item := range env {
+		seen[item] = true
+	}
+	for _, item := range values {
+		if seen[item] {
+			continue
+		}
+		env = append(env, item)
+		seen[item] = true
+	}
+	return env
 }
 
 func splitComma(value string) []string {
@@ -235,8 +291,10 @@ func newFixtureResolver(oraclePath string, cloud string, timeout time.Duration) 
 	}
 }
 
-func (r *fixtureResolver) resolveArgs(args []string) ([]string, string) {
+func (r *fixtureResolver) resolveArgs(args []string) ([]string, []string, string) {
 	resolved := append([]string(nil), args...)
+	env := []string{}
+	seenEnv := map[string]bool{}
 	for index, arg := range resolved {
 		matches := placeholderPattern.FindAllStringSubmatch(arg, -1)
 		for _, match := range matches {
@@ -246,12 +304,18 @@ func (r *fixtureResolver) resolveArgs(args []string) ([]string, string) {
 			name := normalizeFixtureName(match[1])
 			lookup := r.lookup(name)
 			if lookup.Error != "" {
-				return args, lookup.Error
+				return args, env, lookup.Error
+			}
+			for _, item := range liveFixtureEnv[name] {
+				if !seenEnv[item] {
+					env = append(env, item)
+					seenEnv[item] = true
+				}
 			}
 			resolved[index] = strings.ReplaceAll(resolved[index], match[0], lookup.Value)
 		}
 	}
-	return resolved, ""
+	return resolved, env, ""
 }
 
 func normalizeFixtureName(name string) string {
@@ -270,7 +334,8 @@ func (r *fixtureResolver) lookup(name string) fixtureLookup {
 		r.cache[name] = lookup
 		return lookup
 	}
-	result := runCommand(r.timeout, []string{"OS_CLOUD=" + r.cloud}, r.oraclePath, args...)
+	env := append([]string{"OS_CLOUD=" + r.cloud}, liveFixtureEnv[name]...)
+	result := runCommand(r.timeout, env, r.oraclePath, args...)
 	if result.ExitCode != 0 {
 		lookup := fixtureLookup{Error: fmt.Sprintf("fixture {%s} query failed: %s", name, strings.TrimSpace(result.Stderr+result.Stdout))}
 		r.cache[name] = lookup
@@ -293,7 +358,7 @@ func firstFixtureID(jsonText string) (string, error) {
 		return "", err
 	}
 	for _, row := range rows {
-		for _, key := range []string{"ID", "Id", "id", "Name", "name"} {
+		for _, key := range []string{"ID", "Id", "id", "Name", "name", "Network ID", "Volume ID", "Server ID", "Attachment ID", "Agent ID", "Type"} {
 			if value, ok := row[key]; ok {
 				text := strings.TrimSpace(fmt.Sprint(value))
 				if text != "" && text != "<nil>" {
@@ -317,7 +382,7 @@ func runCases(oraclePath string, goBinary string, cases []checkCase, timeout tim
 		}
 		oracle := runCommand(timeout, testCase.Env, oraclePath, testCase.Args...)
 		goResult := runCommand(timeout, testCase.Env, goBinary, testCase.Args...)
-		matched, diff := compareResults(oracle, goResult)
+		matched, diff := compareResults(testCase, oracle, goResult)
 		results = append(results, checkResult{
 			Case:       testCase,
 			Oracle:     oracle,
@@ -370,7 +435,9 @@ func normalizeText(value string) string {
 	return value
 }
 
-func compareResults(oracle commandResult, goResult commandResult) (bool, string) {
+func compareResults(testCase checkCase, oracle commandResult, goResult commandResult) (bool, string) {
+	oracle = normalizeVolatileResult(testCase, oracle)
+	goResult = normalizeVolatileResult(testCase, goResult)
 	if oracle.ExitCode != goResult.ExitCode {
 		return false, fmt.Sprintf("exit code: oracle=%d go=%d", oracle.ExitCode, goResult.ExitCode)
 	}
@@ -381,6 +448,135 @@ func compareResults(oracle commandResult, goResult commandResult) (bool, string)
 		return false, firstDiff("stderr", oracle.Stderr, goResult.Stderr)
 	}
 	return true, ""
+}
+
+func normalizeVolatileResult(testCase checkCase, result commandResult) commandResult {
+	name := testCase.Name
+	if !strings.HasPrefix(name, "live:") {
+		return result
+	}
+	if strings.Contains(name, ":compute service list") || strings.Contains(name, ":volume service list") {
+		result.Stdout = isoTimestampPattern.ReplaceAllString(result.Stdout, "<timestamp>")
+		result.Stdout = sortTableDataRows(result.Stdout)
+		if strings.Contains(name, ":compute service list") {
+			result.Stdout = normalizeJSONListOrder(result.Stdout, []string{"ID", "Binary", "Host", "Zone", "Status", "State", "Updated At"})
+		}
+		if strings.Contains(name, ":volume service list") {
+			result.Stdout = normalizeJSONListOrder(result.Stdout, []string{"Binary", "Host", "Zone", "Status", "State", "Updated At", "Cluster", "Backend State"})
+		}
+	}
+	if strings.Contains(name, ":hypervisor show") {
+		result.Stdout = normalizeTableFields(result.Stdout, []string{"host_time", "load_average", "uptime"})
+		result.Stdout = normalizeJSONFields(result.Stdout, []string{"host_time", "load_average", "uptime"})
+	}
+	if strings.Contains(name, ":network agent show") {
+		result.Stdout = normalizeTableFields(result.Stdout, []string{"last_heartbeat_at"})
+		result.Stdout = normalizeJSONFields(result.Stdout, []string{"last_heartbeat_at"})
+	}
+	return result
+}
+
+func normalizeTableFields(value string, fields []string) string {
+	for _, field := range fields {
+		pattern, ok := tableVolatileFields[field]
+		if !ok {
+			continue
+		}
+		value = pattern.ReplaceAllString(value, "${1}<volatile>${2}")
+	}
+	return value
+}
+
+func normalizeJSONFields(value string, fields []string) string {
+	for _, field := range fields {
+		pattern, ok := jsonVolatileFields[field]
+		if !ok {
+			continue
+		}
+		value = pattern.ReplaceAllString(value, `${1}"<volatile>"`)
+	}
+	return value
+}
+
+func sortTableDataRows(value string) string {
+	lines := strings.Split(value, "\n")
+	borderCount := 0
+	start := -1
+	end := -1
+	for i, line := range lines {
+		if !strings.HasPrefix(line, "+") {
+			continue
+		}
+		borderCount++
+		if borderCount == 2 {
+			start = i + 1
+		}
+		if borderCount == 3 {
+			end = i
+			break
+		}
+	}
+	if start < 0 || end <= start {
+		return value
+	}
+	rows := append([]string(nil), lines[start:end]...)
+	sort.Strings(rows)
+	copy(lines[start:end], rows)
+	return strings.Join(lines, "\n")
+}
+
+func normalizeJSONListOrder(value string, keys []string) string {
+	var rows []map[string]any
+	if err := json.Unmarshal([]byte(value), &rows); err != nil {
+		return value
+	}
+	sort.Slice(rows, func(i int, j int) bool {
+		return jsonSortKey(rows[i], keys) < jsonSortKey(rows[j], keys)
+	})
+	var b strings.Builder
+	b.WriteString("[")
+	if len(rows) > 0 {
+		b.WriteByte('\n')
+	}
+	for i, row := range rows {
+		if i > 0 {
+			b.WriteString(",\n")
+		}
+		b.WriteString("  {\n")
+		written := 0
+		for _, key := range keys {
+			value, ok := row[key]
+			if !ok {
+				continue
+			}
+			if written > 0 {
+				b.WriteString(",\n")
+			}
+			encodedKey, _ := json.Marshal(key)
+			encodedValue, _ := json.Marshal(value)
+			fmt.Fprintf(&b, "    %s: %s", encodedKey, encodedValue)
+			written++
+		}
+		b.WriteString("\n  }")
+	}
+	if len(rows) > 0 {
+		b.WriteByte('\n')
+	}
+	b.WriteString("]")
+	if strings.HasSuffix(value, "\n") {
+		b.WriteByte('\n')
+	}
+	return b.String()
+}
+
+func jsonSortKey(row map[string]any, keys []string) string {
+	parts := make([]string, 0, len(keys))
+	for _, key := range keys {
+		if value, ok := row[key]; ok {
+			parts = append(parts, fmt.Sprint(value))
+		}
+	}
+	return strings.Join(parts, "\x00")
 }
 
 func firstDiff(stream string, oracle string, goValue string) string {

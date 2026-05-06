@@ -1546,3 +1546,20 @@ Sources consulted:
 * Pinned Python OSC oracle at `/Users/ken/.local/bin/openstack`.
 * Local Go CLI binary at `./bin/openstack`.
 * Live `cloud6` fixture data resolved by the Python oracle through `tools/compat-check`.
+
+## 2026-05-05: Expanded Read Parity Fixtures
+
+Decision: treat live fields that change between the Python oracle process and the Go process as comparison-harness volatility, not CLI output differences. The CLI output remains Python-shaped; `tools/compat-check` now normalizes known volatile live fields such as service update timestamps, service-list row order, `hypervisor show` uptime-derived fields, and `network agent show` heartbeat timestamps before comparing default and JSON output.
+
+Work done: added live fixture placeholders for additional Compute, Network, and Volume read commands, including aggregates, hypervisors, IP availability, network agents, security group rules, server groups, subnet pools, volume attachments, backups, groups, group types, messages, QoS specs, snapshots, and volume types. `volume_message` fixture discovery now carries `OS_VOLUME_API_VERSION=3.3`, matching Python OSC's explicit microversion requirement for message commands.
+
+Parity fixes: default empty tables now emit Python OSC's single newline, numeric `json.Number` list columns right-align in table output, network agent `Alive` and `State` values render as `:-)` and `UP`, IP availability subnet rows use Python's compact row-string format, `hypervisor show` follows Python OSC's field set, `hypervisor stats show` emits Python's deprecation warning, `volume type show` includes `access_project_ids` and Python-style properties, `volume attachment show` renders blank detached timestamps and Python-style connection properties, and `volume message show` renders links as Python-style dictionaries while preserving structured JSON.
+
+Validation: the expanded live `cloud6` default-output suite passed with 36 live passes, 0 required failures, 5 fixture skips, and the two existing known static gaps. The matching JSON suite also passed with 36 live passes, 0 required failures, 5 fixture skips, and the same known static gaps. Skipped commands were `aggregate show`, `server group show`, `volume snapshot show`, `subnet pool show`, and `volume qos show` because the Python oracle found no fixture rows on `cloud6` during the run. `make matrix` regenerated `compat/matrix.yaml`, `compat/test-matrix.yaml`, and `compat/test-clouds.yaml`, raising `golden-matched` rows to 50.
+
+Sources consulted:
+
+* Local Python OSC oracle at `/Users/ken/.local/bin/openstack`.
+* Local compatibility harness in `tools/compat-check`.
+* Local matrix generator in `tools/matrix`.
+* Live `cloud6` data from the configured `clouds.yaml`.

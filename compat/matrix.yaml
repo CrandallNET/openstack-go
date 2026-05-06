@@ -247,7 +247,7 @@ commands:
     group: "openstack.compute.v2"
     service: "compute"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/aggregates"
     shim: false
     plugin_scope: false
@@ -255,7 +255,9 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud read smoke"
-    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 default table output"
+      - "compat-live: cloud6 JSON output"
+    notes: "Python-vs-Go default table and JSON output parity recorded against cloud6 with the live compatibility harness. Broader flag and cloud coverage still need completion."
   - command: "aggregate remove host"
     group: "openstack.compute.v2"
     service: "compute"
@@ -651,7 +653,7 @@ commands:
     group: "openstack.compute.v2"
     service: "compute"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/services"
     shim: false
     plugin_scope: false
@@ -659,7 +661,9 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud read smoke"
-    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 default table output"
+      - "compat-live: cloud6 JSON output"
+    notes: "Python-vs-Go default table and JSON output parity recorded against cloud6 with the live compatibility harness. Broader flag and cloud coverage still need completion."
   - command: "compute service set"
     group: "openstack.compute.v2"
     service: "compute"
@@ -1851,7 +1855,7 @@ commands:
     group: "openstack.compute.v2"
     service: "compute"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/hypervisors"
     shim: false
     plugin_scope: false
@@ -1859,12 +1863,14 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud read smoke"
-    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 default table output"
+      - "compat-live: cloud6 JSON output"
+    notes: "Python-vs-Go default table and JSON output parity recorded against cloud6 with the live compatibility harness. Broader flag and cloud coverage still need completion."
   - command: "hypervisor stats show"
     group: "openstack.compute.v2"
     service: "compute"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/hypervisors"
     shim: false
     plugin_scope: false
@@ -1872,7 +1878,9 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud read smoke"
-    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 default table output"
+      - "compat-live: cloud6 JSON output"
+    notes: "Python-vs-Go default table and JSON output parity recorded against cloud6 with the live compatibility harness. Broader flag and cloud coverage still need completion."
   - command: "identity provider create"
     group: "openstack.identity.v3"
     service: "identity"
@@ -2452,7 +2460,7 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/networkipavailabilities"
     shim: false
     plugin_scope: false
@@ -2460,12 +2468,14 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud read smoke"
-    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 default table output"
+      - "compat-live: cloud6 JSON output"
+    notes: "Python-vs-Go default table and JSON output parity recorded against cloud6 with the live compatibility harness. Broader flag and cloud coverage still need completion."
   - command: "ip availability show"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/networkipavailabilities"
     shim: false
     plugin_scope: false
@@ -2473,7 +2483,9 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud read smoke"
-    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 default table output"
+      - "compat-live: cloud6 JSON output"
+    notes: "Python-vs-Go default table and JSON output parity recorded against cloud6 with the live compatibility harness. Broader flag and cloud coverage still need completion."
   - command: "keypair create"
     group: "openstack.compute.v2"
     service: "compute"
@@ -2797,7 +2809,7 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/agents"
     shim: false
     plugin_scope: false
@@ -2805,7 +2817,9 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud read smoke"
-    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 default table output"
+      - "compat-live: cloud6 JSON output"
+    notes: "Python-vs-Go default table and JSON output parity recorded against cloud6 with the live compatibility harness. Broader flag and cloud coverage still need completion."
   - command: "network agent remove network"
     group: "openstack.network.v2"
     service: "network"
@@ -2843,7 +2857,7 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/agents"
     shim: false
     plugin_scope: false
@@ -2851,7 +2865,9 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud read smoke"
-    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 default table output"
+      - "compat-live: cloud6 JSON output"
+    notes: "Python-vs-Go default table and JSON output parity recorded against cloud6 with the live compatibility harness. Broader flag and cloud coverage still need completion."
   - command: "network auto allocated topology create"
     group: "openstack.network.v2"
     service: "network"
@@ -4907,7 +4923,7 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/security/rules"
     shim: false
     plugin_scope: false
@@ -4915,12 +4931,14 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud read smoke"
-    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 default table output"
+      - "compat-live: cloud6 JSON output"
+    notes: "Python-vs-Go default table and JSON output parity recorded against cloud6 with the live compatibility harness. Broader flag and cloud coverage still need completion."
   - command: "security group rule show"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/security/rules"
     shim: false
     plugin_scope: false
@@ -4928,7 +4946,9 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud read smoke"
-    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 default table output"
+      - "compat-live: cloud6 JSON output"
+    notes: "Python-vs-Go default table and JSON output parity recorded against cloud6 with the live compatibility harness. Broader flag and cloud coverage still need completion."
   - command: "security group set"
     group: "openstack.network.v2"
     service: "network"
@@ -5158,7 +5178,7 @@ commands:
     group: "openstack.compute.v2"
     service: "compute"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servergroups"
     shim: false
     plugin_scope: false
@@ -5166,7 +5186,9 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud read smoke"
-    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 default table output"
+      - "compat-live: cloud6 JSON output"
+    notes: "Python-vs-Go default table and JSON output parity recorded against cloud6 with the live compatibility harness. Broader flag and cloud coverage still need completion."
   - command: "server group show"
     group: "openstack.compute.v2"
     service: "compute"
@@ -5881,7 +5903,7 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/subnetpools"
     shim: false
     plugin_scope: false
@@ -5889,7 +5911,9 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud read smoke"
-    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 default table output"
+      - "compat-live: cloud6 JSON output"
+    notes: "Python-vs-Go default table and JSON output parity recorded against cloud6 with the live compatibility harness. Broader flag and cloud coverage still need completion."
   - command: "subnet pool set"
     group: "openstack.network.v2"
     service: "network"
@@ -6404,7 +6428,7 @@ commands:
     group: "openstack.volume.v3"
     service: "volume"
     api: "v3"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/attachments"
     shim: false
     plugin_scope: false
@@ -6412,7 +6436,9 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud read smoke"
-    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 default table output"
+      - "compat-live: cloud6 JSON output"
+    notes: "Python-vs-Go default table and JSON output parity recorded against cloud6 with the live compatibility harness. Broader flag and cloud coverage still need completion."
   - command: "volume attachment set"
     group: "openstack.volume.v3"
     service: "volume"
@@ -6429,7 +6455,7 @@ commands:
     group: "openstack.volume.v3"
     service: "volume"
     api: "v3"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/attachments"
     shim: false
     plugin_scope: false
@@ -6437,7 +6463,9 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud read smoke"
-    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 default table output"
+      - "compat-live: cloud6 JSON output"
+    notes: "Python-vs-Go default table and JSON output parity recorded against cloud6 with the live compatibility harness. Broader flag and cloud coverage still need completion."
   - command: "volume backend capability show"
     group: "openstack.volume.v3"
     service: "volume"
@@ -6454,7 +6482,7 @@ commands:
     group: "openstack.volume.v3"
     service: "volume"
     api: "v3"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/schedulerstats"
     shim: false
     plugin_scope: false
@@ -6462,7 +6490,9 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud read smoke"
-    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 default table output"
+      - "compat-live: cloud6 JSON output"
+    notes: "Python-vs-Go default table and JSON output parity recorded against cloud6 with the live compatibility harness. Broader flag and cloud coverage still need completion."
   - command: "volume backup create"
     group: "openstack.volume.v3"
     service: "volume"
@@ -6491,7 +6521,7 @@ commands:
     group: "openstack.volume.v3"
     service: "volume"
     api: "v3"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/backups"
     shim: false
     plugin_scope: false
@@ -6499,7 +6529,9 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud read smoke"
-    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 default table output"
+      - "compat-live: cloud6 JSON output"
+    notes: "Python-vs-Go default table and JSON output parity recorded against cloud6 with the live compatibility harness. Broader flag and cloud coverage still need completion."
   - command: "volume backup record export"
     group: "openstack.volume.v3"
     service: "volume"
@@ -6636,7 +6668,7 @@ commands:
     group: "openstack.volume.v3"
     service: "volume"
     api: "v3"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "Cinder groups via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
     shim: true
     plugin_scope: false
@@ -6644,7 +6676,9 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud read smoke"
-    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 default table output"
+      - "compat-live: cloud6 JSON output"
+    notes: "Python-vs-Go default table and JSON output parity recorded against cloud6 with the live compatibility harness. Broader flag and cloud coverage still need completion."
   - command: "volume group set"
     group: "openstack.volume.v3"
     service: "volume"
@@ -6746,7 +6780,7 @@ commands:
     group: "openstack.volume.v3"
     service: "volume"
     api: "v3"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "Cinder group_types via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
     shim: true
     plugin_scope: false
@@ -6754,7 +6788,9 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud read smoke"
-    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 default table output"
+      - "compat-live: cloud6 JSON output"
+    notes: "Python-vs-Go default table and JSON output parity recorded against cloud6 with the live compatibility harness. Broader flag and cloud coverage still need completion."
   - command: "volume group type set"
     group: "openstack.volume.v3"
     service: "volume"
@@ -6822,7 +6858,7 @@ commands:
     group: "openstack.volume.v3"
     service: "volume"
     api: "v3"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "Cinder messages via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
     shim: true
     plugin_scope: false
@@ -6830,12 +6866,14 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud read smoke"
-    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 default table output"
+      - "compat-live: cloud6 JSON output"
+    notes: "Python-vs-Go default table and JSON output parity recorded against cloud6 with the live compatibility harness. Broader flag and cloud coverage still need completion."
   - command: "volume message show"
     group: "openstack.volume.v3"
     service: "volume"
     api: "v3"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "Cinder messages via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
     shim: true
     plugin_scope: false
@@ -6843,7 +6881,9 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud read smoke"
-    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 default table output"
+      - "compat-live: cloud6 JSON output"
+    notes: "Python-vs-Go default table and JSON output parity recorded against cloud6 with the live compatibility harness. Broader flag and cloud coverage still need completion."
   - command: "volume migrate"
     group: "openstack.volume.v3"
     service: "volume"
@@ -6908,7 +6948,7 @@ commands:
     group: "openstack.volume.v3"
     service: "volume"
     api: "v3"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/qos"
     shim: false
     plugin_scope: false
@@ -6916,7 +6956,9 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud read smoke"
-    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 default table output"
+      - "compat-live: cloud6 JSON output"
+    notes: "Python-vs-Go default table and JSON output parity recorded against cloud6 with the live compatibility harness. Broader flag and cloud coverage still need completion."
   - command: "volume qos set"
     group: "openstack.volume.v3"
     service: "volume"
@@ -6970,7 +7012,7 @@ commands:
     group: "openstack.volume.v3"
     service: "volume"
     api: "v3"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/services"
     shim: false
     plugin_scope: false
@@ -6978,7 +7020,9 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud read smoke"
-    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 default table output"
+      - "compat-live: cloud6 JSON output"
+    notes: "Python-vs-Go default table and JSON output parity recorded against cloud6 with the live compatibility harness. Broader flag and cloud coverage still need completion."
   - command: "volume service set"
     group: "openstack.volume.v3"
     service: "volume"
@@ -7046,7 +7090,7 @@ commands:
     group: "openstack.volume.v3"
     service: "volume"
     api: "v3"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/snapshots"
     shim: false
     plugin_scope: false
@@ -7054,7 +7098,9 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud read smoke"
-    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 default table output"
+      - "compat-live: cloud6 JSON output"
+    notes: "Python-vs-Go default table and JSON output parity recorded against cloud6 with the live compatibility harness. Broader flag and cloud coverage still need completion."
   - command: "volume snapshot set"
     group: "openstack.volume.v3"
     service: "volume"
@@ -7144,7 +7190,7 @@ commands:
     group: "openstack.volume.v3"
     service: "volume"
     api: "v3"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/transfers"
     shim: false
     plugin_scope: false
@@ -7152,7 +7198,9 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud read smoke"
-    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 default table output"
+      - "compat-live: cloud6 JSON output"
+    notes: "Python-vs-Go default table and JSON output parity recorded against cloud6 with the live compatibility harness. Broader flag and cloud coverage still need completion."
   - command: "volume transfer request show"
     group: "openstack.volume.v3"
     service: "volume"
@@ -7193,7 +7241,7 @@ commands:
     group: "openstack.volume.v3"
     service: "volume"
     api: "v3"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/volumetypes"
     shim: false
     plugin_scope: false
@@ -7201,7 +7249,9 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud read smoke"
-    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 default table output"
+      - "compat-live: cloud6 JSON output"
+    notes: "Python-vs-Go default table and JSON output parity recorded against cloud6 with the live compatibility harness. Broader flag and cloud coverage still need completion."
   - command: "volume type set"
     group: "openstack.volume.v3"
     service: "volume"
@@ -7218,7 +7268,7 @@ commands:
     group: "openstack.volume.v3"
     service: "volume"
     api: "v3"
-    status: "cloud-verified"
+    status: "golden-matched"
     sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/volumetypes"
     shim: false
     plugin_scope: false
@@ -7226,7 +7276,9 @@ commands:
     tests:
       - "unit: command registry"
       - "live: configured cloud read smoke"
-    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion."
+      - "compat-live: cloud6 default table output"
+      - "compat-live: cloud6 JSON output"
+    notes: "Python-vs-Go default table and JSON output parity recorded against cloud6 with the live compatibility harness. Broader flag and cloud coverage still need completion."
   - command: "volume type unset"
     group: "openstack.volume.v3"
     service: "volume"

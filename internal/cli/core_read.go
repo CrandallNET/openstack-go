@@ -16,6 +16,7 @@ import (
 	"net/url"
 	"os"
 	"reflect"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -1095,6 +1096,7 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 			if err != nil {
 				return err
 			}
+			fmt.Fprintln(cmd.ErrOrStderr(), "This command is deprecated.")
 			return hypervisorStatsShow(cmd.Context(), stdout, opts, client)
 		case "limits show":
 			return limitsShow(cmd.Context(), stdout, opts, clients)
@@ -4287,32 +4289,50 @@ func hypervisorShow(ctx context.Context, stdout io.Writer, opts *Options, client
 		return err
 	}
 	uptime, _ := hypervisors.GetUptime(ctx, client, item.ID).Extract()
-	fields := []outputField{
-		{"id", item.ID},
+	uptimeParts := hypervisorUptimeParts{}
+	if uptime != nil {
+		uptimeParts = parseHypervisorUptime(uptime.Uptime)
+	}
+	return renderShowOutput(stdout, opts, []outputField{
+		{"aggregates", []any{}},
+		{"cpu_info", tableValue{Value: map[string]any{}, Table: "None", Pretty: map[string]any{}}},
+		{"host_ip", item.HostIP},
+		{"host_time", uptimeParts.HostTime},
 		{"hypervisor_hostname", item.HypervisorHostname},
 		{"hypervisor_type", item.HypervisorType},
 		{"hypervisor_version", item.HypervisorVersion},
-		{"host_ip", item.HostIP},
-		{"state", item.State},
-		{"status", item.Status},
+		{"id", item.ID},
+		{"load_average", uptimeParts.LoadAverage},
 		{"service_host", item.Service.Host},
 		{"service_id", item.Service.ID},
-		{"vcpus", item.VCPUs},
-		{"vcpus_used", item.VCPUsUsed},
-		{"memory_mb", item.MemoryMB},
-		{"memory_mb_used", item.MemoryMBUsed},
-		{"local_gb", item.LocalGB},
-		{"local_gb_used", item.LocalGBUsed},
-		{"free_disk_gb", item.FreeDiskGB},
-		{"free_ram_mb", item.FreeRamMB},
-		{"running_vms", item.RunningVMs},
-		{"current_workload", item.CurrentWorkload},
-		{"cpu_info", item.CPUInfo},
+		{"state", item.State},
+		{"status", item.Status},
+		{"uptime", uptimeParts.Uptime},
+		{"users", uptimeParts.Users},
+	})
+}
+
+type hypervisorUptimeParts struct {
+	HostTime    string
+	Uptime      string
+	Users       string
+	LoadAverage string
+}
+
+var hypervisorUptimePattern = regexp.MustCompile(`^(\S+)\s+up\s+(.+),\s+(\d+)\s+users?,\s+load average:\s+(.+)$`)
+
+func parseHypervisorUptime(value string) hypervisorUptimeParts {
+	text := strings.TrimSpace(value)
+	matches := hypervisorUptimePattern.FindStringSubmatch(text)
+	if len(matches) != 5 {
+		return hypervisorUptimeParts{Uptime: text}
 	}
-	if uptime != nil {
-		fields = append(fields, outputField{"uptime", uptime.Uptime})
+	return hypervisorUptimeParts{
+		HostTime:    matches[1],
+		Uptime:      matches[2],
+		Users:       matches[3],
+		LoadAverage: matches[4],
 	}
-	return renderShowOutput(stdout, opts, fields)
 }
 
 func hypervisorStatsShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
@@ -7253,8 +7273,8 @@ func networkAgentList(ctx context.Context, stdout io.Writer, opts *Options, clie
 			"Agent Type":        item.AgentType,
 			"Host":              item.Host,
 			"Availability Zone": nilIfEmpty(item.AvailabilityZone),
-			"Alive":             item.Alive,
-			"State":             item.AdminStateUp,
+			"Alive":             agentAliveValue(item.Alive),
+			"State":             adminStateValue(item.AdminStateUp),
 			"Binary":            item.Binary,
 		})
 	}
@@ -7270,12 +7290,12 @@ func networkAgentShow(ctx context.Context, stdout io.Writer, opts *Options, clie
 		return err
 	}
 	return renderShowOutput(stdout, opts, []outputField{
-		{"admin_state_up", item["admin_state_up"]},
+		{"admin_state_up", adminStateValue(item["admin_state_up"])},
 		{"agent_type", item["agent_type"]},
-		{"alive", item["alive"]},
+		{"alive", agentAliveValue(item["alive"])},
 		{"availability_zone", item["availability_zone"]},
 		{"binary", item["binary"]},
-		{"configuration", item["configurations"]},
+		{"configuration", networkAgentConfigurationValue(item["configurations"])},
 		{"created_at", item["created_at"]},
 		{"description", item["description"]},
 		{"ha_state", item["ha_state"]},
@@ -11569,9 +11589,9 @@ func volumeAttachmentShow(ctx context.Context, stdout io.Writer, opts *Options, 
 		{"Instance ID", item.Instance},
 		{"Status", item.Status},
 		{"Attach Mode", item.AttachMode},
-		{"Attached At", valueString(oscTime(item.AttachedAt))},
-		{"Detached At", valueString(oscTime(item.DetachedAt))},
-		{"Properties", item.ConnectionInfo},
+		{"Attached At", attachmentTimeValue(item.AttachedAt)},
+		{"Detached At", attachmentTimeValue(item.DetachedAt)},
+		{"Properties", volumeAttachmentPropertiesValue(item.ConnectionInfo)},
 	})
 }
 
@@ -11692,9 +11712,9 @@ func renderVolumeAttachmentShow(stdout io.Writer, opts *Options, item *bsattachm
 		{"Instance ID", item.Instance},
 		{"Status", item.Status},
 		{"Attach Mode", item.AttachMode},
-		{"Attached At", valueString(oscTime(item.AttachedAt))},
-		{"Detached At", valueString(oscTime(item.DetachedAt))},
-		{"Properties", item.ConnectionInfo},
+		{"Attached At", attachmentTimeValue(item.AttachedAt)},
+		{"Detached At", attachmentTimeValue(item.DetachedAt)},
+		{"Properties", volumeAttachmentPropertiesValue(item.ConnectionInfo)},
 	})
 }
 
@@ -12880,13 +12900,27 @@ func volumeMessageShow(ctx context.Context, stdout io.Writer, opts *Options, cli
 		{"event_id", item.EventID},
 		{"guaranteed_until", item.GuaranteedUntil},
 		{"id", item.ID},
-		{"links", item.Links},
+		{"links", volumeMessageLinksValue(item.Links)},
 		{"message_level", item.MessageLevel},
 		{"request_id", item.RequestID},
 		{"resource_type", item.ResourceType},
 		{"resource_uuid", item.ResourceUUID},
 		{"user_message", item.UserMessage},
 	})
+}
+
+func volumeMessageLinksValue(links []volumeMessageLink) tableValue {
+	values := make([]any, 0, len(links))
+	for _, link := range links {
+		values = append(values, orderedJSONObject{
+			keys: []string{"rel", "href"},
+			values: map[string]any{
+				"rel":  link.Rel,
+				"href": link.Href,
+			},
+		})
+	}
+	return tableValue{Value: values, Table: pythonRepr(values), Pretty: values}
 }
 
 func volumeMessageDelete(ctx context.Context, client *gophercloud.ServiceClient, args []string) error {
@@ -16726,7 +16760,7 @@ func ipAvailabilityShow(ctx context.Context, stdout io.Writer, opts *Options, cl
 		{"network_id", item.NetworkID},
 		{"network_name", item.NetworkName},
 		{"project_id", firstNonEmpty(item.ProjectID, item.TenantID)},
-		{"subnet_ip_availability", ipAvailabilitySubnets(item.SubnetIPAvailabilities)},
+		{"subnet_ip_availability", ipAvailabilitySubnetsValue(item.SubnetIPAvailabilities)},
 		{"total_ips", jsonNumberString(item.TotalIPs)},
 		{"used_ips", jsonNumberString(item.UsedIPs)},
 	})
@@ -16754,6 +16788,23 @@ func ipAvailabilitySubnets(items []networkipavailabilities.SubnetIPAvailability)
 		})
 	}
 	return values
+}
+
+func ipAvailabilitySubnetsValue(items []networkipavailabilities.SubnetIPAvailability) tableValue {
+	values := ipAvailabilitySubnets(items)
+	lines := make([]string, 0, len(values))
+	for _, item := range values {
+		lines = append(lines, fmt.Sprintf(
+			"cidr='%s', ip_version='%s', subnet_id='%s', subnet_name='%s', total_ips='%s', used_ips='%s'",
+			item.CIDR,
+			valueString(item.IPVersion),
+			item.SubnetID,
+			item.SubnetName,
+			valueString(item.TotalIPs),
+			valueString(item.UsedIPs),
+		))
+	}
+	return tableValue{Value: values, Table: strings.Join(lines, "\n"), Pretty: values}
 }
 
 func jsonNumberString(value string) any {
@@ -17231,13 +17282,18 @@ func volumeTypeShow(ctx context.Context, stdout io.Writer, opts *Options, client
 	if err != nil {
 		return err
 	}
+	accessProjectIDs, err := volumeTypeAccessProjectIDs(ctx, client, item)
+	if err != nil {
+		return err
+	}
 	return renderShowOutput(stdout, opts, []outputField{
-		{"id", item.ID},
-		{"name", item.Name},
+		{"access_project_ids", accessProjectIDs},
 		{"description", item.Description},
+		{"id", item.ID},
 		{"is_public", volumeTypeIsPublic(*item)},
-		{"properties", item.ExtraSpecs},
-		{"qos_specs_id", item.QosSpecID},
+		{"name", item.Name},
+		{"properties", volumeTypePropertiesValue(item.ExtraSpecs)},
+		{"qos_specs_id", nilIfEmpty(item.QosSpecID)},
 	})
 }
 
@@ -18855,6 +18911,89 @@ func mapTableValue(value any, emptyTable string) tableValue {
 	return tableValue{Value: values, Table: table, Pretty: values}
 }
 
+func networkAgentConfigurationValue(value any) tableValue {
+	values := mapValueOrEmptyAny(value)
+	if len(values) == 0 {
+		return tableValue{Value: values, Table: "{}", Pretty: values}
+	}
+	keys := []string{
+		"arp_responder_enabled",
+		"baremetal_smartnic",
+		"bridge_mappings",
+		"datapath_type",
+		"devices",
+		"enable_distributed_routing",
+		"extensions",
+		"in_distributed_mode",
+		"integration_bridge",
+		"l2_population",
+		"log_agent_heartbeats",
+		"ovs_capabilities",
+		"ovs_hybrid_plug",
+		"resource_provider_bandwidths",
+		"resource_provider_hypervisors",
+		"resource_provider_inventory_defaults",
+		"resource_provider_packet_processing_inventory_defaults",
+		"resource_provider_packet_processing_with_direction",
+		"resource_provider_packet_processing_without_direction",
+		"tunnel_types",
+		"tunneling_ip",
+		"vhostuser_socket_dir",
+	}
+	jsonValues := make(map[string]any, len(values))
+	tableValues := make(map[string]any, len(values))
+	for key, item := range values {
+		jsonValues[key] = item
+		tableValues[key] = item
+	}
+	if item, ok := tableValues["ovs_capabilities"]; ok {
+		ordered := orderedMapFromKeys(mapValueOrEmptyAny(item), []string{"datapath_types", "iface_types"})
+		jsonValues["ovs_capabilities"] = ordered
+		tableValues["ovs_capabilities"] = ordered
+	}
+	if item, ok := tableValues["resource_provider_hypervisors"]; ok {
+		ordered := orderedMapFromKeys(mapValueOrEmptyAny(item), []string{"rp_tunnelled", "br-ex"})
+		jsonValues["resource_provider_hypervisors"] = ordered
+		tableValues["resource_provider_hypervisors"] = ordered
+	}
+	if item, ok := tableValues["resource_provider_inventory_defaults"]; ok {
+		ordered := networkAgentInventoryDefaultsValue(item)
+		jsonValues["resource_provider_inventory_defaults"] = ordered
+		tableValues["resource_provider_inventory_defaults"] = ordered
+	}
+	if item, ok := tableValues["resource_provider_packet_processing_inventory_defaults"]; ok {
+		ordered := networkAgentInventoryDefaultsValue(item)
+		jsonValues["resource_provider_packet_processing_inventory_defaults"] = ordered
+		tableValues["resource_provider_packet_processing_inventory_defaults"] = ordered
+	}
+	return tableValue{
+		Value:  orderedMapFromKeys(jsonValues, keys),
+		Table:  pythonDictRepr(tableValues, keys),
+		Pretty: values,
+	}
+}
+
+func networkAgentInventoryDefaultsValue(value any) orderedJSONObject {
+	values := mapValueOrEmptyAny(value)
+	if item, ok := values["allocation_ratio"]; ok {
+		if numeric, ok := decimalPythonNumber(item); ok {
+			values["allocation_ratio"] = numeric
+		}
+	}
+	return orderedMapFromKeys(values, []string{"allocation_ratio", "min_unit", "step_size", "reserved"})
+}
+
+func decimalPythonNumber(value any) (json.Number, bool) {
+	switch typed := value.(type) {
+	case float64:
+		return decimalJSONNumber(typed), true
+	case float32:
+		return decimalJSONNumber(float64(typed)), true
+	default:
+		return "", false
+	}
+}
+
 func volumeImageMetadataValue(value any) tableValue {
 	values := mapValueOrEmptyAny(value)
 	keys := []string{"signature_verified", "owner_specified.openstack.md5", "owner_specified.openstack.object", "owner_specified.openstack.sha256", "image_id", "image_name", "checksum", "container_format", "disk_format", "min_disk", "min_ram", "size"}
@@ -18881,6 +19020,93 @@ func flavorPropertiesValue(value any) tableValue {
 		table = ""
 	}
 	return tableValue{Value: values, Table: table, Pretty: values}
+}
+
+func volumeTypePropertiesValue(value map[string]string) tableValue {
+	values := make(map[string]any, len(value))
+	for key, item := range value {
+		values[key] = item
+	}
+	parts := make([]string, 0, len(values))
+	for _, key := range sortedMapKeys(values) {
+		parts = append(parts, fmt.Sprintf("%s='%s'", key, strings.ReplaceAll(valueString(values[key]), "'", "\\'")))
+	}
+	return tableValue{Value: values, Table: strings.Join(parts, ", "), Pretty: values}
+}
+
+func volumeTypeAccessProjectIDs(ctx context.Context, client *gophercloud.ServiceClient, item *volumetypes.VolumeType) (any, error) {
+	if volumeTypeIsPublic(*item) {
+		return nil, nil
+	}
+	page, err := volumetypes.ListAccesses(client, item.ID).AllPages(ctx)
+	if err != nil {
+		return nil, err
+	}
+	accesses, err := volumetypes.ExtractAccesses(page)
+	if err != nil {
+		return nil, err
+	}
+	values := make([]string, 0, len(accesses))
+	for _, access := range accesses {
+		values = append(values, access.ProjectID)
+	}
+	sort.Strings(values)
+	return values, nil
+}
+
+func attachmentTimeValue(value time.Time) tableValue {
+	if value.IsZero() {
+		return tableValue{Value: "", Table: ""}
+	}
+	text := value.UTC().Format("2006-01-02T15:04:05.000000")
+	return tableValue{Value: text, Table: text}
+}
+
+func volumeAttachmentPropertiesValue(value map[string]any) tableValue {
+	jsonKeys := []string{
+		"target_discovered",
+		"target_portal",
+		"target_iqn",
+		"target_lun",
+		"volume_id",
+		"auth_method",
+		"auth_username",
+		"auth_password",
+		"encrypted",
+		"qos_specs",
+		"access_mode",
+		"cacheable",
+		"driver_volume_type",
+		"attachment_id",
+		"enforce_multipath",
+	}
+	tableKeys := sortedMapKeys(value)
+	parts := make([]string, 0, len(tableKeys))
+	for _, key := range tableKeys {
+		item := value[key]
+		if item == nil {
+			parts = append(parts, key+"=")
+			continue
+		}
+		parts = append(parts, fmt.Sprintf("%s='%s'", key, strings.ReplaceAll(attachmentPropertyString(item), "'", "\\'")))
+	}
+	return tableValue{
+		Value:  orderedMapFromKeys(value, jsonKeys),
+		Table:  strings.Join(parts, ", "),
+		Pretty: value,
+	}
+}
+
+func attachmentPropertyString(value any) string {
+	switch typed := value.(type) {
+	case bool:
+		if typed {
+			return "True"
+		}
+		return "False"
+	default:
+		return valueString(value)
+	}
 }
 
 func flavorRxTxValue(value any) any {
@@ -18963,6 +19189,18 @@ func adminStateValue(value any) any {
 			return tableValue{Value: typed, Table: "UP"}
 		}
 		return tableValue{Value: typed, Table: "DOWN"}
+	default:
+		return value
+	}
+}
+
+func agentAliveValue(value any) any {
+	switch typed := value.(type) {
+	case bool:
+		if typed {
+			return tableValue{Value: typed, Table: ":-)"}
+		}
+		return tableValue{Value: typed, Table: "XXX"}
 	default:
 		return value
 	}

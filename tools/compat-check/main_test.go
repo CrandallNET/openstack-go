@@ -8,25 +8,26 @@ import (
 
 func TestCompareResultsRequiresExitStdoutAndStderrParity(t *testing.T) {
 	base := commandResult{Stdout: "out\n", Stderr: "err\n", ExitCode: 2}
-	if matched, diff := compareResults(base, base); !matched || diff != "" {
+	testCase := checkCase{Name: "unit"}
+	if matched, diff := compareResults(testCase, base, base); !matched || diff != "" {
 		t.Fatalf("expected identical results to match, matched=%v diff=%q", matched, diff)
 	}
 
 	changedExit := base
 	changedExit.ExitCode = 1
-	if matched, diff := compareResults(base, changedExit); matched || !strings.Contains(diff, "exit code") {
+	if matched, diff := compareResults(testCase, base, changedExit); matched || !strings.Contains(diff, "exit code") {
 		t.Fatalf("expected exit code mismatch, matched=%v diff=%q", matched, diff)
 	}
 
 	changedStdout := base
 	changedStdout.Stdout = "different\n"
-	if matched, diff := compareResults(base, changedStdout); matched || !strings.Contains(diff, "stdout line 1") {
+	if matched, diff := compareResults(testCase, base, changedStdout); matched || !strings.Contains(diff, "stdout line 1") {
 		t.Fatalf("expected stdout mismatch, matched=%v diff=%q", matched, diff)
 	}
 
 	changedStderr := base
 	changedStderr.Stderr = "different\n"
-	if matched, diff := compareResults(base, changedStderr); matched || !strings.Contains(diff, "stderr line 1") {
+	if matched, diff := compareResults(testCase, base, changedStderr); matched || !strings.Contains(diff, "stderr line 1") {
 		t.Fatalf("expected stderr mismatch, matched=%v diff=%q", matched, diff)
 	}
 }
@@ -48,6 +49,16 @@ func TestSplitCommaTrimsEmptyParts(t *testing.T) {
 	want := []string{"flavor list", "image list", "server list"}
 	if strings.Join(got, "|") != strings.Join(want, "|") {
 		t.Fatalf("split mismatch: got %v want %v", got, want)
+	}
+}
+
+func TestLiveCommandEnvAddsVolumeMessageMicroversion(t *testing.T) {
+	got := liveCommandEnv([]string{"volume", "message", "list"})
+	if strings.Join(got, "|") != "OS_VOLUME_API_VERSION=3.3" {
+		t.Fatalf("unexpected volume message env: %v", got)
+	}
+	if other := liveCommandEnv([]string{"volume", "list"}); len(other) != 0 {
+		t.Fatalf("expected no env for unrelated command, got %v", other)
 	}
 }
 
@@ -92,9 +103,12 @@ func TestFixtureResolverReplacesAliases(t *testing.T) {
 	resolver := &fixtureResolver{cache: map[string]fixtureLookup{
 		"server": {Value: "server-id"},
 	}}
-	args, skip := resolver.resolveArgs([]string{"server", "show", "{server_id}"})
+	args, env, skip := resolver.resolveArgs([]string{"server", "show", "{server_id}"})
 	if skip != "" {
 		t.Fatalf("unexpected skip: %s", skip)
+	}
+	if len(env) != 0 {
+		t.Fatalf("expected no fixture env, got %v", env)
 	}
 	if strings.Join(args, " ") != "server show server-id" {
 		t.Fatalf("resolved args mismatch: %v", args)
@@ -103,7 +117,7 @@ func TestFixtureResolverReplacesAliases(t *testing.T) {
 
 func TestFixtureResolverSkipsUnsupportedPlaceholders(t *testing.T) {
 	resolver := &fixtureResolver{cache: map[string]fixtureLookup{}}
-	_, skip := resolver.resolveArgs([]string{"server", "show", "{unsupported}"})
+	_, _, skip := resolver.resolveArgs([]string{"server", "show", "{unsupported}"})
 	if !strings.Contains(skip, "unsupported live fixture placeholder") {
 		t.Fatalf("expected unsupported placeholder skip, got %q", skip)
 	}

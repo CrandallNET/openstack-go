@@ -36,7 +36,8 @@ func renderTable(stdout io.Writer, opts *Options, headers []string, rows [][]str
 
 func renderTableAligned(stdout io.Writer, opts *Options, headers []string, rows [][]string, alignments []tableAlignment, minWidth int, printEmpty bool) error {
 	if len(rows) == 0 && !printEmpty {
-		return nil
+		_, err := fmt.Fprintln(stdout)
+		return err
 	}
 
 	widths := naturalTableWidths(headers, rows)
