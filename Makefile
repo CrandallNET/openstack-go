@@ -57,14 +57,6 @@ matrix: ## Regenerate compatibility and test matrix artifacts.
 report: ## Print README-ready command compatibility Markdown table.
 	$(GO) run ./tools/matrix --report command-status --report-format readme
 
-.PHONY: compat-static
-compat-static: build ## Run static Python-vs-Go parser, help, completion, and local output checks.
-	$(GO) run ./tools/compat-check
-
-.PHONY: compat-static-all
-compat-static-all: build ## Run static checks plus --help parity for every cataloged command.
-	$(GO) run ./tools/compat-check --all-help
-
 .PHONY: discover
 discover: ## Discover non-secret live cloud capabilities; set CLOUD=name[,name].
 	$(GO) run ./tools/cloud-discovery --cloud "$(CLOUD)"

@@ -1799,3 +1799,11 @@ Decision: start the service-scoped extras migration with the read-only Cinder re
 Work done: added the `internal/plugins/cinderextras` Caddy module, imported it into the CLI binary, and changed the command registry to load implemented extras-module commands from `openstack.commands.extras`. The resource-filter command execution now routes through `runCinderExtras` instead of the core read dispatcher, while continuing to use the same authenticated Gophercloud Block Storage client and Cinder `GET /resource_filters` request.
 
 Validation: focused tests now cover `cinder-extras` module registration, `module list` visibility, `command list` implementation status, and a mocked Cinder endpoint asserting the resource-filter URL and microversion headers. `go test ./...`, `make build`, and `git diff --check` passed. Live Python-vs-Go parity on `cloud6` passed for `block storage resource filter list`, `block storage resource filter list -f json`, `block storage resource filter show volume`, and `block storage resource filter show volume -f json`; the only reported compat-check gaps were the pre-existing root-help ordering gap and intentionally different Go `module list` output.
+
+## 2026-05-07: Remove Compat Make Targets
+
+Decision: remove the hyphenated `compat-static` and `compat-static-all` Make targets. They were thin wrappers around `tools/compat-check` and did not add useful project workflow value. The direct commands remain documented: build `bin/openstack`, then run `go run ./tools/compat-check`, optionally with `--all-help`.
+
+Work done: removed the two Make targets and updated the README and active plan to point at `tools/compat-check` directly. The non-hyphen `compat` target remains because it regenerates compatibility artifacts through `catalog` and `matrix`.
+
+Validation: `make help` no longer lists the removed targets. `go test ./...` and `git diff --check` passed.

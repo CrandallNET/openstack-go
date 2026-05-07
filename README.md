@@ -71,10 +71,11 @@ Run basic smoke checks:
 Run static Python-vs-Go compatibility checks that do not require cloud credentials:
 
 ```sh
-make compat-static
+go build -o bin/openstack ./cmd/openstack
+go run ./tools/compat-check
 ```
 
-This compares the pinned Python OSC oracle with `./bin/openstack` for required parser, help, completion, and local-output cases. It also reports known gaps, such as nondeterministic Python OSC root help and intentionally different Go plugin module reporting, without failing the target. Use `make compat-static-all` to additionally compare `--help` output for every cataloged command.
+This compares the pinned Python OSC oracle with `./bin/openstack` for required parser, help, completion, and local-output cases. It also reports known gaps, such as nondeterministic Python OSC root help and intentionally different Go plugin module reporting, without failing the check. Add `--all-help` to additionally compare `--help` output for every cataloged command.
 
 To compare selected live read commands against the same cloud state:
 
