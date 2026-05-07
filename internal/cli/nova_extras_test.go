@@ -64,6 +64,7 @@ func TestServerSSHHelpListsPureGoPassThroughOptions(t *testing.T) {
 		"Pure Go SSH pass-through options:",
 		"-A                                      enable ssh-agent forwarding",
 		"-o StrictHostKeyChecking=yes|no|ask|accept-new|off",
+		"OS_SSH_USER=<login-name>",
 		"<remote-command> [args ...]",
 	} {
 		if !strings.Contains(stdout, want) {
@@ -73,6 +74,7 @@ func TestServerSSHHelpListsPureGoPassThroughOptions(t *testing.T) {
 }
 
 func TestBuildServerSSHRequestUsesPythonAddressSelection(t *testing.T) {
+	t.Setenv("OS_SSH_USER", "")
 	server := &servers.Server{
 		Name: "vm1",
 		Addresses: map[string]any{
@@ -95,6 +97,46 @@ func TestBuildServerSSHRequestUsesPythonAddressSelection(t *testing.T) {
 		t.Fatalf("address mismatch: got %q want %q", got, want)
 	}
 	if got, want := request.User, "cloud"; got != want {
+		t.Fatalf("user mismatch: got %q want %q", got, want)
+	}
+}
+
+func TestBuildServerSSHRequestUsesOSSSHUser(t *testing.T) {
+	t.Setenv("OS_SSH_USER", "rocky")
+	server := &servers.Server{
+		Name: "vm1",
+		Addresses: map[string]any{
+			"public": []any{
+				map[string]any{"addr": "203.0.113.10", "version": float64(4), "OS-EXT-IPS:type": "floating"},
+			},
+		},
+	}
+	opts := &Options{CommandFlags: map[string]string{}}
+	request, err := buildServerSSHRequest(&bytes.Buffer{}, opts, gophercloud.AuthOptions{Username: "cloud"}, server, []string{"vm1"})
+	if err != nil {
+		t.Fatalf("build server ssh request: %v", err)
+	}
+	if got, want := request.User, "rocky"; got != want {
+		t.Fatalf("user mismatch: got %q want %q", got, want)
+	}
+}
+
+func TestBuildServerSSHRequestPassThroughLoginOverridesOSSSHUser(t *testing.T) {
+	t.Setenv("OS_SSH_USER", "rocky")
+	server := &servers.Server{
+		Name: "vm1",
+		Addresses: map[string]any{
+			"public": []any{
+				map[string]any{"addr": "203.0.113.10", "version": float64(4), "OS-EXT-IPS:type": "floating"},
+			},
+		},
+	}
+	opts := &Options{CommandFlags: map[string]string{}}
+	request, err := buildServerSSHRequest(&bytes.Buffer{}, opts, gophercloud.AuthOptions{Username: "cloud"}, server, []string{"vm1", "-l", "ubuntu"})
+	if err != nil {
+		t.Fatalf("build server ssh request: %v", err)
+	}
+	if got, want := request.User, "ubuntu"; got != want {
 		t.Fatalf("user mismatch: got %q want %q", got, want)
 	}
 }

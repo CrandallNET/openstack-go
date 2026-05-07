@@ -77,6 +77,9 @@ Pure Go SSH pass-through options:
   -o KbdInteractiveAuthentication=yes|no  accepted for compatibility; keyboard-interactive auth is not implemented
   -o LogLevel=<level>                     accepted for compatibility
   <remote-command> [args ...]             execute a remote command instead of an interactive shell
+
+Pure Go SSH defaults:
+  OS_SSH_USER=<login-name>                default SSH login name; overridden by --login, -l, or -o User
 `
 }
 
@@ -167,7 +170,7 @@ func parseServerSSHInvocation(opts *Options, authOptions gophercloud.AuthOptions
 		return serverSSHInvocation{}, fmt.Errorf("server ssh requires <server>")
 	}
 	invocation := serverSSHInvocation{
-		login:                 firstNonEmpty(flagValue(opts, "login"), authOptions.Username, os.Getenv("USER"), os.Getenv("USERNAME")),
+		login:                 firstNonEmpty(flagValue(opts, "login"), os.Getenv("OS_SSH_USER"), authOptions.Username, os.Getenv("USER"), os.Getenv("USERNAME")),
 		port:                  22,
 		addressType:           "public",
 		ipFamilies:            []int{4, 6},

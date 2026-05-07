@@ -1870,3 +1870,9 @@ Decision: keep Python OSC-style public/private/address-type selection when the u
 Reasoning: the pure Go implementation is already a documented local-client compatibility exception because Python OSC shells out to OpenSSH. The fallback is similarly documented as a narrow usability exception for environments where fixed addresses are reachable and floating addresses are not assigned.
 
 Validation: added unit coverage for implicit default fallback, explicit `--public` strict failure, and explicit `--address-type public` strict failure.
+
+## 2026-05-07: Server SSH OS_SSH_USER Default
+
+Decision: `server ssh` reads `OS_SSH_USER` as the default SSH login user. The precedence is explicit `--login`, then `OS_SSH_USER`, then the OpenStack auth username, then local `USER` or `USERNAME`; pass-through `-l` and `-o User=...` are parsed later and still override the default.
+
+Work done: added the environment-variable lookup, documented it in the Go-specific `server ssh --help` section, and added unit coverage for using `OS_SSH_USER` and for pass-through `-l` overriding it.
