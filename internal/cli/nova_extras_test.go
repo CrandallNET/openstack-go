@@ -13,6 +13,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"testing"
@@ -20,6 +21,7 @@ import (
 	"github.com/gophercloud/gophercloud/v2"
 	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servers"
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/agent"
 )
 
 func TestNovaExtrasCommandsAreMarkedImplemented(t *testing.T) {
@@ -321,6 +323,75 @@ func TestRunPureGoSSHSessionExecutesRemoteCommand(t *testing.T) {
 	}
 }
 
+func TestRunPureGoSSHSessionTriesIdentityBeforeAgent(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("test SSH agent socket uses Unix sockets")
+	}
+	clientKeyPath := writeTestSSHPrivateKey(t)
+	clientKeyPEM, err := os.ReadFile(clientKeyPath)
+	if err != nil {
+		t.Fatalf("read client key: %v", err)
+	}
+	clientSigner, err := ssh.ParsePrivateKey(clientKeyPEM)
+	if err != nil {
+		t.Fatalf("parse client key: %v", err)
+	}
+	_, wrongAgentKey, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatalf("generate wrong agent key: %v", err)
+	}
+	agentSocket, closeAgent := startTestAgentSocket(t, wrongAgentKey)
+	defer closeAgent()
+	t.Setenv("SSH_AUTH_SOCK", agentSocket)
+
+	_, hostPrivateKey, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatalf("generate host key: %v", err)
+	}
+	hostSigner, err := ssh.NewSignerFromKey(hostPrivateKey)
+	if err != nil {
+		t.Fatalf("create host signer: %v", err)
+	}
+	config := &ssh.ServerConfig{
+		MaxAuthTries: 1,
+		PublicKeyCallback: func(conn ssh.ConnMetadata, key ssh.PublicKey) (*ssh.Permissions, error) {
+			if bytes.Equal(key.Marshal(), clientSigner.PublicKey().Marshal()) {
+				return nil, nil
+			}
+			return nil, os.ErrPermission
+		},
+	}
+	config.AddHostKey(hostSigner)
+	address, closeServer := startTestSSHServerWithConfig(t, config)
+	defer closeServer()
+	host, portValue, err := net.SplitHostPort(address)
+	if err != nil {
+		t.Fatalf("split listener address: %v", err)
+	}
+	port, err := strconv.Atoi(portValue)
+	if err != nil {
+		t.Fatalf("parse listener port: %v", err)
+	}
+	var stdout bytes.Buffer
+	request := serverSSHRequest{
+		Address:               host,
+		Port:                  port,
+		User:                  "test-user",
+		IdentityFiles:         []string{clientKeyPath},
+		StrictHostKeyChecking: "no",
+		RemoteCommand:         []string{"whoami"},
+		Stdin:                 &bytes.Buffer{},
+		Stdout:                &stdout,
+		Stderr:                &bytes.Buffer{},
+	}
+	if err := runPureGoSSHSession(context.Background(), request); err != nil {
+		t.Fatalf("run pure go ssh session: %v", err)
+	}
+	if got, want := strings.TrimSpace(stdout.String()), "ran: whoami"; got != want {
+		t.Fatalf("stdout mismatch: got %q want %q", got, want)
+	}
+}
+
 func writeTestSSHPrivateKey(t *testing.T) string {
 	t.Helper()
 	_, privateKey, err := ed25519.GenerateKey(rand.Reader)
@@ -336,6 +407,38 @@ func writeTestSSHPrivateKey(t *testing.T) string {
 		t.Fatalf("write client key: %v", err)
 	}
 	return path
+}
+
+func startTestAgentSocket(t *testing.T, privateKey any) (string, func()) {
+	t.Helper()
+	keyring := agent.NewKeyring()
+	if err := keyring.Add(agent.AddedKey{PrivateKey: privateKey, Comment: "wrong-test-agent-key"}); err != nil {
+		t.Fatalf("add key to test agent: %v", err)
+	}
+	dir, err := os.MkdirTemp("/tmp", "gocli-agent-")
+	if err != nil {
+		t.Fatalf("create test SSH agent directory: %v", err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(dir) })
+	socket := filepath.Join(dir, "agent.sock")
+	listener, err := net.Listen("unix", socket)
+	if err != nil {
+		t.Fatalf("listen for test SSH agent: %v", err)
+	}
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		conn, err := listener.Accept()
+		if err != nil {
+			return
+		}
+		defer conn.Close()
+		_ = agent.ServeAgent(keyring, conn)
+	}()
+	return socket, func() {
+		_ = listener.Close()
+		<-done
+	}
 }
 
 func startTestSSHServer(t *testing.T) (string, func()) {
@@ -354,6 +457,11 @@ func startTestSSHServer(t *testing.T) (string, func()) {
 		},
 	}
 	config.AddHostKey(hostSigner)
+	return startTestSSHServerWithConfig(t, config)
+}
+
+func startTestSSHServerWithConfig(t *testing.T, config *ssh.ServerConfig) (string, func()) {
+	t.Helper()
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatalf("listen for test SSH server: %v", err)

@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"crypto/ed25519"
 	"crypto/rand"
+	"crypto/rsa"
 	"encoding/json"
+	"encoding/pem"
 	"flag"
 	"fmt"
 	"os"
@@ -273,6 +275,90 @@ func writePublicKey() (string, func(), error) {
 	}
 	path := file.Name()
 	if _, err := file.Write(ssh.MarshalAuthorizedKey(sshPublicKey)); err != nil {
+		_ = file.Close()
+		_ = os.Remove(path)
+		return "", func() {}, err
+	}
+	if err := file.Close(); err != nil {
+		_ = os.Remove(path)
+		return "", func() {}, err
+	}
+	return path, func() { _ = os.Remove(path) }, nil
+}
+
+func writeSSHKeypair() (publicPath string, privatePath string, authorizedKey string, cleanup func(), err error) {
+	privateKey, err := rsa.GenerateKey(rand.Reader, 3072)
+	if err != nil {
+		return "", "", "", func() {}, err
+	}
+	sshPublicKey, err := ssh.NewPublicKey(&privateKey.PublicKey)
+	if err != nil {
+		return "", "", "", func() {}, err
+	}
+	privateBlock, err := ssh.MarshalPrivateKey(privateKey, "")
+	if err != nil {
+		return "", "", "", func() {}, err
+	}
+
+	publicFile, err := os.CreateTemp("", "golang-osc-ssh-*.pub")
+	if err != nil {
+		return "", "", "", func() {}, err
+	}
+	publicPath = publicFile.Name()
+	cleanup = func() { _ = os.Remove(publicPath) }
+	authorizedKey = strings.TrimSpace(string(ssh.MarshalAuthorizedKey(sshPublicKey)))
+	if _, err := publicFile.WriteString(authorizedKey + "\n"); err != nil {
+		_ = publicFile.Close()
+		cleanup()
+		return "", "", "", func() {}, err
+	}
+	if err := publicFile.Close(); err != nil {
+		cleanup()
+		return "", "", "", func() {}, err
+	}
+
+	privateFile, err := os.CreateTemp("", "golang-osc-ssh-*.key")
+	if err != nil {
+		cleanup()
+		return "", "", "", func() {}, err
+	}
+	privatePath = privateFile.Name()
+	cleanup = func() {
+		_ = os.Remove(publicPath)
+		_ = os.Remove(privatePath)
+	}
+	if err := privateFile.Chmod(0o600); err != nil {
+		_ = privateFile.Close()
+		cleanup()
+		return "", "", "", func() {}, err
+	}
+	if _, err := privateFile.Write(pem.EncodeToMemory(privateBlock)); err != nil {
+		_ = privateFile.Close()
+		cleanup()
+		return "", "", "", func() {}, err
+	}
+	if err := privateFile.Close(); err != nil {
+		cleanup()
+		return "", "", "", func() {}, err
+	}
+	return publicPath, privatePath, authorizedKey, cleanup, nil
+}
+
+func writeServerSSHUserData(user string, authorizedKey string) (string, func(), error) {
+	content := fmt.Sprintf(`#cloud-config
+users:
+  - default
+  - name: %s
+    shell: /bin/bash
+    ssh_authorized_keys:
+      - %s
+`, user, strings.TrimSpace(authorizedKey))
+	file, err := os.CreateTemp("", "golang-osc-user-data-*.yaml")
+	if err != nil {
+		return "", func() {}, err
+	}
+	path := file.Name()
+	if _, err := file.WriteString(content); err != nil {
 		_ = file.Close()
 		_ = os.Remove(path)
 		return "", func() {}, err

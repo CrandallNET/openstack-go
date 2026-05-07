@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -9,6 +10,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"time"
 )
 
 type parityReplacement struct {
@@ -32,12 +34,29 @@ var parityNeutronSegmentationPattern = regexp.MustCompile(`("provider:segmentati
 var parityNeutronStandardAttrPattern = regexp.MustCompile(`("standard_attr_id":\s*)\d+`)
 
 func runOracleCLI(cloud string, extraEnv map[string]string, args ...string) stepResult {
+	return runOracleCLICommand(cloud, extraEnv, 0, args...)
+}
+
+func runOracleCLIWithTimeout(cloud string, extraEnv map[string]string, timeout time.Duration, args ...string) stepResult {
+	return runOracleCLICommand(cloud, extraEnv, timeout, args...)
+}
+
+func runOracleCLICommand(cloud string, extraEnv map[string]string, timeout time.Duration, args ...string) stepResult {
 	oracle := os.Getenv("OSC_ORACLE")
 	if oracle == "" {
 		oracle = "/Users/ken/.local/bin/openstack"
 	}
 	fullArgs := append([]string{"--os-cloud", cloud}, args...)
-	command := exec.Command(oracle, fullArgs...)
+	var command *exec.Cmd
+	var cancel context.CancelFunc
+	var ctx context.Context
+	if timeout > 0 {
+		ctx, cancel = context.WithTimeout(context.Background(), timeout)
+		defer cancel()
+		command = exec.CommandContext(ctx, oracle, fullArgs...)
+	} else {
+		command = exec.Command(oracle, fullArgs...)
+	}
 	command.Env = append(os.Environ(), envMapValues(extraEnv)...)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -53,6 +72,9 @@ func runOracleCLI(cloud string, extraEnv map[string]string, args ...string) step
 	}
 	if err != nil {
 		result.Error = err.Error()
+	}
+	if timeout > 0 && ctx != nil && ctx.Err() == context.DeadlineExceeded {
+		result.Error = fmt.Sprintf("timeout after %s", timeout)
 	}
 	return result
 }

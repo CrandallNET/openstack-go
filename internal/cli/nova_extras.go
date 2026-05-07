@@ -598,16 +598,6 @@ func serverSSHAuthMethods(request serverSSHRequest) ([]ssh.AuthMethod, agent.Age
 	var methods []ssh.AuthMethod
 	var agentClient agent.Agent
 	var closeAgent func()
-	if !request.DisableAgent {
-		if sock := os.Getenv("SSH_AUTH_SOCK"); sock != "" {
-			conn, err := net.Dial("unix", sock)
-			if err == nil {
-				agentClient = agent.NewClient(conn)
-				methods = append(methods, ssh.PublicKeysCallback(agentClient.Signers))
-				closeAgent = func() { _ = conn.Close() }
-			}
-		}
-	}
 	identityFiles := request.IdentityFiles
 	specifiedIdentity := len(identityFiles) > 0
 	if len(identityFiles) == 0 {
@@ -630,6 +620,16 @@ func serverSSHAuthMethods(request serverSSHRequest) ([]ssh.AuthMethod, agent.Age
 			continue
 		}
 		methods = append(methods, ssh.PublicKeys(signer))
+	}
+	if !request.DisableAgent {
+		if sock := os.Getenv("SSH_AUTH_SOCK"); sock != "" {
+			conn, err := net.Dial("unix", sock)
+			if err == nil {
+				agentClient = agent.NewClient(conn)
+				methods = append(methods, ssh.PublicKeysCallback(agentClient.Signers))
+				closeAgent = func() { _ = conn.Close() }
+			}
+		}
 	}
 	return methods, agentClient, closeAgent, nil
 }

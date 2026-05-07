@@ -1876,3 +1876,19 @@ Validation: added unit coverage for implicit default fallback, explicit `--publi
 Decision: `server ssh` reads `OS_SSH_USER` as the default SSH login user. The precedence is explicit `--login`, then `OS_SSH_USER`, then the OpenStack auth username, then local `USER` or `USERNAME`; pass-through `-l` and `-o User=...` are parsed later and still override the default.
 
 Work done: added the environment-variable lookup, documented it in the Go-specific `server ssh --help` section, and added unit coverage for using `OS_SSH_USER` and for pass-through `-l` overriding it.
+
+## 2026-05-07: Server SSH Live Lifecycle Validation
+
+Decision: validate `server ssh` in the server lifecycle with a disposable cloud-init user and key instead of relying on whatever default user and key behavior a cloud image happens to expose. The lifecycle creates a temporary RSA SSH keypair, imports the public key as a Nova keypair, sends user-data that creates a `gocli` account with the same key, creates a temporary SSH security group, and deletes all test-owned resources during cleanup.
+
+Decision: keep the `cloud6` server lifecycle on the normal metadata path rather than forcing config-drive. The local Rocky images reached cloud-init successfully through the OpenStack metadata datasource, and forcing config-drive did not make SSH key authentication work.
+
+Decision: try explicit identity files before ssh-agent keys in the pure Go SSH client. The live diagnostics showed that Python OSC could authenticate with the same server, username, and private key after the Go client failed. The likely cause was Go trying agent keys first and exhausting server-side authentication attempts before the lifecycle `-i` key was accepted. The lifecycle also passes `-o IdentitiesOnly=yes` for its disposable SSH checks so the test key is the only offered identity.
+
+Experiments:
+
+* A first live fixture selected leftover `golang-osc-test-*` networks and timed out against unreachable addresses. The lifecycle now scores networks and prefers reachable non-test networks such as `os6-lan` on `cloud6`.
+* CirrOS and then Rocky with forced config-drive both failed SSH authentication. The lifecycle now prefers SSH-capable standard images over CirrOS and does not force config-drive.
+* User-data with both Ed25519 and RSA keys reached Nova, but Go SSH still failed until the diagnostic proved Python OSC could run `whoami` with the same RSA key. That isolated the issue to Go-side authentication ordering rather than fixture creation.
+
+Validation: `go test ./internal/cli -run 'TestRunPureGoSSHSession|TestBuildServerSSHRequest|TestServerSSH'`, `go test ./tools/lifecycle-smoke`, `make build`, and `make lifecycle CLOUD=cloud6 SUITE=server` passed. The live lifecycle validates implicit fixed-address fallback for `server ssh`, strict explicit `--public` behavior, and paired Python-vs-Go `server ssh --private` remote-command output against the disposable server.

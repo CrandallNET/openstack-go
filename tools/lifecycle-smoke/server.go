@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 )
@@ -54,15 +55,27 @@ func runServerLifecycle(cloud string, prefix string) (diagnostics lifecycleDiagn
 		return diagnostics, fmt.Errorf("server lifecycle requires image, flavor, and network fixtures")
 	}
 
-	publicKey, cleanupPublicKey, err := writePublicKey()
+	publicKey, privateKey, authorizedKey, cleanupSSHKeypair, err := writeSSHKeypair()
 	if err != nil {
 		return diagnostics, err
 	}
-	defer cleanupPublicKey()
+	defer cleanupSSHKeypair()
+	sshUserDataUser := "gocli"
+	userData, cleanupUserData, err := writeServerSSHUserData(sshUserDataUser, authorizedKey)
+	if err != nil {
+		return diagnostics, err
+	}
+	defer cleanupUserData()
 	keyName := id + "-keypair"
 	run.must("create keypair", "keypair", "create", "--public-key", publicKey, keyName, "-f", "json")
 	diagnostics.Fixtures["keypair_name"] = keyName
+	diagnostics.Fixtures["ssh_public_key_file"] = publicKey
+	diagnostics.Fixtures["ssh_private_key_file"] = privateKey
+	diagnostics.Fixtures["server_ssh_user_data_file"] = userData
+	diagnostics.Fixtures["server_ssh_user_data_user"] = sshUserDataUser
 	run.addCleanup("cleanup keypair", "keypair", "delete", keyName)
+
+	sshSecurityGroup := run.prepareServerSSHSecurityGroup(id)
 
 	serverGroupID := ""
 	group := run.optional("create server group", "server", "group", "create", "--policy", "anti-affinity", id+"-server-group", "-f", "json")
@@ -84,7 +97,11 @@ func runServerLifecycle(cloud string, prefix string) (diagnostics lifecycleDiagn
 		"--key-name", keyName,
 		"--property", "golang_osc_test=" + id,
 		"--description", "golang-osc lifecycle server",
+		"--user-data", userData,
 		"--wait",
+	}
+	if sshSecurityGroup != "" {
+		createArgs = append(createArgs, "--security-group", sshSecurityGroup)
 	}
 	createArgs = append(createArgs, serverName, "-f", "json")
 	created := run.must("create server", createArgs...)
@@ -105,10 +122,13 @@ func runServerLifecycle(cloud string, prefix string) (diagnostics lifecycleDiagn
 		"--key-name", keyName,
 		"--property", "golang_osc_test=" + id,
 		"--description", "golang-osc lifecycle server",
+		"--user-data", userData,
 		"--wait",
-		oracleServerName,
-		"-f", "json",
 	}
+	if sshSecurityGroup != "" {
+		oracleCreateArgs = append(oracleCreateArgs, "--security-group", sshSecurityGroup)
+	}
+	oracleCreateArgs = append(oracleCreateArgs, oracleServerName, "-f", "json")
 	oracleCreated := runOracleCLI(cloud, nil, oracleCreateArgs...)
 	oracleServerID := jsonStringField(oracleCreated.Stdout, "id", "ID")
 	if oracleCreated.ExitCode == 0 && oracleServerID != "" {
@@ -137,6 +157,7 @@ func runServerLifecycle(cloud string, prefix string) (diagnostics lifecycleDiagn
 	run.mustOracle("oracle parity server show json", nil, "server", "show", serverID, "-f", "json")
 	run.mustOracle("oracle parity server show table", nil, "server", "show", serverID)
 	run.eventReadLifecycle(serverID)
+	run.serverSSHLifecycle(serverID, oracleServerID, privateKey, sshSecurityGroup)
 
 	run.mustOraclePair("oracle parity server set output", nil,
 		[]string{"server", "set", "--name", id + "-server-renamed", "--description", "golang-osc lifecycle server updated", "--property", "phase=set", "--tag", "golang-osc-lifecycle", serverID},
@@ -227,6 +248,152 @@ func (run *serverLifecycle) eventReadLifecycle(serverID string) {
 		}
 	}
 	run.skip("show server event", "server event list did not return a request id")
+}
+
+func (run *serverLifecycle) prepareServerSSHSecurityGroup(id string) string {
+	name := id + "-ssh-sg"
+	group := run.optional("create server ssh security group", "security", "group", "create", "--description", "golang-osc lifecycle ssh access", name, "-f", "json")
+	if group.ExitCode != 0 {
+		return ""
+	}
+	run.diagnostics.Fixtures["ssh_security_group_name"] = name
+	run.addCleanup("cleanup server ssh security group", "security", "group", "delete", name)
+	rule := run.optional("create server ssh ingress rule", "security", "group", "rule", "create", "--protocol", "tcp", "--dst-port", "22", "--remote-ip", "0.0.0.0/0", "--description", "golang-osc lifecycle ssh access", name, "-f", "json")
+	if rule.ExitCode != 0 {
+		return ""
+	}
+	ruleID := jsonStringField(rule.Stdout, "id", "ID")
+	if ruleID != "" {
+		run.diagnostics.Fixtures["ssh_security_group_rule_id"] = ruleID
+		run.addCleanup("cleanup server ssh ingress rule", "security", "group", "rule", "delete", ruleID)
+	}
+	return name
+}
+
+func (run *serverLifecycle) serverSSHLifecycle(serverID string, oracleServerID string, privateKey string, sshSecurityGroup string) {
+	if strings.TrimSpace(privateKey) == "" {
+		run.skip("server ssh", "no private key fixture was available")
+		return
+	}
+	if strings.TrimSpace(sshSecurityGroup) == "" {
+		run.skip("server ssh", "no SSH security group fixture was available")
+		return
+	}
+	sshUsers := serverSSHUserCandidatesForImage(run.diagnostics.Fixtures["image_name"])
+	if userDataUser := strings.TrimSpace(run.diagnostics.Fixtures["server_ssh_user_data_user"]); userDataUser != "" {
+		sshUsers = []string{userDataUser}
+	}
+	run.diagnostics.Fixtures["server_ssh_user_candidates"] = strings.Join(sshUsers, ",")
+	sshUser := sshUsers[0]
+	run.diagnostics.Fixtures["server_ssh_user"] = sshUser
+	defaultResult, sshUser, ok := run.waitServerSSHUserCandidates("validate server ssh default fixed-address fallback", serverID, privateKey, sshUsers, 5*time.Minute)
+	if !ok {
+		run.captureServerSSHDiagnostics(serverID, privateKey, sshUser)
+		_ = run.cleanupAll()
+		panic(serverLifecycleFailure{name: "validate server ssh default fixed-address fallback"})
+	}
+	run.diagnostics.Fixtures["server_ssh_user"] = sshUser
+	defaultEnv := map[string]string{"OS_SSH_USER": sshUser}
+
+	explicitPublic := run.runWithEnv("validate server ssh explicit public remains strict", defaultEnv, append([]string{"server", "ssh", "--public", serverID}, serverSSHPassThroughArgs(privateKey, "", "whoami")...)...)
+	if explicitPublic.ExitCode != 0 && !strings.Contains(explicitPublic.Error+"\n"+explicitPublic.Stderr, "No public IP version") {
+		run.captureServerSSHDiagnostics(serverID, privateKey, sshUser)
+		_ = run.cleanupAll()
+		panic(serverLifecycleFailure{name: "validate server ssh explicit public remains strict"})
+	}
+
+	privateGoArgs := append([]string{"server", "ssh", "--private", serverID}, serverSSHPassThroughArgs(privateKey, sshUser, "whoami")...)
+	privateOracleArgs := append([]string{"server", "ssh", "--private", oracleServerID}, serverSSHPassThroughArgs(privateKey, sshUser, "whoami")...)
+	goPrivate, ok := run.waitServerSSH("wait server ssh explicit private", false, nil, privateGoArgs, sshUser, 2*time.Minute)
+	if !ok {
+		run.captureServerSSHDiagnostics(serverID, privateKey, sshUser)
+		_ = run.cleanupAll()
+		panic(serverLifecycleFailure{name: "wait server ssh explicit private"})
+	}
+	oraclePrivate, ok := run.waitServerSSH("wait oracle server ssh explicit private", true, nil, privateOracleArgs, sshUser, 2*time.Minute)
+	if !ok {
+		run.captureServerSSHDiagnostics(oracleServerID, privateKey, sshUser)
+		_ = run.cleanupAll()
+		panic(serverLifecycleFailure{name: "wait oracle server ssh explicit private"})
+	}
+	parity := compareStepResults(goPrivate, oraclePrivate, nil)
+	parity.Name = "oracle parity server ssh private remote command"
+	run.diagnostics.Steps = append(run.diagnostics.Steps, parity)
+	if parity.Error != "" {
+		run.captureServerSSHDiagnostics(serverID, privateKey, sshUser)
+		run.captureServerSSHDiagnostics(oracleServerID, privateKey, sshUser)
+		_ = run.cleanupAll()
+		panic(serverLifecycleFailure{name: "oracle parity server ssh private remote command"})
+	}
+	if strings.TrimSpace(defaultResult.Stdout) != sshUser {
+		run.captureServerSSHDiagnostics(serverID, privateKey, sshUser)
+		_ = run.cleanupAll()
+		panic(serverLifecycleFailure{name: "validate server ssh default remote user"})
+	}
+}
+
+func (run *serverLifecycle) captureServerSSHDiagnostics(serverID string, privateKey string, sshUser string) {
+	if strings.TrimSpace(serverID) == "" {
+		return
+	}
+	run.optional("diagnostic server show after ssh failure", "server", "show", serverID, "-f", "json")
+	run.optional("diagnostic server console log after ssh failure", "console", "log", "show", "--lines", "200", serverID)
+	run.optional("diagnostic server event list after ssh failure", "server", "event", "list", serverID, "-f", "json")
+	if strings.TrimSpace(privateKey) != "" && strings.TrimSpace(sshUser) != "" {
+		oracleArgs := append([]string{"server", "ssh", "--private", serverID}, serverSSHPassThroughArgs(privateKey, sshUser, "whoami")...)
+		result := runOracleCLIWithTimeout(run.cloud, nil, 45*time.Second, oracleArgs...)
+		result.Name = "diagnostic oracle server ssh private after go ssh failure"
+		run.diagnostics.Steps = append(run.diagnostics.Steps, result)
+	}
+}
+
+func serverSSHPassThroughArgs(privateKey string, login string, command string) []string {
+	args := []string{
+		"--",
+		"-i", privateKey,
+		"-o", "StrictHostKeyChecking=no",
+		"-o", "UserKnownHostsFile=/dev/null",
+		"-o", "BatchMode=yes",
+		"-o", "IdentitiesOnly=yes",
+		"-o", "LogLevel=ERROR",
+	}
+	if login != "" {
+		args = append(args, "-l", login)
+	}
+	if command != "" {
+		args = append(args, command)
+	}
+	return args
+}
+
+func serverSSHUserForImage(imageName string) string {
+	return serverSSHUserCandidatesForImage(imageName)[0]
+}
+
+func serverSSHUserCandidatesForImage(imageName string) []string {
+	name := strings.ToLower(imageName)
+	switch {
+	case strings.Contains(name, "cirros"):
+		return []string{"cirros"}
+	case strings.Contains(name, "ubuntu"):
+		return []string{"ubuntu"}
+	case strings.Contains(name, "debian"):
+		return []string{"debian"}
+	case strings.Contains(name, "opensuse"), strings.Contains(name, "suse"), strings.Contains(name, "sles"):
+		return []string{"opensuse"}
+	case strings.Contains(name, "freebsd"):
+		return []string{"freebsd"}
+	case strings.Contains(name, "arch"):
+		return []string{"arch"}
+	case strings.Contains(name, "rocky"):
+		return []string{"rocky", "cloud-user"}
+	case strings.Contains(name, "alma"):
+		return []string{"almalinux", "cloud-user"}
+	case strings.Contains(name, "centos"):
+		return []string{"centos", "cloud-user"}
+	default:
+		return []string{"cloud-user"}
+	}
 }
 
 func (run *serverLifecycle) rebuildLifecycle(serverID string, oracleServerID string, replacements []parityReplacement) {
@@ -726,6 +893,66 @@ func (run *serverLifecycle) waitStatus(name string, args []string, field string,
 	}
 }
 
+func (run *serverLifecycle) waitServerSSH(name string, oracle bool, env map[string]string, args []string, expectedStdout string, timeout time.Duration) (stepResult, bool) {
+	deadline := time.Now().Add(timeout)
+	attempts := 0
+	var last stepResult
+	for {
+		attempts++
+		if oracle {
+			last = runOracleCLI(run.cloud, env, args...)
+		} else {
+			last = runCLIWithEnv(run.cloud, env, args...)
+		}
+		if last.ExitCode == 0 && strings.TrimSpace(last.Stdout) == expectedStdout {
+			last.Name = fmt.Sprintf("%s (attempt %d)", name, attempts)
+			run.diagnostics.Steps = append(run.diagnostics.Steps, last)
+			return last, true
+		}
+		if time.Now().After(deadline) {
+			last.Name = fmt.Sprintf("%s (attempts %d)", name, attempts)
+			run.diagnostics.Steps = append(run.diagnostics.Steps, last)
+			return last, false
+		}
+		time.Sleep(5 * time.Second)
+	}
+}
+
+func (run *serverLifecycle) waitServerSSHUserCandidates(name string, serverID string, privateKey string, users []string, timeout time.Duration) (stepResult, string, bool) {
+	if len(users) == 0 {
+		users = []string{"cloud-user"}
+	}
+	deadline := time.Now().Add(timeout)
+	attempts := 0
+	args := append([]string{"server", "ssh", serverID}, serverSSHPassThroughArgs(privateKey, "", "whoami")...)
+	var last stepResult
+	for {
+		attempts++
+		for index, user := range users {
+			last = runCLIWithEnv(run.cloud, map[string]string{"OS_SSH_USER": user}, args...)
+			if last.ExitCode == 0 && strings.TrimSpace(last.Stdout) == user {
+				last.Name = fmt.Sprintf("%s (user %s, attempt %d)", name, user, attempts)
+				run.diagnostics.Steps = append(run.diagnostics.Steps, last)
+				return last, user, true
+			}
+			if index == 0 && !serverSSHAuthFailed(last) {
+				break
+			}
+		}
+		if time.Now().After(deadline) {
+			last.Name = fmt.Sprintf("%s (attempts %d)", name, attempts)
+			run.diagnostics.Steps = append(run.diagnostics.Steps, last)
+			return last, users[0], false
+		}
+		time.Sleep(5 * time.Second)
+	}
+}
+
+func serverSSHAuthFailed(result stepResult) bool {
+	output := strings.ToLower(result.Error + "\n" + result.Stderr)
+	return strings.Contains(output, "unable to authenticate") || strings.Contains(output, "permission denied")
+}
+
 func serverLifecycleTaskStateCleared(jsonText string) bool {
 	taskState := jsonStringField(jsonText, "OS-EXT-STS:task_state", "task_state")
 	return taskState == "" || strings.EqualFold(taskState, "none")
@@ -749,6 +976,12 @@ func (run *serverLifecycle) mustWaitDeleted(name string, args []string, timeout 
 
 func (run *serverLifecycle) recordImageFixture(jsonText string) {
 	rows := jsonRows(jsonText)
+	type imageCandidate struct {
+		id    string
+		name  string
+		score int
+	}
+	var candidates []imageCandidate
 	for _, row := range rows {
 		status := strings.ToLower(jsonRowString(row, "Status", "status"))
 		name := jsonRowString(row, "Name", "name")
@@ -756,13 +989,14 @@ func (run *serverLifecycle) recordImageFixture(jsonText string) {
 		if id == "" || status != "active" {
 			continue
 		}
-		if run.diagnostics.Fixtures["image_id"] == "" || strings.Contains(strings.ToLower(name), "cirros") {
-			run.diagnostics.Fixtures["image_id"] = id
-			run.diagnostics.Fixtures["image_name"] = name
-			if strings.Contains(strings.ToLower(name), "cirros") {
-				return
-			}
-		}
+		candidates = append(candidates, imageCandidate{id: id, name: name, score: serverLifecycleImageScore(name)})
+	}
+	sort.SliceStable(candidates, func(i int, j int) bool {
+		return candidates[i].score > candidates[j].score
+	})
+	if len(candidates) > 0 {
+		run.diagnostics.Fixtures["image_id"] = candidates[0].id
+		run.diagnostics.Fixtures["image_name"] = candidates[0].name
 	}
 }
 
@@ -793,10 +1027,19 @@ func (run *serverLifecycle) recordFlavorFixtures(jsonText string) {
 			}
 		}
 	}
-	run.diagnostics.Fixtures["flavor_id"] = candidates[0].id
-	run.diagnostics.Fixtures["flavor_name"] = candidates[0].name
-	for _, candidate := range candidates[1:] {
-		if candidate.id != candidates[0].id {
+	selected := candidates[0]
+	if !strings.Contains(strings.ToLower(run.diagnostics.Fixtures["image_name"]), "cirros") {
+		for _, candidate := range candidates {
+			if candidate.ram >= 1024 {
+				selected = candidate
+				break
+			}
+		}
+	}
+	run.diagnostics.Fixtures["flavor_id"] = selected.id
+	run.diagnostics.Fixtures["flavor_name"] = selected.name
+	for _, candidate := range candidates {
+		if candidate.id != selected.id {
 			run.diagnostics.Fixtures["alternate_flavor_id"] = candidate.id
 			run.diagnostics.Fixtures["alternate_flavor_name"] = candidate.name
 			return
@@ -804,23 +1047,51 @@ func (run *serverLifecycle) recordFlavorFixtures(jsonText string) {
 	}
 }
 
+func serverLifecycleImageScore(name string) int {
+	normalized := strings.ToLower(strings.TrimSpace(name))
+	score := 0
+	for _, value := range []string{"rocky", "ubuntu", "debian", "alma", "centos", "rhel", "red hat", "oracle", "fedora"} {
+		if strings.Contains(normalized, value) {
+			score += 100
+			break
+		}
+	}
+	if strings.Contains(normalized, "cirros") {
+		score -= 20
+	}
+	return score
+}
+
 func (run *serverLifecycle) recordNetworkFixtures(jsonText string) {
 	rows := jsonRows(jsonText)
+	type networkCandidate struct {
+		id    string
+		name  string
+		score int
+	}
+	var candidates []networkCandidate
 	for _, row := range rows {
 		id := jsonRowString(row, "ID", "id")
 		name := jsonRowString(row, "Name", "name")
 		if id == "" {
 			continue
 		}
-		if run.diagnostics.Fixtures["network_id"] == "" {
-			run.diagnostics.Fixtures["network_id"] = id
-			run.diagnostics.Fixtures["network_name"] = name
+		candidates = append(candidates, networkCandidate{id: id, name: name, score: serverLifecycleNetworkScore(name)})
+	}
+	sort.SliceStable(candidates, func(i int, j int) bool {
+		return candidates[i].score > candidates[j].score
+	})
+	if len(candidates) > 0 {
+		run.diagnostics.Fixtures["network_id"] = candidates[0].id
+		run.diagnostics.Fixtures["network_name"] = candidates[0].name
+	}
+	for _, candidate := range candidates[1:] {
+		if candidate.id == run.diagnostics.Fixtures["network_id"] {
 			continue
 		}
-		if run.diagnostics.Fixtures["alternate_network_id"] == "" {
-			run.diagnostics.Fixtures["alternate_network_id"] = id
-			run.diagnostics.Fixtures["alternate_network_name"] = name
-		}
+		run.diagnostics.Fixtures["alternate_network_id"] = candidate.id
+		run.diagnostics.Fixtures["alternate_network_name"] = candidate.name
+		break
 	}
 	types := run.optional("preflight volume type list", "volume", "type", "list", "-f", "json")
 	if types.ExitCode == 0 {
@@ -835,6 +1106,30 @@ func (run *serverLifecycle) recordNetworkFixtures(jsonText string) {
 			}
 		}
 	}
+}
+
+func serverLifecycleNetworkScore(name string) int {
+	normalized := strings.ToLower(strings.TrimSpace(name))
+	score := 0
+	if normalized == "os6-lan" {
+		score += 100
+	}
+	if strings.Contains(normalized, "lan") {
+		score += 40
+	}
+	if strings.Contains(normalized, "private") || strings.Contains(normalized, "internal") {
+		score += 30
+	}
+	if strings.Contains(normalized, "testnet") {
+		score += 10
+	}
+	if strings.HasPrefix(normalized, "golang-osc-test-") {
+		score -= 100
+	}
+	if strings.Contains(normalized, "oracle") {
+		score -= 10
+	}
+	return score
 }
 
 type serverLifecycleFailure struct {
