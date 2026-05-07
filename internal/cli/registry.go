@@ -257,6 +257,9 @@ func (r *commandRegistry) configureLeaf(cmd *cobra.Command, path string) {
 	cmd.SetHelpFunc(func(command *cobra.Command, args []string) {
 		if help, ok, err := osc.Help(path); err == nil && ok {
 			fmt.Fprint(r.stdout, help)
+			if path == "server ssh" {
+				fmt.Fprint(r.stdout, serverSSHPassThroughHelp())
+			}
 			return
 		}
 		_ = command.Parent().Help()

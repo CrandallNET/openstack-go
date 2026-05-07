@@ -1854,3 +1854,11 @@ Sources consulted:
 * Go known_hosts package docs: https://pkg.go.dev/golang.org/x/crypto/ssh/knownhosts.
 * Go ssh-agent package docs: https://pkg.go.dev/golang.org/x/crypto/ssh/agent.
 * Go terminal package docs: https://pkg.go.dev/golang.org/x/term.
+
+## 2026-05-07: Server SSH Pass-Through Help
+
+Decision: keep the Python OSC `server ssh` help snapshot as the first help block, then append a Go-specific pass-through section listing the SSH options that the pure Go client actually supports. This is a deliberate help exception for `server ssh`: Python says any SSH option is accepted because it shells out to OpenSSH, while golang-osc intentionally rejects unsupported OpenSSH options instead of pretending every option is implemented.
+
+Work done: `openstack server ssh --help` now lists the supported pass-through forms after `--`: `-l`, `-p`, `-i`, `-A`, `-a`, `-t`, `-T`, `-v`, supported `-o` keys, and remote command execution. The help also calls out that password and keyboard-interactive auth options are accepted for compatibility but are not implemented by the pure Go client.
+
+Validation: added a unit test that verifies the appended pass-through help section and representative options are present.

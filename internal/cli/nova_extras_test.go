@@ -51,6 +51,27 @@ func TestModuleListIncludesNovaExtras(t *testing.T) {
 	}
 }
 
+func TestServerSSHHelpListsPureGoPassThroughOptions(t *testing.T) {
+	stdout, stderr, err := executeForTest("server", "ssh", "--help")
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if stderr != "" {
+		t.Fatalf("expected empty stderr, got %q", stderr)
+	}
+	for _, want := range []string{
+		"usage: openstack server ssh",
+		"Pure Go SSH pass-through options:",
+		"-A                                      enable ssh-agent forwarding",
+		"-o StrictHostKeyChecking=yes|no|ask|accept-new|off",
+		"<remote-command> [args ...]",
+	} {
+		if !strings.Contains(stdout, want) {
+			t.Fatalf("server ssh help missing %q:\n%s", want, stdout)
+		}
+	}
+}
+
 func TestBuildServerSSHRequestUsesPythonAddressSelection(t *testing.T) {
 	server := &servers.Server{
 		Name: "vm1",

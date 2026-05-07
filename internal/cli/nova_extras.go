@@ -51,6 +51,35 @@ func isNovaExtrasCommand(path string) bool {
 	return path == "server ssh"
 }
 
+func serverSSHPassThroughHelp() string {
+	return `
+Pure Go SSH pass-through options:
+  Pass these after --. Unsupported OpenSSH options return an error instead of
+  being silently ignored.
+
+  -l <login-name>                         SSH login name
+  -p <port>                               SSH port
+  -i <keyfile>                            SSH private key file
+  -A                                      enable ssh-agent forwarding
+  -a                                      disable ssh-agent use and forwarding
+  -t                                      force pseudo-terminal allocation
+  -T                                      disable pseudo-terminal allocation
+  -v, -vv, -vvv                           enable verbose SSH mode
+  -o User=<login-name>                    SSH login name
+  -o Port=<port>                          SSH port
+  -o IdentityFile=<keyfile>               SSH private key file
+  -o StrictHostKeyChecking=yes|no|ask|accept-new|off
+  -o UserKnownHostsFile=<path> [<path>...]
+  -o ForwardAgent=yes|no                  enable or disable agent forwarding
+  -o BatchMode=yes|no                     disable interactive host-key prompt when yes
+  -o IdentitiesOnly=yes|no                restrict authentication to identity files when yes
+  -o PasswordAuthentication=yes|no        accepted for compatibility; password auth is not implemented
+  -o KbdInteractiveAuthentication=yes|no  accepted for compatibility; keyboard-interactive auth is not implemented
+  -o LogLevel=<level>                     accepted for compatibility
+  <remote-command> [args ...]             execute a remote command instead of an interactive shell
+`
+}
+
 func runNovaExtras(path string, stdout io.Writer, opts *Options) commandHandler {
 	return func(cmd *cobra.Command, args []string) error {
 		clients, err := newOpenStackClients(cmd.Context(), opts)
