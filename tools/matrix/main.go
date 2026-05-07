@@ -288,7 +288,7 @@ func commandReportStatus(entry commandEntry) string {
 }
 
 func commandReportSource(entry commandEntry) string {
-	if entry.PluginScope {
+	if entry.PluginScope || strings.HasPrefix(entry.ImplementedIn, "internal/plugins/") {
 		return "plugin"
 	}
 	return "built-in"
@@ -308,6 +308,9 @@ func commandReportNote(entry commandEntry) string {
 	}
 	if entry.PluginScope {
 		notes = append(notes, "Plugin-scoped command.")
+	}
+	if strings.HasPrefix(entry.ImplementedIn, "internal/plugins/") {
+		notes = append(notes, "Implemented through a CLI plugin module.")
 	}
 	if entry.Shim {
 		notes = append(notes, "Uses a raw REST shim.")
@@ -491,7 +494,21 @@ func newCommandEntry(group string, command string) commandEntry {
 			}
 		}
 	}
+	if implementation, ok := extrasPluginImplementations()[command]; ok {
+		entry.ImplementedIn = implementation
+		entry.Tests = appendMissingTests(entry.Tests, "unit: extras module registration", "unit: mocked Cinder REST endpoint")
+		entry.Notes = strings.TrimSpace(entry.Notes + " Registered through the cinder-extras CLI plugin module.")
+	}
 	return entry
+}
+
+func appendMissingTests(tests []string, values ...string) []string {
+	for _, value := range values {
+		if !hasTest(tests, value) {
+			tests = append(tests, value)
+		}
+	}
+	return tests
 }
 
 func hasTest(tests []string, value string) bool {
@@ -501,6 +518,13 @@ func hasTest(tests []string, value string) bool {
 		}
 	}
 	return false
+}
+
+func extrasPluginImplementations() map[string]string {
+	return map[string]string{
+		"block storage resource filter list": "internal/plugins/cinderextras",
+		"block storage resource filter show": "internal/plugins/cinderextras",
+	}
 }
 
 func identityReadPackages() map[string]string {

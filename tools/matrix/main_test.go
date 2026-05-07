@@ -40,8 +40,14 @@ func TestNewCommandEntryMarksCinderResourceFilterShim(t *testing.T) {
 	if !entry.Shim {
 		t.Fatal("expected resource filter list to be marked as a shim")
 	}
-	if entry.ImplementedIn != "internal/cli" {
+	if entry.ImplementedIn != "internal/plugins/cinderextras" {
 		t.Fatalf("unexpected implementation owner: %q", entry.ImplementedIn)
+	}
+	if got := commandReportSource(entry); got != "plugin" {
+		t.Fatalf("expected plugin report source, got %q", got)
+	}
+	if !strings.Contains(strings.Join(entry.Tests, " "), "mocked Cinder REST endpoint") {
+		t.Fatalf("expected resource filter list to record mocked endpoint evidence, got %v", entry.Tests)
 	}
 }
 

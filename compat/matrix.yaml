@@ -468,13 +468,15 @@ commands:
     sdk_package: "Cinder resource_filters via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
     shim: true
     plugin_scope: false
-    implemented_in: "internal/cli"
+    implemented_in: "internal/plugins/cinderextras"
     tests:
       - "unit: command registry"
       - "live: configured cloud read smoke"
       - "compat-live: cloud6 default table output"
       - "compat-live: cloud6 JSON output"
-    notes: "Python-vs-Go default table and JSON output parity recorded against cloud6 with the live compatibility harness. Broader flag and cloud coverage still need completion."
+      - "unit: extras module registration"
+      - "unit: mocked Cinder REST endpoint"
+    notes: "Python-vs-Go default table and JSON output parity recorded against cloud6 with the live compatibility harness. Broader flag and cloud coverage still need completion. Registered through the cinder-extras CLI plugin module."
   - command: "block storage resource filter show"
     group: "openstack.volume.v3"
     service: "volume"
@@ -483,13 +485,15 @@ commands:
     sdk_package: "Cinder resource_filters via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
     shim: true
     plugin_scope: false
-    implemented_in: "internal/cli"
+    implemented_in: "internal/plugins/cinderextras"
     tests:
       - "unit: command registry"
       - "live: configured cloud read smoke"
       - "compat-live: cloud6 default table output"
       - "compat-live: cloud6 JSON output"
-    notes: "Python-vs-Go default table and JSON output parity recorded against cloud6 with the live compatibility harness. Broader flag and cloud coverage still need completion."
+      - "unit: extras module registration"
+      - "unit: mocked Cinder REST endpoint"
+    notes: "Python-vs-Go default table and JSON output parity recorded against cloud6 with the live compatibility harness. Broader flag and cloud coverage still need completion. Registered through the cinder-extras CLI plugin module."
   - command: "block storage snapshot manageable list"
     group: "openstack.volume.v3"
     service: "volume"

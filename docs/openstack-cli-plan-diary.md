@@ -1791,3 +1791,11 @@ Decision: Pretty wait progress should use a small block layout instead of an inl
 Work done: added a reusable Pretty progress block helper, changed server create/delete and other server wait paths to pass action labels with server names, and changed server image and backup image waits to use the same block so Pretty progress remains one updating bar instead of repeated standalone blocks.
 
 Validation: passed focused Pretty progress tests, `go test ./...`, `make build`, and `git diff --check`.
+
+## 2026-05-07: Cinder Extras Resource Filter Boundary
+
+Decision: start the service-scoped extras migration with the read-only Cinder resource filter commands. This is small enough to validate the Caddy module boundary without changing the existing Cinder API behavior. The module ID is `openstack.commands.extras.cinder-extras`; it advertises `block storage resource filter list` and `block storage resource filter show` as implemented commands in `openstack.volume.v3`.
+
+Work done: added the `internal/plugins/cinderextras` Caddy module, imported it into the CLI binary, and changed the command registry to load implemented extras-module commands from `openstack.commands.extras`. The resource-filter command execution now routes through `runCinderExtras` instead of the core read dispatcher, while continuing to use the same authenticated Gophercloud Block Storage client and Cinder `GET /resource_filters` request.
+
+Validation: focused tests now cover `cinder-extras` module registration, `module list` visibility, `command list` implementation status, and a mocked Cinder endpoint asserting the resource-filter URL and microversion headers. `go test ./...`, `make build`, and `git diff --check` passed. Live Python-vs-Go parity on `cloud6` passed for `block storage resource filter list`, `block storage resource filter list -f json`, `block storage resource filter show volume`, and `block storage resource filter show volume -f json`; the only reported compat-check gaps were the pre-existing root-help ordering gap and intentionally different Go `module list` output.

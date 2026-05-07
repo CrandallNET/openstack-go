@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/crandallnet/golang-osc/compat/osc"
+	"github.com/crandallnet/golang-osc/internal/cliplugin"
 	"github.com/spf13/cobra"
 )
 
@@ -64,7 +65,6 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"block storage cleanup",
 		"block storage cluster list", "block storage cluster set", "block storage cluster show",
 		"block storage log level list", "block storage log level set",
-		"block storage resource filter list", "block storage resource filter show",
 		"block storage snapshot manageable list", "block storage volume manageable list",
 		"cached image clear", "cached image delete",
 		"cached image list", "cached image queue",
@@ -179,7 +179,34 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 	} {
 		registry.implemented[path] = runCoreRead(path, stdout, opts)
 	}
+	registry.addProviderCommands(cliplugin.NamespaceExtras, stdout, opts)
 	return registry
+}
+
+func (r *commandRegistry) addProviderCommands(namespace string, stdout io.Writer, opts *Options) {
+	providers, err := cliplugin.Providers(namespace)
+	if err != nil {
+		panic(fmt.Sprintf("load command providers for %s: %v", namespace, err))
+	}
+	for _, provider := range providers {
+		for _, command := range provider.PluginCommands() {
+			if !command.Implemented {
+				continue
+			}
+			handler, ok := extrasCommandHandler(command.Path, stdout, opts)
+			if !ok {
+				panic(fmt.Sprintf("no registered extras handler for %q", command.Path))
+			}
+			r.implemented[command.Path] = handler
+		}
+	}
+}
+
+func extrasCommandHandler(path string, stdout io.Writer, opts *Options) (commandHandler, bool) {
+	if isCinderExtrasCommand(path) {
+		return runCinderExtras(path, stdout, opts), true
+	}
+	return nil, false
 }
 
 func (r *commandRegistry) addCatalogCommands(root *cobra.Command) {
@@ -1759,7 +1786,6 @@ func isCoreReadCommand(path string) bool {
 		"block storage cleanup",
 		"block storage cluster list", "block storage cluster set", "block storage cluster show",
 		"block storage log level list", "block storage log level set",
-		"block storage resource filter list", "block storage resource filter show",
 		"block storage snapshot manageable list", "block storage volume manageable list",
 		"cached image clear", "cached image delete",
 		"cached image list", "cached image queue",
