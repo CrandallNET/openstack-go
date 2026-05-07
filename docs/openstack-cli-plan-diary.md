@@ -1807,3 +1807,9 @@ Decision: remove the hyphenated `compat-static` and `compat-static-all` Make tar
 Work done: removed the two Make targets and updated the README and active plan to point at `tools/compat-check` directly. The non-hyphen `compat` target remains because it regenerates compatibility artifacts through `catalog` and `matrix`.
 
 Validation: `make help` no longer lists the removed targets. `go test ./...` and `git diff --check` passed.
+
+## 2026-05-07: Lifecycle Help De-Duplication
+
+Decision: keep the top-level `make help` row for `lifecycle` concise because the supported `SUITE=` values are already listed in the dedicated lifecycle suite section.
+
+Work done: changed the `lifecycle` target help text to say `SUITE=name` instead of repeating every supported suite in the target table.

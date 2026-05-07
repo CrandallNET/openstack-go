@@ -62,7 +62,7 @@ discover: ## Discover non-secret live cloud capabilities; set CLOUD=name[,name].
 	$(GO) run ./tools/cloud-discovery --cloud "$(CLOUD)"
 
 .PHONY: lifecycle
-lifecycle: ## Run lifecycle tests; set CLOUD=name and optionally SUITE=keypair|server|volume|quota|image|network|object|all.
+lifecycle: ## Run lifecycle tests; set CLOUD=name and optionally SUITE=name.
 	$(GO) run ./tools/lifecycle-smoke --cloud "$(CLOUD)" --suite "$(or $(SUITE),keypair)"
 
 .PHONY: os-test
