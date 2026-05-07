@@ -910,17 +910,20 @@ func TestPrettyListFormatsServerNetworksVertically(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
-	output := stdout.String()
+	output := stripANSI(stdout.String())
 	for _, want := range []string{"testNet:", "172.16.86.110", "172.17.36.42"} {
 		if !strings.Contains(output, want) {
 			t.Fatalf("pretty server network output missing %q:\n%s", want, output)
 		}
 	}
-	if got, want := strings.Count(output, "testNet:"), 1; got != want {
-		t.Fatalf("expected pretty server networks to label a multi-IP network once, got %d occurrences:\n%s", got, output)
+	if got, want := strings.Count(output, "testNet:"), 2; got != want {
+		t.Fatalf("expected pretty server networks to label each IP, got %d occurrences:\n%s", got, output)
 	}
-	if !strings.Contains(output, "    172.17.36.42") {
-		t.Fatalf("expected additional server network IPs to be indented by four spaces, got:\n%s", output)
+	if !strings.Contains(output, prettyPrimaryAddressMarker+" testNet: 172.16.86.110") {
+		t.Fatalf("expected first server network IP to be marked, got:\n%s", output)
+	}
+	if !strings.Contains(output, "  testNet: 172.17.36.42") {
+		t.Fatalf("expected additional server network IP labels to align under the marker, got:\n%s", output)
 	}
 	if strings.Contains(output, "testNet=172.16.86.110, 172.17.36.42") {
 		t.Fatalf("expected pretty server networks to avoid comma-delimited summary, got:\n%s", output)
@@ -940,7 +943,7 @@ func TestPrettyServerNetworksRelabelBySubnetCIDR(t *testing.T) {
 	}
 
 	pretty := serverPrettyNetworkAddresses(addresses, labels).PrettyString()
-	for _, want := range []string{"os6-lan: 172.16.86.110", "testNet: 172.17.36.42"} {
+	for _, want := range []string{prettyPrimaryAddressMarker + " os6-lan: 172.16.86.110", "  testNet: 172.17.36.42"} {
 		if !strings.Contains(pretty, want) {
 			t.Fatalf("expected pretty network labels to include %q, got:\n%s", want, pretty)
 		}
@@ -949,7 +952,7 @@ func TestPrettyServerNetworksRelabelBySubnetCIDR(t *testing.T) {
 		t.Fatalf("expected os6-lan subnet IP to be relabeled, got:\n%s", pretty)
 	}
 	if strings.Contains(pretty, "    172.") {
-		t.Fatalf("expected single-IP network labels to stay on one line, got:\n%s", pretty)
+		t.Fatalf("expected additional IP lines to keep labels while aligning under the marker, got:\n%s", pretty)
 	}
 
 	defaultValue := valueString(serverAddressesValue(addresses, labels))
@@ -1476,6 +1479,11 @@ func TestPrettyPaletteColorsDomainValues(t *testing.T) {
 		{name: "Server ID", value: "1c77f920-e72d-45d0-8198-5a4a11722214", want: prettyColorizeUUID("1c77f920-e72d-45d0-8198-5a4a11722214")},
 		{name: "Subnet ID", value: "f44a40a0-f159-4923-8d79-55d101533f67", want: prettyColorizeUUID("f44a40a0-f159-4923-8d79-55d101533f67")},
 		{name: "Network ID", value: "6f911ff3-5259-4dbe-a29d-684a11bfd828", want: prettyColorizeUUID("6f911ff3-5259-4dbe-a29d-684a11bfd828")},
+		{name: "Floating Network", value: "6f911ff3-5259-4dbe-a29d-684a11bfd828", want: prettyColorizeUUID("6f911ff3-5259-4dbe-a29d-684a11bfd828")},
+		{name: "Project", value: "17613f25c8d742f8ab589c0fa7b6a66b", want: prettyColorizeID("17613f25c8d742f8ab589c0fa7b6a66b")},
+		{name: "Port", value: "e1cb065e-8710-44ca-ac1f-521724d818ee", want: prettyColorizeUUID("e1cb065e-8710-44ca-ac1f-521724d818ee")},
+		{name: "Router", value: "2a1a6e7f-19d5-4038-b4f1-f4a89b352abc", want: prettyColorizeUUID("2a1a6e7f-19d5-4038-b4f1-f4a89b352abc")},
+		{name: "User", value: "f935345dd3cec8ef4f8bd6bfbfc8379f", want: prettyColorizeID("f935345dd3cec8ef4f8bd6bfbfc8379f")},
 		{name: "Image ID", value: "da8beb8e-7301-49a3-b952-ebde206f9a0b", want: prettyColorizeUUID("da8beb8e-7301-49a3-b952-ebde206f9a0b")},
 		{name: "Flavor ID", value: "56e015e0-79f4-4962-82f0-8f8a1b2c771f", want: prettyColorizeUUID("56e015e0-79f4-4962-82f0-8f8a1b2c771f")},
 		{name: "Image", value: "rocky9", want: prettyStyleForColor(prettyColorOSRocky).Render("rocky9")},
@@ -1688,6 +1696,12 @@ func TestPrettyLabelPrefixIsBrightWhite(t *testing.T) {
 	if !strings.Contains(colored, wantValue) {
 		t.Fatalf("expected pretty label value to keep semantic color, got %q want value %q", colored, wantValue)
 	}
+
+	colored = prettyColorizeByName("Networks", prettyPrimaryAddressMarker+" testNet: 172.16.86.56")
+	wantPrefix = prettyPrimaryAddressMarker + " " + prettyLabelStyle.Render("testNet:")
+	if !strings.HasPrefix(colored, wantPrefix) {
+		t.Fatalf("expected pretty dot marker to stay outside the bright label, got %q want prefix %q", colored, wantPrefix)
+	}
 }
 
 func TestPrettyWrappedLabelContinuationValueKeepsSemanticColor(t *testing.T) {
@@ -1725,6 +1739,27 @@ func TestPrettyWrappedInlineLabelContinuationValueKeepsSemanticColor(t *testing.
 	}
 	if !strings.Contains(rows[1][0], prettyUUIDStyle.Render("c386")) {
 		t.Fatalf("expected continued inline value row to keep UUID color, got %#v", rows)
+	}
+}
+
+func TestPrettyWrappedReferenceIDFragmentsUseUUIDColor(t *testing.T) {
+	rows := prettyWrapRows(
+		[]table.Row{{"e1cb065e-8710-44ca-ac1f-521724d818ee"}},
+		[]table.Column{{Title: "Port", Width: 10}},
+		prettyListCellColorizer([]string{"Port"}),
+		prettyListCellContext([]string{"Port"}),
+	)
+	if len(rows) < 5 {
+		t.Fatalf("expected wrapped port ID fragments, got %#v", rows)
+	}
+	for index, row := range rows {
+		if len(row) != 1 {
+			t.Fatalf("expected one wrapped column, got %#v", rows)
+		}
+		want := prettyColorizeID(stripANSI(row[0]))
+		if row[0] != want {
+			t.Fatalf("expected wrapped port ID fragment %d to use UUID color, got %q want %q", index, row[0], want)
+		}
 	}
 }
 

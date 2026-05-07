@@ -871,6 +871,11 @@ func prettyColorizeByNormalizedName(normalized string, text string) string {
 	if prettyIsIDLikeName(normalized) {
 		return prettyColorizeID(text)
 	}
+	if prettyIsReferenceIDField(normalized) {
+		if colored, ok := prettyColorizeReferenceID(text); ok {
+			return colored
+		}
+	}
 	if prettyIsGenericNameField(normalized) {
 		return prettyNameStyle.Render(text)
 	}
@@ -914,6 +919,82 @@ func prettyIsNameField(name string) bool {
 
 func prettyIsGenericNameField(name string) bool {
 	return name == "name" || name == "display_name"
+}
+
+func prettyIsReferenceIDField(name string) bool {
+	switch name {
+	case "address_group",
+		"address_scope",
+		"flavor",
+		"floating_network",
+		"image",
+		"network",
+		"parent_port",
+		"policy",
+		"port",
+		"project",
+		"qos_policy",
+		"router",
+		"security_group",
+		"server",
+		"subnet",
+		"target_project",
+		"tenant",
+		"trunk",
+		"user",
+		"volume":
+		return true
+	}
+	referenceSuffixes := []string{
+		"_address_group",
+		"_address_scope",
+		"_flavor",
+		"_image",
+		"_network",
+		"_policy",
+		"_port",
+		"_project",
+		"_qos_policy",
+		"_router",
+		"_security_group",
+		"_server",
+		"_subnet",
+		"_tenant",
+		"_trunk",
+		"_user",
+		"_volume",
+	}
+	for _, suffix := range referenceSuffixes {
+		if strings.HasSuffix(name, suffix) {
+			return true
+		}
+	}
+	return false
+}
+
+func prettyColorizeReferenceID(text string) (string, bool) {
+	trimmed := strings.TrimSpace(text)
+	if trimmed == "" {
+		return "", false
+	}
+	if prettyLooksLikeUUIDFragment(trimmed) || prettyLooksLikeReferenceHexIDFragment(trimmed) {
+		return prettyColorizeID(text), true
+	}
+	if prettyUUIDPattern.MatchString(text) {
+		return prettyColorizeTokens(text), true
+	}
+	return "", false
+}
+
+func prettyLooksLikeReferenceHexIDFragment(text string) bool {
+	trimmed := strings.TrimSpace(text)
+	if strings.Contains(trimmed, "-") {
+		return prettyLooksLikeHexUUIDFragment(trimmed)
+	}
+	if len(trimmed) < 8 {
+		return false
+	}
+	return prettyLooksLikeHexUUIDFragment(trimmed)
 }
 
 func prettyIsFlavorField(name string) bool {
@@ -1069,6 +1150,10 @@ func prettyColorizeWrappedCellLines(rowIndex int, columnIndex int, lines []strin
 	pendingNeutralValue := false
 	pendingImageColor := ""
 	wrappedImageColor := ""
+	wrappedReferenceID := false
+	if prettyIsReferenceIDField(contextName) {
+		wrappedReferenceID = prettyLinesLookLikeReferenceID(lines)
+	}
 	if prettyIsImageField(contextName) {
 		if color, ok := prettyOSImageColorForText(strings.Join(lines, "")); ok {
 			wrappedImageColor = color
@@ -1108,6 +1193,10 @@ func prettyColorizeWrappedCellLines(rowIndex int, columnIndex int, lines []strin
 			}
 			continue
 		}
+		if wrappedReferenceID {
+			colored[index] = prettyColorizeID(line)
+			continue
+		}
 		if prettyIsImageField(contextName) {
 			if color, ok := prettyOSImageColorForText(line); ok {
 				pendingImageColor = color
@@ -1130,6 +1219,18 @@ func prettyColorizeWrappedCellLines(rowIndex int, columnIndex int, lines []strin
 		}
 	}
 	return colored
+}
+
+func prettyLinesLookLikeReferenceID(lines []string) bool {
+	joined := strings.Join(lines, "")
+	trimmed := strings.TrimSpace(joined)
+	if trimmed == "" {
+		return false
+	}
+	if prettyUUIDPattern.MatchString(trimmed) || prettyLooksLikeUUIDFragment(trimmed) {
+		return true
+	}
+	return len(trimmed) >= 8 && prettyLooksLikeHexUUIDFragment(trimmed)
 }
 
 func prettyStartsNeutralContinuation(contextName string, text string) bool {
@@ -1193,6 +1294,10 @@ func prettySplitLabelPrefix(text string) (string, string, string, bool) {
 	if strings.HasPrefix(remainder, "- ") {
 		prefix += "- "
 		remainder = remainder[2:]
+	}
+	if strings.HasPrefix(remainder, prettyPrimaryAddressMarker+" ") {
+		prefix += prettyPrimaryAddressMarker + " "
+		remainder = strings.TrimPrefix(remainder, prettyPrimaryAddressMarker+" ")
 	}
 
 	colon := strings.IndexByte(remainder, ':')

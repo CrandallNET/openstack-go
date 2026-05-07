@@ -1683,7 +1683,7 @@ Sources consulted:
 
 ## 2026-05-06: Pretty Server Network IP Indentation
 
-Decision: Pretty server network addresses should keep the network label on the first IP for a network and indent additional IPs by four spaces. Default server address output remains Python-compatible and unchanged.
+Decision: Pretty server network addresses should keep the network label on the first IP for a network and indent additional IPs by four spaces. Default server address output remains Python-compatible and unchanged. This decision was superseded later on 2026-05-06 by dot-marked server network IP output.
 
 Work done: updated the shared Pretty server network formatter used by `server list` and `server show`. A multi-IP network now renders as `network: first-ip` followed by `    next-ip` lines. Single-IP networks still render on one labeled line.
 
@@ -1692,3 +1692,16 @@ Validation: `go test ./internal/cli` passed with focused assertions for the four
 Sources consulted:
 
 * Local Pretty server address formatter in `internal/cli/core_read.go`.
+
+## 2026-05-06: Pretty Server Network IP Dot Marker
+
+Decision: Pretty server network addresses should mark the first rendered IP line with a dot marker and align later IP labels under that marker. The marker is shown even when there is only one IP address for consistency. Pretty resource reference columns should use UUID coloring when the value is UUID-like, including undashed OpenStack project and user IDs and reference columns such as `Port`, `Router`, `Network`, `Floating Network`, `Server`, `Image`, `Flavor`, and `Volume`. Default server address output remains Python-compatible and unchanged.
+
+Work done: replaced the four-space continuation-only layout with `dot network: ip` for the first rendered IP and `  network: ip` for subsequent IPs. The shared Pretty formatter is used by both `server list` and `server show`, and the Pretty label parser now treats the dot as a prefix so labels and IP values keep their existing color rules. The Pretty semantic colorizer now treats UUID-like resource reference values as IDs without coloring non-ID names as UUIDs, including short fragments produced when a narrow table wraps a resource ID.
+
+Validation: focused unit tests cover the dot marker, aligned later IP labels, relabeled subnet output, unchanged default address output, and UUID-style coloring for project, user, port, router, and floating-network reference columns.
+
+Sources consulted:
+
+* Local Pretty server address formatter in `internal/cli/core_read.go`.
+* Local Pretty label parser in `internal/cli/output.go`.

@@ -18645,12 +18645,15 @@ func serverNetworksSummary(addresses map[string]any) string {
 
 type prettyNetworkAddresses map[string][]string
 
+const prettyPrimaryAddressMarker = "\u2022"
+
 func (addresses prettyNetworkAddresses) PrettyString() string {
 	names := sortedKeysFromStringSlices(addresses)
 	if len(names) == 0 {
 		return "None"
 	}
 	lines := make([]string, 0, len(addresses))
+	hasMarkedPrimary := false
 	for _, name := range names {
 		values := append([]string(nil), addresses[name]...)
 		sort.Strings(values)
@@ -18658,12 +18661,13 @@ func (addresses prettyNetworkAddresses) PrettyString() string {
 			lines = append(lines, name+": None")
 			continue
 		}
-		for index, value := range values {
-			if index == 0 {
-				lines = append(lines, name+": "+value)
-				continue
+		for _, value := range values {
+			prefix := "  "
+			if !hasMarkedPrimary {
+				prefix = prettyPrimaryAddressMarker + " "
+				hasMarkedPrimary = true
 			}
-			lines = append(lines, "    "+value)
+			lines = append(lines, prefix+name+": "+value)
 		}
 	}
 	return strings.Join(lines, "\n")
