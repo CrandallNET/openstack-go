@@ -1,6 +1,9 @@
 package cli
 
 import (
+	"bytes"
+	_ "embed"
+	"encoding/json"
 	"fmt"
 	"io"
 	"math"
@@ -22,280 +25,115 @@ func (value prettyImageValue) PrettySemanticRole() string {
 }
 
 type prettyOSImageColorDefinition struct {
-	Name    string
-	Hex     string
-	Sample  string
-	Matches []string
+	Name    string   `json:"name"`
+	Hex     string   `json:"hex"`
+	Sample  string   `json:"sample"`
+	Matches []string `json:"matches"`
+	Sources []string `json:"sources"`
 }
 
-const (
-	prettyOSImageColorContrastBackground = "#282C34"
-	prettyOSImageColorMinimumContrast    = 2.5
+type prettyOSImageColorPalette struct {
+	SchemaVersion      int                            `json:"schema_version"`
+	ContrastBackground string                         `json:"contrast_background"`
+	MinimumContrast    float64                        `json:"minimum_contrast"`
+	Definitions        []prettyOSImageColorDefinition `json:"definitions"`
+}
+
+//go:embed pretty_os_colors.json
+var prettyOSImageColorsJSON []byte
+
+var prettyOSImageColorPaletteData = mustLoadPrettyOSImageColorPalette(prettyOSImageColorsJSON)
+
+var (
+	prettyOSImageColorContrastBackground = prettyOSImageColorPaletteData.ContrastBackground
+	prettyOSImageColorMinimumContrast    = prettyOSImageColorPaletteData.MinimumContrast
+	prettyOSImageColorDefinitions        = prettyOSImageColorPaletteData.Definitions
 )
 
-const (
-	prettyColorOSAlmaLinux    = "#0069DA"
-	prettyColorOSAlpine       = "#4BB4D8"
-	prettyColorOSArch         = "#4DBBEB"
-	prettyColorOSCentOS       = "#A14F8C"
-	prettyColorOSCentOSCore   = prettyColorOSCentOS
-	prettyColorOSCentOSStream = prettyColorOSCentOS
-	prettyColorOSCirrOS       = "#FF6A7D"
-	prettyColorOSCoreOS       = "#7EB7E6"
-	prettyColorOSDebian       = "#CE0056"
-	prettyColorOSDeepin       = "#5FB0FF"
-	prettyColorOSElementary   = "#4CA7E4"
-	prettyColorOSEndeavourOS  = "#A0A0FF"
-	prettyColorOSFedora       = "#51A2DA"
-	prettyColorOSFlatcar      = "#52B8D8"
-	prettyColorOSFreeBSD      = "#FF5A5F"
-	prettyColorOSGentoo       = "#DDDAEC"
-	prettyColorOSKali         = "#84C8E8"
-	prettyColorOSLinuxMint    = "#86BE43"
-	prettyColorOSManjaro      = "#35BFA4"
-	prettyColorOSNetBSD       = "#FF7A1A"
-	prettyColorOSNixOS        = "#7EB7E6"
-	prettyColorOSOpenBSD      = "#F2CA30"
-	prettyColorOSOpenSUSE     = "#73BA25"
-	prettyColorOSOracleLinux  = "#C74634"
-	prettyColorOSPopOS        = "#48B9C7"
-	prettyColorOSQubes        = "#6EA8FF"
-	prettyColorOSRedHat       = "#EE0000"
-	prettyColorOSRocky        = "#10B981"
-	prettyColorOSSolus        = "#6AA8F7"
-	prettyColorOSSUSE         = "#30BA78"
-	prettyColorOSTails        = "#C7A4F4"
-	prettyColorOSTalos        = "#E8312C"
-	prettyColorOSUbuntu       = "#FF7A45"
-	prettyColorOSVoid         = "#6FBF8F"
-	prettyColorOSVyOS         = "#FFBF12"
-	prettyColorOSWindows      = "#54B8FF"
-	prettyColorOSZorin        = "#15A6F0"
-)
+func mustLoadPrettyOSImageColorPalette(data []byte) prettyOSImageColorPalette {
+	palette, err := parsePrettyOSImageColorPalette(data)
+	if err != nil {
+		panic(fmt.Sprintf("load embedded pretty OS color palette: %v", err))
+	}
+	return palette
+}
 
-var prettyOSImageColorDefinitions = []prettyOSImageColorDefinition{
-	{
-		Name:    "AlmaLinux",
-		Hex:     prettyColorOSAlmaLinux,
-		Sample:  "AlmaLinux 9",
-		Matches: []string{"almalinux", "alma linux", "alma"},
-	},
-	{
-		Name:    "Alpine Linux",
-		Hex:     prettyColorOSAlpine,
-		Sample:  "Alpine Linux 3.20",
-		Matches: []string{"alpine"},
-	},
-	{
-		Name:    "Arch Linux",
-		Hex:     prettyColorOSArch,
-		Sample:  "Arch Linux",
-		Matches: []string{"arch linux", "archlinux", "arch"},
-	},
-	{
-		Name:    "CentOS Stream",
-		Hex:     prettyColorOSCentOSStream,
-		Sample:  "CentOS Stream 10",
-		Matches: []string{"centos stream", "centosstream"},
-	},
-	{
-		Name:    "CentOS Core",
-		Hex:     prettyColorOSCentOSCore,
-		Sample:  "CentOS Core",
-		Matches: []string{"centos core", "centoscore"},
-	},
-	{
-		Name:    "CentOS",
-		Hex:     prettyColorOSCentOS,
-		Sample:  "CentOS 7",
-		Matches: []string{"centos"},
-	},
-	{
-		Name:    "CirrOS",
-		Hex:     prettyColorOSCirrOS,
-		Sample:  "CirrOS 0.6.2",
-		Matches: []string{"cirros"},
-	},
-	{
-		Name:    "CoreOS",
-		Hex:     prettyColorOSCoreOS,
-		Sample:  "Fedora CoreOS",
-		Matches: []string{"fedora coreos", "coreos", "core os"},
-	},
-	{
-		Name:    "Debian",
-		Hex:     prettyColorOSDebian,
-		Sample:  "Debian 12",
-		Matches: []string{"debian"},
-	},
-	{
-		Name:    "deepin",
-		Hex:     prettyColorOSDeepin,
-		Sample:  "deepin 23",
-		Matches: []string{"deepin"},
-	},
-	{
-		Name:    "elementary OS",
-		Hex:     prettyColorOSElementary,
-		Sample:  "elementary OS 8",
-		Matches: []string{"elementary os", "elementaryos", "elementary"},
-	},
-	{
-		Name:    "EndeavourOS",
-		Hex:     prettyColorOSEndeavourOS,
-		Sample:  "EndeavourOS",
-		Matches: []string{"endeavouros", "endeavour os"},
-	},
-	{
-		Name:    "Fedora",
-		Hex:     prettyColorOSFedora,
-		Sample:  "Fedora 41",
-		Matches: []string{"fedora"},
-	},
-	{
-		Name:    "Flatcar Container Linux",
-		Hex:     prettyColorOSFlatcar,
-		Sample:  "Flatcar Container Linux",
-		Matches: []string{"flatcar container linux", "flatcar linux", "flatcar"},
-	},
-	{
-		Name:    "FreeBSD",
-		Hex:     prettyColorOSFreeBSD,
-		Sample:  "FreeBSD 14",
-		Matches: []string{"freebsd", "free bsd"},
-	},
-	{
-		Name:    "Gentoo",
-		Hex:     prettyColorOSGentoo,
-		Sample:  "Gentoo Linux",
-		Matches: []string{"gentoo"},
-	},
-	{
-		Name:    "Kali Linux",
-		Hex:     prettyColorOSKali,
-		Sample:  "Kali Linux",
-		Matches: []string{"kali linux", "kalilinux", "kali"},
-	},
-	{
-		Name:    "Linux Mint",
-		Hex:     prettyColorOSLinuxMint,
-		Sample:  "Linux Mint 22",
-		Matches: []string{"linux mint", "linuxmint", "mint"},
-	},
-	{
-		Name:    "Manjaro",
-		Hex:     prettyColorOSManjaro,
-		Sample:  "Manjaro Linux",
-		Matches: []string{"manjaro"},
-	},
-	{
-		Name:    "NetBSD",
-		Hex:     prettyColorOSNetBSD,
-		Sample:  "NetBSD 10",
-		Matches: []string{"netbsd", "net bsd"},
-	},
-	{
-		Name:    "NixOS",
-		Hex:     prettyColorOSNixOS,
-		Sample:  "NixOS 25.05",
-		Matches: []string{"nixos", "nix os"},
-	},
-	{
-		Name:    "OpenBSD",
-		Hex:     prettyColorOSOpenBSD,
-		Sample:  "OpenBSD 7.7",
-		Matches: []string{"openbsd", "open bsd"},
-	},
-	{
-		Name:    "openSUSE",
-		Hex:     prettyColorOSOpenSUSE,
-		Sample:  "openSUSE Leap 15",
-		Matches: []string{"opensuse", "open suse", "tumbleweed", "leap"},
-	},
-	{
-		Name:    "Oracle Linux",
-		Hex:     prettyColorOSOracleLinux,
-		Sample:  "Oracle Linux 9",
-		Matches: []string{"oracle linux", "oraclelinux", "ol"},
-	},
-	{
-		Name:    "Pop!_OS",
-		Hex:     prettyColorOSPopOS,
-		Sample:  "Pop!_OS 22.04",
-		Matches: []string{"pop os", "popos"},
-	},
-	{
-		Name:    "Qubes OS",
-		Hex:     prettyColorOSQubes,
-		Sample:  "Qubes OS 4.2",
-		Matches: []string{"qubes os", "qubesos", "qubes"},
-	},
-	{
-		Name:    "Red Hat Enterprise Linux",
-		Hex:     prettyColorOSRedHat,
-		Sample:  "Red Hat Enterprise Linux 9",
-		Matches: []string{"red hat", "redhat", "rhel"},
-	},
-	{
-		Name:    "Rocky Linux",
-		Hex:     prettyColorOSRocky,
-		Sample:  "Rocky Linux 9",
-		Matches: []string{"rocky", "rockylinux"},
-	},
-	{
-		Name:    "Solus",
-		Hex:     prettyColorOSSolus,
-		Sample:  "Solus 4.5",
-		Matches: []string{"solus"},
-	},
-	{
-		Name:    "SUSE",
-		Hex:     prettyColorOSSUSE,
-		Sample:  "SUSE Linux Enterprise Server 15",
-		Matches: []string{"suse linux enterprise", "sles", "suse"},
-	},
-	{
-		Name:    "Tails",
-		Hex:     prettyColorOSTails,
-		Sample:  "Tails 6.0",
-		Matches: []string{"tails"},
-	},
-	{
-		Name:    "Talos Linux",
-		Hex:     prettyColorOSTalos,
-		Sample:  "Talos Linux",
-		Matches: []string{"talos linux", "talos"},
-	},
-	{
-		Name:    "Ubuntu",
-		Hex:     prettyColorOSUbuntu,
-		Sample:  "Ubuntu 24.04",
-		Matches: []string{"ubuntu"},
-	},
-	{
-		Name:    "Void Linux",
-		Hex:     prettyColorOSVoid,
-		Sample:  "Void Linux",
-		Matches: []string{"void linux", "voidlinux", "void"},
-	},
-	{
-		Name:    "VyOS",
-		Hex:     prettyColorOSVyOS,
-		Sample:  "VyOS 1.5",
-		Matches: []string{"vyos"},
-	},
-	{
-		Name:    "Windows",
-		Hex:     prettyColorOSWindows,
-		Sample:  "Windows Server 2022",
-		Matches: []string{"windows"},
-	},
-	{
-		Name:    "Zorin OS",
-		Hex:     prettyColorOSZorin,
-		Sample:  "Zorin OS 17",
-		Matches: []string{"zorin os", "zorinos", "zorin"},
-	},
+func parsePrettyOSImageColorPalette(data []byte) (prettyOSImageColorPalette, error) {
+	var palette prettyOSImageColorPalette
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&palette); err != nil {
+		return palette, err
+	}
+	if err := decoder.Decode(&struct{}{}); err != io.EOF {
+		return palette, fmt.Errorf("unexpected content after JSON document")
+	}
+	if palette.SchemaVersion != 1 {
+		return palette, fmt.Errorf("unsupported schema_version %d", palette.SchemaVersion)
+	}
+	palette.ContrastBackground = prettyNormalizeHexColor(palette.ContrastBackground)
+	if _, _, _, ok := prettyHexRGB(palette.ContrastBackground); !ok {
+		return palette, fmt.Errorf("invalid contrast_background %q", palette.ContrastBackground)
+	}
+	if palette.MinimumContrast <= 0 {
+		return palette, fmt.Errorf("minimum_contrast must be positive")
+	}
+	if len(palette.Definitions) == 0 {
+		return palette, fmt.Errorf("definitions must not be empty")
+	}
+	seenNames := make(map[string]struct{}, len(palette.Definitions))
+	for index := range palette.Definitions {
+		definition := &palette.Definitions[index]
+		definition.Name = strings.TrimSpace(definition.Name)
+		definition.Hex = prettyNormalizeHexColor(definition.Hex)
+		definition.Sample = strings.TrimSpace(definition.Sample)
+		if definition.Name == "" {
+			return palette, fmt.Errorf("definitions[%d].name must not be empty", index)
+		}
+		nameKey := strings.ToLower(definition.Name)
+		if _, ok := seenNames[nameKey]; ok {
+			return palette, fmt.Errorf("duplicate OS color definition name %q", definition.Name)
+		}
+		seenNames[nameKey] = struct{}{}
+		if _, _, _, ok := prettyHexRGB(definition.Hex); !ok {
+			return palette, fmt.Errorf("invalid hex color %q for %s", definition.Hex, definition.Name)
+		}
+		if definition.Sample == "" {
+			return palette, fmt.Errorf("definition %s sample must not be empty", definition.Name)
+		}
+		if len(definition.Matches) == 0 {
+			return palette, fmt.Errorf("definition %s matches must not be empty", definition.Name)
+		}
+		for matchIndex, match := range definition.Matches {
+			match = strings.TrimSpace(match)
+			if match == "" {
+				return palette, fmt.Errorf("definition %s matches[%d] must not be empty", definition.Name, matchIndex)
+			}
+			definition.Matches[matchIndex] = match
+		}
+		for sourceIndex, source := range definition.Sources {
+			definition.Sources[sourceIndex] = strings.TrimSpace(source)
+		}
+	}
+	return palette, nil
+}
+
+func prettyNormalizeHexColor(color string) string {
+	color = strings.TrimSpace(color)
+	if color == "" {
+		return color
+	}
+	color = strings.TrimPrefix(color, "#")
+	return "#" + strings.ToUpper(color)
+}
+
+func prettyOSImageColorByName(name string) (string, bool) {
+	for _, definition := range prettyOSImageColorDefinitions {
+		if strings.EqualFold(definition.Name, name) {
+			return definition.Hex, true
+		}
+	}
+	return "", false
 }
 
 func prettyOSImageColorForText(text string) (string, bool) {

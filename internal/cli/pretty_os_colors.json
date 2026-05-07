@@ -1,0 +1,266 @@
+{
+  "schema_version": 1,
+  "contrast_background": "#282C34",
+  "minimum_contrast": 2.5,
+  "definitions": [
+    {
+      "name": "AlmaLinux",
+      "hex": "#0069DA",
+      "sample": "AlmaLinux 9",
+      "matches": ["almalinux", "alma linux", "alma"],
+      "sources": ["https://almalinux.org/images/icon.svg", "https://almalinux.org/"]
+    },
+    {
+      "name": "Alpine Linux",
+      "hex": "#4BB4D8",
+      "sample": "Alpine Linux 3.20",
+      "matches": ["alpine"],
+      "sources": ["https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/data/simple-icons.json"]
+    },
+    {
+      "name": "Arch Linux",
+      "hex": "#4DBBEB",
+      "sample": "Arch Linux",
+      "matches": ["arch linux", "archlinux", "arch"],
+      "sources": ["https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/data/simple-icons.json"]
+    },
+    {
+      "name": "CentOS Stream",
+      "hex": "#A14F8C",
+      "sample": "CentOS Stream 10",
+      "matches": ["centos stream", "centosstream"],
+      "sources": ["https://www.centos.org/centos-stream/", "https://www.centos.org/assets/css/base/stylesheet.min.css"]
+    },
+    {
+      "name": "CentOS Core",
+      "hex": "#A14F8C",
+      "sample": "CentOS Core",
+      "matches": ["centos core", "centoscore"],
+      "sources": ["https://www.centos.org/centos-stream/", "https://www.centos.org/assets/css/base/stylesheet.min.css"]
+    },
+    {
+      "name": "CentOS",
+      "hex": "#A14F8C",
+      "sample": "CentOS 7",
+      "matches": ["centos"],
+      "sources": ["https://www.centos.org/centos-stream/", "https://www.centos.org/assets/css/base/stylesheet.min.css"]
+    },
+    {
+      "name": "CirrOS",
+      "hex": "#ED1844",
+      "sample": "CirrOS 0.6.2",
+      "matches": ["cirros"],
+      "sources": ["https://commons.wikimedia.org/wiki/File:OpenStack%C2%AE_Logo_2016.svg"]
+    },
+    {
+      "name": "CoreOS",
+      "hex": "#7EB7E6",
+      "sample": "Fedora CoreOS",
+      "matches": ["fedora coreos", "coreos", "core os"],
+      "sources": ["https://commons.wikimedia.org/wiki/File:CoreOS.svg", "https://commons.wikimedia.org/wiki/File:Fedora_CoreOS_logo.svg"]
+    },
+    {
+      "name": "Debian",
+      "hex": "#CE0056",
+      "sample": "Debian 12",
+      "matches": ["debian"],
+      "sources": ["https://www.debian.org/logos/"]
+    },
+    {
+      "name": "deepin",
+      "hex": "#5FB0FF",
+      "sample": "deepin 23",
+      "matches": ["deepin"],
+      "sources": ["https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/data/simple-icons.json"]
+    },
+    {
+      "name": "elementary OS",
+      "hex": "#4CA7E4",
+      "sample": "elementary OS 8",
+      "matches": ["elementary os", "elementaryos", "elementary"],
+      "sources": ["https://elementary.io/", "https://elementary.io/styles/main-0d002cb065.css"]
+    },
+    {
+      "name": "EndeavourOS",
+      "hex": "#A0A0FF",
+      "sample": "EndeavourOS",
+      "matches": ["endeavouros", "endeavour os"],
+      "sources": ["https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/data/simple-icons.json"]
+    },
+    {
+      "name": "Fedora",
+      "hex": "#51A2DA",
+      "sample": "Fedora 41",
+      "matches": ["fedora"],
+      "sources": ["https://fedoraproject.org/wiki/Logo/UsageGuidelines"]
+    },
+    {
+      "name": "Flatcar Container Linux",
+      "hex": "#52B8D8",
+      "sample": "Flatcar Container Linux",
+      "matches": ["flatcar container linux", "flatcar linux", "flatcar"],
+      "sources": ["https://www.flatcar.org/"]
+    },
+    {
+      "name": "FreeBSD",
+      "hex": "#FF5A5F",
+      "sample": "FreeBSD 14",
+      "matches": ["freebsd", "free bsd"],
+      "sources": ["https://freebsdfoundation.org/brand/"]
+    },
+    {
+      "name": "Gentoo",
+      "hex": "#DDDAEC",
+      "sample": "Gentoo Linux",
+      "matches": ["gentoo"],
+      "sources": ["https://wiki.gentoo.org/wiki/Project:Artwork/Colors"]
+    },
+    {
+      "name": "Kali Linux",
+      "hex": "#84C8E8",
+      "sample": "Kali Linux",
+      "matches": ["kali linux", "kalilinux", "kali"],
+      "sources": ["https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/data/simple-icons.json"]
+    },
+    {
+      "name": "Linux Mint",
+      "hex": "#86BE43",
+      "sample": "Linux Mint 22",
+      "matches": ["linux mint", "linuxmint", "mint"],
+      "sources": ["https://github.com/linuxmint/brand-logo"]
+    },
+    {
+      "name": "Manjaro",
+      "hex": "#35BFA4",
+      "sample": "Manjaro Linux",
+      "matches": ["manjaro"],
+      "sources": ["https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/data/simple-icons.json"]
+    },
+    {
+      "name": "NetBSD",
+      "hex": "#FF7A1A",
+      "sample": "NetBSD 10",
+      "matches": ["netbsd", "net bsd"],
+      "sources": ["https://www.netbsd.org/gallery/logos.html", "https://commons.wikimedia.org/wiki/File:NetBSD_textlogo.svg"]
+    },
+    {
+      "name": "NixOS",
+      "hex": "#7EB7E6",
+      "sample": "NixOS 25.05",
+      "matches": ["nixos", "nix os"],
+      "sources": ["https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/data/simple-icons.json"]
+    },
+    {
+      "name": "OpenBSD",
+      "hex": "#F2CA30",
+      "sample": "OpenBSD 7.7",
+      "matches": ["openbsd", "open bsd"],
+      "sources": ["https://commons.wikimedia.org/wiki/File:OpenBSD_textual_logo.svg"]
+    },
+    {
+      "name": "openSUSE",
+      "hex": "#73BA25",
+      "sample": "openSUSE Leap 15",
+      "matches": ["opensuse", "open suse", "tumbleweed", "leap"],
+      "sources": ["https://en.opensuse.org/openSUSE%3AArtwork_brand"]
+    },
+    {
+      "name": "Oracle Linux",
+      "hex": "#C74634",
+      "sample": "Oracle Linux 9",
+      "matches": ["oracle linux", "oraclelinux", "ol"],
+      "sources": ["https://commons.wikimedia.org/wiki/File:Oracle_linux_logo.svg", "https://commons.wikimedia.org/wiki/File:Oracle_logo.svg"]
+    },
+    {
+      "name": "Pop!_OS",
+      "hex": "#48B9C7",
+      "sample": "Pop!_OS 22.04",
+      "matches": ["pop os", "popos"],
+      "sources": ["https://github.com/system76/brand"]
+    },
+    {
+      "name": "Qubes OS",
+      "hex": "#6EA8FF",
+      "sample": "Qubes OS 4.2",
+      "matches": ["qubes os", "qubesos", "qubes"],
+      "sources": ["https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/data/simple-icons.json"]
+    },
+    {
+      "name": "Red Hat Enterprise Linux",
+      "hex": "#EE0000",
+      "sample": "Red Hat Enterprise Linux 9",
+      "matches": ["red hat", "redhat", "rhel"],
+      "sources": ["https://www.redhat.com/en/about/brand/standards/color"]
+    },
+    {
+      "name": "Rocky Linux",
+      "hex": "#10B981",
+      "sample": "Rocky Linux 9",
+      "matches": ["rocky", "rockylinux"],
+      "sources": ["https://github.com/rocky-linux/brand-kit", "https://simple-icons.github.io/simple-icons-website/"]
+    },
+    {
+      "name": "Solus",
+      "hex": "#6AA8F7",
+      "sample": "Solus 4.5",
+      "matches": ["solus"],
+      "sources": ["https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/data/simple-icons.json"]
+    },
+    {
+      "name": "SUSE",
+      "hex": "#30BA78",
+      "sample": "SUSE Linux Enterprise Server 15",
+      "matches": ["suse linux enterprise", "sles", "suse"],
+      "sources": ["https://ranchercomprd.eks-prod.suse.com/brand-guidelines"]
+    },
+    {
+      "name": "Tails",
+      "hex": "#C7A4F4",
+      "sample": "Tails 6.0",
+      "matches": ["tails"],
+      "sources": ["https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/data/simple-icons.json"]
+    },
+    {
+      "name": "Talos Linux",
+      "hex": "#E8312C",
+      "sample": "Talos Linux",
+      "matches": ["talos linux", "talos"],
+      "sources": ["https://www.talos.dev/"]
+    },
+    {
+      "name": "Ubuntu",
+      "hex": "#FF7A45",
+      "sample": "Ubuntu 24.04",
+      "matches": ["ubuntu"],
+      "sources": ["https://design.ubuntu.com/brand/colour-palette"]
+    },
+    {
+      "name": "Void Linux",
+      "hex": "#6FBF8F",
+      "sample": "Void Linux",
+      "matches": ["void linux", "voidlinux", "void"],
+      "sources": ["https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/data/simple-icons.json"]
+    },
+    {
+      "name": "VyOS",
+      "hex": "#FFBF12",
+      "sample": "VyOS 1.5",
+      "matches": ["vyos"],
+      "sources": ["https://vyos.io/wp-content/themes/vyos_theme/images/main/vyos-logo.svg"]
+    },
+    {
+      "name": "Windows",
+      "hex": "#54B8FF",
+      "sample": "Windows Server 2022",
+      "matches": ["windows"],
+      "sources": ["https://learn.microsoft.com/en-us/windows-hardware/customize/desktop/unattend/microsoft-windows-shell-setup-themes-windowcolor"]
+    },
+    {
+      "name": "Zorin OS",
+      "hex": "#15A6F0",
+      "sample": "Zorin OS 17",
+      "matches": ["zorin os", "zorinos", "zorin"],
+      "sources": ["https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/data/simple-icons.json"]
+    }
+  ]
+}

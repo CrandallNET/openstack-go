@@ -1407,13 +1407,22 @@ func TestPrettyOSColorTestReportsContrast(t *testing.T) {
 	}
 }
 
+func mustPrettyOSImageColorForTest(t *testing.T, name string) string {
+	t.Helper()
+	color, ok := prettyOSImageColorByName(name)
+	if !ok {
+		t.Fatalf("expected OS image color definition for %q", name)
+	}
+	return color
+}
+
 func TestPrettyImageSemanticRoleColorsImageNames(t *testing.T) {
 	colorizer := prettyListCellColorizer([]string{"Name"}, [][]string{{"image"}})
-	want := prettyStyleForColor(prettyColorOSUbuntu).Render("Ubuntu 24.04")
+	want := prettyStyleForColor(mustPrettyOSImageColorForTest(t, "Ubuntu")).Render("Ubuntu 24.04")
 	if got := colorizer(0, 0, "Ubuntu 24.04"); got != want {
 		t.Fatalf("expected image semantic role to use OS image color, got %q want %q", got, want)
 	}
-	want = prettyStyleForColor(prettyColorOSRedHat).Render("rhel9")
+	want = prettyStyleForColor(mustPrettyOSImageColorForTest(t, "Red Hat Enterprise Linux")).Render("rhel9")
 	if got := colorizer(0, 0, "rhel9"); got != want {
 		t.Fatalf("expected compact RHEL image names to use OS image color, got %q want %q", got, want)
 	}
@@ -1425,22 +1434,22 @@ func TestPrettyOSImageColorsUseSpecificBrandMatches(t *testing.T) {
 		value string
 		color string
 	}{
-		{name: "centos stream before centos", value: "CentOS Stream 10", color: prettyColorOSCentOSStream},
-		{name: "centos core before centos", value: "CentOS Core", color: prettyColorOSCentOSCore},
-		{name: "centos classic", value: "CentOS 7", color: prettyColorOSCentOS},
-		{name: "coreos before fedora", value: "Fedora CoreOS", color: prettyColorOSCoreOS},
-		{name: "flatcar", value: "Flatcar Container Linux", color: prettyColorOSFlatcar},
-		{name: "oracle linux before rhel", value: "Oracle Linux 9", color: prettyColorOSOracleLinux},
-		{name: "cirros openstack", value: "CirrOS 0.6.2", color: prettyColorOSCirrOS},
-		{name: "gentoo readable palette", value: "Gentoo Linux", color: prettyColorOSGentoo},
-		{name: "tails readable palette", value: "Tails 6.0", color: prettyColorOSTails},
-		{name: "talos linux", value: "Talos Linux", color: prettyColorOSTalos},
-		{name: "vyos yellow", value: "VyOS 1.5", color: prettyColorOSVyOS},
-		{name: "pop os punctuation", value: "Pop!_OS 22.04", color: prettyColorOSPopOS},
-		{name: "freebsd", value: "FreeBSD 14", color: prettyColorOSFreeBSD},
-		{name: "netbsd", value: "NetBSD 10", color: prettyColorOSNetBSD},
-		{name: "openbsd", value: "OpenBSD 7.7", color: prettyColorOSOpenBSD},
-		{name: "linux mint", value: "Linux Mint 22", color: prettyColorOSLinuxMint},
+		{name: "centos stream before centos", value: "CentOS Stream 10", color: mustPrettyOSImageColorForTest(t, "CentOS Stream")},
+		{name: "centos core before centos", value: "CentOS Core", color: mustPrettyOSImageColorForTest(t, "CentOS Core")},
+		{name: "centos classic", value: "CentOS 7", color: mustPrettyOSImageColorForTest(t, "CentOS")},
+		{name: "coreos before fedora", value: "Fedora CoreOS", color: mustPrettyOSImageColorForTest(t, "CoreOS")},
+		{name: "flatcar", value: "Flatcar Container Linux", color: mustPrettyOSImageColorForTest(t, "Flatcar Container Linux")},
+		{name: "oracle linux before rhel", value: "Oracle Linux 9", color: mustPrettyOSImageColorForTest(t, "Oracle Linux")},
+		{name: "cirros openstack", value: "CirrOS 0.6.2", color: mustPrettyOSImageColorForTest(t, "CirrOS")},
+		{name: "gentoo readable palette", value: "Gentoo Linux", color: mustPrettyOSImageColorForTest(t, "Gentoo")},
+		{name: "tails readable palette", value: "Tails 6.0", color: mustPrettyOSImageColorForTest(t, "Tails")},
+		{name: "talos linux", value: "Talos Linux", color: mustPrettyOSImageColorForTest(t, "Talos Linux")},
+		{name: "vyos yellow", value: "VyOS 1.5", color: mustPrettyOSImageColorForTest(t, "VyOS")},
+		{name: "pop os punctuation", value: "Pop!_OS 22.04", color: mustPrettyOSImageColorForTest(t, "Pop!_OS")},
+		{name: "freebsd", value: "FreeBSD 14", color: mustPrettyOSImageColorForTest(t, "FreeBSD")},
+		{name: "netbsd", value: "NetBSD 10", color: mustPrettyOSImageColorForTest(t, "NetBSD")},
+		{name: "openbsd", value: "OpenBSD 7.7", color: mustPrettyOSImageColorForTest(t, "OpenBSD")},
+		{name: "linux mint", value: "Linux Mint 22", color: mustPrettyOSImageColorForTest(t, "Linux Mint")},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -1473,7 +1482,7 @@ func TestPrettyWrappedOSImageContinuationKeepsOSColor(t *testing.T) {
 		if index >= len(rows) {
 			t.Fatalf("expected wrapped OS image row %d, got %#v", index, rows)
 		}
-		colored := prettyStyleForColor(prettyColorOSUbuntu).Render(want)
+		colored := prettyStyleForColor(mustPrettyOSImageColorForTest(t, "Ubuntu")).Render(want)
 		if rows[index][0] != colored {
 			t.Fatalf("expected wrapped OS image row %d to keep Ubuntu color, got %#v want %q", index, rows[index], colored)
 		}
@@ -1491,7 +1500,7 @@ func TestPrettyWrappedShortOSImageNameKeepsOSColor(t *testing.T) {
 		t.Fatalf("expected wrapped Arch image rows, got %#v", rows)
 	}
 	for index, want := range []string{"Arch", "Linux"} {
-		colored := prettyStyleForColor(prettyColorOSArch).Render(want)
+		colored := prettyStyleForColor(mustPrettyOSImageColorForTest(t, "Arch Linux")).Render(want)
 		if rows[index][0] != colored {
 			t.Fatalf("expected wrapped Arch image row %d to keep Arch color, got %#v want %q", index, rows[index], colored)
 		}
@@ -1509,7 +1518,7 @@ func TestPrettyWrappedSplitOSImageWordKeepsOSColor(t *testing.T) {
 		t.Fatalf("expected wrapped AlmaLinux image rows, got %#v", rows)
 	}
 	for index, want := range []string{"AlmaLinu", "x"} {
-		colored := prettyStyleForColor(prettyColorOSAlmaLinux).Render(want)
+		colored := prettyStyleForColor(mustPrettyOSImageColorForTest(t, "AlmaLinux")).Render(want)
 		if rows[index][0] != colored {
 			t.Fatalf("expected wrapped AlmaLinux row %d to keep AlmaLinux color, got %#v want %q", index, rows[index], colored)
 		}
@@ -1553,7 +1562,7 @@ func TestPrettyPaletteColorsDomainValues(t *testing.T) {
 		{name: "User", value: "f935345dd3cec8ef4f8bd6bfbfc8379f", want: prettyColorizeID("f935345dd3cec8ef4f8bd6bfbfc8379f")},
 		{name: "Image ID", value: "da8beb8e-7301-49a3-b952-ebde206f9a0b", want: prettyColorizeUUID("da8beb8e-7301-49a3-b952-ebde206f9a0b")},
 		{name: "Flavor ID", value: "56e015e0-79f4-4962-82f0-8f8a1b2c771f", want: prettyColorizeUUID("56e015e0-79f4-4962-82f0-8f8a1b2c771f")},
-		{name: "Image", value: "rocky9", want: prettyStyleForColor(prettyColorOSRocky).Render("rocky9")},
+		{name: "Image", value: "rocky9", want: prettyStyleForColor(mustPrettyOSImageColorForTest(t, "Rocky Linux")).Render("rocky9")},
 		{name: "Flavor", value: "m1.small", want: prettyFlavorStyle.Render("m1.small")},
 		{name: "device", value: "/dev/vda", want: prettyDeviceStyle.Render("/dev/vda")},
 		{name: "created_at", value: "2026-05-04T19:10:59.000000", want: prettyTimestampStyle.Render("2026-05-04T19:10:59.000000")},
@@ -1593,7 +1602,7 @@ func TestPrettyValueStylesAreNotBoldExceptLabels(t *testing.T) {
 		prettyDeviceStyle.Render("/dev/vda"),
 		prettyErrorStyle.Render("ERROR"),
 		prettyFlavorStyle.Render("m1.small"),
-		prettyStyleForColor(prettyColorOSRocky).Render("rocky9"),
+		prettyStyleForColor(mustPrettyOSImageColorForTest(t, "Rocky Linux")).Render("rocky9"),
 		prettyIPStyle.Render("172.16.86.56"),
 		prettyNAStyle.Render("N/A"),
 		prettyNameStyle.Render("rocky"),

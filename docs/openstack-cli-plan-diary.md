@@ -1769,3 +1769,17 @@ Sources consulted:
 * CentOS Stream project page and stylesheet, whose current page styling uses purple `#A14F8C`: https://www.centos.org/centos-stream/ and https://www.centos.org/assets/css/base/stylesheet.min.css.
 * Talos Linux project page, whose site styling includes red-orange `#E8312C`: https://www.talos.dev/.
 * elementary OS site and stylesheet, whose purchase button gradient includes blue `#4CA7E4`: https://elementary.io/ and https://elementary.io/styles/main-0d002cb065.css.
+
+## 2026-05-07: Pretty OS Palette Data File
+
+Decision: OS image color rules should be data-driven at build time. The editable source is `internal/cli/pretty_os_colors.json`, and the compiled binary embeds that file through Go's `embed` package. JSON was selected because Go parses it with the standard library, so this does not add another dependency. Runtime palette overrides remain deferred because the request was specifically for user edits before compilation.
+
+Work done: moved OS image display names, hex colors, sample image labels, match keywords, source URLs, contrast background, and minimum legibility guard into `internal/cli/pretty_os_colors.json`. The Go loader validates the schema version, strict JSON fields, hex color syntax, duplicate names, required samples, and required match keywords before exposing the palette to the Pretty renderer. CirrOS now uses the OpenStack logo red `#ED1844` again.
+
+Validation: passed focused Pretty OS color tests, `make os-test`, `go test ./...`, `make build`, and `git diff --check`.
+
+Sources consulted:
+
+* Go `embed` package documentation, used for compile-time embedding: https://pkg.go.dev/embed.
+* Go `encoding/json` package documentation, used for the standard-library JSON parser: https://pkg.go.dev/encoding/json.
+* OpenStack 2016 logo SVG, used for CirrOS/OpenStack red `#ED1844`: https://commons.wikimedia.org/wiki/File:OpenStack%C2%AE_Logo_2016.svg.

@@ -130,6 +130,8 @@ Display the supported Fancy operating-system image colors:
 make os-test
 ```
 
+The Fancy OS image color rules are compiled from [internal/cli/pretty_os_colors.json](internal/cli/pretty_os_colors.json). Edit that file before building to change OS display names, hex colors, sample image names, match keywords, source URLs, the contrast-report background, or the minimum legibility guard. The data is embedded into the binary at build time, so changes require rebuilding `bin/openstack`.
+
 ## Compatibility Artifacts
 
 Generated compatibility artifacts should be committed under `compat/` once generators exist. Expected artifacts include:
