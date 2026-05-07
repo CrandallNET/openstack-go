@@ -99,6 +99,63 @@ func TestBuildServerSSHRequestUsesPythonAddressSelection(t *testing.T) {
 	}
 }
 
+func TestBuildServerSSHRequestFallsBackToFixedAddressForImplicitPublic(t *testing.T) {
+	server := &servers.Server{
+		Name: "vm1",
+		Addresses: map[string]any{
+			"tenant-net": []any{
+				map[string]any{"addr": "10.0.0.5", "version": float64(4), "OS-EXT-IPS:type": "fixed"},
+			},
+		},
+	}
+	opts := &Options{CommandFlags: map[string]string{}}
+	request, err := buildServerSSHRequest(&bytes.Buffer{}, opts, gophercloud.AuthOptions{Username: "cloud"}, server, []string{"vm1"})
+	if err != nil {
+		t.Fatalf("build server ssh request: %v", err)
+	}
+	if got, want := request.Address, "10.0.0.5"; got != want {
+		t.Fatalf("address mismatch: got %q want %q", got, want)
+	}
+}
+
+func TestBuildServerSSHRequestDoesNotFallbackForExplicitPublic(t *testing.T) {
+	server := &servers.Server{
+		Name: "vm1",
+		Addresses: map[string]any{
+			"tenant-net": []any{
+				map[string]any{"addr": "10.0.0.5", "version": float64(4), "OS-EXT-IPS:type": "fixed"},
+			},
+		},
+	}
+	opts := &Options{CommandFlags: map[string]string{"public": "true"}}
+	_, err := buildServerSSHRequest(&bytes.Buffer{}, opts, gophercloud.AuthOptions{Username: "cloud"}, server, []string{"vm1"})
+	if err == nil {
+		t.Fatal("expected explicit public address selection to fail")
+	}
+	if !strings.Contains(err.Error(), "No public IP version [4 6] address found") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestBuildServerSSHRequestDoesNotFallbackForAddressTypePublic(t *testing.T) {
+	server := &servers.Server{
+		Name: "vm1",
+		Addresses: map[string]any{
+			"tenant-net": []any{
+				map[string]any{"addr": "10.0.0.5", "version": float64(4), "OS-EXT-IPS:type": "fixed"},
+			},
+		},
+	}
+	opts := &Options{CommandFlags: map[string]string{"address-type": "public"}}
+	_, err := buildServerSSHRequest(&bytes.Buffer{}, opts, gophercloud.AuthOptions{Username: "cloud"}, server, []string{"vm1"})
+	if err == nil {
+		t.Fatal("expected explicit address-type public selection to fail")
+	}
+	if !strings.Contains(err.Error(), "No public IP version [4 6] address found") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestParseServerSSHPassThroughOptions(t *testing.T) {
 	opts := &Options{CommandFlags: map[string]string{
 		"address-type": "private",

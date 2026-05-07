@@ -1862,3 +1862,11 @@ Decision: keep the Python OSC `server ssh` help snapshot as the first help block
 Work done: `openstack server ssh --help` now lists the supported pass-through forms after `--`: `-l`, `-p`, `-i`, `-A`, `-a`, `-t`, `-T`, `-v`, supported `-o` keys, and remote command execution. The help also calls out that password and keyboard-interactive auth options are accepted for compatibility but are not implemented by the pure Go client.
 
 Validation: added a unit test that verifies the appended pass-through help section and representative options are present.
+
+## 2026-05-07: Server SSH Default Fixed-Address Fallback
+
+Decision: keep Python OSC-style public/private/address-type selection when the user explicitly asks for a type, but make golang-osc's implicit default more useful on clouds that expose only fixed/private server addresses. If the default public/floating lookup fails and the user did not pass `--public` or `--address-type public`, `server ssh` falls back to private/fixed address selection. Explicit public selection still returns the Python-style `ERROR: No public IP version [4 6] address found`.
+
+Reasoning: the pure Go implementation is already a documented local-client compatibility exception because Python OSC shells out to OpenSSH. The fallback is similarly documented as a narrow usability exception for environments where fixed addresses are reachable and floating addresses are not assigned.
+
+Validation: added unit coverage for implicit default fallback, explicit `--public` strict failure, and explicit `--address-type public` strict failure.

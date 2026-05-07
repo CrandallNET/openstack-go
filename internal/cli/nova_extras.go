@@ -119,7 +119,7 @@ func buildServerSSHRequest(stdout io.Writer, opts *Options, authOptions gophercl
 	if err != nil {
 		return serverSSHRequest{}, err
 	}
-	address, err := serverSSHAddress(server.Addresses, invocation.addressType, invocation.ipFamilies)
+	address, err := serverSSHAddressForInvocation(server.Addresses, invocation)
 	if err != nil {
 		return serverSSHRequest{}, err
 	}
@@ -151,6 +151,7 @@ type serverSSHInvocation struct {
 	knownHostsFiles       []string
 	strictHostKeyChecking string
 	addressType           string
+	addressTypeExplicit   bool
 	ipFamilies            []int
 	forwardAgent          bool
 	disableAgent          bool
@@ -199,14 +200,17 @@ func parseServerSSHInvocation(opts *Options, authOptions gophercloud.AuthOptions
 	if boolFlag(opts, "public") {
 		addressTypeFlags++
 		invocation.addressType = "public"
+		invocation.addressTypeExplicit = true
 	}
 	if boolFlag(opts, "private") {
 		addressTypeFlags++
 		invocation.addressType = "private"
+		invocation.addressTypeExplicit = true
 	}
 	if addressType := flagValue(opts, "address-type"); addressType != "" {
 		addressTypeFlags++
 		invocation.addressType = addressType
+		invocation.addressTypeExplicit = true
 	}
 	if addressTypeFlags > 1 {
 		return serverSSHInvocation{}, fmt.Errorf("argument --address-type: not allowed with argument --public or --private")
@@ -370,6 +374,20 @@ func sshOptionTruthy(value string) bool {
 	default:
 		return false
 	}
+}
+
+func serverSSHAddressForInvocation(addresses map[string]any, invocation serverSSHInvocation) (string, error) {
+	address, err := serverSSHAddress(addresses, invocation.addressType, invocation.ipFamilies)
+	if err == nil {
+		return address, nil
+	}
+	if invocation.addressTypeExplicit || invocation.addressType != "public" {
+		return "", err
+	}
+	if privateAddress, privateErr := serverSSHAddress(addresses, "private", invocation.ipFamilies); privateErr == nil {
+		return privateAddress, nil
+	}
+	return "", err
 }
 
 func serverSSHAddress(addresses map[string]any, addressType string, ipFamilies []int) (string, error) {
