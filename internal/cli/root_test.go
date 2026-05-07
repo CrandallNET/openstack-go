@@ -1381,6 +1381,32 @@ func TestPrettyOSImageColorsKnownOperatingSystems(t *testing.T) {
 	}
 }
 
+func TestPrettyOSImageColorsMeetDarkBackgroundContrast(t *testing.T) {
+	for _, definition := range prettyOSImageColorDefinitions {
+		ratio, ok := prettyOSImageColorContrastRatio(definition.Hex)
+		if !ok {
+			t.Fatalf("expected OS image color %s for %s to parse", definition.Hex, definition.Name)
+		}
+		if ratio < prettyOSImageColorMinimumContrast {
+			t.Fatalf("expected OS image color %s for %s to meet %.1f:1 contrast against %s, got %.2f:1", definition.Hex, definition.Name, prettyOSImageColorMinimumContrast, prettyOSImageColorContrastBackground, ratio)
+		}
+	}
+}
+
+func TestPrettyOSColorTestReportsContrast(t *testing.T) {
+	var stdout bytes.Buffer
+	if err := RenderPrettyOSColorTest(&stdout, &Options{Format: "pretty"}); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	output := stripANSI(stdout.String())
+	if !strings.Contains(output, "Contrast") {
+		t.Fatalf("expected os-test output to include contrast column, got:\n%s", output)
+	}
+	if !strings.Contains(output, "4.5") && !strings.Contains(output, ":1") {
+		t.Fatalf("expected os-test output to include measured contrast ratios, got:\n%s", output)
+	}
+}
+
 func TestPrettyImageSemanticRoleColorsImageNames(t *testing.T) {
 	colorizer := prettyListCellColorizer([]string{"Name"}, [][]string{{"image"}})
 	want := prettyStyleForColor(prettyColorOSUbuntu).Render("Ubuntu 24.04")
@@ -1400,9 +1426,15 @@ func TestPrettyOSImageColorsUseSpecificBrandMatches(t *testing.T) {
 		color string
 	}{
 		{name: "centos stream before centos", value: "CentOS Stream 10", color: prettyColorOSCentOSStream},
+		{name: "centos core before centos", value: "CentOS Core", color: prettyColorOSCentOSCore},
 		{name: "centos classic", value: "CentOS 7", color: prettyColorOSCentOS},
+		{name: "coreos before fedora", value: "Fedora CoreOS", color: prettyColorOSCoreOS},
+		{name: "flatcar", value: "Flatcar Container Linux", color: prettyColorOSFlatcar},
 		{name: "oracle linux before rhel", value: "Oracle Linux 9", color: prettyColorOSOracleLinux},
 		{name: "cirros openstack", value: "CirrOS 0.6.2", color: prettyColorOSCirrOS},
+		{name: "gentoo readable palette", value: "Gentoo Linux", color: prettyColorOSGentoo},
+		{name: "tails readable palette", value: "Tails 6.0", color: prettyColorOSTails},
+		{name: "talos linux", value: "Talos Linux", color: prettyColorOSTalos},
 		{name: "vyos yellow", value: "VyOS 1.5", color: prettyColorOSVyOS},
 		{name: "pop os punctuation", value: "Pop!_OS 22.04", color: prettyColorOSPopOS},
 		{name: "freebsd", value: "FreeBSD 14", color: prettyColorOSFreeBSD},

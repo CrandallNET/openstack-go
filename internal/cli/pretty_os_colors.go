@@ -3,6 +3,8 @@ package cli
 import (
 	"fmt"
 	"io"
+	"math"
+	"strconv"
 	"strings"
 	"unicode"
 
@@ -27,38 +29,47 @@ type prettyOSImageColorDefinition struct {
 }
 
 const (
-	prettyColorOSAlmaLinux    = "#0069DA"
-	prettyColorOSAlpine       = "#0D597F"
-	prettyColorOSArch         = "#1793D1"
-	prettyColorOSCentOS       = "#262577"
-	prettyColorOSCentOSStream = "#A14F8C"
-	prettyColorOSCirrOS       = "#ED1844"
-	prettyColorOSDebian       = "#CE0056"
-	prettyColorOSDeepin       = "#007CFF"
+	prettyOSImageColorContrastBackground = "#282C34"
+	prettyOSImageColorMinimumContrast    = 4.5
+)
+
+const (
+	prettyColorOSAlmaLinux    = "#4DB5FF"
+	prettyColorOSAlpine       = "#4BB4D8"
+	prettyColorOSArch         = "#4DBBEB"
+	prettyColorOSCentOS       = "#9CCD2A"
+	prettyColorOSCentOSCore   = prettyColorOSCentOS
+	prettyColorOSCentOSStream = prettyColorOSCentOS
+	prettyColorOSCirrOS       = "#FF6A7D"
+	prettyColorOSCoreOS       = "#7EB7E6"
+	prettyColorOSDebian       = "#FF5C93"
+	prettyColorOSDeepin       = "#5FB0FF"
 	prettyColorOSElementary   = "#64BAFF"
-	prettyColorOSEndeavourOS  = "#7F7FFF"
-	prettyColorOSFedora       = "#3C6EB4"
-	prettyColorOSFreeBSD      = "#E31E26"
-	prettyColorOSGentoo       = "#54487A"
-	prettyColorOSKali         = "#557C94"
+	prettyColorOSEndeavourOS  = "#A0A0FF"
+	prettyColorOSFedora       = "#51A2DA"
+	prettyColorOSFlatcar      = "#52B8D8"
+	prettyColorOSFreeBSD      = "#FF5A5F"
+	prettyColorOSGentoo       = "#DDDAEC"
+	prettyColorOSKali         = "#84C8E8"
 	prettyColorOSLinuxMint    = "#86BE43"
 	prettyColorOSManjaro      = "#35BFA4"
-	prettyColorOSNetBSD       = "#F26711"
-	prettyColorOSNixOS        = "#5277C3"
+	prettyColorOSNetBSD       = "#FF7A1A"
+	prettyColorOSNixOS        = "#7EB7E6"
 	prettyColorOSOpenBSD      = "#F2CA30"
 	prettyColorOSOpenSUSE     = "#73BA25"
-	prettyColorOSOracleLinux  = "#E32124"
+	prettyColorOSOracleLinux  = "#FF6B6B"
 	prettyColorOSPopOS        = "#48B9C7"
-	prettyColorOSQubes        = "#3874D8"
-	prettyColorOSRedHat       = "#EE0000"
+	prettyColorOSQubes        = "#6EA8FF"
+	prettyColorOSRedHat       = "#FF5959"
 	prettyColorOSRocky        = "#10B981"
-	prettyColorOSSolus        = "#5294E2"
+	prettyColorOSSolus        = "#6AA8F7"
 	prettyColorOSSUSE         = "#30BA78"
-	prettyColorOSTails        = "#56347C"
-	prettyColorOSUbuntu       = "#E95420"
-	prettyColorOSVoid         = "#478061"
+	prettyColorOSTails        = "#C7A4F4"
+	prettyColorOSTalos        = "#FF7300"
+	prettyColorOSUbuntu       = "#FF7A45"
+	prettyColorOSVoid         = "#6FBF8F"
 	prettyColorOSVyOS         = "#FFBF12"
-	prettyColorOSWindows      = "#0078D7"
+	prettyColorOSWindows      = "#54B8FF"
 	prettyColorOSZorin        = "#15A6F0"
 )
 
@@ -88,6 +99,12 @@ var prettyOSImageColorDefinitions = []prettyOSImageColorDefinition{
 		Matches: []string{"centos stream", "centosstream"},
 	},
 	{
+		Name:    "CentOS Core",
+		Hex:     prettyColorOSCentOSCore,
+		Sample:  "CentOS Core",
+		Matches: []string{"centos core", "centoscore"},
+	},
+	{
 		Name:    "CentOS",
 		Hex:     prettyColorOSCentOS,
 		Sample:  "CentOS 7",
@@ -98,6 +115,12 @@ var prettyOSImageColorDefinitions = []prettyOSImageColorDefinition{
 		Hex:     prettyColorOSCirrOS,
 		Sample:  "CirrOS 0.6.2",
 		Matches: []string{"cirros"},
+	},
+	{
+		Name:    "CoreOS",
+		Hex:     prettyColorOSCoreOS,
+		Sample:  "Fedora CoreOS",
+		Matches: []string{"fedora coreos", "coreos", "core os"},
 	},
 	{
 		Name:    "Debian",
@@ -128,6 +151,12 @@ var prettyOSImageColorDefinitions = []prettyOSImageColorDefinition{
 		Hex:     prettyColorOSFedora,
 		Sample:  "Fedora 41",
 		Matches: []string{"fedora"},
+	},
+	{
+		Name:    "Flatcar Container Linux",
+		Hex:     prettyColorOSFlatcar,
+		Sample:  "Flatcar Container Linux",
+		Matches: []string{"flatcar container linux", "flatcar linux", "flatcar"},
 	},
 	{
 		Name:    "FreeBSD",
@@ -232,6 +261,12 @@ var prettyOSImageColorDefinitions = []prettyOSImageColorDefinition{
 		Matches: []string{"tails"},
 	},
 	{
+		Name:    "Talos Linux",
+		Hex:     prettyColorOSTalos,
+		Sample:  "Talos Linux",
+		Matches: []string{"talos linux", "talos"},
+	},
+	{
 		Name:    "Ubuntu",
 		Hex:     prettyColorOSUbuntu,
 		Sample:  "Ubuntu 24.04",
@@ -290,6 +325,59 @@ func prettyStyleForColor(color string) lipgloss.Style {
 	return lipgloss.NewStyle().Foreground(lipgloss.Color(color))
 }
 
+func prettyOSImageColorContrastRatio(color string) (float64, bool) {
+	return prettyContrastRatio(color, prettyOSImageColorContrastBackground)
+}
+
+func prettyContrastRatio(foreground string, background string) (float64, bool) {
+	foregroundLuminance, ok := prettyRelativeLuminance(foreground)
+	if !ok {
+		return 0, false
+	}
+	backgroundLuminance, ok := prettyRelativeLuminance(background)
+	if !ok {
+		return 0, false
+	}
+	light := math.Max(foregroundLuminance, backgroundLuminance)
+	dark := math.Min(foregroundLuminance, backgroundLuminance)
+	return (light + 0.05) / (dark + 0.05), true
+}
+
+func prettyRelativeLuminance(color string) (float64, bool) {
+	red, green, blue, ok := prettyHexRGB(color)
+	if !ok {
+		return 0, false
+	}
+	return 0.2126*prettyLinearRGB(red) + 0.7152*prettyLinearRGB(green) + 0.0722*prettyLinearRGB(blue), true
+}
+
+func prettyHexRGB(color string) (float64, float64, float64, bool) {
+	color = strings.TrimPrefix(strings.TrimSpace(color), "#")
+	if len(color) != 6 {
+		return 0, 0, 0, false
+	}
+	red, err := strconv.ParseUint(color[0:2], 16, 8)
+	if err != nil {
+		return 0, 0, 0, false
+	}
+	green, err := strconv.ParseUint(color[2:4], 16, 8)
+	if err != nil {
+		return 0, 0, 0, false
+	}
+	blue, err := strconv.ParseUint(color[4:6], 16, 8)
+	if err != nil {
+		return 0, 0, 0, false
+	}
+	return float64(red) / 255, float64(green) / 255, float64(blue) / 255, true
+}
+
+func prettyLinearRGB(value float64) float64 {
+	if value <= 0.03928 {
+		return value / 12.92
+	}
+	return math.Pow((value+0.055)/1.055, 2.4)
+}
+
 func prettyNormalizeOSImageText(text string) string {
 	var builder strings.Builder
 	lastSpace := true
@@ -335,13 +423,18 @@ func RenderPrettyOSColorTest(stdout io.Writer, opts *Options) error {
 
 	rows := make([]outputRow, 0, len(prettyOSImageColorDefinitions))
 	for _, definition := range prettyOSImageColorDefinitions {
+		contrast := "unknown"
+		if ratio, ok := prettyOSImageColorContrastRatio(definition.Hex); ok {
+			contrast = fmt.Sprintf("%.2f:1", ratio)
+		}
 		rows = append(rows, outputRow{
 			"OS":            prettyImageValue(definition.Name),
 			"Hex":           definition.Hex,
+			"Contrast":      contrast,
 			"Sample Image":  prettyImageValue(definition.Sample),
 			"Matched Terms": strings.Join(definition.Matches, ", "),
 			"Color Preview": prettyImageValue(fmt.Sprintf("%s %s", definition.Name, definition.Hex)),
 		})
 	}
-	return renderListOutput(stdout, &renderOpts, []string{"OS", "Hex", "Sample Image", "Color Preview", "Matched Terms"}, rows)
+	return renderListOutput(stdout, &renderOpts, []string{"OS", "Hex", "Contrast", "Sample Image", "Color Preview", "Matched Terms"}, rows)
 }

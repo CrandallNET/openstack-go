@@ -1731,3 +1731,21 @@ Sources consulted:
 
 * Local Make targets in `Makefile`.
 * Local discovery runner in `tools/cloud-discovery/main.go`.
+
+## 2026-05-07: Pretty OS Color Contrast
+
+Decision: keep OS image colors in the Fancy/Pretty renderer brand-recognizable, but treat readability as the stronger constraint for terminal text. `make os-test` now reports the measured contrast ratio for each supported OS color against the dark Fancy terminal baseline `#282C34`, and unit tests require every suggested color to meet at least `4.5:1`. CentOS, CentOS Stream, and CentOS Core share the readable CentOS green `#9CCD2A`. Gentoo uses the documented Gentoo grey `#DDDAEC` instead of the primary purple, Tails uses a lighter accessible purple tint because the primary purple was too dark on this background, and Talos Linux uses the source-backed Simple Icons orange `#FF7300`.
+
+Work done: updated the OS image palette to use readable colors, added Flatcar Container Linux, Talos Linux, CentOS Core, and CoreOS/Fedora CoreOS match entries, made `make os-test` include a `Contrast` column, and added tests for match specificity and dark-background contrast.
+
+Validation: focused unit tests cover the contrast threshold, `os-test` contrast reporting, and the new OS match ordering. Full validation results are recorded with the commit.
+
+Sources consulted:
+
+* W3C WCAG 2.2 SC 1.4.3 contrast guidance, which specifies `4.5:1` for normal text: https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html.
+* Archived CentOS logo color page, which lists CentOS green `#9CCD2A`, orange `#EFA724`, purple `#a14F8C`, and dark blue `#262577`: https://wiki.centos.org/ArtWork%282f%29Brand%282f%29Logo.html.
+* Gentoo artwork color page, which lists Gentoo purple variants and light grey `#DDDAEC`: https://wiki.gentoo.org/wiki/Project:Artwork/Colors.
+* Flatcar Container Linux project page, used to confirm the distro name and supported image label: https://www.flatcar.org/.
+* Talos Linux project page, used to confirm the distro name and supported image label: https://www.talos.dev/.
+* Wikimedia CoreOS logo records, used as the available public reference for legacy CoreOS and Fedora CoreOS logo lineage: https://commons.wikimedia.org/wiki/File:CoreOS.svg and https://commons.wikimedia.org/wiki/File:Fedora_CoreOS_logo.svg.
+* Simple Icons source-backed color data remains the fallback source for distro logo colors when an official page does not expose a terminal-usable palette. It currently records Talos as `#FF7300` from the Sidero Labs Talos logo SVG, Tails as `#56347C` from the Tails logo page, and Gentoo as `#54487A` from Gentoo artwork: https://cdn.jsdelivr.net/npm/simple-icons@latest/_data/simple-icons.json.
