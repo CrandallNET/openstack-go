@@ -195,6 +195,7 @@ func TestCommandReportStatusMapping(t *testing.T) {
 		{status: "sdk-covered", want: "partially implemented"},
 		{status: "shim-needed", want: "partially implemented"},
 		{status: "blocked", want: "partially implemented"},
+		{status: "local-client-needed", want: "partially implemented"},
 	}
 	for _, tt := range tests {
 		got := commandReportStatus(commandEntry{Status: tt.status})

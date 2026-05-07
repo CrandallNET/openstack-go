@@ -45,6 +45,8 @@ Default output, help text, completion output, stderr text, and exit status are c
 
 The Go CLI must not shell out to Python/OpenStackClient in production behavior. Python/OpenStackClient may be used only as an oracle for catalog generation, tests, and behavior comparison.
 
+`server ssh` is a documented compatibility exception to the normal API-backed command rule, not an exception to the self-contained runtime rule. Implement it with a pure Go SSH client path; do not shell out to `ssh`, Python/OpenStackClient, or another OS command in production behavior.
+
 Build the local Go CLI as `bin/openstack` and preserve the Python `openstack` binary as the oracle.
 
 ## Plugin Rules

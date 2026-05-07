@@ -50,7 +50,7 @@ type generationSummary struct {
 	TestCloudsPath string
 }
 
-var matrixStatusValues = []string{"unknown", "sdk-covered", "shim-needed", "implemented", "golden-matched", "cloud-verified", "blocked"}
+var matrixStatusValues = []string{"unknown", "sdk-covered", "shim-needed", "implemented", "golden-matched", "cloud-verified", "blocked", "local-client-needed"}
 var reportModes = map[string]bool{"summary": true, "command-status": true}
 var reportFormats = map[string]bool{"terminal": true, "readme": true}
 
@@ -259,7 +259,7 @@ func printCommandStatusReport(w io.Writer, entries []commandEntry, format string
 	if format == "readme" {
 		fmt.Fprintln(w, "### Command Compatibility Status")
 		fmt.Fprintln(w)
-		fmt.Fprintln(w, "The Python column is sourced from the pinned Python OpenStackClient 9.0.0 command catalog. The Go status is conservative: `compatible` requires golden oracle parity, `partially compatible` means live cloud verification exists without full oracle parity, `implemented` means Go behavior exists but parity is still open, and `partially implemented` includes command paths that currently rely on generated stubs or incomplete SDK/shim work.")
+		fmt.Fprintln(w, "The Python column is sourced from the pinned Python OpenStackClient 9.0.0 command catalog. The Go status is conservative: `compatible` requires golden oracle parity, `partially compatible` means live cloud verification exists without full oracle parity, `implemented` means Go behavior exists but parity is still open, and `partially implemented` includes command paths that currently rely on generated stubs or incomplete SDK, shim, or local-client work.")
 		fmt.Fprintln(w)
 	}
 	fmt.Fprintln(w, "| Command | Python OSC 9.0.0 | golang-osc status | Source | Notes |")
@@ -303,6 +303,8 @@ func commandReportNote(entry commandEntry) string {
 		notes = append(notes, "Live cloud verification recorded; full oracle parity may still be open.")
 	case "implemented":
 		notes = append(notes, "Implemented in Go; compatibility verification still open.")
+	case "local-client-needed":
+		notes = append(notes, "Accepted local-client exception; pure Go SSH implementation still needed.")
 	default:
 		notes = append(notes, "Command path exists in the Go CLI, but behavior is not complete.")
 	}
@@ -359,10 +361,10 @@ func newCommandEntry(group string, command string) commandEntry {
 		entry.Tests = []string{"unit: injected token issuer", "live: cloud6 token issue"}
 		entry.Notes = "Implemented through Gophercloud auth/config and Identity v3 token extraction. JSON smoke passed on cloud6; broader formatter and auth precedence parity still need oracle tests."
 	case "server ssh":
-		entry.Status = "blocked"
+		entry.Status = "local-client-needed"
 		entry.ImplementedIn = ""
 		entry.Tests = []string{"unit: generated command stub"}
-		entry.Notes = "Python OSC delegates to local SSH behavior. The Go CLI keeps this as a stub until a self-contained, cross-platform SSH implementation can preserve the project rule against shelling out to the operating system."
+		entry.Notes = "Project-approved compatibility exception to the normal API-backed command rule. Python OSC delegates to local SSH behavior; golang-osc must implement this as a self-contained, cross-platform Go SSH client and must not shell out to ssh or Python in production behavior."
 	}
 	if packagePath, ok := identityReadPackages()[command]; ok {
 		entry.Status = "implemented"

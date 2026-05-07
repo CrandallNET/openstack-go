@@ -1813,3 +1813,27 @@ Validation: `make help` no longer lists the removed targets. `go test ./...` and
 Decision: keep the top-level `make help` row for `lifecycle` concise because the supported `SUITE=` values are already listed in the dedicated lifecycle suite section.
 
 Work done: changed the `lifecycle` target help text to say `SUITE=name` instead of repeating every supported suite in the target table.
+
+## 2026-05-07: Server SSH Local-Client Exception
+
+Decision: `server ssh` is now a documented compatibility exception to the normal API-backed command rule. It is not an exception to the self-contained production rule: golang-osc must not shell out to `ssh`, Python OSC, or another OS command for production behavior. The implementation path should resolve the target server address through Compute, then run an SSH session with a Go SSH client library.
+
+Research: the pinned Python OSC help exposes `openstack server ssh <server> [-- <standard ssh args> ...]`, and the local Python source builds an `ssh` command string before calling `os.system`. That confirms this command is local SSH orchestration, not OpenStack API behavior. The Go dependency path is viable: `golang.org/x/crypto/ssh` documents an SSH client implementation with `Dial`, `Client.NewSession`, shell support, subprocess support, and `Session.RequestPty`; `golang.org/x/crypto/ssh/knownhosts` provides an OpenSSH `known_hosts` parser and `HostKeyCallback`; `golang.org/x/crypto/ssh/agent` implements the ssh-agent protocol; and `golang.org/x/term` supports terminal raw mode and terminal sizing. `golang.org/x/crypto` and `golang.org/x/term` are already present in `go.mod`, so the likely first implementation can use existing module dependencies.
+
+Compatibility risks to resolve before implementation:
+
+* Python accepts arbitrary OpenSSH pass-through arguments after `--`; a pure Go client cannot honestly support every OpenSSH option unless each relevant option is parsed and mapped.
+* Interactive TTY behavior needs raw-mode handling, PTY allocation, terminal size propagation, signal handling, and exit-status mapping.
+* Authentication needs an explicit policy for ssh-agent, key files, encrypted private keys, passwords, default username fallback, and deprecated Python OSC flags such as `-l`, `-p`, `-i`, and `-o`.
+* Host key behavior must be documented and tested rather than silently disabling verification.
+
+Work done: updated the active plan and matrix generator to track `server ssh` as `local-client-needed` instead of a generic blocked command.
+
+Sources consulted:
+
+* Local Python OSC help snapshot: `compat/osc/9.0.0/help/server/ssh.txt`.
+* Local Python OSC source: `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/compute/v2/server.py`.
+* Go SSH package docs: https://pkg.go.dev/golang.org/x/crypto/ssh.
+* Go known_hosts package docs: https://pkg.go.dev/golang.org/x/crypto/ssh/knownhosts.
+* Go ssh-agent package docs: https://pkg.go.dev/golang.org/x/crypto/ssh/agent.
+* Go terminal package docs: https://pkg.go.dev/golang.org/x/term.

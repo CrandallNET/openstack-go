@@ -8,6 +8,7 @@ status_values:
   - "golden-matched"
   - "cloud-verified"
   - "blocked"
+  - "local-client-needed"
 commands:
   - command: "access rule delete"
     group: "openstack.identity.v3"
@@ -5695,14 +5696,14 @@ commands:
     group: "openstack.compute.v2"
     service: "compute"
     api: "v2"
-    status: "blocked"
+    status: "local-client-needed"
     sdk_package: ""
     shim: false
     plugin_scope: false
     implemented_in: ""
     tests:
       - "unit: generated command stub"
-    notes: "Python OSC delegates to local SSH behavior. The Go CLI keeps this as a stub until a self-contained, cross-platform SSH implementation can preserve the project rule against shelling out to the operating system."
+    notes: "Project-approved compatibility exception to the normal API-backed command rule. Python OSC delegates to local SSH behavior; golang-osc must implement this as a self-contained, cross-platform Go SSH client and must not shell out to ssh or Python in production behavior."
   - command: "server start"
     group: "openstack.compute.v2"
     service: "compute"
