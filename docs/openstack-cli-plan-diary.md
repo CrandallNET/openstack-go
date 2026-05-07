@@ -1680,3 +1680,15 @@ Sources consulted:
 
 * Local Pretty renderer in `internal/cli/output.go`.
 * Local parser setup in `internal/cli/root.go`.
+
+## 2026-05-06: Pretty Server Network IP Indentation
+
+Decision: Pretty server network addresses should keep the network label on the first IP for a network and indent additional IPs by four spaces. Default server address output remains Python-compatible and unchanged.
+
+Work done: updated the shared Pretty server network formatter used by `server list` and `server show`. A multi-IP network now renders as `network: first-ip` followed by `    next-ip` lines. Single-IP networks still render on one labeled line.
+
+Validation: `go test ./internal/cli` passed with focused assertions for the four-space indentation and for unchanged single-IP network labels.
+
+Sources consulted:
+
+* Local Pretty server address formatter in `internal/cli/core_read.go`.

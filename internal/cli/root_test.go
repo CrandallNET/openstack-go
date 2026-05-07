@@ -916,8 +916,11 @@ func TestPrettyListFormatsServerNetworksVertically(t *testing.T) {
 			t.Fatalf("pretty server network output missing %q:\n%s", want, output)
 		}
 	}
-	if got, want := strings.Count(output, "testNet:"), 2; got != want {
-		t.Fatalf("expected pretty server networks to repeat the network name for each IP, got %d occurrences:\n%s", got, output)
+	if got, want := strings.Count(output, "testNet:"), 1; got != want {
+		t.Fatalf("expected pretty server networks to label a multi-IP network once, got %d occurrences:\n%s", got, output)
+	}
+	if !strings.Contains(output, "    172.17.36.42") {
+		t.Fatalf("expected additional server network IPs to be indented by four spaces, got:\n%s", output)
 	}
 	if strings.Contains(output, "testNet=172.16.86.110, 172.17.36.42") {
 		t.Fatalf("expected pretty server networks to avoid comma-delimited summary, got:\n%s", output)
@@ -944,6 +947,9 @@ func TestPrettyServerNetworksRelabelBySubnetCIDR(t *testing.T) {
 	}
 	if strings.Contains(pretty, "testNet: 172.16.86.110") {
 		t.Fatalf("expected os6-lan subnet IP to be relabeled, got:\n%s", pretty)
+	}
+	if strings.Contains(pretty, "    172.") {
+		t.Fatalf("expected single-IP network labels to stay on one line, got:\n%s", pretty)
 	}
 
 	defaultValue := valueString(serverAddressesValue(addresses, labels))
