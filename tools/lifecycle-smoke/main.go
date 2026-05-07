@@ -46,6 +46,8 @@ type stepResult struct {
 	SkipReason     string   `json:"skip_reason,omitempty"`
 }
 
+var lifecycleSuites = []string{"keypair", "server", "volume", "quota", "image", "network", "object"}
+
 func main() {
 	var suite string
 	var cloud string
@@ -53,7 +55,7 @@ func main() {
 	var diagnosticsDir string
 	var keepSuccess bool
 
-	flag.StringVar(&suite, "suite", "keypair", "lifecycle suite to run: keypair, server, volume, quota, image, network, or object")
+	flag.StringVar(&suite, "suite", "keypair", "lifecycle suite to run: "+lifecycleSuiteHelp())
 	flag.StringVar(&cloud, "cloud", os.Getenv("OS_CLOUD"), "cloud name to test")
 	flag.StringVar(&prefix, "prefix", "golang-osc-test", "unique resource prefix")
 	flag.StringVar(&diagnosticsDir, "diagnostics-dir", "compat/lifecycle-diagnostics", "directory for retained failure diagnostics")
@@ -65,28 +67,65 @@ func main() {
 		os.Exit(1)
 	}
 
-	var diagnostics lifecycleDiagnostics
-	var err error
-	switch suite {
-	case "keypair":
-		diagnostics, err = runKeypairLifecycle(cloud, prefix)
-	case "server":
-		diagnostics, err = runServerLifecycle(cloud, prefix)
-	case "volume":
-		diagnostics, err = runVolumeLifecycle(cloud, prefix)
-	case "quota":
-		diagnostics, err = runQuotaLifecycle(cloud, prefix)
-	case "image":
-		diagnostics, err = runImageLifecycle(cloud, prefix)
-	case "network":
-		diagnostics, err = runNetworkLifecycle(cloud, prefix)
-	case "object":
-		diagnostics, err = runObjectLifecycle(cloud, prefix)
-	default:
-		fmt.Fprintf(os.Stderr, "lifecycle-smoke: unknown suite %q\n", suite)
+	suite = strings.TrimSpace(suite)
+	if suite == "all" {
+		runAllLifecycleSuites(cloud, prefix, diagnosticsDir, keepSuccess)
+		return
+	}
+
+	diagnostics, err := runLifecycleSuite(suite, cloud, prefix)
+	failed := finishLifecycleSuite(suite, cloud, diagnostics, err, diagnosticsDir, keepSuccess)
+	if failed {
 		os.Exit(1)
 	}
+}
+
+func lifecycleSuiteHelp() string {
+	values := append([]string(nil), lifecycleSuites...)
+	values = append(values, "all")
+	return strings.Join(values, ", ")
+}
+
+func runAllLifecycleSuites(cloud string, prefix string, diagnosticsDir string, keepSuccess bool) {
+	failed := false
+	for _, suite := range lifecycleSuites {
+		diagnostics, err := runLifecycleSuite(suite, cloud, prefix)
+		if finishLifecycleSuite(suite, cloud, diagnostics, err, diagnosticsDir, keepSuccess) {
+			failed = true
+		}
+	}
+	if failed {
+		os.Exit(1)
+	}
+}
+
+func runLifecycleSuite(suite string, cloud string, prefix string) (lifecycleDiagnostics, error) {
+	switch suite {
+	case "keypair":
+		return runKeypairLifecycle(cloud, prefix)
+	case "server":
+		return runServerLifecycle(cloud, prefix)
+	case "volume":
+		return runVolumeLifecycle(cloud, prefix)
+	case "quota":
+		return runQuotaLifecycle(cloud, prefix)
+	case "image":
+		return runImageLifecycle(cloud, prefix)
+	case "network":
+		return runNetworkLifecycle(cloud, prefix)
+	case "object":
+		return runObjectLifecycle(cloud, prefix)
+	default:
+		return lifecycleDiagnostics{}, fmt.Errorf("unknown suite %q", suite)
+	}
+}
+
+func finishLifecycleSuite(suite string, cloud string, diagnostics lifecycleDiagnostics, err error, diagnosticsDir string, keepSuccess bool) bool {
 	if err != nil {
+		if diagnostics.StartedAt == "" {
+			fmt.Fprintf(os.Stderr, "lifecycle-smoke: %v\n", err)
+			return true
+		}
 		diagnostics.Status = "failed"
 	} else {
 		diagnostics.Status = "passed"
@@ -108,8 +147,9 @@ func main() {
 	}
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "lifecycle-smoke: %v\n", err)
-		os.Exit(1)
+		return true
 	}
+	return false
 }
 
 func runKeypairLifecycle(cloud string, prefix string) (lifecycleDiagnostics, error) {

@@ -1705,3 +1705,16 @@ Sources consulted:
 
 * Local Pretty server address formatter in `internal/cli/core_read.go`.
 * Local Pretty label parser in `internal/cli/output.go`.
+
+## 2026-05-07: Lifecycle Make Target Consolidation
+
+Decision: use one public Make target for lifecycle validation: `make lifecycle CLOUD=name SUITE=suite`. The supported suites are `keypair`, `server`, `volume`, `quota`, `image`, `network`, `object`, and `all`. Remove the individual service-specific `*-lifecycle` Make targets so users do not have to discover multiple target names for the same runner.
+
+Work done: replaced `lifecycle-smoke` and the individual `server-lifecycle`, `volume-lifecycle`, `quota-lifecycle`, `image-lifecycle`, `network-lifecycle`, and `object-lifecycle` Make targets with a single `lifecycle` target. `make help` now prints the lifecycle suite list and short suite descriptions. The lifecycle runner now accepts `--suite all` and runs every suite in sequence, continuing through all suites and returning a failure exit code if any suite fails.
+
+Validation: focused unit tests cover the lifecycle suite help text and unknown-suite rejection.
+
+Sources consulted:
+
+* Local Make targets in `Makefile`.
+* Local lifecycle runner in `tools/lifecycle-smoke/main.go`.

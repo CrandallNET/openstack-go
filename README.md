@@ -93,13 +93,15 @@ make discover-cloud CLOUD=cloud6,flex-sjc,flex-dfw,flex-iad
 
 Discovery writes JSON reports under `compat/live-clouds/`. These reports intentionally omit secrets and should be refreshed before lifecycle tests because cloud state can change.
 
-Run the first low-risk write lifecycle smoke test:
+Run live write lifecycle tests:
 
 ```sh
-make lifecycle-smoke CLOUD=cloud6
+make lifecycle CLOUD=cloud6
+make lifecycle CLOUD=cloud6 SUITE=server
+make lifecycle CLOUD=cloud6 SUITE=all
 ```
 
-The lifecycle smoke currently creates, shows, and deletes a uniquely named keypair. Failure diagnostics are retained under `compat/lifecycle-diagnostics/`; successful runs print a concise pass line and do not retain diagnostics unless `tools/lifecycle-smoke --keep-success` is used.
+The default lifecycle suite is `keypair`. Available suites are `keypair`, `server`, `volume`, `quota`, `image`, `network`, `object`, and `all`; `make help` prints the current list. Lifecycle tests create uniquely named `golang-osc-test-*` resources, compare Go CLI behavior against the Python OSC oracle where supported, clean up resources they created, and retain failure diagnostics under `compat/lifecycle-diagnostics/`. Successful runs print concise pass lines and do not retain diagnostics unless `tools/lifecycle-smoke --keep-success` is used.
 
 Regenerate compatibility artifacts after changing the local Python OSC oracle or matrix generator:
 

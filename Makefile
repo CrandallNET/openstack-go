@@ -12,6 +12,15 @@ export GOMODCACHE
 .PHONY: help
 help: ## Show available Make targets.
 	@awk 'BEGIN {FS = ":.*##"; printf "Available targets:\n"} /^[a-zA-Z0-9_.-]+:.*##/ { printf "  %-24s %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
+	@printf "\nLifecycle suites for 'make lifecycle CLOUD=name SUITE=suite':\n"
+	@printf "  %-24s %s\n" "keypair" "Create, show, and delete a disposable keypair."
+	@printf "  %-24s %s\n" "server" "Run disposable Compute server lifecycle and attach/detach checks."
+	@printf "  %-24s %s\n" "volume" "Run disposable Block Storage volume lifecycle checks."
+	@printf "  %-24s %s\n" "quota" "Run project-scoped quota mutation checks."
+	@printf "  %-24s %s\n" "image" "Run disposable Image service lifecycle and metadef checks."
+	@printf "  %-24s %s\n" "network" "Run disposable Network service lifecycle checks."
+	@printf "  %-24s %s\n" "object" "Run disposable Object Storage container and object checks."
+	@printf "  %-24s %s\n" "all" "Run all lifecycle suites in sequence."
 
 .PHONY: build
 build: ## Build the drop-in openstack binary at bin/openstack.
@@ -60,33 +69,9 @@ compat-static-all: build ## Run static checks plus --help parity for every catal
 discover-cloud: ## Discover non-secret live cloud capabilities; set CLOUD=name[,name].
 	$(GO) run ./tools/cloud-discovery --cloud "$(CLOUD)"
 
-.PHONY: lifecycle-smoke
-lifecycle-smoke: ## Run a lifecycle smoke test; set CLOUD=name and optionally SUITE=keypair|server|volume|quota|image|network|object.
+.PHONY: lifecycle
+lifecycle: ## Run lifecycle tests; set CLOUD=name and optionally SUITE=keypair|server|volume|quota|image|network|object|all.
 	$(GO) run ./tools/lifecycle-smoke --cloud "$(CLOUD)" --suite "$(or $(SUITE),keypair)"
-
-.PHONY: server-lifecycle
-server-lifecycle: ## Run the Compute server disposable lifecycle suite; set CLOUD=name.
-	$(GO) run ./tools/lifecycle-smoke --cloud "$(CLOUD)" --suite server
-
-.PHONY: volume-lifecycle
-volume-lifecycle: ## Run the Volume v3 disposable lifecycle suite; set CLOUD=name.
-	$(GO) run ./tools/lifecycle-smoke --cloud "$(CLOUD)" --suite volume
-
-.PHONY: quota-lifecycle
-quota-lifecycle: ## Run the quota lifecycle suite against a dedicated test project; set CLOUD=name.
-	$(GO) run ./tools/lifecycle-smoke --cloud "$(CLOUD)" --suite quota
-
-.PHONY: image-lifecycle
-image-lifecycle: ## Run the Image v2 disposable lifecycle suite; set CLOUD=name.
-	$(GO) run ./tools/lifecycle-smoke --cloud "$(CLOUD)" --suite image
-
-.PHONY: network-lifecycle
-network-lifecycle: ## Run the Network v2 disposable lifecycle suite; set CLOUD=name.
-	$(GO) run ./tools/lifecycle-smoke --cloud "$(CLOUD)" --suite network
-
-.PHONY: object-lifecycle
-object-lifecycle: ## Run the Object Storage v1 disposable lifecycle suite; set CLOUD=name.
-	$(GO) run ./tools/lifecycle-smoke --cloud "$(CLOUD)" --suite object
 
 .PHONY: os-test
 os-test: ## Display supported Fancy operating-system image colors.
