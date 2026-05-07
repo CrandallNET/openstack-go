@@ -1783,3 +1783,11 @@ Sources consulted:
 * Go `embed` package documentation, used for compile-time embedding: https://pkg.go.dev/embed.
 * Go `encoding/json` package documentation, used for the standard-library JSON parser: https://pkg.go.dev/encoding/json.
 * OpenStack 2016 logo SVG, used for CirrOS/OpenStack red `#ED1844`: https://commons.wikimedia.org/wiki/File:OpenStack%C2%AE_Logo_2016.svg.
+
+## 2026-05-07: Pretty Wait Progress Action Blocks
+
+Decision: Pretty wait progress should use a small block layout instead of an inline label. The block starts with a blank line, prints an action sentence such as `Creating server: test_vm` or `Deleting server: test_vm`, updates the progress bar on the following line, and finishes with a blank line. This keeps the action readable without changing default OSC-compatible wait output.
+
+Work done: added a reusable Pretty progress block helper, changed server create/delete and other server wait paths to pass action labels with server names, and changed server image and backup image waits to use the same block so Pretty progress remains one updating bar instead of repeated standalone blocks.
+
+Validation: passed focused Pretty progress tests, `go test ./...`, `make build`, and `git diff --check`.

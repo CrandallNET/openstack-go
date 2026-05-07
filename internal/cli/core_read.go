@@ -2865,7 +2865,10 @@ func serverDelete(ctx context.Context, stdout io.Writer, opts *Options, client *
 	if len(args) < 1 {
 		return fmt.Errorf("server delete requires <server>")
 	}
-	deleted := make([]string, 0, len(args))
+	deleted := make([]struct {
+		id   string
+		name string
+	}, 0, len(args))
 	failures := 0
 	for _, value := range args {
 		server, err := findServerForServerCommand(ctx, client, value, boolFlag(opts, "all-projects"))
@@ -2882,14 +2885,17 @@ func serverDelete(ctx context.Context, stdout io.Writer, opts *Options, client *
 			failures++
 			continue
 		}
-		deleted = append(deleted, server.ID)
+		deleted = append(deleted, struct {
+			id   string
+			name string
+		}{id: server.ID, name: server.Name})
 	}
 	if failures > 0 {
 		return fmt.Errorf("%d of %d servers failed to delete.", failures, len(args))
 	}
 	if boolFlag(opts, "wait") {
-		for _, id := range deleted {
-			if err := waitForServerGone(ctx, stdout, opts, client, id); err != nil {
+		for _, server := range deleted {
+			if err := waitForServerGone(ctx, stdout, opts, client, server.id, fmt.Sprintf("Deleting server: %s", server.name)); err != nil {
 				return err
 			}
 		}
@@ -2913,7 +2919,7 @@ func serverReboot(ctx context.Context, stdout io.Writer, opts *Options, client *
 		return err
 	}
 	if boolFlag(opts, "wait") {
-		if err := waitForServerStatus(ctx, stdout, opts, client, server.ID, "Rebooting", []string{"ACTIVE"}, []string{"ERROR"}); err != nil {
+		if err := waitForServerStatus(ctx, stdout, opts, client, server.ID, fmt.Sprintf("Rebooting server: %s", server.Name), []string{"ACTIVE"}, []string{"ERROR"}); err != nil {
 			return err
 		}
 		renderWaitComplete(stdout, opts)
@@ -2947,7 +2953,7 @@ func serverResize(ctx context.Context, stdout io.Writer, opts *Options, client *
 		return err
 	}
 	if boolFlag(opts, "wait") {
-		return waitForServerStatus(ctx, stdout, opts, client, server.ID, "Resizing", []string{"VERIFY_RESIZE"}, []string{"ERROR"})
+		return waitForServerStatus(ctx, stdout, opts, client, server.ID, fmt.Sprintf("Resizing server: %s", server.Name), []string{"VERIFY_RESIZE"}, []string{"ERROR"})
 	}
 	return nil
 }
@@ -2985,7 +2991,7 @@ func serverMigrate(ctx context.Context, stdout io.Writer, opts *Options, client 
 			return err
 		}
 		if boolFlag(opts, "wait") {
-			return waitForServerStatus(ctx, stdout, opts, client, server.ID, "Migrating", []string{"ACTIVE"}, []string{"ERROR"})
+			return waitForServerStatus(ctx, stdout, opts, client, server.ID, fmt.Sprintf("Migrating server: %s", server.Name), []string{"ACTIVE"}, []string{"ERROR"})
 		}
 		return nil
 	}
@@ -2997,7 +3003,7 @@ func serverMigrate(ctx context.Context, stdout io.Writer, opts *Options, client 
 		return err
 	}
 	if boolFlag(opts, "wait") {
-		return waitForServerStatus(ctx, stdout, opts, client, server.ID, "Migrating", []string{"VERIFY_RESIZE"}, []string{"ERROR"})
+		return waitForServerStatus(ctx, stdout, opts, client, server.ID, fmt.Sprintf("Migrating server: %s", server.Name), []string{"VERIFY_RESIZE"}, []string{"ERROR"})
 	}
 	return nil
 }
@@ -3058,7 +3064,7 @@ func serverRebuild(ctx context.Context, stdout io.Writer, opts *Options, compute
 	}
 	adminPass := rebuilt.AdminPass
 	if boolFlag(opts, "wait") {
-		if err := waitForServerStatus(ctx, stdout, opts, computeClient, server.ID, "Rebuilding", []string{"ACTIVE"}, []string{"ERROR"}); err != nil {
+		if err := waitForServerStatus(ctx, stdout, opts, computeClient, server.ID, fmt.Sprintf("Rebuilding server: %s", server.Name), []string{"ACTIVE"}, []string{"ERROR"}); err != nil {
 			return err
 		}
 		rebuilt, err = servers.Get(ctx, computeClient, server.ID).Extract()
@@ -3133,7 +3139,7 @@ func serverEvacuate(ctx context.Context, stdout io.Writer, opts *Options, client
 		return err
 	}
 	if boolFlag(opts, "wait") {
-		if err := waitForServerStatus(ctx, stdout, opts, client, server.ID, "Evacuating", []string{"ACTIVE"}, []string{"ERROR"}); err != nil {
+		if err := waitForServerStatus(ctx, stdout, opts, client, server.ID, fmt.Sprintf("Evacuating server: %s", server.Name), []string{"ACTIVE"}, []string{"ERROR"}); err != nil {
 			return err
 		}
 	}
@@ -3165,7 +3171,7 @@ func serverShelve(ctx context.Context, stdout io.Writer, opts *Options, client *
 			if boolFlag(opts, "offload") {
 				targets = []string{"SHELVED_OFFLOADED"}
 			}
-			if err := waitForServerStatus(ctx, stdout, opts, client, server.ID, "Shelving", targets, []string{"ERROR"}); err != nil {
+			if err := waitForServerStatus(ctx, stdout, opts, client, server.ID, fmt.Sprintf("Shelving server: %s", server.Name), targets, []string{"ERROR"}); err != nil {
 				return err
 			}
 		}
@@ -3210,7 +3216,7 @@ func serverUnshelve(ctx context.Context, stdout io.Writer, opts *Options, client
 			return err
 		}
 		if boolFlag(opts, "wait") {
-			if err := waitForServerStatus(ctx, stdout, opts, client, server.ID, "Unshelving", []string{"ACTIVE"}, []string{"ERROR"}); err != nil {
+			if err := waitForServerStatus(ctx, stdout, opts, client, server.ID, fmt.Sprintf("Unshelving server: %s", server.Name), []string{"ACTIVE"}, []string{"ERROR"}); err != nil {
 				return err
 			}
 		}
@@ -3423,7 +3429,7 @@ func serverCreate(ctx context.Context, stdout io.Writer, opts *Options, computeC
 	}
 	adminPass := created.AdminPass
 	if boolFlag(opts, "wait") {
-		if err := waitForServerStatus(ctx, stdout, opts, computeClient, created.ID, "Creating", []string{"ACTIVE"}, []string{"ERROR"}); err != nil {
+		if err := waitForServerStatus(ctx, stdout, opts, computeClient, created.ID, fmt.Sprintf("Creating server: %s", args[0]), []string{"ACTIVE"}, []string{"ERROR"}); err != nil {
 			return err
 		}
 		created, err = servers.Get(ctx, computeClient, created.ID).Extract()
@@ -3469,7 +3475,7 @@ func serverImageCreate(ctx context.Context, stdout io.Writer, opts *Options, com
 		return err
 	}
 	if boolFlag(opts, "wait") && imageClient != nil {
-		if err := waitForImageStatus(ctx, stdout, opts, imageClient, imageID, []string{"active"}, []string{"killed", "deleted"}); err != nil {
+		if err := waitForImageStatus(ctx, stdout, opts, imageClient, imageID, fmt.Sprintf("Creating image: %s", name), []string{"active"}, []string{"killed", "deleted"}); err != nil {
 			return err
 		}
 	}
@@ -3517,7 +3523,7 @@ func serverBackupCreate(ctx context.Context, stdout io.Writer, opts *Options, co
 		}
 	}
 	if boolFlag(opts, "wait") && imageClient != nil && imageID != "" {
-		if err := waitForImageStatus(ctx, stdout, opts, imageClient, imageID, []string{"active"}, []string{"killed", "deleted"}); err != nil {
+		if err := waitForImageStatus(ctx, stdout, opts, imageClient, imageID, fmt.Sprintf("Creating image backup: %s", name), []string{"active"}, []string{"killed", "deleted"}); err != nil {
 			return err
 		}
 	}
@@ -20709,46 +20715,39 @@ func waitForServerStatus(ctx context.Context, stdout io.Writer, opts *Options, c
 	target := upperStringSet(targets)
 	failed := upperStringSet(failures)
 	prettyProgress := 0.0
-	prettyProgressLineOpen := false
+	var prettyBlock *prettyProgressBlock
+	if prettyOutput(opts) {
+		prettyBlock = newPrettyProgressBlock(stdout, opts, actionLabel)
+		defer func() {
+			_ = prettyBlock.Finish()
+		}()
+	}
 	for {
 		raw, err := computeServerRaw(ctx, client, serverID)
 		if err != nil {
-			if prettyProgressLineOpen {
-				_ = finishPrettyProgressLine(stdout)
-			}
 			return err
 		}
 		status := strings.ToUpper(stringValue(raw["status"]))
 		if target[status] && serverRawTaskStateCleared(raw) {
-			if prettyOutput(opts) {
-				_ = renderPrettyProgressAnimated(stdout, opts, "Complete", prettyProgress, 1, true)
+			if prettyBlock != nil {
+				_ = prettyBlock.Render(prettyProgress, 1, true)
 			}
 			return nil
 		}
 		if failed[status] {
-			if prettyProgressLineOpen {
-				_ = finishPrettyProgressLine(stdout)
-			}
 			return fmt.Errorf("server %s entered %s status", serverID, status)
 		}
 		if time.Now().After(deadline) {
-			if prettyProgressLineOpen {
-				_ = finishPrettyProgressLine(stdout)
-			}
 			return fmt.Errorf("timed out waiting for server %s", serverID)
 		}
-		if prettyOutput(opts) {
+		if prettyBlock != nil {
 			previousProgress := prettyProgress
 			progress, _ := intFromAny(raw["progress"])
 			prettyProgress = nextPrettyWaitProgress(progress, prettyProgress)
-			_ = renderPrettyProgressAnimated(stdout, opts, actionLabel, previousProgress, prettyProgress, false)
-			prettyProgressLineOpen = true
+			_ = prettyBlock.Render(previousProgress, prettyProgress, false)
 		}
 		select {
 		case <-ctx.Done():
-			if prettyProgressLineOpen {
-				_ = finishPrettyProgressLine(stdout)
-			}
 			return ctx.Err()
 		case <-time.After(serverStatusPollInterval):
 		}
@@ -20781,51 +20780,58 @@ func renderWaitComplete(stdout io.Writer, opts *Options) {
 	fmt.Fprintln(stdout, "Complete")
 }
 
-func waitForServerGone(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, serverID string) error {
+func waitForServerGone(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, serverID string, actionLabel string) error {
 	deadline := time.Now().Add(30 * time.Minute)
 	prettyProgress := 0.0
-	prettyProgressLineOpen := false
+	var prettyBlock *prettyProgressBlock
+	if prettyOutput(opts) {
+		prettyBlock = newPrettyProgressBlock(stdout, opts, actionLabel)
+		defer func() {
+			_ = prettyBlock.Finish()
+		}()
+	}
 	for {
 		result := servers.Get(ctx, client, serverID)
 		if result.Err != nil {
 			if codeErr, ok := unexpectedResponseCode(result.Err); ok && codeErr.Actual == http.StatusNotFound {
-				if prettyOutput(opts) {
-					_ = renderPrettyProgressAnimated(stdout, opts, "Deleted", prettyProgress, 1, true)
+				if prettyBlock != nil {
+					_ = prettyBlock.Render(prettyProgress, 1, true)
 				}
 				return nil
-			}
-			if prettyProgressLineOpen {
-				_ = finishPrettyProgressLine(stdout)
 			}
 			return result.Err
 		}
 		if time.Now().After(deadline) {
-			if prettyProgressLineOpen {
-				_ = finishPrettyProgressLine(stdout)
-			}
 			return fmt.Errorf("timed out waiting for server %s delete", serverID)
 		}
-		if prettyOutput(opts) {
+		if prettyBlock != nil {
 			previousProgress := prettyProgress
 			prettyProgress = nextPrettyWaitProgress(0, prettyProgress)
-			_ = renderPrettyProgressAnimated(stdout, opts, "Deleting", previousProgress, prettyProgress, false)
-			prettyProgressLineOpen = true
+			_ = prettyBlock.Render(previousProgress, prettyProgress, false)
 		}
 		select {
 		case <-ctx.Done():
-			if prettyProgressLineOpen {
-				_ = finishPrettyProgressLine(stdout)
-			}
 			return ctx.Err()
 		case <-time.After(serverStatusPollInterval):
 		}
 	}
 }
 
-func waitForImageStatus(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, imageID string, targets []string, failures []string) error {
+func waitForImageStatus(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, imageID string, actionLabel string, targets []string, failures []string) error {
 	deadline := time.Now().Add(30 * time.Minute)
 	target := lowerStringSet(targets)
 	failed := lowerStringSet(failures)
+	prettyProgress := 0.0
+	var prettyBlock *prettyProgressBlock
+	if prettyOutput(opts) {
+		if actionLabel == "" {
+			actionLabel = fmt.Sprintf("Waiting for image: %s", imageID)
+		}
+		prettyBlock = newPrettyProgressBlock(stdout, opts, actionLabel)
+		defer func() {
+			_ = prettyBlock.Finish()
+		}()
+	}
 	for {
 		image, err := images.Get(ctx, client, imageID).Extract()
 		if err != nil {
@@ -20833,8 +20839,8 @@ func waitForImageStatus(ctx context.Context, stdout io.Writer, opts *Options, cl
 		}
 		status := strings.ToLower(string(image.Status))
 		if target[status] {
-			if prettyOutput(opts) {
-				_ = renderPrettyProgress(stdout, opts, "complete", 1)
+			if prettyBlock != nil {
+				_ = prettyBlock.Render(prettyProgress, 1, true)
 			}
 			return nil
 		}
@@ -20844,8 +20850,10 @@ func waitForImageStatus(ctx context.Context, stdout io.Writer, opts *Options, cl
 		if time.Now().After(deadline) {
 			return fmt.Errorf("timed out waiting for image %s", imageID)
 		}
-		if prettyOutput(opts) {
-			_ = renderPrettyProgress(stdout, opts, "waiting", 0.5)
+		if prettyBlock != nil {
+			previousProgress := prettyProgress
+			prettyProgress = nextPrettyWaitProgress(0, prettyProgress)
+			_ = prettyBlock.Render(previousProgress, prettyProgress, false)
 		}
 		select {
 		case <-ctx.Done():

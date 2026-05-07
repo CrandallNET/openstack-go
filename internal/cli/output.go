@@ -447,18 +447,77 @@ func renderPrettyEmpty(stdout io.Writer) error {
 }
 
 func renderPrettyProgress(stdout io.Writer, opts *Options, label string, percent float64) error {
-	_, err := fmt.Fprintln(stdout, prettyProgressView(stdout, opts, label, percent))
-	return err
+	block := newPrettyProgressBlock(stdout, opts, label)
+	if err := block.Render(percent, percent, true); err != nil {
+		return err
+	}
+	return block.Finish()
 }
 
 func renderPrettyProgressAnimated(stdout io.Writer, opts *Options, label string, from float64, to float64, endLine bool) error {
+	block := newPrettyProgressBlock(stdout, opts, label)
+	if err := block.Render(from, to, endLine); err != nil {
+		return err
+	}
+	if endLine {
+		return block.Finish()
+	}
+	return nil
+}
+
+type prettyProgressBlock struct {
+	stdout   io.Writer
+	opts     *Options
+	action   string
+	started  bool
+	lineOpen bool
+}
+
+func newPrettyProgressBlock(stdout io.Writer, opts *Options, action string) *prettyProgressBlock {
+	return &prettyProgressBlock{stdout: stdout, opts: opts, action: strings.TrimSpace(action)}
+}
+
+func (block *prettyProgressBlock) Render(from float64, to float64, endLine bool) error {
+	if !block.started {
+		if block.action != "" {
+			if _, err := fmt.Fprintf(block.stdout, "\n%s\n", block.action); err != nil {
+				return err
+			}
+		} else if _, err := fmt.Fprintln(block.stdout); err != nil {
+			return err
+		}
+		block.started = true
+	}
+	if err := renderPrettyProgressLineAnimated(block.stdout, block.opts, from, to, endLine); err != nil {
+		return err
+	}
+	block.lineOpen = tableWriterIsTerminal(block.stdout) && !endLine
+	return nil
+}
+
+func (block *prettyProgressBlock) Finish() error {
+	if !block.started {
+		return nil
+	}
+	if block.lineOpen && tableWriterIsTerminal(block.stdout) {
+		if _, err := fmt.Fprintln(block.stdout); err != nil {
+			return err
+		}
+	}
+	block.lineOpen = false
+	_, err := fmt.Fprintln(block.stdout)
+	return err
+}
+
+func renderPrettyProgressLineAnimated(stdout io.Writer, opts *Options, from float64, to float64, endLine bool) error {
 	if !tableWriterIsTerminal(stdout) {
-		return renderPrettyProgress(stdout, opts, label, to)
+		_, err := fmt.Fprintln(stdout, prettyProgressView(stdout, opts, to))
+		return err
 	}
 	from = math.Max(0, math.Min(1, from))
 	to = math.Max(0, math.Min(1, to))
 	if math.Abs(to-from) < 0.001 {
-		return renderPrettyProgressTerminal(stdout, opts, label, to, endLine)
+		return renderPrettyProgressTerminal(stdout, opts, to, endLine)
 	}
 
 	spring := harmonica.NewSpring(harmonica.FPS(30), 18.0, 1.0)
@@ -467,7 +526,7 @@ func renderPrettyProgressAnimated(stdout io.Writer, opts *Options, label string,
 	deadline := time.Now().Add(prettyProgressAnimationMaxDuration)
 	for time.Now().Before(deadline) {
 		position, velocity = spring.Update(position, velocity, to)
-		if _, err := fmt.Fprintf(stdout, "\r%s", prettyProgressView(stdout, opts, label, position)); err != nil {
+		if _, err := fmt.Fprintf(stdout, "\r%s", prettyProgressView(stdout, opts, position)); err != nil {
 			return err
 		}
 		if math.Abs(position-to) < 0.002 && math.Abs(velocity) < 0.002 {
@@ -475,33 +534,21 @@ func renderPrettyProgressAnimated(stdout io.Writer, opts *Options, label string,
 		}
 		time.Sleep(prettyProgressAnimationFrameDelay)
 	}
-	return renderPrettyProgressTerminal(stdout, opts, label, to, endLine)
+	return renderPrettyProgressTerminal(stdout, opts, to, endLine)
 }
 
-func renderPrettyProgressTerminal(stdout io.Writer, opts *Options, label string, percent float64, endLine bool) error {
+func renderPrettyProgressTerminal(stdout io.Writer, opts *Options, percent float64, endLine bool) error {
 	lineEnd := ""
 	if endLine {
 		lineEnd = "\n"
 	}
-	_, err := fmt.Fprintf(stdout, "\r%s%s", prettyProgressView(stdout, opts, label, percent), lineEnd)
+	_, err := fmt.Fprintf(stdout, "\r%s%s", prettyProgressView(stdout, opts, percent), lineEnd)
 	return err
 }
 
-func finishPrettyProgressLine(stdout io.Writer) error {
-	if !tableWriterIsTerminal(stdout) {
-		return nil
-	}
-	_, err := fmt.Fprintln(stdout)
-	return err
-}
-
-func prettyProgressView(stdout io.Writer, opts *Options, label string, percent float64) string {
+func prettyProgressView(stdout io.Writer, opts *Options, percent float64) string {
 	color := prettyColorEnabled(stdout)
-	labelWidth := displayWidth(label)
-	if labelWidth > 0 {
-		labelWidth = max(labelWidth, 8)
-	}
-	width := min(max(prettyOutputWidth(stdout, opts, color)-labelWidth-4, 20), 80)
+	width := min(max(prettyOutputWidth(stdout, opts, color)-4, 20), 80)
 	percent = math.Max(0, math.Min(1, percent))
 
 	options := []progress.Option{progress.WithWidth(width)}
@@ -518,10 +565,7 @@ func prettyProgressView(stdout io.Writer, opts *Options, label string, percent f
 		model.FullColor = lipgloss.NoColor{}
 		model.EmptyColor = lipgloss.NoColor{}
 	}
-	if label != "" {
-		label = padRight(label, 8) + " "
-	}
-	return fmt.Sprintf("%s%s", label, model.ViewAs(percent))
+	return model.ViewAs(percent)
 }
 
 func prettyTableColumns(headers []string, rows []table.Row, termWidth int, color bool) []table.Column {

@@ -1111,11 +1111,11 @@ func TestCommandListPrettyUsesPrettyRenderer(t *testing.T) {
 
 func TestPrettyProgressUsesBubblesProgressWithoutANSIForNonTTY(t *testing.T) {
 	var stdout bytes.Buffer
-	if err := renderPrettyProgress(&stdout, &Options{}, "waiting", 0.5); err != nil {
+	if err := renderPrettyProgress(&stdout, &Options{}, "Creating server: test_vm", 0.5); err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 	output := stdout.String()
-	for _, want := range []string{"waiting", "50%"} {
+	for _, want := range []string{"Creating server: test_vm", "50%"} {
 		if !strings.Contains(output, want) {
 			t.Fatalf("pretty progress output missing %q:\n%s", want, output)
 		}
@@ -1125,26 +1125,29 @@ func TestPrettyProgressUsesBubblesProgressWithoutANSIForNonTTY(t *testing.T) {
 	}
 }
 
-func TestPrettyProgressPadsLabels(t *testing.T) {
+func TestPrettyProgressPadsBlockWithActionLine(t *testing.T) {
 	var stdout bytes.Buffer
-	if err := renderPrettyProgress(&stdout, &Options{}, "Creating", 0.5); err != nil {
+	if err := renderPrettyProgress(&stdout, &Options{}, "Creating server: test_vm", 0.5); err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
-	if err := renderPrettyProgress(&stdout, &Options{}, "Complete", 1); err != nil {
-		t.Fatalf("expected no error, got %v", err)
+	lines := strings.Split(stdout.String(), "\n")
+	if len(lines) < 5 {
+		t.Fatalf("expected padded progress block, got %d lines:\n%s", len(lines), stdout.String())
 	}
-	lines := strings.Split(strings.TrimRight(stdout.String(), "\n"), "\n")
-	if len(lines) != 2 {
-		t.Fatalf("expected two progress lines, got %d:\n%s", len(lines), stdout.String())
+	if lines[0] != "" {
+		t.Fatalf("expected blank line above progress block, got %q", lines[0])
 	}
-	if !strings.HasPrefix(lines[0], "Creating ") {
-		t.Fatalf("expected creating label to be padded, got %q", lines[0])
+	if lines[1] != "Creating server: test_vm" {
+		t.Fatalf("expected action line above progress bar, got %q", lines[1])
 	}
-	if !strings.HasPrefix(lines[1], "Complete ") {
-		t.Fatalf("expected complete label to keep the same bar column, got %q", lines[1])
+	if !strings.Contains(lines[2], "50%") {
+		t.Fatalf("expected progress bar after action line, got %q", lines[2])
 	}
-	if strings.Index(lines[0], "[") != strings.Index(lines[1], "[") {
-		t.Fatalf("expected progress bars to start in the same column, got:\n%s", stdout.String())
+	if strings.Contains(lines[2], "Creating") || strings.Contains(lines[2], "test_vm") {
+		t.Fatalf("expected action text only on the line above progress bar, got %q", lines[2])
+	}
+	if lines[3] != "" {
+		t.Fatalf("expected blank line below progress block, got %q", lines[3])
 	}
 }
 
@@ -1167,15 +1170,18 @@ func TestPrettyProgressAnimatedUsesCarriageReturnForTTY(t *testing.T) {
 	}()
 
 	var stdout bytes.Buffer
-	if err := renderPrettyProgressAnimated(&stdout, &Options{}, "waiting", 0, 0.5, true); err != nil {
+	if err := renderPrettyProgressAnimated(&stdout, &Options{}, "Creating server: test_vm", 0, 0.5, true); err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 	output := stdout.String()
+	if !strings.Contains(output, "\nCreating server: test_vm\n") {
+		t.Fatalf("expected animated progress to render action line above bar, got %q", output)
+	}
 	if !strings.Contains(output, "\r") {
 		t.Fatalf("expected animated progress to redraw with carriage returns, got %q", output)
 	}
-	if !strings.HasSuffix(output, "\n") {
-		t.Fatalf("expected animated progress to end with a newline, got %q", output)
+	if !strings.HasSuffix(output, "\n\n") {
+		t.Fatalf("expected animated progress to end with a blank line, got %q", output)
 	}
 	if !strings.Contains(output, "50%") {
 		t.Fatalf("expected animated progress to render the final target percent, got %q", output)
@@ -1201,21 +1207,25 @@ func TestPrettyProgressAnimatedKeepsTTYLineOpen(t *testing.T) {
 	}()
 
 	var stdout bytes.Buffer
-	if err := renderPrettyProgressAnimated(&stdout, &Options{}, "waiting", 0, 0.5, false); err != nil {
+	block := newPrettyProgressBlock(&stdout, &Options{}, "Creating server: test_vm")
+	if err := block.Render(0, 0.5, false); err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 	output := stdout.String()
 	if strings.HasSuffix(output, "\n") {
 		t.Fatalf("expected waiting progress to keep the terminal line open, got %q", output)
 	}
-	if err := renderPrettyProgressAnimated(&stdout, &Options{}, "Complete", 0.5, 1, true); err != nil {
+	if err := block.Render(0.5, 1, true); err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
-	if !strings.HasSuffix(stdout.String(), "\n") {
-		t.Fatalf("expected complete progress to close the terminal line, got %q", stdout.String())
+	if err := block.Finish(); err != nil {
+		t.Fatalf("expected no error, got %v", err)
 	}
-	if strings.Count(stdout.String(), "\n") != 1 {
-		t.Fatalf("expected only the final progress render to print a newline, got %q", stdout.String())
+	if !strings.HasSuffix(stdout.String(), "\n\n") {
+		t.Fatalf("expected complete progress to close the terminal line with a blank line, got %q", stdout.String())
+	}
+	if strings.Count(stdout.String(), "Creating server: test_vm") != 1 {
+		t.Fatalf("expected progress block to print the action once, got %q", stdout.String())
 	}
 }
 
