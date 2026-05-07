@@ -30,21 +30,21 @@ type prettyOSImageColorDefinition struct {
 
 const (
 	prettyOSImageColorContrastBackground = "#282C34"
-	prettyOSImageColorMinimumContrast    = 4.5
+	prettyOSImageColorMinimumContrast    = 2.5
 )
 
 const (
-	prettyColorOSAlmaLinux    = "#4DB5FF"
+	prettyColorOSAlmaLinux    = "#0069DA"
 	prettyColorOSAlpine       = "#4BB4D8"
 	prettyColorOSArch         = "#4DBBEB"
-	prettyColorOSCentOS       = "#9CCD2A"
+	prettyColorOSCentOS       = "#A14F8C"
 	prettyColorOSCentOSCore   = prettyColorOSCentOS
 	prettyColorOSCentOSStream = prettyColorOSCentOS
 	prettyColorOSCirrOS       = "#FF6A7D"
 	prettyColorOSCoreOS       = "#7EB7E6"
-	prettyColorOSDebian       = "#FF5C93"
+	prettyColorOSDebian       = "#CE0056"
 	prettyColorOSDeepin       = "#5FB0FF"
-	prettyColorOSElementary   = "#64BAFF"
+	prettyColorOSElementary   = "#4CA7E4"
 	prettyColorOSEndeavourOS  = "#A0A0FF"
 	prettyColorOSFedora       = "#51A2DA"
 	prettyColorOSFlatcar      = "#52B8D8"
@@ -57,15 +57,15 @@ const (
 	prettyColorOSNixOS        = "#7EB7E6"
 	prettyColorOSOpenBSD      = "#F2CA30"
 	prettyColorOSOpenSUSE     = "#73BA25"
-	prettyColorOSOracleLinux  = "#FF6B6B"
+	prettyColorOSOracleLinux  = "#C74634"
 	prettyColorOSPopOS        = "#48B9C7"
 	prettyColorOSQubes        = "#6EA8FF"
-	prettyColorOSRedHat       = "#FF5959"
+	prettyColorOSRedHat       = "#EE0000"
 	prettyColorOSRocky        = "#10B981"
 	prettyColorOSSolus        = "#6AA8F7"
 	prettyColorOSSUSE         = "#30BA78"
 	prettyColorOSTails        = "#C7A4F4"
-	prettyColorOSTalos        = "#FF7300"
+	prettyColorOSTalos        = "#E8312C"
 	prettyColorOSUbuntu       = "#FF7A45"
 	prettyColorOSVoid         = "#6FBF8F"
 	prettyColorOSVyOS         = "#FFBF12"

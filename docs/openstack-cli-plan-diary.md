@@ -1749,3 +1749,23 @@ Sources consulted:
 * Talos Linux project page, used to confirm the distro name and supported image label: https://www.talos.dev/.
 * Wikimedia CoreOS logo records, used as the available public reference for legacy CoreOS and Fedora CoreOS logo lineage: https://commons.wikimedia.org/wiki/File:CoreOS.svg and https://commons.wikimedia.org/wiki/File:Fedora_CoreOS_logo.svg.
 * Simple Icons source-backed color data remains the fallback source for distro logo colors when an official page does not expose a terminal-usable palette. It currently records Talos as `#FF7300` from the Sidero Labs Talos logo SVG, Tails as `#56347C` from the Tails logo page, and Gentoo as `#54487A` from Gentoo artwork: https://cdn.jsdelivr.net/npm/simple-icons@latest/_data/simple-icons.json.
+
+## 2026-05-07: Pretty OS Brand-First Palette Adjustment
+
+Decision update: the previous `4.5:1` contrast threshold was too strict for this terminal-only Fancy palette because it pushed several readable, recognizable distro colors away from their brand. The OS image palette is now brand-first when the source color remains legible in the Fancy table. `make os-test` continues to report contrast ratios, and unit tests keep a low dark-background legibility guard to catch truly unreadable entries without forcing WCAG AA-style substitutions.
+
+Work done: restored AlmaLinux blue `#0069DA`, Debian red `#CE0056`, and Red Hat/RHEL red `#EE0000`; kept SUSE green `#30BA78` and openSUSE green `#73BA25`; changed Oracle Linux to the red used in the Oracle Linux SVG and current Oracle logo SVG, `#C74634`; changed CentOS, CentOS Stream, and CentOS Core to CentOS-site purple `#A14F8C`; changed Talos Linux to Talos-site red-orange `#E8312C`; and changed elementary OS to the blue from the site's purchase button gradient, `#4CA7E4`.
+
+Validation: passed focused OS-color renderer tests, `make os-test`, `go test ./...`, `make build`, and `git diff --check`.
+
+Sources consulted:
+
+* AlmaLinux current site icon and theme metadata, used for AlmaLinux blue `#0069DA`: https://almalinux.org/images/icon.svg and https://almalinux.org/.
+* Debian logo page, which lists current red equivalents `#CE0056` and `#CE0058`; this implementation uses `#CE0056`: https://www.debian.org/logos/.
+* Red Hat brand standards, which list Red Hat red as `#ee0000`: https://www.redhat.com/en/about/brand/standards/color.
+* SUSE/Rancher brand page, which lists SUSE brand colors including Jungle Green `#30BA78`: https://ranchercomprd.eks-prod.suse.com/brand-guidelines.
+* openSUSE artwork brand page, which lists openSUSE green as `#73ba25`: https://en.opensuse.org/openSUSE%3AArtwork_brand.
+* Oracle Linux SVG and current Oracle logo SVG, which use `#c74634`/`#C74634`: https://commons.wikimedia.org/wiki/File:Oracle_linux_logo.svg and https://commons.wikimedia.org/wiki/File:Oracle_logo.svg.
+* CentOS Stream project page and stylesheet, whose current page styling uses purple `#A14F8C`: https://www.centos.org/centos-stream/ and https://www.centos.org/assets/css/base/stylesheet.min.css.
+* Talos Linux project page, whose site styling includes red-orange `#E8312C`: https://www.talos.dev/.
+* elementary OS site and stylesheet, whose purchase button gradient includes blue `#4CA7E4`: https://elementary.io/ and https://elementary.io/styles/main-0d002cb065.css.
