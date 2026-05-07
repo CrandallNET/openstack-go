@@ -101,6 +101,19 @@ func TestNewCommandEntryMarksPluginScope(t *testing.T) {
 	}
 }
 
+func TestNewCommandEntryMarksServerSSHImplementedByPlugin(t *testing.T) {
+	entry := newCommandEntry("openstack.compute.v2", "server ssh")
+	if entry.Status != "implemented" {
+		t.Fatalf("expected server ssh to be implemented, got %q", entry.Status)
+	}
+	if !entry.PluginScope {
+		t.Fatal("expected server ssh to be plugin scoped")
+	}
+	if entry.ImplementedIn != "internal/plugins/novaextras" {
+		t.Fatalf("implemented_in mismatch: got %q", entry.ImplementedIn)
+	}
+}
+
 func TestCommandStatusCounts(t *testing.T) {
 	entries := []commandEntry{
 		{Command: "command list", Status: "implemented"},

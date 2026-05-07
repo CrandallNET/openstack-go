@@ -13,6 +13,7 @@ import (
 type openStackClients struct {
 	Provider     *gophercloud.ProviderClient
 	EndpointOpts gophercloud.EndpointOpts
+	AuthOptions  gophercloud.AuthOptions
 }
 
 func newOpenStackClients(ctx context.Context, opts *Options) (*openStackClients, error) {
@@ -31,7 +32,7 @@ func newOpenStackClients(ctx context.Context, opts *Options) (*openStackClients,
 	if err != nil {
 		return nil, err
 	}
-	return &openStackClients{Provider: provider, EndpointOpts: endpointOptions}, nil
+	return &openStackClients{Provider: provider, EndpointOpts: endpointOptions, AuthOptions: authOptions}, nil
 }
 
 func (clients *openStackClients) identityV3() (*gophercloud.ServiceClient, error) {

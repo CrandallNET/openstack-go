@@ -361,10 +361,12 @@ func newCommandEntry(group string, command string) commandEntry {
 		entry.Tests = []string{"unit: injected token issuer", "live: cloud6 token issue"}
 		entry.Notes = "Implemented through Gophercloud auth/config and Identity v3 token extraction. JSON smoke passed on cloud6; broader formatter and auth precedence parity still need oracle tests."
 	case "server ssh":
-		entry.Status = "local-client-needed"
-		entry.ImplementedIn = ""
-		entry.Tests = []string{"unit: generated command stub"}
-		entry.Notes = "Project-approved compatibility exception to the normal API-backed command rule. Python OSC delegates to local SSH behavior; golang-osc must implement this as a self-contained, cross-platform Go SSH client and must not shell out to ssh or Python in production behavior."
+		entry.Status = "implemented"
+		entry.SDKPackage = "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servers; golang.org/x/crypto/ssh"
+		entry.PluginScope = true
+		entry.ImplementedIn = "internal/plugins/novaextras"
+		entry.Tests = []string{"unit: nova-extras module registration", "unit: pure Go SSH request parsing", "unit: server address selection", "unit: in-process pure Go SSH session"}
+		entry.Notes = "Implemented as the nova-extras plugin with a pure Go SSH client path. Python OSC delegates to local SSH behavior; golang-osc resolves the server address through Compute and uses golang.org/x/crypto/ssh instead of shelling out to ssh or Python. Live interactive SSH parity still needs validation against a disposable server fixture."
 	}
 	if packagePath, ok := identityReadPackages()[command]; ok {
 		entry.Status = "implemented"

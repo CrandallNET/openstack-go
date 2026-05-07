@@ -1837,3 +1837,20 @@ Sources consulted:
 * Go known_hosts package docs: https://pkg.go.dev/golang.org/x/crypto/ssh/knownhosts.
 * Go ssh-agent package docs: https://pkg.go.dev/golang.org/x/crypto/ssh/agent.
 * Go terminal package docs: https://pkg.go.dev/golang.org/x/term.
+
+## 2026-05-07: Server SSH Pure Go Plugin
+
+Decision: implement `server ssh` through a new `openstack.commands.extras.nova-extras` module, not as a core API command and not as a subprocess wrapper. The command remains a compatibility exception because Python OSC shells out to local SSH, but golang-osc uses a pure Go SSH client path and keeps production behavior self-contained.
+
+Work done: added the `nova-extras` Caddy module and registered `server ssh` as implemented. The handler resolves the target server with the existing Compute client, selects the IP address with Python OSC's public/private/address-type and IPv4/IPv6 rules, parses the deprecated `-l`, `-p`, `-i`, `-o`, and `-v` forms, parses common pass-through OpenSSH options after `--`, and starts an SSH session with `golang.org/x/crypto/ssh`. The implementation supports ssh-agent, default private keys under `~/.ssh`, explicit identity files, `known_hosts` verification through `knownhosts`, optional `StrictHostKeyChecking=no` and `accept-new`, agent forwarding, PTY allocation for interactive sessions, remote command execution, and remote exit-status propagation.
+
+Compatibility limits: Python OSC accepts arbitrary OpenSSH arguments because it builds a local `ssh` command string. The Go implementation intentionally rejects unsupported OpenSSH options instead of silently ignoring them. Options currently mapped include `-l`, `-p`, `-i`, `-o`, `-A`, `-a`, `-t`, `-T`, `-v`, and `-o` keys for `User`, `Port`, `IdentityFile`, `StrictHostKeyChecking`, `UserKnownHostsFile`, `ForwardAgent`, `BatchMode`, `IdentitiesOnly`, `PasswordAuthentication`, `KbdInteractiveAuthentication`, and `LogLevel`. Live interactive parity still needs a disposable reachable-server fixture.
+
+Validation: focused unit tests cover `nova-extras` module registration, `command list` implementation state, `module list` visibility, server address selection, supported SSH pass-through parsing, injected pure-Go runner handoff, and execution against an in-process SSH server built with `golang.org/x/crypto/ssh`. `make matrix` now reports `server ssh` as `implemented` through `internal/plugins/novaextras`, with zero `blocked` and zero `local-client-needed` rows.
+
+Sources consulted:
+
+* Go SSH package docs: https://pkg.go.dev/golang.org/x/crypto/ssh.
+* Go known_hosts package docs: https://pkg.go.dev/golang.org/x/crypto/ssh/knownhosts.
+* Go ssh-agent package docs: https://pkg.go.dev/golang.org/x/crypto/ssh/agent.
+* Go terminal package docs: https://pkg.go.dev/golang.org/x/term.

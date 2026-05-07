@@ -206,6 +206,9 @@ func extrasCommandHandler(path string, stdout io.Writer, opts *Options) (command
 	if isCinderExtrasCommand(path) {
 		return runCinderExtras(path, stdout, opts), true
 	}
+	if isNovaExtrasCommand(path) {
+		return runNovaExtras(path, stdout, opts), true
+	}
 	return nil, false
 }
 
@@ -1350,6 +1353,17 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().String("type", "", "backup type")
 		cmd.Flags().Int("rotate", 0, "backup rotation count")
 		cmd.Flags().Bool("wait", false, "wait for operation to complete")
+	case "server ssh":
+		cmd.Flags().StringP("login", "l", "", "SSH login name")
+		cmd.Flags().IntP("port", "p", 0, "SSH port")
+		cmd.Flags().StringP("identity", "i", "", "SSH private key file")
+		cmd.Flags().StringP("option", "o", "", "SSH option")
+		cmd.Flags().BoolP("ipv4", "4", false, "use only IPv4 addresses")
+		cmd.Flags().BoolP("ipv6", "6", false, "use only IPv6 addresses")
+		cmd.Flags().Bool("public", false, "use public IP address")
+		cmd.Flags().Bool("private", false, "use private IP address")
+		cmd.Flags().String("address-type", "", "use other IP address type")
+		cmd.Flags().BoolP("verbose", "v", false, "verbose SSH logging")
 	case "server add fixed ip":
 		cmd.Flags().String("fixed-ip-address", "", "fixed IP address")
 		cmd.Flags().String("tag", "", "interface tag")

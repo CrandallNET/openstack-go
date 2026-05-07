@@ -5696,14 +5696,17 @@ commands:
     group: "openstack.compute.v2"
     service: "compute"
     api: "v2"
-    status: "local-client-needed"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servers; golang.org/x/crypto/ssh"
     shim: false
-    plugin_scope: false
-    implemented_in: ""
+    plugin_scope: true
+    implemented_in: "internal/plugins/novaextras"
     tests:
-      - "unit: generated command stub"
-    notes: "Project-approved compatibility exception to the normal API-backed command rule. Python OSC delegates to local SSH behavior; golang-osc must implement this as a self-contained, cross-platform Go SSH client and must not shell out to ssh or Python in production behavior."
+      - "unit: nova-extras module registration"
+      - "unit: pure Go SSH request parsing"
+      - "unit: server address selection"
+      - "unit: in-process pure Go SSH session"
+    notes: "Implemented as the nova-extras plugin with a pure Go SSH client path. Python OSC delegates to local SSH behavior; golang-osc resolves the server address through Compute and uses golang.org/x/crypto/ssh instead of shelling out to ssh or Python. Live interactive SSH parity still needs validation against a disposable server fixture."
   - command: "server start"
     group: "openstack.compute.v2"
     service: "compute"
