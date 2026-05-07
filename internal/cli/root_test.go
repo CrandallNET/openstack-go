@@ -183,7 +183,7 @@ func TestCommandListJSONMarksCoreReadsImplemented(t *testing.T) {
 	if stderr != "" {
 		t.Fatalf("expected empty stderr, got %q", stderr)
 	}
-	for _, want := range []string{`"server list"`, `"server show"`, `"flavor list"`, `"flavor show"`} {
+	for _, want := range []string{`"server list"`, `"server show"`, `"flavor create"`, `"flavor delete"`, `"flavor list"`, `"flavor set"`, `"flavor show"`, `"flavor unset"`} {
 		if !strings.Contains(stdout, want) {
 			t.Fatalf("expected %s to be marked implemented, got:\n%s", want, stdout)
 		}

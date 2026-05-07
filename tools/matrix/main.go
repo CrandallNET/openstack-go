@@ -402,10 +402,22 @@ func newCommandEntry(group string, command string) commandEntry {
 			entry.Tests = []string{"unit: command registry", "live: cloud6 quota lifecycle smoke", "compat-live: cloud6 quota show JSON oracle before and after reset"}
 			entry.Notes = "Shim-backed quota mutation implementation. cloud6 quota lifecycle creates a dedicated test project, mutates only that project's Compute, Volume, and Network quotas, resets each service, verifies aggregate quota show JSON against the Python oracle, and deletes the test project."
 		}
+		if strings.HasPrefix(command, "flavor ") && command != "flavor list" && command != "flavor show" {
+			entry.Tests = []string{"unit: command registry", "unit: mocked Nova flavor mutation requests"}
+			entry.Notes = "Gophercloud-backed Nova flavor mutation implementation. Mocked tests cover create, delete, set, and unset request paths; live cloud6 validation creates and deletes only disposable private flavors."
+		}
+		if command == "project cleanup" {
+			entry.Tests = []string{"unit: command registry", "unit: mocked Nova cleanup resource discovery"}
+			entry.Notes = "Initial project cleanup implementation for Compute servers and empty server groups. Live cloud6 validation currently covers --auth-project --dry-run only; broader OpenStackSDK-style multi-service cleanup still needs lifecycle coverage in a dedicated test project."
+		}
 		if coreCloudVerified()[command] {
 			entry.Status = "cloud-verified"
 			if coreWriteCommands()[command] {
-				if !hasTest(entry.Tests, "live: cloud6 quota lifecycle smoke") {
+				if command == "project cleanup" && !hasTest(entry.Tests, "live: cloud6 project cleanup dry-run") {
+					entry.Tests = append(entry.Tests, "live: cloud6 project cleanup dry-run")
+				} else if strings.HasPrefix(command, "flavor ") && command != "flavor list" && command != "flavor show" && !hasTest(entry.Tests, "live: cloud6 disposable flavor lifecycle") {
+					entry.Tests = append(entry.Tests, "live: cloud6 disposable flavor lifecycle", "compat-live: cloud6 flavor show JSON oracle after mutation")
+				} else if !hasTest(entry.Tests, "live: cloud6 quota lifecycle smoke") {
 					entry.Tests = append(entry.Tests, "live: configured cloud lifecycle smoke")
 				}
 			} else {
@@ -690,8 +702,12 @@ func coreReadPackages() map[string]string {
 		"container unset":                        "github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/containers",
 		"extension list":                         "github.com/gophercloud/gophercloud/v2/openstack/common/extensions",
 		"extension show":                         "github.com/gophercloud/gophercloud/v2/openstack/common/extensions",
+		"flavor create":                          "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/flavors",
+		"flavor delete":                          "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/flavors",
 		"flavor list":                            "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/flavors",
+		"flavor set":                             "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/flavors",
 		"flavor show":                            "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/flavors",
+		"flavor unset":                           "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/flavors",
 		"floating ip create":                     "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/floatingips; standard tags and extension fields via gophercloud.ServiceClient",
 		"floating ip delete":                     "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/floatingips",
 		"floating ip list":                       "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/floatingips",
@@ -788,6 +804,7 @@ func coreReadPackages() map[string]string {
 		"port set":                               "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/ports; standard tags and extension fields via gophercloud.ServiceClient",
 		"port show":                              "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/ports",
 		"port unset":                             "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/ports; standard tags and extension fields via gophercloud.ServiceClient",
+		"project cleanup":                        "github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servers; github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servergroups",
 		"quota delete":                           "Compute, Volume, and Network quota reset via gophercloud.ServiceClient",
 		"quota list":                             "Compute/Volume/Network quota reads via gophercloud.ServiceClient; typed SDK packages are incomplete for OSC-shaped aggregate output",
 		"quota set":                              "Compute, Volume, and Network quota update via gophercloud.ServiceClient",
@@ -1152,8 +1169,12 @@ func coreCloudVerified() map[string]bool {
 		"container unset":                        true,
 		"extension list":                         true,
 		"extension show":                         true,
+		"flavor create":                          true,
+		"flavor delete":                          true,
 		"flavor list":                            true,
+		"flavor set":                             true,
 		"flavor show":                            true,
+		"flavor unset":                           true,
 		"floating ip create":                     true,
 		"floating ip delete":                     true,
 		"floating ip list":                       true,
@@ -1217,6 +1238,7 @@ func coreCloudVerified() map[string]bool {
 		"port set":                               true,
 		"port show":                              true,
 		"port unset":                             true,
+		"project cleanup":                        true,
 		"quota delete":                           true,
 		"quota list":                             true,
 		"quota set":                              true,
@@ -1612,6 +1634,10 @@ func coreWriteCommands() map[string]bool {
 		"floating ip port forwarding set":    true,
 		"floating ip set":                    true,
 		"floating ip unset":                  true,
+		"flavor create":                      true,
+		"flavor delete":                      true,
+		"flavor set":                         true,
+		"flavor unset":                       true,
 		"keypair create":                     true,
 		"keypair delete":                     true,
 		"network create":                     true,
@@ -1638,6 +1664,7 @@ func coreWriteCommands() map[string]bool {
 		"port delete":                        true,
 		"port set":                           true,
 		"port unset":                         true,
+		"project cleanup":                    true,
 		"quota delete":                       true,
 		"quota set":                          true,
 		"router add gateway":                 true,

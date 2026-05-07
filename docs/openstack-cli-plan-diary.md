@@ -1892,3 +1892,22 @@ Experiments:
 * User-data with both Ed25519 and RSA keys reached Nova, but Go SSH still failed until the diagnostic proved Python OSC could run `whoami` with the same RSA key. That isolated the issue to Go-side authentication ordering rather than fixture creation.
 
 Validation: `go test ./internal/cli -run 'TestRunPureGoSSHSession|TestBuildServerSSHRequest|TestServerSSH'`, `go test ./tools/lifecycle-smoke`, `make build`, and `make lifecycle CLOUD=cloud6 SUITE=server` passed. The live lifecycle validates implicit fixed-address fallback for `server ssh`, strict explicit `--public` behavior, and paired Python-vs-Go `server ssh --private` remote-command output against the disposable server.
+
+## 2026-05-07: Flavor Mutations And Initial Project Cleanup
+
+Decision: implement the remaining Compute flavor commands in core because Gophercloud has typed Nova flavor coverage for create, delete, update description, extra specs, and tenant access. The command set now covers `flavor create`, `flavor delete`, `flavor set`, and `flavor unset`, including `--private`, `--project`, `--property`, `--no-property`, and description microversion handling.
+
+Decision: implement `project cleanup` as an initial safe core command, but do not mark it as full OpenStackSDK parity yet. The first implementation covers Compute servers and empty server groups, supports `--auth-project`, `--project`, `--dry-run`, `--auto-approve`, `--created-before`, `--updated-before`, and `--skip-resource`, and prompts before deletion unless `--auto-approve` is set. Broader OpenStackSDK-style cleanup for Network, Block Storage, Image, Object Store, and dependency ordering still needs dedicated-project lifecycle coverage before it can be treated as complete.
+
+Work done: wired these commands into the Cobra registry, added command-local flags, added handler coverage, and updated the matrix generator. `flavor show` lookup now lists all flavor access types when name lookup falls back to a list, so private flavors are name-resolvable. `flavor show` also fetches extra specs and private flavor access IDs when Nova omits them from the base flavor record, matching the Python output observed on `cloud6`.
+
+Validation: mocked unit tests cover flavor create request shape, extra-spec creation, delete, set/unset extra specs, command-list registration, and project cleanup discovery of servers plus empty server groups. `go test ./internal/cli`, `go test ./...`, `make build`, and `make matrix` passed. Live `cloud6` validation ran `project cleanup --auth-project --dry-run -f json` without deleting resources, then created disposable private flavors `golang-osc-test-flavor-codex-0507a` and `golang-osc-test-flavor-codex-0507b`, compared Go and Python `flavor show -f json` output after mutation, ran `flavor set`, `flavor unset`, and deleted the test flavors.
+
+Sources consulted:
+
+* Local Python OSC flavor source: `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/compute/v2/flavor.py`.
+* Local Python OSC project cleanup source: `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/common/project_cleanup.py`.
+* Local OpenStackSDK cleanup source: `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstack/cloud/openstackcloud.py`.
+* Gophercloud flavor package docs: https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/compute/v2/flavors.
+* Gophercloud servers package docs: https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servers.
+* Gophercloud server groups package docs: https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servergroups.

@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"crypto/ed25519"
@@ -345,18 +346,65 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 			return extensionList(cmd.Context(), stdout, opts, clients)
 		case "extension show":
 			return extensionShow(cmd.Context(), stdout, opts, clients, args)
+		case "project cleanup":
+			return projectCleanup(cmd.Context(), stdout, cmd.InOrStdin(), opts, clients)
+		case "flavor create":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			var identityClient *gophercloud.ServiceClient
+			if flagValue(opts, "project") != "" {
+				identityClient, err = clients.identityV3()
+				if err != nil {
+					return err
+				}
+			}
+			return computeFlavorCreate(cmd.Context(), stdout, opts, client, identityClient, args)
+		case "flavor delete":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return computeFlavorDelete(cmd.Context(), client, args)
 		case "flavor list":
 			client, err := clients.computeV2()
 			if err != nil {
 				return err
 			}
 			return computeFlavorList(cmd.Context(), stdout, opts, client)
+		case "flavor set":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			var identityClient *gophercloud.ServiceClient
+			if flagValue(opts, "project") != "" {
+				identityClient, err = clients.identityV3()
+				if err != nil {
+					return err
+				}
+			}
+			return computeFlavorSet(cmd.Context(), opts, client, identityClient, args)
 		case "flavor show":
 			client, err := clients.computeV2()
 			if err != nil {
 				return err
 			}
 			return computeFlavorShow(cmd.Context(), stdout, opts, client, args)
+		case "flavor unset":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			var identityClient *gophercloud.ServiceClient
+			if flagValue(opts, "project") != "" {
+				identityClient, err = clients.identityV3()
+				if err != nil {
+					return err
+				}
+			}
+			return computeFlavorUnset(cmd.Context(), opts, client, identityClient, args)
 		case "allocation candidate list":
 			client, err := clients.placementV1()
 			if err != nil {
@@ -4557,6 +4605,519 @@ func computeFlavorShow(ctx context.Context, stdout io.Writer, opts *Options, cli
 	return renderShowOutput(stdout, opts, flavorFields(item))
 }
 
+func computeFlavorCreate(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, identityClient *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("flavor create requires <flavor-name>")
+	}
+	if boolFlag(opts, "public") && boolFlag(opts, "private") {
+		return fmt.Errorf("argument --public: not allowed with argument --private")
+	}
+
+	targetClient := client
+	description := flagValue(opts, "description")
+	if description != "" {
+		var err error
+		targetClient, err = computeClientWithMinimumMicroversion(ctx, client, "2.55")
+		if err != nil {
+			return err
+		}
+	}
+
+	isPublic := true
+	if flagChanged(opts, "public") && flagValue(opts, "public") == "false" {
+		isPublic = false
+	}
+	if boolFlag(opts, "private") {
+		isPublic = false
+	}
+	if flagValue(opts, "project") != "" && isPublic {
+		return fmt.Errorf("--project is only allowed with --private")
+	}
+
+	disk := intFlagDefault(opts, "disk", 0)
+	ephemeral := intFlagDefault(opts, "ephemeral", 0)
+	swap := intFlagDefault(opts, "swap", 0)
+	flavorID := flagValueDefault(opts, "id", "auto")
+	if strings.EqualFold(flavorID, "auto") {
+		flavorID = ""
+	}
+
+	item, err := flavors.Create(ctx, targetClient, flavors.CreateOpts{
+		Name:        args[0],
+		RAM:         intFlagDefault(opts, "ram", 256),
+		VCPUs:       intFlagDefault(opts, "vcpus", 1),
+		Disk:        &disk,
+		ID:          flavorID,
+		Swap:        &swap,
+		RxTxFactor:  floatFlagDefault(opts, "rxtx-factor", 1.0),
+		IsPublic:    &isPublic,
+		Ephemeral:   &ephemeral,
+		Description: description,
+	}).Extract()
+	if err != nil {
+		return err
+	}
+
+	if projectNameOrID := flagValue(opts, "project"); projectNameOrID != "" {
+		if identityClient == nil {
+			return fmt.Errorf("--project requires the identity service")
+		}
+		project, err := findProjectWithDomain(ctx, identityClient, projectNameOrID, flagValue(opts, "project-domain"))
+		if err != nil {
+			return err
+		}
+		if _, err := flavors.AddAccess(ctx, targetClient, item.ID, flavors.AddAccessOpts{Tenant: project.ID}).Extract(); err != nil {
+			return err
+		}
+	}
+
+	properties, err := parseStringMap(flagValues(opts, "property"), "--property")
+	if err != nil {
+		return err
+	}
+	if len(properties) > 0 {
+		if _, err := flavors.CreateExtraSpecs(ctx, targetClient, item.ID, flavors.ExtraSpecsOpts(properties)).Extract(); err != nil {
+			return err
+		}
+	}
+
+	if raw, err := computeFlavorRaw(ctx, targetClient, item.ID); err == nil {
+		return renderShowOutput(stdout, opts, flavorRawFields(raw))
+	}
+	return renderShowOutput(stdout, opts, flavorFields(item))
+}
+
+func computeFlavorDelete(ctx context.Context, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("flavor delete requires <flavor> [<flavor> ...]")
+	}
+	failures := 0
+	for _, value := range args {
+		item, err := findFlavor(ctx, client, value)
+		if err != nil {
+			failures++
+			continue
+		}
+		if err := flavors.Delete(ctx, client, item.ID).ExtractErr(); err != nil {
+			failures++
+		}
+	}
+	if failures > 0 {
+		return fmt.Errorf("%d of %d flavors failed to delete.", failures, len(args))
+	}
+	return nil
+}
+
+func computeFlavorSet(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, identityClient *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("flavor set requires <flavor>")
+	}
+	item, err := findFlavor(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+
+	failures := 0
+	targetClient := client
+	if description := flagValue(opts, "description"); description != "" {
+		targetClient, err = computeClientWithMinimumMicroversion(ctx, client, "2.55")
+		if err != nil {
+			return err
+		}
+		if _, err := flavors.Update(ctx, targetClient, item.ID, flavors.UpdateOpts{Description: description}).Extract(); err != nil {
+			failures++
+		}
+	}
+
+	if boolFlag(opts, "no-property") {
+		specs, err := flavors.ListExtraSpecs(ctx, targetClient, item.ID).Extract()
+		if err != nil {
+			failures++
+		} else {
+			keys := make([]string, 0, len(specs))
+			for key := range specs {
+				keys = append(keys, key)
+			}
+			sort.Strings(keys)
+			for _, key := range keys {
+				if err := flavors.DeleteExtraSpec(ctx, targetClient, item.ID, key).ExtractErr(); err != nil {
+					failures++
+				}
+			}
+		}
+	}
+
+	properties, err := parseStringMap(flagValues(opts, "property"), "--property")
+	if err != nil {
+		return err
+	}
+	if len(properties) > 0 {
+		if _, err := flavors.CreateExtraSpecs(ctx, targetClient, item.ID, flavors.ExtraSpecsOpts(properties)).Extract(); err != nil {
+			failures++
+		}
+	}
+
+	if projectNameOrID := flagValue(opts, "project"); projectNameOrID != "" {
+		if item.IsPublic {
+			return fmt.Errorf("Cannot add access for a public flavor")
+		}
+		if identityClient == nil {
+			return fmt.Errorf("--project requires the identity service")
+		}
+		project, err := findProjectWithDomain(ctx, identityClient, projectNameOrID, flagValue(opts, "project-domain"))
+		if err != nil {
+			return err
+		}
+		if _, err := flavors.AddAccess(ctx, targetClient, item.ID, flavors.AddAccessOpts{Tenant: project.ID}).Extract(); err != nil {
+			failures++
+		}
+	}
+
+	if failures > 0 {
+		return fmt.Errorf("Command Failed: One or more of the operations failed")
+	}
+	return nil
+}
+
+func computeFlavorUnset(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, identityClient *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("flavor unset requires <flavor>")
+	}
+	item, err := findFlavor(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+
+	failures := 0
+	for _, key := range flagValues(opts, "property") {
+		if err := flavors.DeleteExtraSpec(ctx, client, item.ID, key).ExtractErr(); err != nil {
+			failures++
+		}
+	}
+
+	if projectNameOrID := flagValue(opts, "project"); projectNameOrID != "" {
+		if item.IsPublic {
+			return fmt.Errorf("Cannot remove access for a public flavor")
+		}
+		if identityClient == nil {
+			return fmt.Errorf("--project requires the identity service")
+		}
+		project, err := findProjectWithDomain(ctx, identityClient, projectNameOrID, flagValue(opts, "project-domain"))
+		if err != nil {
+			return err
+		}
+		if _, err := flavors.RemoveAccess(ctx, client, item.ID, flavors.RemoveAccessOpts{Tenant: project.ID}).Extract(); err != nil {
+			failures++
+		}
+	}
+
+	if failures > 0 {
+		return fmt.Errorf("Command Failed: One or more of the operations failed")
+	}
+	return nil
+}
+
+type projectCleanupResource struct {
+	Type       string
+	ID         string
+	Name       string
+	deleteFunc func(context.Context) error
+}
+
+type projectCleanupFilters struct {
+	CreatedBefore *time.Time
+	UpdatedBefore *time.Time
+}
+
+func projectCleanup(ctx context.Context, stdout io.Writer, stdin io.Reader, opts *Options, clients *openStackClients) error {
+	if boolFlag(opts, "dry-run") && boolFlag(opts, "auto-approve") {
+		return fmt.Errorf("argument --dry-run: not allowed with argument --auto-approve")
+	}
+	targetProjectID, explicitProject, err := projectCleanupTargetProjectID(ctx, opts, clients)
+	if err != nil {
+		return err
+	}
+	filters, err := parseProjectCleanupFilters(opts)
+	if err != nil {
+		return err
+	}
+	skipResources := projectCleanupSkipSet(flagValues(opts, "skip-resource"))
+
+	computeClient, err := clients.computeV2()
+	if err != nil {
+		return err
+	}
+	resources, err := projectCleanupComputeResources(ctx, computeClient, targetProjectID, explicitProject, filters, skipResources)
+	if err != nil {
+		return err
+	}
+	sort.SliceStable(resources, func(i, j int) bool {
+		if resources[i].Type == resources[j].Type {
+			return resources[i].ID < resources[j].ID
+		}
+		return resources[i].Type < resources[j].Type
+	})
+
+	rows := make([]outputRow, 0, len(resources))
+	for _, resource := range resources {
+		rows = append(rows, outputRow{
+			"Type": resource.Type,
+			"ID":   resource.ID,
+			"Name": resource.Name,
+		})
+	}
+	if err := renderListOutput(stdout, opts, []string{"Type", "ID", "Name"}, rows); err != nil {
+		return err
+	}
+	if boolFlag(opts, "dry-run") || len(resources) == 0 {
+		return nil
+	}
+	if !boolFlag(opts, "auto-approve") {
+		approved, err := projectCleanupPrompt(stdout, stdin)
+		if err != nil {
+			return err
+		}
+		if !approved {
+			return nil
+		}
+	}
+
+	failures := 0
+	for _, resource := range resources {
+		if resource.deleteFunc == nil {
+			continue
+		}
+		if err := resource.deleteFunc(ctx); err != nil {
+			failures++
+		}
+	}
+	if failures > 0 {
+		return fmt.Errorf("%d of %d resources failed to delete.", failures, len(resources))
+	}
+	return nil
+}
+
+func projectCleanupTargetProjectID(ctx context.Context, opts *Options, clients *openStackClients) (string, bool, error) {
+	authProject := boolFlag(opts, "auth-project")
+	projectNameOrID := flagValue(opts, "project")
+	if authProject && projectNameOrID != "" {
+		return "", false, fmt.Errorf("argument --auth-project: not allowed with argument --project")
+	}
+	if !authProject && projectNameOrID == "" {
+		return "", false, fmt.Errorf("one of the arguments --auth-project --project is required")
+	}
+	if authProject {
+		if projectID := currentProjectID(clients); projectID != "" {
+			return projectID, false, nil
+		}
+		if clients != nil {
+			if clients.AuthOptions.TenantID != "" {
+				return clients.AuthOptions.TenantID, false, nil
+			}
+			if clients.AuthOptions.Scope != nil && clients.AuthOptions.Scope.ProjectID != "" {
+				return clients.AuthOptions.Scope.ProjectID, false, nil
+			}
+		}
+		if projectID := os.Getenv("OS_PROJECT_ID"); projectID != "" {
+			return projectID, false, nil
+		}
+		if projectID := os.Getenv("OS_TENANT_ID"); projectID != "" {
+			return projectID, false, nil
+		}
+		return "", false, nil
+	}
+
+	identityClient, err := clients.identityV3()
+	if err != nil {
+		return "", false, err
+	}
+	project, err := findProjectWithDomain(ctx, identityClient, projectNameOrID, flagValue(opts, "project-domain"))
+	if err != nil {
+		return "", false, err
+	}
+	return project.ID, true, nil
+}
+
+func parseProjectCleanupFilters(opts *Options) (projectCleanupFilters, error) {
+	var filters projectCleanupFilters
+	createdBefore, err := parseProjectCleanupTime(flagValue(opts, "created-before"), "--created-before")
+	if err != nil {
+		return filters, err
+	}
+	updatedBefore, err := parseProjectCleanupTime(flagValue(opts, "updated-before"), "--updated-before")
+	if err != nil {
+		return filters, err
+	}
+	filters.CreatedBefore = createdBefore
+	filters.UpdatedBefore = updatedBefore
+	return filters, nil
+}
+
+func parseProjectCleanupTime(value string, flag string) (*time.Time, error) {
+	if value == "" {
+		return nil, nil
+	}
+	layouts := []string{
+		time.RFC3339Nano,
+		time.RFC3339,
+		"2006-01-02T15:04:05",
+		"2006-01-02 15:04:05",
+		"2006-01-02",
+	}
+	for _, layout := range layouts {
+		if parsed, err := time.Parse(layout, value); err == nil {
+			parsed = parsed.UTC()
+			return &parsed, nil
+		}
+	}
+	return nil, fmt.Errorf("invalid %s %q, expected an ISO-8601 timestamp", flag, value)
+}
+
+func projectCleanupSkipSet(values []string) map[string]bool {
+	result := map[string]bool{}
+	for _, value := range values {
+		cleaned := strings.ToLower(strings.TrimSpace(value))
+		if cleaned == "" {
+			continue
+		}
+		result[cleaned] = true
+		result[strings.TrimSuffix(cleaned, "s")] = true
+	}
+	return result
+}
+
+func projectCleanupSkipped(skipResources map[string]bool, aliases ...string) bool {
+	for _, alias := range aliases {
+		cleaned := strings.ToLower(strings.TrimSpace(alias))
+		if skipResources[cleaned] || skipResources[strings.TrimSuffix(cleaned, "s")] {
+			return true
+		}
+	}
+	return false
+}
+
+func projectCleanupComputeResources(ctx context.Context, client *gophercloud.ServiceClient, projectID string, explicitProject bool, filters projectCleanupFilters, skipResources map[string]bool) ([]projectCleanupResource, error) {
+	var resources []projectCleanupResource
+	if !projectCleanupSkipped(skipResources, "server", "compute.server") {
+		serverResources, err := projectCleanupServers(ctx, client, projectID, explicitProject, filters)
+		if err != nil {
+			return nil, err
+		}
+		resources = append(resources, serverResources...)
+	}
+	if !projectCleanupSkipped(skipResources, "server_group", "server-group", "server group", "compute.server_group") {
+		serverGroupResources, err := projectCleanupServerGroups(ctx, client, projectID, explicitProject, filters)
+		if err != nil {
+			return nil, err
+		}
+		resources = append(resources, serverGroupResources...)
+	}
+	return resources, nil
+}
+
+func projectCleanupServers(ctx context.Context, client *gophercloud.ServiceClient, projectID string, explicitProject bool, filters projectCleanupFilters) ([]projectCleanupResource, error) {
+	listOpts := servers.ListOpts{}
+	if explicitProject {
+		listOpts.AllTenants = true
+		listOpts.TenantID = projectID
+	}
+	page, err := servers.List(client, listOpts).AllPages(ctx)
+	if err != nil {
+		return nil, err
+	}
+	items, err := servers.ExtractServers(page)
+	if err != nil {
+		return nil, err
+	}
+	resources := make([]projectCleanupResource, 0, len(items))
+	for _, item := range items {
+		if explicitProject && item.TenantID != "" && item.TenantID != projectID {
+			continue
+		}
+		if !projectCleanupTimestampMatch(item.Created, item.Updated, filters) {
+			continue
+		}
+		id := item.ID
+		resources = append(resources, projectCleanupResource{
+			Type: "Server",
+			ID:   item.ID,
+			Name: item.Name,
+			deleteFunc: func(ctx context.Context) error {
+				return servers.Delete(ctx, client, id).ExtractErr()
+			},
+		})
+	}
+	return resources, nil
+}
+
+func projectCleanupServerGroups(ctx context.Context, client *gophercloud.ServiceClient, projectID string, explicitProject bool, filters projectCleanupFilters) ([]projectCleanupResource, error) {
+	if filters.CreatedBefore != nil || filters.UpdatedBefore != nil {
+		return nil, nil
+	}
+	listOpts := servergroups.ListOpts{}
+	if explicitProject {
+		listOpts.AllProjects = true
+	}
+	page, err := servergroups.List(client, listOpts).AllPages(ctx)
+	if err != nil {
+		return nil, err
+	}
+	items, err := servergroups.ExtractServerGroups(page)
+	if err != nil {
+		return nil, err
+	}
+	resources := make([]projectCleanupResource, 0, len(items))
+	for _, item := range items {
+		if explicitProject && item.ProjectID != "" && item.ProjectID != projectID {
+			continue
+		}
+		if len(item.Members) > 0 {
+			continue
+		}
+		id := item.ID
+		resources = append(resources, projectCleanupResource{
+			Type: "ServerGroup",
+			ID:   item.ID,
+			Name: item.Name,
+			deleteFunc: func(ctx context.Context) error {
+				return servergroups.Delete(ctx, client, id).ExtractErr()
+			},
+		})
+	}
+	return resources, nil
+}
+
+func projectCleanupTimestampMatch(created time.Time, updated time.Time, filters projectCleanupFilters) bool {
+	if filters.CreatedBefore != nil {
+		if created.IsZero() || !created.Before(*filters.CreatedBefore) {
+			return false
+		}
+	}
+	if filters.UpdatedBefore != nil {
+		if updated.IsZero() || !updated.Before(*filters.UpdatedBefore) {
+			return false
+		}
+	}
+	return true
+}
+
+func projectCleanupPrompt(stdout io.Writer, stdin io.Reader) (bool, error) {
+	if stdin == nil {
+		return false, fmt.Errorf("confirmation is required; use --auto-approve to run non-interactively")
+	}
+	fmt.Fprint(stdout, "These resources will be deleted. Are you sure [y/n]: ")
+	value, err := bufio.NewReader(stdin).ReadString('\n')
+	if err != nil && !errors.Is(err, io.EOF) {
+		return false, err
+	}
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "y", "yes":
+		return true, nil
+	default:
+		return false, nil
+	}
+}
+
 func computeFlavorRaw(ctx context.Context, client *gophercloud.ServiceClient, id string) (map[string]any, error) {
 	var body struct {
 		Flavor map[string]any `json:"flavor"`
@@ -4565,6 +5126,21 @@ func computeFlavorRaw(ctx context.Context, client *gophercloud.ServiceClient, id
 	_, _, err = gophercloud.ParseResponse(resp, err)
 	if err != nil {
 		return nil, err
+	}
+	if specs, err := flavors.ListExtraSpecs(ctx, client, id).Extract(); err == nil {
+		body.Flavor["extra_specs"] = specs
+	}
+	if isPublic, ok := body.Flavor["os-flavor-access:is_public"].(bool); ok && !isPublic {
+		if page, err := flavors.ListAccesses(client, id).AllPages(ctx); err == nil {
+			if accesses, err := flavors.ExtractAccesses(page); err == nil {
+				projectIDs := make([]string, 0, len(accesses))
+				for _, access := range accesses {
+					projectIDs = append(projectIDs, access.TenantID)
+				}
+				sort.Strings(projectIDs)
+				body.Flavor["access_project_ids"] = projectIDs
+			}
+		}
 	}
 	return body.Flavor, nil
 }
@@ -17986,9 +18562,12 @@ func findFlavor(ctx context.Context, client *gophercloud.ServiceClient, value st
 	if result.Err == nil {
 		return result.Extract()
 	}
-	page, err := flavors.ListDetail(client, flavors.ListOpts{}).AllPages(ctx)
+	page, err := flavors.ListDetail(client, flavors.ListOpts{AccessType: flavors.AllAccess}).AllPages(ctx)
 	if err != nil {
-		return nil, result.Err
+		page, err = flavors.ListDetail(client, flavors.ListOpts{}).AllPages(ctx)
+		if err != nil {
+			return nil, result.Err
+		}
 	}
 	items, err := flavors.ExtractFlavors(page)
 	if err != nil {
@@ -20122,6 +20701,32 @@ func intFlag(opts *Options, name string) int {
 		return 0
 	}
 	return parsed
+}
+
+func intFlagDefault(opts *Options, name string, defaultValue int) int {
+	if !flagChanged(opts, name) {
+		return defaultValue
+	}
+	return intFlag(opts, name)
+}
+
+func floatFlagDefault(opts *Options, name string, defaultValue float64) float64 {
+	value := flagValue(opts, name)
+	if value == "" {
+		return defaultValue
+	}
+	parsed, err := strconv.ParseFloat(value, 64)
+	if err != nil {
+		return defaultValue
+	}
+	return parsed
+}
+
+func flagValueDefault(opts *Options, name string, defaultValue string) string {
+	if !flagChanged(opts, name) {
+		return defaultValue
+	}
+	return flagValue(opts, name)
 }
 
 func resolveNetworkID(ctx context.Context, client *gophercloud.ServiceClient, value string) string {

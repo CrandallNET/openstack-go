@@ -77,7 +77,7 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"console log show", "console url show",
 		"container create", "container delete", "container list", "container set", "container show", "container unset",
 		"extension list", "extension show",
-		"flavor list", "flavor show",
+		"flavor create", "flavor delete", "flavor list", "flavor set", "flavor show", "flavor unset",
 		"floating ip create", "floating ip delete", "floating ip list", "floating ip pool list",
 		"floating ip port forwarding create", "floating ip port forwarding delete", "floating ip port forwarding list", "floating ip port forwarding set", "floating ip port forwarding show",
 		"floating ip set", "floating ip show", "floating ip unset",
@@ -119,6 +119,7 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"object create", "object delete", "object list", "object save", "object set", "object show", "object unset",
 		"object store account show",
 		"port create", "port delete", "port list", "port set", "port show", "port unset",
+		"project cleanup",
 		"quota delete", "quota list", "quota set", "quota show",
 		"resource class list", "resource class show",
 		"resource provider aggregate list",
@@ -518,6 +519,39 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().Bool("network", false, "list network extensions")
 		cmd.Flags().Bool("volume", false, "list volume extensions")
 		cmd.Flags().Bool("long", false, "list additional fields")
+	case "flavor create":
+		cmd.Flags().String("id", "auto", "unique flavor ID")
+		cmd.Flags().Int("ram", 256, "memory size in MB")
+		cmd.Flags().Int("disk", 0, "disk size in GB")
+		cmd.Flags().Int("ephemeral", 0, "ephemeral disk size in GB")
+		cmd.Flags().Int("swap", 0, "swap size in MB")
+		cmd.Flags().Int("vcpus", 1, "number of VCPUs")
+		cmd.Flags().Float64("rxtx-factor", 1.0, "RX/TX factor")
+		cmd.Flags().Bool("public", true, "make flavor public")
+		cmd.Flags().Bool("private", false, "make flavor private")
+		cmd.Flags().StringArray("property", nil, "property key=value")
+		cmd.Flags().String("project", "", "project that can access a private flavor")
+		cmd.Flags().String("description", "", "flavor description")
+		cmd.Flags().String("project-domain", "", "project domain")
+	case "flavor set":
+		cmd.Flags().Bool("no-property", false, "remove all flavor properties")
+		cmd.Flags().StringArray("property", nil, "property key=value")
+		cmd.Flags().String("project", "", "project that can access a private flavor")
+		cmd.Flags().String("project-domain", "", "project domain")
+		cmd.Flags().String("description", "", "flavor description")
+	case "flavor unset":
+		cmd.Flags().StringArray("property", nil, "property key")
+		cmd.Flags().String("project", "", "project to remove from private flavor access")
+		cmd.Flags().String("project-domain", "", "project domain")
+	case "project cleanup":
+		cmd.Flags().Bool("dry-run", false, "list resources without deleting them")
+		cmd.Flags().Bool("auto-approve", false, "delete resources without prompting")
+		cmd.Flags().Bool("auth-project", false, "clean the authenticated project")
+		cmd.Flags().String("project", "", "project to clean")
+		cmd.Flags().String("project-domain", "", "project domain")
+		cmd.Flags().String("created-before", "", "only clean resources created before this time")
+		cmd.Flags().String("updated-before", "", "only clean resources updated before this time")
+		cmd.Flags().StringArray("skip-resource", nil, "resource type to skip")
 	case "compute service list":
 		cmd.Flags().String("host", "", "filter by host")
 		cmd.Flags().String("service", "", "filter by service binary")
@@ -1815,7 +1849,7 @@ func isCoreReadCommand(path string) bool {
 		"console log show", "console url show",
 		"container create", "container delete", "container list", "container set", "container show", "container unset",
 		"extension list", "extension show",
-		"flavor list", "flavor show",
+		"flavor create", "flavor delete", "flavor list", "flavor set", "flavor show", "flavor unset",
 		"floating ip create", "floating ip delete", "floating ip list", "floating ip pool list",
 		"floating ip port forwarding create", "floating ip port forwarding delete", "floating ip port forwarding list", "floating ip port forwarding set", "floating ip port forwarding show",
 		"floating ip set", "floating ip show", "floating ip unset",
@@ -1857,6 +1891,7 @@ func isCoreReadCommand(path string) bool {
 		"object create", "object delete", "object list", "object save", "object set", "object show", "object unset",
 		"object store account show",
 		"port create", "port delete", "port list", "port set", "port show", "port unset",
+		"project cleanup",
 		"quota delete", "quota list", "quota set", "quota show",
 		"resource class list", "resource class show",
 		"resource provider aggregate list",
