@@ -23,10 +23,11 @@ const (
 )
 
 type Options struct {
-	Format  string
-	Pretty  bool
-	Compact bool
-	Debug   bool
+	Format    string
+	Pretty    bool
+	Compact   bool
+	NoCompact bool
+	Debug     bool
 
 	MaxWidth   int
 	FitWidth   bool
@@ -197,6 +198,9 @@ func NewRootCommand(stdout io.Writer, stderr io.Writer) *cobra.Command {
 		if opts.Pretty && (!formatFlagChanged || prettyFlagChanged) {
 			opts.Format = "pretty"
 		}
+		if cmd.Flags().Changed("no-compact") {
+			opts.Compact = false
+		}
 		opts.CommandFlags = commandFlagValues(cmd)
 		opts.CommandFlagList = commandFlagLists(cmd)
 		return nil
@@ -213,6 +217,7 @@ func addGlobalFlags(flags *pflag.FlagSet, opts *Options) {
 	flags.StringVarP(&opts.Format, "format", "f", defaultOutputFormat, "the output format")
 	flags.BoolVar(&opts.Pretty, "pretty", opts.Pretty, "use enhanced human-readable output")
 	flags.BoolVar(&opts.Compact, "compact", opts.Compact, "compact enhanced human-readable output")
+	flags.BoolVar(&opts.NoCompact, "no-compact", false, "disable compact enhanced human-readable output")
 	flags.BoolVar(&opts.Debug, "debug", false, "show tracebacks on errors")
 	flags.IntVar(&opts.MaxWidth, "max-width", opts.MaxWidth, "maximum display width, <1 to disable")
 	flags.BoolVar(&opts.FitWidth, "fit-width", opts.FitWidth, "fit table output to the display width")

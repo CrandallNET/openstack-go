@@ -424,6 +424,30 @@ func TestOSCompactEnvCompactsPrettyOutput(t *testing.T) {
 	}
 }
 
+func TestNoCompactFlagOverridesOSCompactEnv(t *testing.T) {
+	t.Setenv("OS_PRETTY", "1")
+	t.Setenv("OS_COMPACT", "0")
+	normal, stderr, err := executeForTest("command", "list", "--group", "openstack.compute.v2")
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if stderr != "" {
+		t.Fatalf("expected empty stderr, got %q", stderr)
+	}
+
+	t.Setenv("OS_COMPACT", "1")
+	expanded, stderr, err := executeForTest("command", "list", "--group", "openstack.compute.v2", "--no-compact")
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if stderr != "" {
+		t.Fatalf("expected empty stderr, got %q", stderr)
+	}
+	if expanded != normal {
+		t.Fatalf("expected --no-compact to match non-compact Pretty output\nnormal:\n%s\nexpanded:\n%s", normal, expanded)
+	}
+}
+
 func TestCompactFlagIsNoopForDefaultOutput(t *testing.T) {
 	normal, stderr, err := executeForTest("command", "list", "--group", "openstack.cli")
 	if err != nil {
@@ -441,6 +465,17 @@ func TestCompactFlagIsNoopForDefaultOutput(t *testing.T) {
 	}
 	if compact != normal {
 		t.Fatalf("expected --compact to be ignored for default output\nnormal:\n%s\ncompact:\n%s", normal, compact)
+	}
+	t.Setenv("OS_COMPACT", "1")
+	noCompact, stderr, err := executeForTest("command", "list", "--group", "openstack.cli", "--no-compact")
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if stderr != "" {
+		t.Fatalf("expected empty stderr, got %q", stderr)
+	}
+	if noCompact != normal {
+		t.Fatalf("expected --no-compact to be ignored for default output\nnormal:\n%s\nno-compact:\n%s", normal, noCompact)
 	}
 }
 
