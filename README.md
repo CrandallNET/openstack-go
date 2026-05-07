@@ -87,11 +87,11 @@ Live command checks support fixture placeholders resolved from the Python oracle
 Discover non-secret live cloud capabilities and fixture candidates:
 
 ```sh
-make discover-cloud CLOUD=cloud6
-make discover-cloud CLOUD=cloud6,flex-sjc,flex-dfw,flex-iad
+make discover CLOUD=cloud6
+make discover CLOUD=cloud6,flex-sjc,flex-dfw,flex-iad
 ```
 
-Discovery writes JSON reports under `compat/live-clouds/`. These reports intentionally omit secrets and should be refreshed before lifecycle tests because cloud state can change.
+Discovery prints a summary table to the terminal and writes JSON reports under `compat/live-clouds/`. These reports intentionally omit secrets and should be refreshed before lifecycle tests because cloud state can change.
 
 Run live write lifecycle tests:
 

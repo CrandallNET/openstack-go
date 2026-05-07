@@ -1718,3 +1718,16 @@ Sources consulted:
 
 * Local Make targets in `Makefile`.
 * Local lifecycle runner in `tools/lifecycle-smoke/main.go`.
+
+## 2026-05-07: Discovery Make Target And Terminal Summary
+
+Decision: rename the cloud discovery Make target from `discover-cloud` to `discover` and have the discovery command print a terminal summary table while still writing the non-secret JSON reports under `compat/live-clouds/`.
+
+Work done: updated the Makefile and README to use `make discover CLOUD=name[,name]`. `tools/cloud-discovery` now accumulates report results and prints one row per cloud with status, region, service count, API probe status counts, fixture status summary, lifecycle eligibility counts, and the JSON report path.
+
+Validation: focused unit tests cover the terminal table summary and status-count ordering.
+
+Sources consulted:
+
+* Local Make targets in `Makefile`.
+* Local discovery runner in `tools/cloud-discovery/main.go`.

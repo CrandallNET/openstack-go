@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
+	"text/tabwriter"
 	"time"
 
 	"github.com/gophercloud/gophercloud/v2"
@@ -125,6 +127,11 @@ type fixtureItem struct {
 	Selected bool   `json:"selected,omitempty"`
 }
 
+type discoveryOutput struct {
+	Report discoveryReport
+	Path   string
+}
+
 func main() {
 	var cloudList string
 	var outputDir string
@@ -148,6 +155,7 @@ func main() {
 	}
 
 	failed := false
+	var outputs []discoveryOutput
 	for _, cloud := range cloudsToDiscover {
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		report := discoverCloud(ctx, cloud, limit)
@@ -157,18 +165,100 @@ func main() {
 			fmt.Fprintf(os.Stderr, "cloud-discovery: write %s: %v\n", path, err)
 			os.Exit(1)
 		}
-		fmt.Printf("%s: %s", cloud, report.Status)
-		if report.Error != "" {
-			fmt.Printf(" (%s)", report.Error)
-		}
-		fmt.Printf(" -> %s\n", path)
+		outputs = append(outputs, discoveryOutput{Report: report, Path: path})
 		if report.Status != "ok" {
 			failed = true
 		}
 	}
+	printDiscoveryTable(os.Stdout, outputs)
 	if failed {
 		os.Exit(1)
 	}
+}
+
+func printDiscoveryTable(w io.Writer, outputs []discoveryOutput) {
+	if len(outputs) == 0 {
+		return
+	}
+	table := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
+	fmt.Fprintln(table, "Cloud\tStatus\tRegion\tServices\tAPIs\tFixtures\tSuites\tReport")
+	for _, output := range outputs {
+		report := output.Report
+		status := report.Status
+		if report.Error != "" {
+			status += ": " + report.Error
+		}
+		fmt.Fprintf(
+			table,
+			"%s\t%s\t%s\t%d\t%s\t%s\t%s\t%s\n",
+			report.Cloud,
+			status,
+			emptyDefault(report.Auth.Region, "-"),
+			len(serviceTypeSet(report.Services)),
+			apiStatusSummary(report.APIs),
+			fixtureStatusSummary(report.Fixtures),
+			eligibilityStatusSummary(report.Eligibility),
+			output.Path,
+		)
+	}
+	_ = table.Flush()
+}
+
+func apiStatusSummary(apis []apiSummary) string {
+	statuses := make([]string, 0, len(apis))
+	for _, api := range apis {
+		statuses = append(statuses, api.Status)
+	}
+	return statusCountSummary(statuses)
+}
+
+func fixtureStatusSummary(fixtures fixtureSummary) string {
+	return strings.Join([]string{
+		"img=" + emptyDefault(fixtures.Images.Status, "-"),
+		"flv=" + emptyDefault(fixtures.Flavors.Status, "-"),
+		"net=" + emptyDefault(fixtures.Networks.Status, "-"),
+		"vol=" + emptyDefault(fixtures.VolumeTypes.Status, "-"),
+		"role=" + emptyDefault(fixtures.Roles.Status, "-"),
+	}, " ")
+}
+
+func eligibilityStatusSummary(eligibilities []eligibility) string {
+	statuses := make([]string, 0, len(eligibilities))
+	for _, item := range eligibilities {
+		statuses = append(statuses, item.Status)
+	}
+	return statusCountSummary(statuses)
+}
+
+func statusCountSummary(statuses []string) string {
+	if len(statuses) == 0 {
+		return "-"
+	}
+	counts := map[string]int{}
+	for _, status := range statuses {
+		status = emptyDefault(status, "unknown")
+		counts[status]++
+	}
+	ordered := []string{"ok", "error", "skipped", "empty", "unknown"}
+	var parts []string
+	seen := map[string]bool{}
+	for _, status := range ordered {
+		if count := counts[status]; count > 0 {
+			parts = append(parts, fmt.Sprintf("%s=%d", status, count))
+			seen[status] = true
+		}
+	}
+	var extra []string
+	for status := range counts {
+		if !seen[status] {
+			extra = append(extra, status)
+		}
+	}
+	sort.Strings(extra)
+	for _, status := range extra {
+		parts = append(parts, fmt.Sprintf("%s=%d", status, counts[status]))
+	}
+	return strings.Join(parts, " ")
 }
 
 func splitClouds(value string) []string {
