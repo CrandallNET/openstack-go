@@ -115,7 +115,7 @@ func TestStubCommand(t *testing.T) {
 }
 
 func TestGeneratedStubCommandIgnoresCommandFlags(t *testing.T) {
-	stdout, stderr, err := executeForTest("host", "set", "--bogus")
+	stdout, stderr, err := executeForTest("container", "save", "--bogus")
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}

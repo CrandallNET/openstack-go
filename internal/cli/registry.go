@@ -68,7 +68,8 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 	for _, path := range []string{
 		"address group create", "address group delete", "address group list", "address group set", "address group show", "address group unset",
 		"address scope create", "address scope delete", "address scope list", "address scope set", "address scope show",
-		"aggregate list", "aggregate show",
+		"aggregate add host", "aggregate cache image", "aggregate create", "aggregate delete", "aggregate list",
+		"aggregate remove host", "aggregate set", "aggregate show", "aggregate unset",
 		"allocation candidate list",
 		"availability zone list",
 		"block storage cleanup",
@@ -77,8 +78,8 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"block storage snapshot manageable list", "block storage volume manageable list",
 		"cached image clear", "cached image delete",
 		"cached image list", "cached image queue",
-		"compute agent list",
-		"compute service list",
+		"compute agent create", "compute agent delete", "compute agent list", "compute agent set",
+		"compute service delete", "compute service list", "compute service set",
 		"consistency group add volume", "consistency group create", "consistency group delete", "consistency group list",
 		"consistency group remove volume", "consistency group set", "consistency group show",
 		"consistency group snapshot create", "consistency group snapshot delete", "consistency group snapshot list", "consistency group snapshot show",
@@ -90,7 +91,7 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"floating ip create", "floating ip delete", "floating ip list", "floating ip pool list",
 		"floating ip port forwarding create", "floating ip port forwarding delete", "floating ip port forwarding list", "floating ip port forwarding set", "floating ip port forwarding show",
 		"floating ip set", "floating ip show", "floating ip unset",
-		"host list", "host show",
+		"host list", "host set", "host show",
 		"hypervisor list", "hypervisor show", "hypervisor stats show",
 		"image add project",
 		"image create", "image delete",
@@ -404,8 +405,18 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 	case "access rule list", "application credential list", "ec2 credentials list":
 		cmd.Flags().String("user", "", "filter by user")
 		cmd.Flags().String("user-domain", "", "user domain")
+	case "aggregate create":
+		cmd.Flags().String("zone", "", "availability zone name")
+		cmd.Flags().StringArray("property", nil, "property key=value")
 	case "aggregate list":
 		cmd.Flags().Bool("long", false, "list additional fields")
+	case "aggregate set":
+		cmd.Flags().String("name", "", "new aggregate name")
+		cmd.Flags().String("zone", "", "availability zone name")
+		cmd.Flags().StringArray("property", nil, "property key=value")
+		cmd.Flags().Bool("no-property", false, "remove all aggregate properties")
+	case "aggregate unset":
+		cmd.Flags().StringArray("property", nil, "property key")
 	case "project show", "user show", "group show", "role show", "domain show":
 		cmd.Flags().String("domain", "", "domain name or ID")
 	case "project list":
@@ -605,10 +616,17 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().String("created-before", "", "only clean resources created before this time")
 		cmd.Flags().String("updated-before", "", "only clean resources updated before this time")
 		cmd.Flags().StringArray("skip-resource", nil, "resource type to skip")
+	case "compute service delete":
 	case "compute service list":
 		cmd.Flags().String("host", "", "filter by host")
 		cmd.Flags().String("service", "", "filter by service binary")
 		cmd.Flags().Bool("long", false, "list additional fields")
+	case "compute service set":
+		cmd.Flags().Bool("enable", false, "enable service")
+		cmd.Flags().Bool("disable", false, "disable service")
+		cmd.Flags().String("disable-reason", "", "reason for disabling service")
+		cmd.Flags().Bool("up", false, "force service up")
+		cmd.Flags().Bool("down", false, "force service down")
 	case "console log show":
 		cmd.Flags().Int("lines", 0, "number of log lines")
 	case "console url show":
@@ -1565,8 +1583,17 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().String("consistency-group", "", "filter by consistency group")
 	case "compute agent list":
 		cmd.Flags().String("hypervisor", "", "type of hypervisor")
+	case "compute agent set":
+		cmd.Flags().String("agent-version", "", "version of the agent")
+		cmd.Flags().String("url", "", "URL of the agent")
+		cmd.Flags().String("md5hash", "", "MD5 hash of the agent")
 	case "host list":
 		cmd.Flags().String("zone", "", "only return hosts in the availability zone")
+	case "host set":
+		cmd.Flags().Bool("enable", false, "enable the host")
+		cmd.Flags().Bool("disable", false, "disable the host")
+		cmd.Flags().Bool("enable-maintenance", false, "enable maintenance mode")
+		cmd.Flags().Bool("disable-maintenance", false, "disable maintenance mode")
 	case "volume attachment list":
 		cmd.Flags().String("project", "", "filter by project")
 		cmd.Flags().String("project-domain", "", "project domain")

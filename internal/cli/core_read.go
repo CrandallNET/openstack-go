@@ -208,18 +208,64 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return addressScopeShow(cmd.Context(), stdout, opts, client, args)
+		case "aggregate add host":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return aggregateAddRemoveHost(cmd.Context(), stdout, opts, client, args, true)
+		case "aggregate cache image":
+			computeClient, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			imageClient, err := clients.imageV2()
+			if err != nil {
+				return err
+			}
+			return aggregateCacheImage(cmd.Context(), opts, computeClient, imageClient, args)
+		case "aggregate create":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return aggregateCreate(cmd.Context(), stdout, opts, client, args)
+		case "aggregate delete":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return aggregateDelete(cmd.Context(), client, args)
 		case "aggregate list":
 			client, err := clients.computeV2()
 			if err != nil {
 				return err
 			}
 			return aggregateList(cmd.Context(), stdout, opts, client)
+		case "aggregate remove host":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return aggregateAddRemoveHost(cmd.Context(), stdout, opts, client, args, false)
+		case "aggregate set":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return aggregateSet(cmd.Context(), opts, client, args)
 		case "aggregate show":
 			client, err := clients.computeV2()
 			if err != nil {
 				return err
 			}
 			return aggregateShow(cmd.Context(), stdout, opts, client, args)
+		case "aggregate unset":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return aggregateUnset(cmd.Context(), opts, client, args)
 		case "availability zone list":
 			return availabilityZoneList(cmd.Context(), stdout, opts, clients)
 		case "cached image clear":
@@ -246,18 +292,48 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return cachedImageQueue(cmd.Context(), cmd.ErrOrStderr(), opts, client, args)
+		case "compute agent create":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return computeAgentCreate(cmd.Context(), stdout, opts, client, args)
+		case "compute agent delete":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return computeAgentDelete(cmd.Context(), client, args)
 		case "compute agent list":
 			client, err := clients.computeV2()
 			if err != nil {
 				return err
 			}
 			return computeAgentList(cmd.Context(), stdout, opts, client)
+		case "compute agent set":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return computeAgentSet(cmd.Context(), opts, client, args)
+		case "compute service delete":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return computeServiceDelete(cmd.Context(), client, args)
 		case "compute service list":
 			client, err := clients.computeV2()
 			if err != nil {
 				return err
 			}
 			return computeServiceList(cmd.Context(), stdout, opts, client)
+		case "compute service set":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			return computeServiceSet(cmd.Context(), opts, client, args)
 		case "consistency group add volume":
 			client, err := clients.blockStorageV3()
 			if err != nil {
@@ -533,6 +609,13 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 			}
 			fmt.Fprintln(cmd.ErrOrStderr(), "API has been deprecated; consider using 'hypervisor show' instead.")
 			return hostShow(cmd.Context(), stdout, opts, client, args)
+		case "host set":
+			client, err := clients.computeV2()
+			if err != nil {
+				return err
+			}
+			fmt.Fprintln(cmd.ErrOrStderr(), "API has been deprecated; consider using 'compute service set' instead.")
+			return hostSet(cmd.Context(), opts, client, args)
 		case "ip availability list":
 			client, err := clients.networkV2()
 			if err != nil {
@@ -3920,7 +4003,7 @@ func aggregateList(ctx context.Context, stdout io.Writer, opts *Options, client 
 		}
 		if boolFlag(opts, "long") {
 			row["Hosts"] = item.Hosts
-			row["Properties"] = item.Metadata
+			row["Properties"] = aggregateProperties(&item, true)
 		}
 		rows = append(rows, row)
 	}
@@ -3931,6 +4014,111 @@ func aggregateList(ctx context.Context, stdout io.Writer, opts *Options, client 
 	return renderListOutput(stdout, opts, columns, rows)
 }
 
+func aggregateCreate(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("aggregate create requires <name>")
+	}
+	item, err := aggregates.Create(ctx, client, aggregates.CreateOpts{
+		Name:             args[0],
+		AvailabilityZone: flagValue(opts, "zone"),
+	}).Extract()
+	if err != nil {
+		return err
+	}
+	properties, err := parseStringMap(flagValues(opts, "property"), "--property")
+	if err != nil {
+		return err
+	}
+	if len(properties) > 0 {
+		item, err = aggregates.SetMetadata(ctx, client, item.ID, aggregates.SetMetadataOpts{Metadata: stringMapToAny(properties)}).Extract()
+		if err != nil {
+			return err
+		}
+	}
+	return renderShowOutput(stdout, opts, aggregateFields(item, false))
+}
+
+func aggregateDelete(ctx context.Context, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("aggregate delete requires <aggregate> [<aggregate> ...]")
+	}
+	failures := 0
+	for _, value := range args {
+		item, err := findAggregate(ctx, client, value)
+		if err != nil {
+			failures++
+			continue
+		}
+		if err := aggregates.Delete(ctx, client, item.ID).ExtractErr(); err != nil {
+			failures++
+		}
+	}
+	if failures > 0 {
+		return fmt.Errorf("%d of %d aggregates failed to delete.", failures, len(args))
+	}
+	return nil
+}
+
+func aggregateAddRemoveHost(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string, add bool) error {
+	action := "add host"
+	if !add {
+		action = "remove host"
+	}
+	if len(args) < 2 {
+		return fmt.Errorf("aggregate %s requires <aggregate> <host>", action)
+	}
+	item, err := findAggregate(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	if add {
+		item, err = aggregates.AddHost(ctx, client, item.ID, aggregates.AddHostOpts{Host: args[1]}).Extract()
+	} else {
+		item, err = aggregates.RemoveHost(ctx, client, item.ID, aggregates.RemoveHostOpts{Host: args[1]}).Extract()
+	}
+	if err != nil {
+		return err
+	}
+	return renderShowOutput(stdout, opts, aggregateFields(item, false))
+}
+
+func aggregateSet(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("aggregate set requires <aggregate>")
+	}
+	item, err := findAggregate(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	if name := flagValue(opts, "name"); name != "" || flagValue(opts, "zone") != "" {
+		update := aggregates.UpdateOpts{Name: name, AvailabilityZone: flagValue(opts, "zone")}
+		if _, err := aggregates.Update(ctx, client, item.ID, update).Extract(); err != nil {
+			return err
+		}
+	}
+	properties := map[string]any{}
+	if boolFlag(opts, "no-property") {
+		for key := range item.Metadata {
+			if key != "availability_zone" {
+				properties[key] = nil
+			}
+		}
+	}
+	parsed, err := parseStringMap(flagValues(opts, "property"), "--property")
+	if err != nil {
+		return err
+	}
+	for key, value := range parsed {
+		properties[key] = value
+	}
+	if len(properties) > 0 {
+		if _, err := aggregates.SetMetadata(ctx, client, item.ID, aggregates.SetMetadataOpts{Metadata: properties}).Extract(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func aggregateShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
 	if len(args) < 1 {
 		return fmt.Errorf("aggregate show requires <aggregate>")
@@ -3939,17 +4127,89 @@ func aggregateShow(ctx context.Context, stdout io.Writer, opts *Options, client 
 	if err != nil {
 		return err
 	}
-	return renderShowOutput(stdout, opts, []outputField{
-		{"id", item.ID},
-		{"name", item.Name},
-		{"availability_zone", item.AvailabilityZone},
-		{"hosts", item.Hosts},
-		{"metadata", item.Metadata},
-		{"uuid", item.UUID},
+	return renderShowOutput(stdout, opts, aggregateFields(item, true))
+}
+
+func aggregateUnset(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("aggregate unset requires <aggregate>")
+	}
+	item, err := findAggregate(ctx, client, args[0])
+	if err != nil {
+		return err
+	}
+	properties := map[string]any{}
+	for _, key := range flagValues(opts, "property") {
+		if strings.TrimSpace(key) != "" {
+			properties[strings.TrimSpace(key)] = nil
+		}
+	}
+	if len(properties) == 0 {
+		return nil
+	}
+	if _, err := aggregates.SetMetadata(ctx, client, item.ID, aggregates.SetMetadataOpts{Metadata: properties}).Extract(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func aggregateCacheImage(ctx context.Context, opts *Options, computeClient *gophercloud.ServiceClient, imageClient *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("aggregate cache image requires <aggregate> <image> [<image> ...]")
+	}
+	computeClient, err := computeClientWithMinimumMicroversion(ctx, computeClient, "2.81")
+	if err != nil {
+		return err
+	}
+	item, err := findAggregate(ctx, computeClient, args[0])
+	if err != nil {
+		return err
+	}
+	cache := make([]map[string]string, 0, len(args)-1)
+	for _, value := range args[1:] {
+		image, err := findImage(ctx, imageClient, value)
+		if err != nil {
+			return err
+		}
+		cache = append(cache, map[string]string{"id": image.ID})
+	}
+	resp, err := computeClient.Post(ctx, computeClient.ServiceURL("os-aggregates", strconv.Itoa(item.ID), "images"), map[string]any{"cache": cache}, nil, &gophercloud.RequestOpts{OkCodes: []int{http.StatusOK, http.StatusAccepted, http.StatusNoContent}})
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	return oscHTTPException(err)
+}
+
+func aggregateFields(item *aggregates.Aggregate, stripAvailabilityZoneMetadata bool) []outputField {
+	return []outputField{
+		{"availability_zone", nilIfEmpty(item.AvailabilityZone)},
 		{"created_at", oscTime(item.CreatedAt)},
+		{"deleted_at", oscTime(item.DeletedAt)},
+		{"hosts", item.Hosts},
+		{"id", item.ID},
+		{"is_deleted", item.Deleted},
+		{"name", item.Name},
+		{"properties", aggregateProperties(item, stripAvailabilityZoneMetadata)},
+		{"uuid", item.UUID},
 		{"updated_at", oscTime(item.UpdatedAt)},
-		{"deleted", item.Deleted},
-	})
+	}
+}
+
+func aggregateProperties(item *aggregates.Aggregate, stripAvailabilityZone bool) map[string]string {
+	properties := map[string]string{}
+	for key, value := range item.Metadata {
+		if stripAvailabilityZone && key == "availability_zone" {
+			continue
+		}
+		properties[key] = value
+	}
+	return properties
+}
+
+func stringMapToAny(values map[string]string) map[string]any {
+	result := make(map[string]any, len(values))
+	for key, value := range values {
+		result[key] = value
+	}
+	return result
 }
 
 func computeServiceList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
@@ -3988,7 +4248,226 @@ func computeServiceList(ctx context.Context, stdout io.Writer, opts *Options, cl
 	return renderListOutput(stdout, opts, columns, rows)
 }
 
+func computeServiceDelete(ctx context.Context, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("compute service delete requires <service> [<service> ...]")
+	}
+	failures := 0
+	for _, value := range args {
+		if err := computeservices.Delete(ctx, client, value).ExtractErr(); err != nil {
+			failures++
+		}
+	}
+	if failures > 0 {
+		return fmt.Errorf("%d of %d compute services failed to delete.", failures, len(args))
+	}
+	return nil
+}
+
+func computeServiceSet(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("compute service set requires <host> <service>")
+	}
+	enable := boolFlag(opts, "enable")
+	disable := boolFlag(opts, "disable")
+	if enable && disable {
+		return fmt.Errorf("arguments --enable and --disable are mutually exclusive")
+	}
+	up := boolFlag(opts, "up")
+	down := boolFlag(opts, "down")
+	if up && down {
+		return fmt.Errorf("arguments --up and --down are mutually exclusive")
+	}
+	disableReason := flagValue(opts, "disable-reason")
+	if (enable || !disable) && disableReason != "" {
+		return fmt.Errorf("Cannot specify option --disable-reason without --disable specified.")
+	}
+	if !enable && !disable && !up && !down {
+		return nil
+	}
+	host, binary := args[0], args[1]
+	if microversionAtLeast(client.Microversion, "2.53") {
+		service, err := findComputeServiceByHostAndBinary(ctx, client, host, binary)
+		if err != nil {
+			return err
+		}
+		body := map[string]any{}
+		if enable {
+			body["status"] = "enabled"
+		}
+		if disable {
+			body["status"] = "disabled"
+			if disableReason != "" {
+				body["disabled_reason"] = disableReason
+			}
+		}
+		if up {
+			body["forced_down"] = false
+		}
+		if down {
+			body["forced_down"] = true
+		}
+		return computePutAction(ctx, client, client.ServiceURL("os-services", url.PathEscape(service.ID)), body, http.StatusOK)
+	}
+	if enable {
+		if err := computePostAction(ctx, client, client.ServiceURL("os-services", "enable"), map[string]any{"host": host, "binary": binary}, http.StatusOK); err != nil {
+			return err
+		}
+	}
+	if disable {
+		action := "disable"
+		body := map[string]any{"host": host, "binary": binary}
+		if disableReason != "" {
+			action = "disable-log-reason"
+			body["disabled_reason"] = disableReason
+		}
+		if err := computePostAction(ctx, client, client.ServiceURL("os-services", action), body, http.StatusOK); err != nil {
+			return err
+		}
+	}
+	if up || down {
+		if !microversionAtLeast(client.Microversion, "2.11") {
+			return fmt.Errorf("--os-compute-api-version 2.11 or later is required")
+		}
+		if err := computePostAction(ctx, client, client.ServiceURL("os-services", "force-down"), map[string]any{"host": host, "binary": binary, "forced_down": down}, http.StatusOK); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func findComputeServiceByHostAndBinary(ctx context.Context, client *gophercloud.ServiceClient, host string, binary string) (*computeservices.Service, error) {
+	page, err := computeservices.List(client, computeservices.ListOpts{Host: host, Binary: binary}).AllPages(ctx)
+	if err != nil {
+		return nil, err
+	}
+	items, err := computeservices.ExtractServices(page)
+	if err != nil {
+		return nil, err
+	}
+	if len(items) == 0 {
+		return nil, fmt.Errorf("Compute service for host %q and binary %q not found.", host, binary)
+	}
+	if len(items) > 1 {
+		return nil, fmt.Errorf("Multiple compute services found for host %q and binary %q. Unable to proceed.", host, binary)
+	}
+	return &items[0], nil
+}
+
+func computePostAction(ctx context.Context, client *gophercloud.ServiceClient, requestURL string, body any, okCodes ...int) error {
+	if len(okCodes) == 0 {
+		okCodes = []int{http.StatusOK, http.StatusAccepted, http.StatusNoContent}
+	}
+	resp, err := client.Post(ctx, requestURL, body, nil, &gophercloud.RequestOpts{OkCodes: okCodes})
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	return oscHTTPException(err)
+}
+
+func computePutAction(ctx context.Context, client *gophercloud.ServiceClient, requestURL string, body any, okCodes ...int) error {
+	if len(okCodes) == 0 {
+		okCodes = []int{http.StatusOK, http.StatusAccepted, http.StatusNoContent}
+	}
+	resp, err := client.Put(ctx, requestURL, body, nil, &gophercloud.RequestOpts{OkCodes: okCodes})
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	return oscHTTPException(err)
+}
+
 func computeAgentList(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient) error {
+	agents, err := computeAgentListRaw(ctx, opts, client)
+	if err != nil {
+		return err
+	}
+	rows := make([]outputRow, 0, len(agents))
+	for _, item := range agents {
+		rows = append(rows, outputRow{
+			"Agent ID":     mapValueOrEmpty(item, "agent_id"),
+			"Hypervisor":   mapValueOrEmpty(item, "hypervisor"),
+			"OS":           mapValueOrEmpty(item, "os"),
+			"Architecture": mapValueOrEmpty(item, "architecture"),
+			"Version":      mapValueOrEmpty(item, "version"),
+			"Md5Hash":      mapValueOrEmpty(item, "md5hash"),
+			"URL":          mapValueOrEmpty(item, "url"),
+		})
+	}
+	return renderListOutput(stdout, opts, []string{"Agent ID", "Hypervisor", "OS", "Architecture", "Version", "Md5Hash", "URL"}, rows)
+}
+
+func computeAgentCreate(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 6 {
+		return fmt.Errorf("compute agent create requires <os> <architecture> <version> <url> <md5hash> <hypervisor>")
+	}
+	client.Microversion = "2.1"
+	body := map[string]any{"agent": map[string]any{
+		"os":           args[0],
+		"architecture": args[1],
+		"version":      args[2],
+		"url":          args[3],
+		"md5hash":      args[4],
+		"hypervisor":   args[5],
+	}}
+	var result struct {
+		Agent map[string]any `json:"agent"`
+	}
+	resp, err := client.Post(ctx, client.ServiceURL("os-agents"), body, &result, &gophercloud.RequestOpts{OkCodes: []int{http.StatusOK}})
+	_, _, err = gophercloud.ParseResponse(resp, err)
+	if err != nil {
+		return oscHTTPException(err)
+	}
+	return renderShowOutput(stdout, opts, sortedFieldsFromMap(result.Agent, false))
+}
+
+func computeAgentDelete(ctx context.Context, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("compute agent delete requires <id> [<id> ...]")
+	}
+	client.Microversion = "2.1"
+	failures := 0
+	for _, value := range args {
+		resp, err := client.Delete(ctx, client.ServiceURL("os-agents", url.PathEscape(value)), &gophercloud.RequestOpts{OkCodes: []int{http.StatusOK, http.StatusAccepted, http.StatusNoContent}})
+		_, _, err = gophercloud.ParseResponse(resp, err)
+		if err != nil {
+			failures++
+		}
+	}
+	if failures > 0 {
+		return fmt.Errorf("%d of %d agents failed to delete.", failures, len(args))
+	}
+	return nil
+}
+
+func computeAgentSet(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("compute agent set requires <id>")
+	}
+	agents, err := computeAgentListRaw(ctx, &Options{CommandFlags: map[string]string{}}, client)
+	if err != nil {
+		return err
+	}
+	data := map[string]any{}
+	for _, agent := range agents {
+		if valueString(mapValueOrEmpty(agent, "agent_id")) == args[0] {
+			data["version"] = mapValueOrEmpty(agent, "version")
+			data["url"] = mapValueOrEmpty(agent, "url")
+			data["md5hash"] = mapValueOrEmpty(agent, "md5hash")
+			break
+		}
+	}
+	if len(data) == 0 {
+		return fmt.Errorf("No agent with a ID of '%s' exists.", args[0])
+	}
+	if value := flagValue(opts, "agent-version"); value != "" {
+		data["version"] = value
+	}
+	if value := flagValue(opts, "url"); value != "" {
+		data["url"] = value
+	}
+	if value := flagValue(opts, "md5hash"); value != "" {
+		data["md5hash"] = value
+	}
+	return computePutAction(ctx, client, client.ServiceURL("os-agents", url.PathEscape(args[0])), map[string]any{"para": data}, http.StatusOK)
+}
+
+func computeAgentListRaw(ctx context.Context, opts *Options, client *gophercloud.ServiceClient) ([]map[string]any, error) {
 	client.Microversion = "2.1"
 	requestURL := client.ServiceURL("os-agents")
 	if hypervisor := flagValue(opts, "hypervisor"); hypervisor != "" {
@@ -4002,21 +4481,9 @@ func computeAgentList(ctx context.Context, stdout io.Writer, opts *Options, clie
 	resp, err := client.Get(ctx, requestURL, &body, nil)
 	_, _, err = gophercloud.ParseResponse(resp, err)
 	if err != nil {
-		return oscHTTPException(err)
+		return nil, oscHTTPException(err)
 	}
-	rows := make([]outputRow, 0, len(body.Agents))
-	for _, item := range body.Agents {
-		rows = append(rows, outputRow{
-			"Agent ID":     mapValueOrEmpty(item, "agent_id"),
-			"Hypervisor":   mapValueOrEmpty(item, "hypervisor"),
-			"OS":           mapValueOrEmpty(item, "os"),
-			"Architecture": mapValueOrEmpty(item, "architecture"),
-			"Version":      mapValueOrEmpty(item, "version"),
-			"Md5Hash":      mapValueOrEmpty(item, "md5hash"),
-			"URL":          mapValueOrEmpty(item, "url"),
-		})
-	}
-	return renderListOutput(stdout, opts, []string{"Agent ID", "Hypervisor", "OS", "Architecture", "Version", "Md5Hash", "URL"}, rows)
+	return body.Agents, nil
 }
 
 func consoleConnectionShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
@@ -4096,6 +4563,40 @@ func hostShow(ctx context.Context, stdout io.Writer, opts *Options, client *goph
 		})
 	}
 	return renderListOutput(stdout, opts, []string{"Host", "Project", "CPU", "Memory MB", "Disk GB"}, rows)
+}
+
+func hostSet(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("host set requires <host>")
+	}
+	enable := boolFlag(opts, "enable")
+	disable := boolFlag(opts, "disable")
+	if enable && disable {
+		return fmt.Errorf("arguments --enable and --disable are mutually exclusive")
+	}
+	enableMaintenance := boolFlag(opts, "enable-maintenance")
+	disableMaintenance := boolFlag(opts, "disable-maintenance")
+	if enableMaintenance && disableMaintenance {
+		return fmt.Errorf("arguments --enable-maintenance and --disable-maintenance are mutually exclusive")
+	}
+	data := map[string]any{}
+	if enable {
+		data["status"] = "enable"
+	}
+	if disable {
+		data["status"] = "disable"
+	}
+	if enableMaintenance {
+		data["maintenance_mode"] = "enable"
+	}
+	if disableMaintenance {
+		data["maintenance_mode"] = "disable"
+	}
+	if len(data) == 0 {
+		return nil
+	}
+	client.Microversion = "2.1"
+	return computePutAction(ctx, client, client.ServiceURL("os-hosts", url.PathEscape(args[0])), data, http.StatusOK)
 }
 
 func consoleLogShow(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
