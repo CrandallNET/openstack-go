@@ -4517,24 +4517,26 @@ commands:
     group: "openstack.placement.v1"
     service: "placement"
     api: "v1"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/placement/v1/resourceclasses"
     shim: false
     plugin_scope: true
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion. Live fixture still needed before this row can be marked cloud-verified."
   - command: "resource class delete"
     group: "openstack.placement.v1"
     service: "placement"
     api: "v1"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/placement/v1/resourceclasses"
     shim: false
     plugin_scope: true
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion. Live fixture still needed before this row can be marked cloud-verified."
   - command: "resource class list"
     group: "openstack.placement.v1"
     service: "placement"
@@ -4552,13 +4554,14 @@ commands:
     group: "openstack.placement.v1"
     service: "placement"
     api: "v1"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/placement/v1/resourceclasses"
     shim: false
     plugin_scope: true
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion. Live fixture still needed before this row can be marked cloud-verified."
   - command: "resource class show"
     group: "openstack.placement.v1"
     service: "placement"
@@ -4589,42 +4592,45 @@ commands:
     group: "openstack.placement.v1"
     service: "placement"
     api: "v1"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/placement/v1/resourceproviders"
     shim: false
     plugin_scope: true
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion. Live fixture still needed before this row can be marked cloud-verified."
   - command: "resource provider allocation delete"
     group: "openstack.placement.v1"
     service: "placement"
     api: "v1"
-    status: "unknown"
-    sdk_package: ""
-    shim: false
+    status: "implemented"
+    sdk_package: "Placement consumer allocations via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
+    shim: true
     plugin_scope: true
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion. Live fixture still needed before this row can be marked cloud-verified."
   - command: "resource provider allocation set"
     group: "openstack.placement.v1"
     service: "placement"
     api: "v1"
-    status: "unknown"
-    sdk_package: ""
-    shim: false
+    status: "implemented"
+    sdk_package: "Placement consumer allocations via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
+    shim: true
     plugin_scope: true
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion. Live fixture still needed before this row can be marked cloud-verified."
   - command: "resource provider allocation show"
     group: "openstack.placement.v1"
     service: "placement"
     api: "v1"
     status: "cloud-verified"
-    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/placement/v1/resourceproviders"
-    shim: false
+    sdk_package: "Placement consumer allocations via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
+    shim: true
     plugin_scope: true
     implemented_in: "internal/cli"
     tests:
@@ -4635,57 +4641,62 @@ commands:
     group: "openstack.placement.v1"
     service: "placement"
     api: "v1"
-    status: "unknown"
-    sdk_package: ""
-    shim: false
+    status: "implemented"
+    sdk_package: "Placement consumer allocations via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
+    shim: true
     plugin_scope: true
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion. Live fixture still needed before this row can be marked cloud-verified."
   - command: "resource provider create"
     group: "openstack.placement.v1"
     service: "placement"
     api: "v1"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/placement/v1/resourceproviders"
     shim: false
     plugin_scope: true
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion. Live fixture still needed before this row can be marked cloud-verified."
   - command: "resource provider delete"
     group: "openstack.placement.v1"
     service: "placement"
     api: "v1"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/placement/v1/resourceproviders"
     shim: false
     plugin_scope: true
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion. Live fixture still needed before this row can be marked cloud-verified."
   - command: "resource provider inventory class set"
     group: "openstack.placement.v1"
     service: "placement"
     api: "v1"
-    status: "unknown"
-    sdk_package: ""
-    shim: false
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/placement/v1/resourceproviders; raw request preserves partial OSC inventory payloads"
+    shim: true
     plugin_scope: true
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion. Live fixture still needed before this row can be marked cloud-verified."
   - command: "resource provider inventory delete"
     group: "openstack.placement.v1"
     service: "placement"
     api: "v1"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/placement/v1/resourceproviders"
     shim: false
     plugin_scope: true
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion. Live fixture still needed before this row can be marked cloud-verified."
   - command: "resource provider inventory list"
     group: "openstack.placement.v1"
     service: "placement"
@@ -4703,13 +4714,14 @@ commands:
     group: "openstack.placement.v1"
     service: "placement"
     api: "v1"
-    status: "unknown"
-    sdk_package: ""
-    shim: false
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/placement/v1/resourceproviders; raw request preserves partial OSC inventory payloads"
+    shim: true
     plugin_scope: true
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion. Live fixture still needed before this row can be marked cloud-verified."
   - command: "resource provider inventory show"
     group: "openstack.placement.v1"
     service: "placement"
@@ -4740,13 +4752,14 @@ commands:
     group: "openstack.placement.v1"
     service: "placement"
     api: "v1"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/placement/v1/resourceproviders"
     shim: false
     plugin_scope: true
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion. Live fixture still needed before this row can be marked cloud-verified."
   - command: "resource provider show"
     group: "openstack.placement.v1"
     service: "placement"
@@ -4764,13 +4777,14 @@ commands:
     group: "openstack.placement.v1"
     service: "placement"
     api: "v1"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/placement/v1/resourceproviders"
     shim: false
     plugin_scope: true
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion. Live fixture still needed before this row can be marked cloud-verified."
   - command: "resource provider trait list"
     group: "openstack.placement.v1"
     service: "placement"
@@ -4788,13 +4802,14 @@ commands:
     group: "openstack.placement.v1"
     service: "placement"
     api: "v1"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/placement/v1/resourceproviders"
     shim: false
     plugin_scope: true
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion. Live fixture still needed before this row can be marked cloud-verified."
   - command: "resource provider usage show"
     group: "openstack.placement.v1"
     service: "placement"
@@ -4812,13 +4827,14 @@ commands:
     group: "openstack.placement.v1"
     service: "placement"
     api: "v1"
-    status: "unknown"
-    sdk_package: ""
-    shim: false
+    status: "implemented"
+    sdk_package: "Placement project/user usages via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
+    shim: true
     plugin_scope: true
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, microversion, and oracle parity coverage still need completion. Live fixture still needed before this row can be marked cloud-verified."
   - command: "role add"
     group: "openstack.identity.v3"
     service: "identity"
@@ -6630,24 +6646,26 @@ commands:
     group: "openstack.placement.v1"
     service: "placement"
     api: "v1"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/placement/v1/traits"
     shim: false
     plugin_scope: true
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion. Live fixture still needed before this row can be marked cloud-verified."
   - command: "trait delete"
     group: "openstack.placement.v1"
     service: "placement"
     api: "v1"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/placement/v1/traits"
     shim: false
     plugin_scope: true
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Gophercloud-backed write implementation. Basic lifecycle behavior works for test-created resources; full flag, lookup, cleanup, and oracle parity coverage still need completion. Live fixture still needed before this row can be marked cloud-verified."
   - command: "trait list"
     group: "openstack.placement.v1"
     service: "placement"

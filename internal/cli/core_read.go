@@ -1266,6 +1266,24 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return resourceClassList(cmd.Context(), stdout, opts, client)
+		case "resource class create":
+			client, err := clients.placementV1()
+			if err != nil {
+				return err
+			}
+			return resourceClassCreate(cmd.Context(), opts, client, args)
+		case "resource class delete":
+			client, err := clients.placementV1()
+			if err != nil {
+				return err
+			}
+			return resourceClassDelete(cmd.Context(), client, args)
+		case "resource class set":
+			client, err := clients.placementV1()
+			if err != nil {
+				return err
+			}
+			return resourceClassSet(cmd.Context(), client, args)
 		case "resource class show":
 			client, err := clients.placementV1()
 			if err != nil {
@@ -1278,18 +1296,72 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return resourceProviderAggregateList(cmd.Context(), stdout, opts, client, args)
+		case "resource provider aggregate set":
+			client, err := clients.placementV1()
+			if err != nil {
+				return err
+			}
+			return resourceProviderAggregateSet(cmd.Context(), stdout, opts, client, args)
+		case "resource provider allocation delete":
+			client, err := clients.placementV1()
+			if err != nil {
+				return err
+			}
+			return resourceProviderAllocationDelete(cmd.Context(), client, args)
+		case "resource provider allocation set":
+			client, err := clients.placementV1()
+			if err != nil {
+				return err
+			}
+			return resourceProviderAllocationSet(cmd.Context(), stdout, cmd.ErrOrStderr(), opts, client, args)
 		case "resource provider allocation show":
 			client, err := clients.placementV1()
 			if err != nil {
 				return err
 			}
 			return resourceProviderAllocationShow(cmd.Context(), stdout, opts, client, args)
+		case "resource provider allocation unset":
+			client, err := clients.placementV1()
+			if err != nil {
+				return err
+			}
+			return resourceProviderAllocationUnset(cmd.Context(), stdout, opts, client, args)
+		case "resource provider create":
+			client, err := clients.placementV1()
+			if err != nil {
+				return err
+			}
+			return resourceProviderCreate(cmd.Context(), stdout, opts, client, args)
+		case "resource provider delete":
+			client, err := clients.placementV1()
+			if err != nil {
+				return err
+			}
+			return resourceProviderDelete(cmd.Context(), client, args)
+		case "resource provider inventory class set":
+			client, err := clients.placementV1()
+			if err != nil {
+				return err
+			}
+			return resourceProviderInventoryClassSet(cmd.Context(), stdout, opts, client, args)
+		case "resource provider inventory delete":
+			client, err := clients.placementV1()
+			if err != nil {
+				return err
+			}
+			return resourceProviderInventoryDelete(cmd.Context(), opts, client, args)
 		case "resource provider inventory list":
 			client, err := clients.placementV1()
 			if err != nil {
 				return err
 			}
 			return resourceProviderInventoryList(cmd.Context(), stdout, opts, client, args)
+		case "resource provider inventory set":
+			client, err := clients.placementV1()
+			if err != nil {
+				return err
+			}
+			return resourceProviderInventorySet(cmd.Context(), stdout, opts, client, args)
 		case "resource provider inventory show":
 			client, err := clients.placementV1()
 			if err != nil {
@@ -1302,24 +1374,48 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return resourceProviderList(cmd.Context(), stdout, opts, client)
+		case "resource provider set":
+			client, err := clients.placementV1()
+			if err != nil {
+				return err
+			}
+			return resourceProviderSet(cmd.Context(), stdout, opts, client, args)
 		case "resource provider show":
 			client, err := clients.placementV1()
 			if err != nil {
 				return err
 			}
 			return resourceProviderShow(cmd.Context(), stdout, opts, client, args)
+		case "resource provider trait delete":
+			client, err := clients.placementV1()
+			if err != nil {
+				return err
+			}
+			return resourceProviderTraitDelete(cmd.Context(), client, args)
 		case "resource provider trait list":
 			client, err := clients.placementV1()
 			if err != nil {
 				return err
 			}
 			return resourceProviderTraitList(cmd.Context(), stdout, opts, client, args)
+		case "resource provider trait set":
+			client, err := clients.placementV1()
+			if err != nil {
+				return err
+			}
+			return resourceProviderTraitSet(cmd.Context(), stdout, opts, client, args)
 		case "resource provider usage show":
 			client, err := clients.placementV1()
 			if err != nil {
 				return err
 			}
 			return resourceProviderUsageShow(cmd.Context(), stdout, opts, client, args)
+		case "resource usage show":
+			client, err := clients.placementV1()
+			if err != nil {
+				return err
+			}
+			return resourceUsageShow(cmd.Context(), stdout, opts, client, args)
 		case "router add port":
 			client, err := clients.networkV2()
 			if err != nil {
@@ -1974,6 +2070,18 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return traitList(cmd.Context(), stdout, opts, client)
+		case "trait create":
+			client, err := clients.placementV1()
+			if err != nil {
+				return err
+			}
+			return traitCreate(cmd.Context(), client, args)
+		case "trait delete":
+			client, err := clients.placementV1()
+			if err != nil {
+				return err
+			}
+			return traitDelete(cmd.Context(), client, args)
 		case "trait show":
 			client, err := clients.placementV1()
 			if err != nil {

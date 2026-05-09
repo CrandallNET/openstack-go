@@ -84,7 +84,7 @@ func (clients *openStackClients) placementV1() (*gophercloud.ServiceClient, erro
 	}
 	client.Microversion = os.Getenv("OS_PLACEMENT_API_VERSION")
 	if client.Microversion == "" {
-		client.Microversion = "1.39"
+		client.Microversion = "1.29"
 	}
 	return client, nil
 }

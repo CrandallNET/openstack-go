@@ -131,13 +131,14 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"port create", "port delete", "port list", "port set", "port show", "port unset",
 		"project cleanup",
 		"quota delete", "quota list", "quota set", "quota show",
-		"resource class list", "resource class show",
-		"resource provider aggregate list",
-		"resource provider allocation show",
-		"resource provider inventory list", "resource provider inventory show",
-		"resource provider list", "resource provider show",
-		"resource provider trait list",
-		"resource provider usage show",
+		"resource class create", "resource class delete", "resource class list", "resource class set", "resource class show",
+		"resource provider aggregate list", "resource provider aggregate set",
+		"resource provider allocation delete", "resource provider allocation set", "resource provider allocation show", "resource provider allocation unset",
+		"resource provider create", "resource provider delete",
+		"resource provider inventory class set", "resource provider inventory delete", "resource provider inventory list", "resource provider inventory set", "resource provider inventory show",
+		"resource provider list", "resource provider set", "resource provider show",
+		"resource provider trait delete", "resource provider trait list", "resource provider trait set",
+		"resource provider usage show", "resource usage show",
 		"router add gateway", "router add port", "router add route", "router add subnet",
 		"router create", "router delete", "router list",
 		"router remove gateway", "router remove port", "router remove route", "router remove subnet",
@@ -160,7 +161,7 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"server volume list", "server volume set", "server volume update",
 		"subnet create", "subnet delete", "subnet list", "subnet set", "subnet show", "subnet unset",
 		"subnet pool create", "subnet pool delete", "subnet pool list", "subnet pool set", "subnet pool show", "subnet pool unset",
-		"trait list", "trait show",
+		"trait create", "trait delete", "trait list", "trait show",
 		"usage list", "usage show",
 		"versions show",
 		"volume attachment complete", "volume attachment create", "volume attachment delete",
@@ -443,11 +444,11 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 	case "identity provider list":
 		cmd.Flags().String("id", "", "filter by ID")
 	case "allocation candidate list":
-		cmd.Flags().String("resource", "", "resource class amount")
+		cmd.Flags().StringArray("resource", nil, "resource class amount")
 		cmd.Flags().Int("limit", 0, "maximum number of entries")
-		cmd.Flags().String("required", "", "required trait")
-		cmd.Flags().String("forbidden", "", "forbidden trait")
-		cmd.Flags().String("member-of", "", "aggregate membership")
+		cmd.Flags().StringArray("required", nil, "required trait")
+		cmd.Flags().StringArray("forbidden", nil, "forbidden trait")
+		cmd.Flags().StringArray("member-of", nil, "aggregate membership")
 		cmd.Flags().String("group", "", "granular request group")
 		cmd.Flags().String("group-policy", "", "granular request group policy")
 	case "availability zone list":
@@ -1173,13 +1174,48 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 	case "resource provider list":
 		cmd.Flags().String("uuid", "", "filter by UUID")
 		cmd.Flags().String("name", "", "filter by name")
-		cmd.Flags().String("resource", "", "resource class amount")
+		cmd.Flags().StringArray("resource", nil, "resource class amount")
 		cmd.Flags().String("in-tree", "", "provider tree UUID")
-		cmd.Flags().String("required", "", "required trait")
-		cmd.Flags().String("forbidden", "", "forbidden trait")
-		cmd.Flags().String("member-of", "", "aggregate membership")
+		cmd.Flags().StringArray("required", nil, "required trait")
+		cmd.Flags().StringArray("forbidden", nil, "forbidden trait")
+		cmd.Flags().StringArray("member-of", nil, "aggregate membership")
+	case "resource provider create":
+		cmd.Flags().String("uuid", "", "resource provider UUID")
+		cmd.Flags().String("parent-provider", "", "parent provider UUID")
+	case "resource provider set":
+		cmd.Flags().String("name", "", "new resource provider name")
+		cmd.Flags().String("parent-provider", "", "parent provider UUID")
 	case "resource provider show":
 		cmd.Flags().Bool("allocations", false, "include resource allocations")
+	case "resource provider aggregate set":
+		cmd.Flags().StringArray("aggregate", nil, "aggregate UUID")
+		cmd.Flags().Int("generation", 0, "resource provider generation")
+	case "resource provider allocation set":
+		cmd.Flags().StringArray("allocation", nil, "resource allocation")
+		cmd.Flags().String("project-id", "", "consumer project ID")
+		cmd.Flags().String("user-id", "", "consumer user ID")
+		cmd.Flags().String("consumer-type", "", "consumer type")
+	case "resource provider allocation unset":
+		cmd.Flags().StringArray("provider", nil, "resource provider UUID")
+		cmd.Flags().StringArray("resource-class", nil, "resource class")
+	case "resource provider inventory class set":
+		cmd.Flags().Float64("allocation-ratio", 0, "allocation ratio")
+		cmd.Flags().Int("min-unit", 0, "minimum unit")
+		cmd.Flags().Int("max-unit", 0, "maximum unit")
+		cmd.Flags().Int("reserved", 0, "reserved resources")
+		cmd.Flags().Int("step-size", 0, "step size")
+		cmd.Flags().Int("total", 0, "total resources")
+	case "resource provider inventory delete":
+		cmd.Flags().String("resource-class", "", "resource class")
+	case "resource provider inventory set":
+		cmd.Flags().StringArray("resource", nil, "resource inventory value")
+		cmd.Flags().Bool("aggregate", false, "treat UUID as aggregate UUID")
+		cmd.Flags().Bool("amend", false, "amend existing inventories")
+		cmd.Flags().Bool("dry-run", false, "show inventories without setting them")
+	case "resource provider trait set":
+		cmd.Flags().StringArray("trait", nil, "trait name")
+	case "resource usage show":
+		cmd.Flags().String("user-id", "", "filter by user ID")
 	case "registered limit list":
 		cmd.Flags().String("resource-name", "", "filter by resource name")
 	case "role assignment list":
@@ -2156,13 +2192,14 @@ func isCoreReadCommand(path string) bool {
 		"port create", "port delete", "port list", "port set", "port show", "port unset",
 		"project cleanup",
 		"quota delete", "quota list", "quota set", "quota show",
-		"resource class list", "resource class show",
-		"resource provider aggregate list",
-		"resource provider allocation show",
-		"resource provider inventory list", "resource provider inventory show",
-		"resource provider list", "resource provider show",
-		"resource provider trait list",
-		"resource provider usage show",
+		"resource class create", "resource class delete", "resource class list", "resource class set", "resource class show",
+		"resource provider aggregate list", "resource provider aggregate set",
+		"resource provider allocation delete", "resource provider allocation set", "resource provider allocation show", "resource provider allocation unset",
+		"resource provider create", "resource provider delete",
+		"resource provider inventory class set", "resource provider inventory delete", "resource provider inventory list", "resource provider inventory set", "resource provider inventory show",
+		"resource provider list", "resource provider set", "resource provider show",
+		"resource provider trait delete", "resource provider trait list", "resource provider trait set",
+		"resource provider usage show", "resource usage show",
 		"router add gateway", "router add port", "router add route", "router add subnet",
 		"router create", "router delete", "router list",
 		"router remove gateway", "router remove port", "router remove route", "router remove subnet",
@@ -2176,7 +2213,7 @@ func isCoreReadCommand(path string) bool {
 		"server volume list",
 		"subnet create", "subnet delete", "subnet list", "subnet set", "subnet show", "subnet unset",
 		"subnet pool create", "subnet pool delete", "subnet pool list", "subnet pool set", "subnet pool show", "subnet pool unset",
-		"trait list", "trait show",
+		"trait create", "trait delete", "trait list", "trait show",
 		"usage list", "usage show",
 		"versions show",
 		"volume attachment complete", "volume attachment create", "volume attachment delete",
