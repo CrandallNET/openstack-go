@@ -9,6 +9,33 @@ status_values:
   - "cloud-verified"
   - "blocked"
   - "local-client-needed"
+status_summary:
+  total: 594
+  statuses:
+    - status: "unknown"
+      count: 0
+      percentage: 0.00
+    - status: "sdk-covered"
+      count: 0
+      percentage: 0.00
+    - status: "shim-needed"
+      count: 0
+      percentage: 0.00
+    - status: "implemented"
+      count: 277
+      percentage: 46.63
+    - status: "golden-matched"
+      count: 166
+      percentage: 27.95
+    - status: "cloud-verified"
+      count: 151
+      percentage: 25.42
+    - status: "blocked"
+      count: 0
+      percentage: 0.00
+    - status: "local-client-needed"
+      count: 0
+      percentage: 0.00
 commands:
   - command: "access rule delete"
     group: "openstack.identity.v3"

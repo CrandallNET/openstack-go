@@ -214,7 +214,7 @@ The repository should start with compatibility data, not hand-written commands. 
 * `compat/osc/9.0.0/help/<command>.txt` from `openstack help <command>` for every command.
 * `compat/osc/9.0.0/global-help.txt` from `openstack --help`.
 * `compat/gophercloud/v2.12.0/packages.json`, generated from `go list` once a module exists, plus a source URL or module checksum.
-* `compat/matrix.yaml`, where each command has `status`, `service`, `api`, `sdk_package`, `shim`, `tests`, and `notes`.
+* `compat/matrix.yaml`, where each command has `status`, `service`, `api`, `sdk_package`, `shim`, `tests`, and `notes`, and where `status_summary` records counts and percentages for every status value, including zero-count states.
 * `compat/test-matrix.yaml`, where each test suite records required service, required role, risk level, allowed clouds, setup resources, cleanup behavior, and skip conditions.
 * `compat/test-clouds.yaml`, where each configured test cloud records non-secret capability policy, allowed risk levels, destructive-test project, resource prefix, and cleanup policy.
 
@@ -228,6 +228,21 @@ Use the following status values in the matrix:
 * `cloud-verified`: command has passed against a real OpenStack cloud.
 * `blocked`: source behavior is unclear, the API is not available in the test cloud, or the required role is unavailable.
 * `local-client-needed`: command compatibility requires non-OpenStack local client behavior that has been accepted as an exception and still needs a self-contained Go implementation.
+
+Current generated command-matrix status, from `compat/matrix.yaml`:
+
+| Status | Count | Percent |
+| --- | ---: | ---: |
+| `unknown` | 0 | 0.00% |
+| `sdk-covered` | 0 | 0.00% |
+| `shim-needed` | 0 | 0.00% |
+| `implemented` | 277 | 46.63% |
+| `golden-matched` | 166 | 27.95% |
+| `cloud-verified` | 151 | 25.42% |
+| `blocked` | 0 | 0.00% |
+| `local-client-needed` | 0 | 0.00% |
+
+Regenerate this status with `make matrix` or `make report` whenever command statuses change; do not hand-edit the generated `compat/matrix.yaml` summary.
 
 Build the core before service commands. The core includes command registration, command parsing, global options, auth/config loading, service-client creation, renderer interfaces, error mapping, logging, debug output, timing output, shell completion, and a test harness that can run Python and Go commands side-by-side.
 

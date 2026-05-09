@@ -21,6 +21,34 @@ Use [docs/openstack-cli-compatibility-plan.md](docs/openstack-cli-compatibility-
 
 Use [docs/openstack-cli-plan-diary.md](docs/openstack-cli-plan-diary.md) as the project history. It should record decisions, experiments, dependency choices, rejected alternatives, source links, observed behavior, and reasoning that may need to be reviewed later.
 
+## Repository Context
+
+The intended Go module path is `github.com/crandallnet/golang-osc`. Keep that module path even when the local checkout or git remote is a staging location.
+
+Keep `README.md` user-facing. Build, usage, compatibility-summary, and project-documentation pointers belong there. Internal directives, cloud-specific context, oracle paths, compatibility artifact rules, and agent workflow belong in this file or the active plan/diary instead.
+
+The local Go CLI binary should be built as `bin/openstack`. Preserve the Python `openstack` binary as the compatibility oracle rather than replacing it.
+
+The CLI parser choice is Cobra plus pflag. Cobra and pflag are parsing substrates only; Python OpenStackClient compatibility behavior such as help text, completion, error text, command sorting, command stubs, and global option placement must be owned by this project and tested against the Python oracle.
+
+Core OpenStack API access should use Gophercloud. Python/OpenStackClient must not be used in production execution paths. It may be used only as a reference for catalog generation, compatibility tests, and behavior comparison.
+
+Plugin-scope commands and service-scoped extras plugins use Caddy's module system as the plugin framework. The project uses Caddy's module registration and loading model for statically linked, in-process CLI plugins, not Caddy's server runtime behavior.
+
+Use the top-level `Makefile` for common workflows. `make help` lists available targets. Important targets include `make build`, `make test`, `make smoke`, `make matrix`, `make report`, `make discover CLOUD=name`, `make lifecycle CLOUD=name SUITE=name`, and `make os-test`.
+
+`tools/matrix` writes `compat/matrix.yaml`, `compat/test-matrix.yaml`, and `compat/test-clouds.yaml` by default. The generated `compat/matrix.yaml` file includes `status_summary` with counts and percentages for every matrix status, including zero-count states. Keep the status table at the bottom of `README.md` synchronized with regenerated matrix output when command statuses change.
+
+The Fancy OS image color rules are compiled from `internal/cli/pretty_os_colors.json`. Edit that file before building to change OS display names, colors, sample image names, match keywords, source URLs, the contrast-report background, or the minimum legibility guard.
+
+The local `clouds.yaml` is available for live testing only. Normal CLI configuration discovery must follow the same XDG/config precedence described by the OpenStackClient configuration docs.
+
+Known test clouds are `cloud6`, `flex-sjc`, `flex-dfw`, and `flex-iad`. `cloud6` is local with full admin access but not all services. The flex clouds are remote and have broader service coverage but no admin-level access.
+
+Lifecycle tests should use uniquely named `golang-osc-test-*` resources, compare Go CLI behavior against the Python OSC oracle where supported, clean up resources they created, and retain failure diagnostics under `compat/lifecycle-diagnostics/`. Successful lifecycle runs should not retain diagnostics unless `tools/lifecycle-smoke --keep-success` is used.
+
+Generated compatibility artifacts should be committed under `compat/` once generators exist. Expected artifacts include `compat/osc/9.0.0/commands.json`, `compat/osc/9.0.0/global-help.txt`, `compat/osc/9.0.0/help/...`, `compat/osc/9.0.0/completion.bash`, `compat/osc/9.0.0/metadata.json`, `compat/matrix.yaml`, `compat/test-matrix.yaml`, `compat/test-clouds.yaml`, and `compat/gophercloud/<version>/packages.json` when that package catalog exists.
+
 ## Decision Process
 
 Implementation-defining decisions belong in the plan's Decision And Question Register. Use stable IDs such as `Q-021` or `A-027` when adding or changing decisions.

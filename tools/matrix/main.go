@@ -169,6 +169,15 @@ func renderCommandMatrixEntries(entries []commandEntry) string {
 	for _, status := range matrixStatusValues {
 		fmt.Fprintf(&b, "  - %s\n", yamlString(status))
 	}
+	counts := commandStatusCounts(entries)
+	b.WriteString("status_summary:\n")
+	fmt.Fprintf(&b, "  total: %d\n", len(entries))
+	b.WriteString("  statuses:\n")
+	for _, status := range matrixStatusValues {
+		fmt.Fprintf(&b, "    - status: %s\n", yamlString(status))
+		fmt.Fprintf(&b, "      count: %d\n", counts[status])
+		fmt.Fprintf(&b, "      percentage: %.2f\n", commandStatusPercentage(counts[status], len(entries)))
+	}
 	b.WriteString("commands:\n")
 	for _, entry := range entries {
 		fmt.Fprintf(&b, "  - command: %s\n", yamlString(entry.Command))
@@ -204,6 +213,13 @@ func commandStatusCounts(entries []commandEntry) map[string]int {
 	return counts
 }
 
+func commandStatusPercentage(count int, total int) float64 {
+	if total == 0 {
+		return 0
+	}
+	return float64(count) * 100 / float64(total)
+}
+
 func printGenerationSummary(w io.Writer, summary generationSummary, format string) {
 	switch format {
 	case "readme":
@@ -218,7 +234,7 @@ func printTerminalGenerationSummary(w io.Writer, summary generationSummary) {
 	fmt.Fprintf(w, "  commands: %d\n", summary.CommandCount)
 	fmt.Fprintln(w, "  status counts:")
 	for _, status := range matrixStatusValues {
-		fmt.Fprintf(w, "    %s: %d\n", status, summary.StatusCounts[status])
+		fmt.Fprintf(w, "    %s: %d (%.2f%%)\n", status, summary.StatusCounts[status], commandStatusPercentage(summary.StatusCounts[status], summary.CommandCount))
 	}
 	fmt.Fprintln(w, "  wrote:")
 	fmt.Fprintf(w, "    %s\n", summary.MatrixPath)
@@ -231,10 +247,10 @@ func printReadmeGenerationSummary(w io.Writer, summary generationSummary) {
 	fmt.Fprintln(w)
 	fmt.Fprintf(w, "Generated command rows: `%d`\n", summary.CommandCount)
 	fmt.Fprintln(w)
-	fmt.Fprintln(w, "| Status | Count |")
-	fmt.Fprintln(w, "| --- | ---: |")
+	fmt.Fprintln(w, "| Status | Count | Percent |")
+	fmt.Fprintln(w, "| --- | ---: | ---: |")
 	for _, status := range matrixStatusValues {
-		fmt.Fprintf(w, "| `%s` | %d |\n", status, summary.StatusCounts[status])
+		fmt.Fprintf(w, "| `%s` | %d | %.2f%% |\n", status, summary.StatusCounts[status], commandStatusPercentage(summary.StatusCounts[status], summary.CommandCount))
 	}
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "Generated files:")

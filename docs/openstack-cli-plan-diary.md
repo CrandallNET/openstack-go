@@ -2009,3 +2009,11 @@ Sources consulted:
 * Local Python OSC Object Store API source: `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/api/object_store_v1.py`.
 * Gophercloud Object Storage account package docs: https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/accounts.
 * Gophercloud Object Storage object package docs: https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/objects.
+
+## 2026-05-09: Matrix Status Percentages
+
+Decision: make command-state percentages generated data instead of a hand-computed note. `tools/matrix` now writes a `status_summary` block into `compat/matrix.yaml` with the total command count and every known status value, including zero-count states. The terminal and README-style summary reports also print percentages next to counts.
+
+Work done: updated `tools/matrix` and its tests, regenerated `compat/matrix.yaml`, and documented the current generated status table at the bottom of the user-facing README and in the active plan. Added a test that compares the README status table with the generated command catalog so stale percentages are caught by `go test ./tools/matrix`. The current generated state is 594 commands: `implemented` 277 commands, 46.63%; `golden-matched` 166 commands, 27.95%; `cloud-verified` 151 commands, 25.42%; and all other status values at 0 commands, 0.00%.
+
+Documentation cleanup: rewrote `README.md` as a user-facing overview focused on what the CLI is, how to build it, how to run it, how to use Pretty output, and where to find compatibility reports. Moved internal project context, oracle details, cloud-specific testing notes, compatibility artifact rules, and agent workflow guidance into `AGENTS.md`.

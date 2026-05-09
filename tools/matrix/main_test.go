@@ -1,6 +1,9 @@
 package main
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -151,6 +154,39 @@ func TestCommandStatusCounts(t *testing.T) {
 	}
 }
 
+func TestCommandStatusPercentage(t *testing.T) {
+	if got := commandStatusPercentage(1, 4); got != 25 {
+		t.Fatalf("expected 25%%, got %.2f", got)
+	}
+	if got := commandStatusPercentage(1, 0); got != 0 {
+		t.Fatalf("expected zero percent for empty total, got %.2f", got)
+	}
+}
+
+func TestRenderCommandMatrixIncludesStatusSummary(t *testing.T) {
+	output := renderCommandMatrixEntries([]commandEntry{
+		{Command: "command list", Group: "openstack.cli", Service: "cli", API: "internal", Status: "golden-matched", ImplementedIn: "internal/cli"},
+		{Command: "server list", Group: "openstack.compute.v2", Service: "compute", API: "v2", Status: "implemented", ImplementedIn: "internal/cli"},
+	})
+	for _, want := range []string{
+		"status_summary:",
+		"  total: 2",
+		"    - status: \"unknown\"",
+		"      count: 0",
+		"      percentage: 0.00",
+		"    - status: \"implemented\"",
+		"      count: 1",
+		"      percentage: 50.00",
+		"    - status: \"golden-matched\"",
+		"      count: 1",
+		"commands:",
+	} {
+		if !strings.Contains(output, want) {
+			t.Fatalf("matrix summary missing %q:\n%s", want, output)
+		}
+	}
+}
+
 func TestPrintGenerationSummary(t *testing.T) {
 	var output strings.Builder
 	printGenerationSummary(&output, generationSummary{
@@ -168,9 +204,10 @@ func TestPrintGenerationSummary(t *testing.T) {
 	for _, want := range []string{
 		"matrix results:",
 		"  commands: 3",
-		"    unknown: 1",
-		"    implemented: 1",
-		"    cloud-verified: 1",
+		"    unknown: 1 (33.33%)",
+		"    implemented: 1 (33.33%)",
+		"    cloud-verified: 1 (33.33%)",
+		"    blocked: 0 (0.00%)",
 		"    compat/matrix.yaml",
 		"    compat/test-matrix.yaml",
 		"    compat/test-clouds.yaml",
@@ -198,16 +235,40 @@ func TestPrintGenerationSummaryReadmeFormat(t *testing.T) {
 	for _, want := range []string{
 		"### Matrix Results",
 		"Generated command rows: `3`",
-		"| Status | Count |",
-		"| `unknown` | 1 |",
-		"| `implemented` | 1 |",
-		"| `cloud-verified` | 1 |",
+		"| Status | Count | Percent |",
+		"| `unknown` | 1 | 33.33% |",
+		"| `implemented` | 1 | 33.33% |",
+		"| `cloud-verified` | 1 | 33.33% |",
+		"| `blocked` | 0 | 0.00% |",
 		"* `compat/matrix.yaml`",
 		"* `compat/test-matrix.yaml`",
 		"* `compat/test-clouds.yaml`",
 	} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("README summary missing %q:\n%s", want, text)
+		}
+	}
+}
+
+func TestReadmeCommandMatrixStatusIsCurrent(t *testing.T) {
+	groups, err := readGroups(filepath.Join("..", "..", "compat", "osc", "9.0.0", "commands.json"))
+	if err != nil {
+		t.Fatalf("read command groups: %v", err)
+	}
+	entries := commandEntries(groups)
+	counts := commandStatusCounts(entries)
+	readme, err := os.ReadFile(filepath.Join("..", "..", "README.md"))
+	if err != nil {
+		t.Fatalf("read README.md: %v", err)
+	}
+	text := string(readme)
+	if !strings.Contains(text, "## Command Matrix Status") {
+		t.Fatalf("README.md missing bottom command matrix status section")
+	}
+	for _, status := range matrixStatusValues {
+		want := fmt.Sprintf("| `%s` | %d | %.2f%% |", status, counts[status], commandStatusPercentage(counts[status], len(entries)))
+		if !strings.Contains(text, want) {
+			t.Fatalf("README.md command status table is stale; missing %q", want)
 		}
 	}
 }
