@@ -210,6 +210,9 @@ func extrasCommandHandler(path string, stdout io.Writer, opts *Options) (command
 	if isNovaExtrasCommand(path) {
 		return runNovaExtras(path, stdout, opts), true
 	}
+	if isNeutronExtrasCommand(path) {
+		return runNeutronExtras(path, stdout, opts), true
+	}
 	return nil, false
 }
 
@@ -287,6 +290,9 @@ func (r *commandRegistry) configureLeaf(cmd *cobra.Command, path string) {
 }
 
 func addImplementedCommandFlags(cmd *cobra.Command, path string) {
+	if isNeutronExtrasCommand(path) {
+		addNeutronExtrasCommandFlags(cmd, path)
+	}
 	if isIdentityReadCommand(path) && strings.HasSuffix(path, " list") {
 		cmd.Flags().Bool("long", false, "list additional fields")
 		cmd.Flags().String("domain", "", "filter by domain")

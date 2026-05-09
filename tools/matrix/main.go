@@ -511,9 +511,19 @@ func newCommandEntry(group string, command string) commandEntry {
 		}
 	}
 	if implementation, ok := extrasPluginImplementations()[command]; ok {
+		if entry.Status == "unknown" {
+			entry.Status = "implemented"
+		}
+		entry.Shim = true
+		entry.PluginScope = true
 		entry.ImplementedIn = implementation
-		entry.Tests = appendMissingTests(entry.Tests, "unit: extras module registration", "unit: mocked Cinder REST endpoint")
-		entry.Notes = strings.TrimSpace(entry.Notes + " Registered through the cinder-extras CLI plugin module.")
+		entry.Tests = appendMissingTests(entry.Tests, "unit: extras module registration", "unit: mocked extras REST endpoint")
+		entry.Notes = strings.TrimSpace(entry.Notes + " Registered through an extras CLI plugin module.")
+		if neutronExtrasGoldenMatched()[command] {
+			entry.Status = "golden-matched"
+			entry.Tests = appendMissingTests(entry.Tests, "compat-live: cloud6 default table output", "compat-live: cloud6 JSON output")
+			entry.Notes = "Python-vs-Go default table and JSON output parity recorded against cloud6 for this Neutron extension list command. Broader flag, mutation, and cloud coverage still need completion. Registered through the neutron-extras CLI plugin module."
+		}
 	}
 	return entry
 }
@@ -537,9 +547,100 @@ func hasTest(tests []string, value string) bool {
 }
 
 func extrasPluginImplementations() map[string]string {
-	return map[string]string{
+	commands := map[string]string{
 		"block storage resource filter list": "internal/plugins/cinderextras",
 		"block storage resource filter show": "internal/plugins/cinderextras",
+	}
+	for _, command := range []string{
+		"default security group rule create",
+		"default security group rule delete",
+		"default security group rule list",
+		"default security group rule show",
+		"local ip association create",
+		"local ip association delete",
+		"local ip association list",
+		"local ip create",
+		"local ip delete",
+		"local ip list",
+		"local ip set",
+		"local ip show",
+		"network agent add network",
+		"network agent add router",
+		"network agent delete",
+		"network agent remove network",
+		"network agent remove router",
+		"network agent set",
+		"network auto allocated topology create",
+		"network auto allocated topology delete",
+		"network flavor add profile",
+		"network flavor create",
+		"network flavor delete",
+		"network flavor list",
+		"network flavor profile create",
+		"network flavor profile delete",
+		"network flavor profile list",
+		"network flavor profile set",
+		"network flavor profile show",
+		"network flavor remove profile",
+		"network flavor set",
+		"network flavor show",
+		"network l3 conntrack helper create",
+		"network l3 conntrack helper delete",
+		"network l3 conntrack helper list",
+		"network l3 conntrack helper set",
+		"network l3 conntrack helper show",
+		"network meter create",
+		"network meter delete",
+		"network meter list",
+		"network meter rule create",
+		"network meter rule delete",
+		"network meter rule list",
+		"network meter rule show",
+		"network meter show",
+		"network segment range create",
+		"network segment range delete",
+		"network segment range list",
+		"network segment range set",
+		"network segment range show",
+		"router ndp proxy create",
+		"router ndp proxy delete",
+		"router ndp proxy list",
+		"router ndp proxy set",
+		"router ndp proxy show",
+		"tap flow create",
+		"tap flow delete",
+		"tap flow list",
+		"tap flow show",
+		"tap flow update",
+		"tap mirror create",
+		"tap mirror delete",
+		"tap mirror list",
+		"tap mirror show",
+		"tap mirror update",
+		"tap service create",
+		"tap service delete",
+		"tap service list",
+		"tap service show",
+		"tap service update",
+	} {
+		commands[command] = "internal/plugins/neutronextras"
+	}
+	return commands
+}
+
+func neutronExtrasGoldenMatched() map[string]bool {
+	return map[string]bool{
+		"default security group rule list": true,
+		"local ip list":                    true,
+		"network flavor list":              true,
+		"network flavor profile list":      true,
+		"network meter list":               true,
+		"network meter rule list":          true,
+		"network segment range list":       true,
+		"router ndp proxy list":            true,
+		"tap flow list":                    true,
+		"tap mirror list":                  true,
+		"tap service list":                 true,
 	}
 }
 

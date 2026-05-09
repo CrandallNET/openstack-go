@@ -46,8 +46,24 @@ func TestNewCommandEntryMarksCinderResourceFilterShim(t *testing.T) {
 	if got := commandReportSource(entry); got != "plugin" {
 		t.Fatalf("expected plugin report source, got %q", got)
 	}
-	if !strings.Contains(strings.Join(entry.Tests, " "), "mocked Cinder REST endpoint") {
+	if !strings.Contains(strings.Join(entry.Tests, " "), "mocked extras REST endpoint") {
 		t.Fatalf("expected resource filter list to record mocked endpoint evidence, got %v", entry.Tests)
+	}
+}
+
+func TestNewCommandEntryMarksNeutronExtrasShim(t *testing.T) {
+	entry := newCommandEntry("openstack.network.v2", "network flavor list")
+	if entry.Status != "golden-matched" {
+		t.Fatalf("expected network flavor list to be golden-matched, got %q", entry.Status)
+	}
+	if !entry.Shim {
+		t.Fatal("expected network flavor list to be marked as a shim")
+	}
+	if entry.ImplementedIn != "internal/plugins/neutronextras" {
+		t.Fatalf("unexpected implementation owner: %q", entry.ImplementedIn)
+	}
+	if got := commandReportSource(entry); got != "plugin" {
+		t.Fatalf("expected plugin report source, got %q", got)
 	}
 }
 

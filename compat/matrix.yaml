@@ -468,7 +468,7 @@ commands:
     status: "golden-matched"
     sdk_package: "Cinder resource_filters via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
     shim: true
-    plugin_scope: false
+    plugin_scope: true
     implemented_in: "internal/plugins/cinderextras"
     tests:
       - "unit: command registry"
@@ -476,8 +476,8 @@ commands:
       - "compat-live: cloud6 default table output"
       - "compat-live: cloud6 JSON output"
       - "unit: extras module registration"
-      - "unit: mocked Cinder REST endpoint"
-    notes: "Python-vs-Go default table and JSON output parity recorded against cloud6 with the live compatibility harness. Broader flag and cloud coverage still need completion. Registered through the cinder-extras CLI plugin module."
+      - "unit: mocked extras REST endpoint"
+    notes: "Python-vs-Go default table and JSON output parity recorded against cloud6 with the live compatibility harness. Broader flag and cloud coverage still need completion. Registered through an extras CLI plugin module."
   - command: "block storage resource filter show"
     group: "openstack.volume.v3"
     service: "volume"
@@ -485,7 +485,7 @@ commands:
     status: "golden-matched"
     sdk_package: "Cinder resource_filters via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
     shim: true
-    plugin_scope: false
+    plugin_scope: true
     implemented_in: "internal/plugins/cinderextras"
     tests:
       - "unit: command registry"
@@ -493,8 +493,8 @@ commands:
       - "compat-live: cloud6 default table output"
       - "compat-live: cloud6 JSON output"
       - "unit: extras module registration"
-      - "unit: mocked Cinder REST endpoint"
-    notes: "Python-vs-Go default table and JSON output parity recorded against cloud6 with the live compatibility harness. Broader flag and cloud coverage still need completion. Registered through the cinder-extras CLI plugin module."
+      - "unit: mocked extras REST endpoint"
+    notes: "Python-vs-Go default table and JSON output parity recorded against cloud6 with the live compatibility harness. Broader flag and cloud coverage still need completion. Registered through an extras CLI plugin module."
   - command: "block storage snapshot manageable list"
     group: "openstack.volume.v3"
     service: "volume"
@@ -1099,46 +1099,56 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "default security group rule delete"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "default security group rule list"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "golden-matched"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+      - "compat-live: cloud6 default table output"
+      - "compat-live: cloud6 JSON output"
+    notes: "Python-vs-Go default table and JSON output parity recorded against cloud6 for this Neutron extension list command. Broader flag, mutation, and cloud coverage still need completion. Registered through the neutron-extras CLI plugin module."
   - command: "default security group rule show"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "domain create"
     group: "openstack.identity.v3"
     service: "identity"
@@ -2687,90 +2697,108 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "local ip association delete"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "local ip association list"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "local ip create"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "local ip delete"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "local ip list"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "golden-matched"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+      - "compat-live: cloud6 default table output"
+      - "compat-live: cloud6 JSON output"
+    notes: "Python-vs-Go default table and JSON output parity recorded against cloud6 for this Neutron extension list command. Broader flag, mutation, and cloud coverage still need completion. Registered through the neutron-extras CLI plugin module."
   - command: "local ip set"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "local ip show"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "mapping create"
     group: "openstack.identity.v3"
     service: "identity"
@@ -2845,35 +2873,41 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "network agent add router"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "network agent delete"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "network agent list"
     group: "openstack.network.v2"
     service: "network"
@@ -2893,35 +2927,41 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "network agent remove router"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "network agent set"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "network agent show"
     group: "openstack.network.v2"
     service: "network"
@@ -2941,24 +2981,28 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "network auto allocated topology delete"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "network create"
     group: "openstack.network.v2"
     service: "network"
@@ -2991,189 +3035,227 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "network flavor create"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "network flavor delete"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "network flavor list"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "golden-matched"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+      - "compat-live: cloud6 default table output"
+      - "compat-live: cloud6 JSON output"
+    notes: "Python-vs-Go default table and JSON output parity recorded against cloud6 for this Neutron extension list command. Broader flag, mutation, and cloud coverage still need completion. Registered through the neutron-extras CLI plugin module."
   - command: "network flavor profile create"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "network flavor profile delete"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "network flavor profile list"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "golden-matched"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+      - "compat-live: cloud6 default table output"
+      - "compat-live: cloud6 JSON output"
+    notes: "Python-vs-Go default table and JSON output parity recorded against cloud6 for this Neutron extension list command. Broader flag, mutation, and cloud coverage still need completion. Registered through the neutron-extras CLI plugin module."
   - command: "network flavor profile set"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "network flavor profile show"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "network flavor remove profile"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "network flavor set"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "network flavor show"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "network l3 conntrack helper create"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "network l3 conntrack helper delete"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "network l3 conntrack helper list"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "network l3 conntrack helper set"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "network l3 conntrack helper show"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "network list"
     group: "openstack.network.v2"
     service: "network"
@@ -3193,90 +3275,110 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "network meter delete"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "network meter list"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "golden-matched"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+      - "compat-live: cloud6 default table output"
+      - "compat-live: cloud6 JSON output"
+    notes: "Python-vs-Go default table and JSON output parity recorded against cloud6 for this Neutron extension list command. Broader flag, mutation, and cloud coverage still need completion. Registered through the neutron-extras CLI plugin module."
   - command: "network meter rule create"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "network meter rule delete"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "network meter rule list"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "golden-matched"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+      - "compat-live: cloud6 default table output"
+      - "compat-live: cloud6 JSON output"
+    notes: "Python-vs-Go default table and JSON output parity recorded against cloud6 for this Neutron extension list command. Broader flag, mutation, and cloud coverage still need completion. Registered through the neutron-extras CLI plugin module."
   - command: "network meter rule show"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "network meter show"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "network qos policy create"
     group: "openstack.network.v2"
     service: "network"
@@ -3531,57 +3633,69 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "network segment range delete"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "network segment range list"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "golden-matched"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+      - "compat-live: cloud6 default table output"
+      - "compat-live: cloud6 JSON output"
+    notes: "Python-vs-Go default table and JSON output parity recorded against cloud6 for this Neutron extension list command. Broader flag, mutation, and cloud coverage still need completion. Registered through the neutron-extras CLI plugin module."
   - command: "network segment range set"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "network segment range show"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "network segment set"
     group: "openstack.network.v2"
     service: "network"
@@ -4804,57 +4918,69 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "router ndp proxy delete"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "router ndp proxy list"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "golden-matched"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+      - "compat-live: cloud6 default table output"
+      - "compat-live: cloud6 JSON output"
+    notes: "Python-vs-Go default table and JSON output parity recorded against cloud6 for this Neutron extension list command. Broader flag, mutation, and cloud coverage still need completion. Registered through the neutron-extras CLI plugin module."
   - command: "router ndp proxy set"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "router ndp proxy show"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "router remove gateway"
     group: "openstack.network.v2"
     service: "network"
@@ -6165,167 +6291,203 @@ commands:
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
+    shim: true
     plugin_scope: true
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "tap flow delete"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
+    shim: true
     plugin_scope: true
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "tap flow list"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "golden-matched"
     sdk_package: ""
-    shim: false
+    shim: true
     plugin_scope: true
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+      - "compat-live: cloud6 default table output"
+      - "compat-live: cloud6 JSON output"
+    notes: "Python-vs-Go default table and JSON output parity recorded against cloud6 for this Neutron extension list command. Broader flag, mutation, and cloud coverage still need completion. Registered through the neutron-extras CLI plugin module."
   - command: "tap flow show"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
+    shim: true
     plugin_scope: true
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "tap flow update"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
+    shim: true
     plugin_scope: true
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "tap mirror create"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
+    shim: true
     plugin_scope: true
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "tap mirror delete"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
+    shim: true
     plugin_scope: true
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "tap mirror list"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "golden-matched"
     sdk_package: ""
-    shim: false
+    shim: true
     plugin_scope: true
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+      - "compat-live: cloud6 default table output"
+      - "compat-live: cloud6 JSON output"
+    notes: "Python-vs-Go default table and JSON output parity recorded against cloud6 for this Neutron extension list command. Broader flag, mutation, and cloud coverage still need completion. Registered through the neutron-extras CLI plugin module."
   - command: "tap mirror show"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
+    shim: true
     plugin_scope: true
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "tap mirror update"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
+    shim: true
     plugin_scope: true
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "tap service create"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
+    shim: true
     plugin_scope: true
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "tap service delete"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
+    shim: true
     plugin_scope: true
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "tap service list"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "golden-matched"
     sdk_package: ""
-    shim: false
+    shim: true
     plugin_scope: true
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+      - "compat-live: cloud6 default table output"
+      - "compat-live: cloud6 JSON output"
+    notes: "Python-vs-Go default table and JSON output parity recorded against cloud6 for this Neutron extension list command. Broader flag, mutation, and cloud coverage still need completion. Registered through the neutron-extras CLI plugin module."
   - command: "tap service show"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
+    shim: true
     plugin_scope: true
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "tap service update"
     group: "openstack.network.v2"
     service: "network"
     api: "v2"
-    status: "unknown"
+    status: "implemented"
     sdk_package: ""
-    shim: false
+    shim: true
     plugin_scope: true
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/plugins/neutronextras"
+    tests:
+      - "unit: extras module registration"
+      - "unit: mocked extras REST endpoint"
+    notes: "Registered through an extras CLI plugin module."
   - command: "token issue"
     group: "openstack.identity.v3"
     service: "identity"
