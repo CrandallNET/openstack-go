@@ -386,6 +386,16 @@ func newCommandEntry(group string, command string) commandEntry {
 			entry.Notes = "Python-vs-Go default table and JSON output parity recorded against cloud6 with the live compatibility harness. Broader flag and cloud coverage still need completion."
 		}
 	}
+	if packagePath, ok := identityWritePackages()[command]; ok {
+		entry.Status = "implemented"
+		entry.SDKPackage = packagePath
+		if identityWriteShims()[command] {
+			entry.Shim = true
+		}
+		entry.ImplementedIn = "internal/cli"
+		entry.Tests = []string{"unit: command registry"}
+		entry.Notes = "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
+	}
 	if packagePath, ok := coreReadPackages()[command]; ok {
 		entry.Status = "implemented"
 		entry.SDKPackage = packagePath
@@ -517,7 +527,11 @@ func newCommandEntry(group string, command string) commandEntry {
 		entry.Shim = true
 		entry.PluginScope = true
 		entry.ImplementedIn = implementation
-		entry.Tests = appendMissingTests(entry.Tests, "unit: extras module registration", "unit: mocked extras REST endpoint")
+		extrasTests := []string{"unit: extras module registration"}
+		if implementation != "internal/plugins/keystoneextras" {
+			extrasTests = append(extrasTests, "unit: mocked extras REST endpoint")
+		}
+		entry.Tests = appendMissingTests(entry.Tests, extrasTests...)
 		entry.Notes = strings.TrimSpace(entry.Notes + " Registered through an extras CLI plugin module.")
 		if neutronExtrasGoldenMatched()[command] {
 			entry.Status = "golden-matched"
@@ -550,6 +564,34 @@ func extrasPluginImplementations() map[string]string {
 	commands := map[string]string{
 		"block storage resource filter list": "internal/plugins/cinderextras",
 		"block storage resource filter show": "internal/plugins/cinderextras",
+	}
+	for _, command := range []string{
+		"endpoint group add project",
+		"endpoint group create",
+		"endpoint group delete",
+		"endpoint group list",
+		"endpoint group remove project",
+		"endpoint group set",
+		"endpoint group show",
+		"federation domain list",
+		"federation project list",
+		"federation protocol create",
+		"federation protocol delete",
+		"federation protocol list",
+		"federation protocol set",
+		"federation protocol show",
+		"identity provider create",
+		"identity provider delete",
+		"identity provider list",
+		"identity provider set",
+		"identity provider show",
+		"service provider create",
+		"service provider delete",
+		"service provider list",
+		"service provider set",
+		"service provider show",
+	} {
+		commands[command] = "internal/plugins/keystoneextras"
 	}
 	for _, command := range []string{
 		"default security group rule create",
@@ -702,6 +744,122 @@ func identityReadShims() map[string]bool {
 		"identity provider show":   true,
 		"service provider list":    true,
 		"service provider show":    true,
+	}
+}
+
+func identityWritePackages() map[string]string {
+	base := "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/"
+	rawFederation := "Keystone OS-FEDERATION writes via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
+	rawEndpointFilter := "Keystone OS-EP-FILTER endpoint-group writes via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
+	return map[string]string{
+		"access rule delete":            base + "applicationcredentials",
+		"access token create":           base + "oauth1",
+		"application credential create": base + "applicationcredentials",
+		"application credential delete": base + "applicationcredentials",
+		"consumer create":               base + "oauth1",
+		"consumer delete":               base + "oauth1",
+		"consumer list":                 base + "oauth1",
+		"consumer set":                  base + "oauth1",
+		"consumer show":                 base + "oauth1",
+		"credential create":             base + "credentials",
+		"credential delete":             base + "credentials",
+		"credential set":                base + "credentials",
+		"domain create":                 base + "domains",
+		"domain delete":                 base + "domains",
+		"domain set":                    base + "domains",
+		"ec2 credentials create":        base + "ec2credentials",
+		"ec2 credentials delete":        base + "ec2credentials",
+		"endpoint add project":          base + "projectendpoints",
+		"endpoint create":               base + "endpoints",
+		"endpoint delete":               base + "endpoints",
+		"endpoint group add project":    rawEndpointFilter,
+		"endpoint group create":         rawEndpointFilter,
+		"endpoint group delete":         rawEndpointFilter,
+		"endpoint group list":           rawEndpointFilter,
+		"endpoint group remove project": rawEndpointFilter,
+		"endpoint group set":            rawEndpointFilter,
+		"endpoint group show":           rawEndpointFilter,
+		"endpoint remove project":       base + "projectendpoints",
+		"endpoint set":                  base + "endpoints",
+		"federation domain list":        rawFederation,
+		"federation project list":       rawFederation,
+		"federation protocol create":    rawFederation,
+		"federation protocol delete":    rawFederation,
+		"federation protocol set":       rawFederation,
+		"group add user":                base + "users",
+		"group contains user":           base + "users",
+		"group create":                  base + "groups",
+		"group delete":                  base + "groups",
+		"group remove user":             base + "users",
+		"group set":                     base + "groups",
+		"identity provider create":      rawFederation,
+		"identity provider delete":      rawFederation,
+		"identity provider set":         rawFederation,
+		"implied role create":           base + "roles",
+		"implied role delete":           base + "roles",
+		"limit create":                  base + "limits",
+		"limit delete":                  base + "limits",
+		"limit set":                     base + "limits",
+		"mapping create":                base + "federation",
+		"mapping delete":                base + "federation",
+		"mapping set":                   base + "federation",
+		"policy create":                 base + "policies",
+		"policy delete":                 base + "policies",
+		"policy set":                    base + "policies",
+		"project create":                base + "projects",
+		"project delete":                base + "projects",
+		"project set":                   base + "projects",
+		"region create":                 base + "regions",
+		"region delete":                 base + "regions",
+		"region set":                    base + "regions",
+		"registered limit create":       base + "registeredlimits",
+		"registered limit delete":       base + "registeredlimits",
+		"registered limit set":          base + "registeredlimits",
+		"request token authorize":       base + "oauth1",
+		"request token create":          base + "oauth1",
+		"role add":                      base + "roles; " + base + "osinherit; Keystone system role assignment via gophercloud.ServiceClient",
+		"role create":                   base + "roles",
+		"role delete":                   base + "roles",
+		"role remove":                   base + "roles; " + base + "osinherit; Keystone system role assignment via gophercloud.ServiceClient",
+		"role set":                      base + "roles",
+		"service create":                base + "services",
+		"service delete":                base + "services",
+		"service provider create":       rawFederation,
+		"service provider delete":       rawFederation,
+		"service provider set":          rawFederation,
+		"service set":                   base + "services",
+		"token revoke":                  base + "tokens",
+		"trust create":                  base + "trusts",
+		"trust delete":                  base + "trusts",
+		"user create":                   base + "users",
+		"user delete":                   base + "users",
+		"user password set":             base + "users",
+		"user set":                      base + "users",
+	}
+}
+
+func identityWriteShims() map[string]bool {
+	return map[string]bool{
+		"endpoint group add project":    true,
+		"endpoint group create":         true,
+		"endpoint group delete":         true,
+		"endpoint group list":           true,
+		"endpoint group remove project": true,
+		"endpoint group set":            true,
+		"endpoint group show":           true,
+		"federation domain list":        true,
+		"federation project list":       true,
+		"federation protocol create":    true,
+		"federation protocol delete":    true,
+		"federation protocol set":       true,
+		"identity provider create":      true,
+		"identity provider delete":      true,
+		"identity provider set":         true,
+		"role add":                      true,
+		"role remove":                   true,
+		"service provider create":       true,
+		"service provider delete":       true,
+		"service provider set":          true,
 	}
 }
 

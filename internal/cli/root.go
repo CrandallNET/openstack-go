@@ -11,6 +11,7 @@ import (
 
 	"github.com/crandallnet/golang-osc/compat/osc"
 	_ "github.com/crandallnet/golang-osc/internal/plugins/cinderextras"
+	_ "github.com/crandallnet/golang-osc/internal/plugins/keystoneextras"
 	_ "github.com/crandallnet/golang-osc/internal/plugins/local"
 	_ "github.com/crandallnet/golang-osc/internal/plugins/neutronextras"
 	_ "github.com/crandallnet/golang-osc/internal/plugins/novaextras"

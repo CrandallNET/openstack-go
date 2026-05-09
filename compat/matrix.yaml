@@ -14,13 +14,14 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/applicationcredentials"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "access rule list"
     group: "openstack.identity.v3"
     service: "identity"
@@ -51,13 +52,14 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/oauth1"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "address group create"
     group: "openstack.network.v2"
     service: "network"
@@ -328,24 +330,26 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/applicationcredentials"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "application credential delete"
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/applicationcredentials"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "application credential list"
     group: "openstack.identity.v3"
     service: "identity"
@@ -892,57 +896,62 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/oauth1"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "consumer delete"
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/oauth1"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "consumer list"
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/oauth1"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "consumer set"
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/oauth1"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "consumer show"
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/oauth1"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "container create"
     group: "openstack.object_store.v1"
     service: "object-store"
@@ -1040,24 +1049,26 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/credentials"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "credential delete"
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/credentials"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "credential list"
     group: "openstack.identity.v3"
     service: "identity"
@@ -1075,13 +1086,14 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/credentials"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "credential show"
     group: "openstack.identity.v3"
     service: "identity"
@@ -1153,24 +1165,26 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/domains"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "domain delete"
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/domains"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "domain list"
     group: "openstack.identity.v3"
     service: "identity"
@@ -1188,13 +1202,14 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/domains"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "domain show"
     group: "openstack.identity.v3"
     service: "identity"
@@ -1212,24 +1227,26 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/ec2credentials"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "ec2 credentials delete"
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/ec2credentials"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "ec2 credentials list"
     group: "openstack.identity.v3"
     service: "identity"
@@ -1260,112 +1277,129 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/projectendpoints"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "endpoint create"
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/endpoints"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "endpoint delete"
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/endpoints"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "endpoint group add project"
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    status: "implemented"
+    sdk_package: "Keystone OS-EP-FILTER endpoint-group writes via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/keystoneextras"
+    tests:
+      - "unit: command registry"
+      - "unit: extras module registration"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible. Registered through an extras CLI plugin module."
   - command: "endpoint group create"
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    status: "implemented"
+    sdk_package: "Keystone OS-EP-FILTER endpoint-group writes via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/keystoneextras"
+    tests:
+      - "unit: command registry"
+      - "unit: extras module registration"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible. Registered through an extras CLI plugin module."
   - command: "endpoint group delete"
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    status: "implemented"
+    sdk_package: "Keystone OS-EP-FILTER endpoint-group writes via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/keystoneextras"
+    tests:
+      - "unit: command registry"
+      - "unit: extras module registration"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible. Registered through an extras CLI plugin module."
   - command: "endpoint group list"
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    status: "implemented"
+    sdk_package: "Keystone OS-EP-FILTER endpoint-group writes via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/keystoneextras"
+    tests:
+      - "unit: command registry"
+      - "unit: extras module registration"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible. Registered through an extras CLI plugin module."
   - command: "endpoint group remove project"
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    status: "implemented"
+    sdk_package: "Keystone OS-EP-FILTER endpoint-group writes via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/keystoneextras"
+    tests:
+      - "unit: command registry"
+      - "unit: extras module registration"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible. Registered through an extras CLI plugin module."
   - command: "endpoint group set"
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    status: "implemented"
+    sdk_package: "Keystone OS-EP-FILTER endpoint-group writes via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/keystoneextras"
+    tests:
+      - "unit: command registry"
+      - "unit: extras module registration"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible. Registered through an extras CLI plugin module."
   - command: "endpoint group show"
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    status: "implemented"
+    sdk_package: "Keystone OS-EP-FILTER endpoint-group writes via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/keystoneextras"
+    tests:
+      - "unit: command registry"
+      - "unit: extras module registration"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible. Registered through an extras CLI plugin module."
   - command: "endpoint list"
     group: "openstack.identity.v3"
     service: "identity"
@@ -1383,24 +1417,26 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/projectendpoints"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "endpoint set"
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/endpoints"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "endpoint show"
     group: "openstack.identity.v3"
     service: "identity"
@@ -1444,46 +1480,54 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    status: "implemented"
+    sdk_package: "Keystone OS-FEDERATION writes via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/keystoneextras"
+    tests:
+      - "unit: command registry"
+      - "unit: extras module registration"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible. Registered through an extras CLI plugin module."
   - command: "federation project list"
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    status: "implemented"
+    sdk_package: "Keystone OS-FEDERATION writes via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/keystoneextras"
+    tests:
+      - "unit: command registry"
+      - "unit: extras module registration"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible. Registered through an extras CLI plugin module."
   - command: "federation protocol create"
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    status: "implemented"
+    sdk_package: "Keystone OS-FEDERATION writes via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/keystoneextras"
+    tests:
+      - "unit: command registry"
+      - "unit: extras module registration"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible. Registered through an extras CLI plugin module."
   - command: "federation protocol delete"
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    status: "implemented"
+    sdk_package: "Keystone OS-FEDERATION writes via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/keystoneextras"
+    tests:
+      - "unit: command registry"
+      - "unit: extras module registration"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible. Registered through an extras CLI plugin module."
   - command: "federation protocol list"
     group: "openstack.identity.v3"
     service: "identity"
@@ -1491,23 +1535,26 @@ commands:
     status: "implemented"
     sdk_package: "Keystone OS-FEDERATION protocol reads via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
     shim: true
-    plugin_scope: false
-    implemented_in: "internal/cli"
+    plugin_scope: true
+    implemented_in: "internal/plugins/keystoneextras"
     tests:
       - "unit: command registry"
       - "live: cloud6 identity read smoke"
-    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, sorting, and oracle parity coverage still need completion."
+      - "unit: extras module registration"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, sorting, and oracle parity coverage still need completion. Registered through an extras CLI plugin module."
   - command: "federation protocol set"
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    status: "implemented"
+    sdk_package: "Keystone OS-FEDERATION writes via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/keystoneextras"
+    tests:
+      - "unit: command registry"
+      - "unit: extras module registration"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible. Registered through an extras CLI plugin module."
   - command: "federation protocol show"
     group: "openstack.identity.v3"
     service: "identity"
@@ -1515,12 +1562,13 @@ commands:
     status: "implemented"
     sdk_package: "Keystone OS-FEDERATION protocol reads via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
     shim: true
-    plugin_scope: false
-    implemented_in: "internal/cli"
+    plugin_scope: true
+    implemented_in: "internal/plugins/keystoneextras"
     tests:
       - "unit: command registry"
       - "live: cloud6 identity read smoke"
-    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, sorting, and oracle parity coverage still need completion."
+      - "unit: extras module registration"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, sorting, and oracle parity coverage still need completion. Registered through an extras CLI plugin module."
   - command: "flavor create"
     group: "openstack.compute.v2"
     service: "compute"
@@ -1771,46 +1819,50 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/users"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "group contains user"
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/users"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "group create"
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/groups"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "group delete"
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/groups"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "group list"
     group: "openstack.identity.v3"
     service: "identity"
@@ -1828,24 +1880,26 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/users"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "group set"
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/groups"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "group show"
     group: "openstack.identity.v3"
     service: "identity"
@@ -1945,24 +1999,28 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    status: "implemented"
+    sdk_package: "Keystone OS-FEDERATION writes via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/keystoneextras"
+    tests:
+      - "unit: command registry"
+      - "unit: extras module registration"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible. Registered through an extras CLI plugin module."
   - command: "identity provider delete"
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    status: "implemented"
+    sdk_package: "Keystone OS-FEDERATION writes via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/keystoneextras"
+    tests:
+      - "unit: command registry"
+      - "unit: extras module registration"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible. Registered through an extras CLI plugin module."
   - command: "identity provider list"
     group: "openstack.identity.v3"
     service: "identity"
@@ -1970,23 +2028,26 @@ commands:
     status: "cloud-verified"
     sdk_package: "Keystone OS-FEDERATION identity provider reads via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
     shim: true
-    plugin_scope: false
-    implemented_in: "internal/cli"
+    plugin_scope: true
+    implemented_in: "internal/plugins/keystoneextras"
     tests:
       - "unit: command registry"
       - "live: cloud6 identity read smoke"
-    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, sorting, and oracle parity coverage still need completion."
+      - "unit: extras module registration"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, sorting, and oracle parity coverage still need completion. Registered through an extras CLI plugin module."
   - command: "identity provider set"
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    status: "implemented"
+    sdk_package: "Keystone OS-FEDERATION writes via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/keystoneextras"
+    tests:
+      - "unit: command registry"
+      - "unit: extras module registration"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible. Registered through an extras CLI plugin module."
   - command: "identity provider show"
     group: "openstack.identity.v3"
     service: "identity"
@@ -1994,12 +2055,13 @@ commands:
     status: "implemented"
     sdk_package: "Keystone OS-FEDERATION identity provider reads via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
     shim: true
-    plugin_scope: false
-    implemented_in: "internal/cli"
+    plugin_scope: true
+    implemented_in: "internal/plugins/keystoneextras"
     tests:
       - "unit: command registry"
       - "live: cloud6 identity read smoke"
-    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, sorting, and oracle parity coverage still need completion."
+      - "unit: extras module registration"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, sorting, and oracle parity coverage still need completion. Registered through an extras CLI plugin module."
   - command: "image add project"
     group: "openstack.image.v2"
     service: "image"
@@ -2504,24 +2566,26 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/roles"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "implied role delete"
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/roles"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "implied role list"
     group: "openstack.identity.v3"
     service: "identity"
@@ -2625,24 +2689,26 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/limits"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "limit delete"
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/limits"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "limit list"
     group: "openstack.identity.v3"
     service: "identity"
@@ -2660,13 +2726,14 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/limits"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "limit show"
     group: "openstack.identity.v3"
     service: "identity"
@@ -2803,24 +2870,26 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/federation"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "mapping delete"
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/federation"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "mapping list"
     group: "openstack.identity.v3"
     service: "identity"
@@ -2838,13 +2907,14 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/federation"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "mapping show"
     group: "openstack.identity.v3"
     service: "identity"
@@ -4002,24 +4072,26 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/policies"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "policy delete"
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/policies"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "policy list"
     group: "openstack.identity.v3"
     service: "identity"
@@ -4037,13 +4109,14 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/policies"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "policy show"
     group: "openstack.identity.v3"
     service: "identity"
@@ -4161,24 +4234,26 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/projects"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "project delete"
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/projects"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "project list"
     group: "openstack.identity.v3"
     service: "identity"
@@ -4198,13 +4273,14 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/projects"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "project show"
     group: "openstack.identity.v3"
     service: "identity"
@@ -4280,24 +4356,26 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/regions"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "region delete"
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/regions"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "region list"
     group: "openstack.identity.v3"
     service: "identity"
@@ -4315,13 +4393,14 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/regions"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "region show"
     group: "openstack.identity.v3"
     service: "identity"
@@ -4339,24 +4418,26 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/registeredlimits"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "registered limit delete"
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/registeredlimits"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "registered limit list"
     group: "openstack.identity.v3"
     service: "identity"
@@ -4374,13 +4455,14 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/registeredlimits"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "registered limit show"
     group: "openstack.identity.v3"
     service: "identity"
@@ -4398,24 +4480,26 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/oauth1"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "request token create"
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/oauth1"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "resource class create"
     group: "openstack.placement.v1"
     service: "placement"
@@ -4726,13 +4810,14 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
-    shim: false
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/roles; github.com/gophercloud/gophercloud/v2/openstack/identity/v3/osinherit; Keystone system role assignment via gophercloud.ServiceClient"
+    shim: true
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "role assignment list"
     group: "openstack.identity.v3"
     service: "identity"
@@ -4750,24 +4835,26 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/roles"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "role delete"
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/roles"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "role list"
     group: "openstack.identity.v3"
     service: "identity"
@@ -4785,24 +4872,26 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
-    shim: false
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/roles; github.com/gophercloud/gophercloud/v2/openstack/identity/v3/osinherit; Keystone system role assignment via gophercloud.ServiceClient"
+    shim: true
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "role set"
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/roles"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "role show"
     group: "openstack.identity.v3"
     service: "identity"
@@ -6007,24 +6096,26 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/services"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "service delete"
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/services"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "service list"
     group: "openstack.identity.v3"
     service: "identity"
@@ -6042,24 +6133,28 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    status: "implemented"
+    sdk_package: "Keystone OS-FEDERATION writes via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/keystoneextras"
+    tests:
+      - "unit: command registry"
+      - "unit: extras module registration"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible. Registered through an extras CLI plugin module."
   - command: "service provider delete"
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    status: "implemented"
+    sdk_package: "Keystone OS-FEDERATION writes via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/keystoneextras"
+    tests:
+      - "unit: command registry"
+      - "unit: extras module registration"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible. Registered through an extras CLI plugin module."
   - command: "service provider list"
     group: "openstack.identity.v3"
     service: "identity"
@@ -6067,23 +6162,26 @@ commands:
     status: "cloud-verified"
     sdk_package: "Keystone OS-FEDERATION service provider reads via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
     shim: true
-    plugin_scope: false
-    implemented_in: "internal/cli"
+    plugin_scope: true
+    implemented_in: "internal/plugins/keystoneextras"
     tests:
       - "unit: command registry"
       - "live: cloud6 identity read smoke"
-    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, sorting, and oracle parity coverage still need completion."
+      - "unit: extras module registration"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, sorting, and oracle parity coverage still need completion. Registered through an extras CLI plugin module."
   - command: "service provider set"
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
-    shim: false
-    plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    status: "implemented"
+    sdk_package: "Keystone OS-FEDERATION writes via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
+    shim: true
+    plugin_scope: true
+    implemented_in: "internal/plugins/keystoneextras"
+    tests:
+      - "unit: command registry"
+      - "unit: extras module registration"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible. Registered through an extras CLI plugin module."
   - command: "service provider show"
     group: "openstack.identity.v3"
     service: "identity"
@@ -6091,23 +6189,25 @@ commands:
     status: "implemented"
     sdk_package: "Keystone OS-FEDERATION service provider reads via gophercloud.ServiceClient; no typed Gophercloud helper in v2.12.0"
     shim: true
-    plugin_scope: false
-    implemented_in: "internal/cli"
+    plugin_scope: true
+    implemented_in: "internal/plugins/keystoneextras"
     tests:
       - "unit: command registry"
       - "live: cloud6 identity read smoke"
-    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, sorting, and oracle parity coverage still need completion."
+      - "unit: extras module registration"
+    notes: "Initial Gophercloud-backed read implementation. Basic JSON and table output work; full flag, lookup, sorting, and oracle parity coverage still need completion. Registered through an extras CLI plugin module."
   - command: "service set"
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/services"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "service show"
     group: "openstack.identity.v3"
     service: "identity"
@@ -6505,13 +6605,14 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/tokens"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "trait create"
     group: "openstack.placement.v1"
     service: "placement"
@@ -6564,24 +6665,26 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/trusts"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "trust delete"
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/trusts"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "trust list"
     group: "openstack.identity.v3"
     service: "identity"
@@ -6638,24 +6741,26 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/users"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "user delete"
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/users"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "user list"
     group: "openstack.identity.v3"
     service: "identity"
@@ -6673,24 +6778,26 @@ commands:
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/users"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "user set"
     group: "openstack.identity.v3"
     service: "identity"
     api: "v3"
-    status: "unknown"
-    sdk_package: ""
+    status: "implemented"
+    sdk_package: "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/users"
     shim: false
     plugin_scope: false
-    implemented_in: ""
-    tests: []
-    notes: ""
+    implemented_in: "internal/cli"
+    tests:
+      - "unit: command registry"
+    notes: "Initial Identity v3 write/action implementation. Gophercloud typed packages are used where available, with narrow Keystone REST shims for federation and endpoint-filter gaps. Output parity and live lifecycle validation remain required before marking compatible."
   - command: "user show"
     group: "openstack.identity.v3"
     service: "identity"

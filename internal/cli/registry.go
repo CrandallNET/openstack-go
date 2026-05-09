@@ -30,29 +30,38 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 	registry.implemented["module list"] = runModuleList(stdout, opts)
 	registry.implemented["token issue"] = runTokenIssue(stdout, opts)
 	for _, path := range []string{
-		"access rule list", "access rule show",
-		"application credential list", "application credential show",
+		"access rule delete", "access rule list", "access rule show",
+		"access token create",
+		"application credential create", "application credential delete", "application credential list", "application credential show",
 		"catalog list", "catalog show",
-		"credential list", "credential show",
-		"domain list", "domain show",
-		"ec2 credentials list", "ec2 credentials show",
-		"endpoint list", "endpoint show",
-		"federation protocol list", "federation protocol show",
-		"group list", "group show",
-		"identity provider list", "identity provider show",
-		"implied role list",
-		"limit list", "limit show",
-		"mapping list", "mapping show",
-		"policy list", "policy show",
-		"project list", "project show",
-		"region list", "region show",
-		"registered limit list", "registered limit show",
+		"consumer create", "consumer delete", "consumer list", "consumer set", "consumer show",
+		"credential create", "credential delete", "credential list", "credential set", "credential show",
+		"domain create", "domain delete", "domain list", "domain set", "domain show",
+		"ec2 credentials create", "ec2 credentials delete", "ec2 credentials list", "ec2 credentials show",
+		"endpoint add project", "endpoint create", "endpoint delete",
+		"endpoint group add project", "endpoint group create", "endpoint group delete", "endpoint group list",
+		"endpoint group remove project", "endpoint group set", "endpoint group show",
+		"endpoint list", "endpoint remove project", "endpoint set", "endpoint show",
+		"federation domain list", "federation project list",
+		"federation protocol create", "federation protocol delete", "federation protocol list", "federation protocol set", "federation protocol show",
+		"group add user", "group contains user", "group create", "group delete", "group list", "group remove user", "group set", "group show",
+		"identity provider create", "identity provider delete", "identity provider list", "identity provider set", "identity provider show",
+		"implied role create", "implied role delete", "implied role list",
+		"limit create", "limit delete", "limit list", "limit set", "limit show",
+		"mapping create", "mapping delete", "mapping list", "mapping set", "mapping show",
+		"policy create", "policy delete", "policy list", "policy set", "policy show",
+		"project create", "project delete", "project list", "project set", "project show",
+		"region create", "region delete", "region list", "region set", "region show",
+		"registered limit create", "registered limit delete", "registered limit list", "registered limit set", "registered limit show",
+		"request token authorize", "request token create",
+		"role add", "role create", "role delete", "role remove", "role set",
 		"role assignment list",
 		"role list", "role show",
-		"service list", "service show",
-		"service provider list", "service provider show",
-		"trust list", "trust show",
-		"user list", "user show",
+		"service create", "service delete", "service list", "service set", "service show",
+		"service provider create", "service provider delete", "service provider list", "service provider set", "service provider show",
+		"token revoke",
+		"trust create", "trust delete", "trust list", "trust show",
+		"user create", "user delete", "user list", "user password set", "user set", "user show",
 	} {
 		registry.implemented[path] = runIdentityRead(path, stdout, opts)
 	}
@@ -207,6 +216,9 @@ func extrasCommandHandler(path string, stdout io.Writer, opts *Options) (command
 	if isCinderExtrasCommand(path) {
 		return runCinderExtras(path, stdout, opts), true
 	}
+	if isKeystoneExtrasCommand(path) {
+		return runIdentityRead(path, stdout, opts), true
+	}
 	if isNovaExtrasCommand(path) {
 		return runNovaExtras(path, stdout, opts), true
 	}
@@ -214,6 +226,38 @@ func extrasCommandHandler(path string, stdout io.Writer, opts *Options) (command
 		return runNeutronExtras(path, stdout, opts), true
 	}
 	return nil, false
+}
+
+func isKeystoneExtrasCommand(path string) bool {
+	switch path {
+	case "endpoint group add project",
+		"endpoint group create",
+		"endpoint group delete",
+		"endpoint group list",
+		"endpoint group remove project",
+		"endpoint group set",
+		"endpoint group show",
+		"federation domain list",
+		"federation project list",
+		"federation protocol create",
+		"federation protocol delete",
+		"federation protocol list",
+		"federation protocol set",
+		"federation protocol show",
+		"identity provider create",
+		"identity provider delete",
+		"identity provider list",
+		"identity provider set",
+		"identity provider show",
+		"service provider create",
+		"service provider delete",
+		"service provider list",
+		"service provider set",
+		"service provider show":
+		return true
+	default:
+		return false
+	}
 }
 
 func (r *commandRegistry) addCatalogCommands(root *cobra.Command) {
@@ -292,6 +336,9 @@ func (r *commandRegistry) configureLeaf(cmd *cobra.Command, path string) {
 func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 	if isNeutronExtrasCommand(path) {
 		addNeutronExtrasCommandFlags(cmd, path)
+	}
+	if isIdentityWriteCommand(path) {
+		addIdentityWriteCommandFlags(cmd, path)
 	}
 	if isIdentityReadCommand(path) && strings.HasSuffix(path, " list") {
 		cmd.Flags().Bool("long", false, "list additional fields")
@@ -1795,6 +1842,153 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 	}
 }
 
+func addIdentityWriteCommandFlags(cmd *cobra.Command, path string) {
+	switch path {
+	case "access rule delete", "application credential create", "application credential delete",
+		"credential create", "credential set", "ec2 credentials create", "ec2 credentials delete",
+		"trust create":
+		cmd.Flags().String("user", "", "user")
+		cmd.Flags().String("user-domain", "", "user domain")
+	}
+	switch path {
+	case "application credential create", "consumer create", "consumer set", "credential set",
+		"domain create", "domain set", "endpoint group create", "endpoint group set",
+		"group create", "group set", "identity provider create", "identity provider set",
+		"limit create", "limit set", "policy create", "policy set", "project create",
+		"project set", "region create", "region set", "registered limit create",
+		"registered limit set", "role create", "role set", "service create",
+		"service set", "service provider create", "service provider set", "user create",
+		"user set":
+		cmd.Flags().String("description", "", "description")
+	}
+	switch path {
+	case "domain create", "domain set", "endpoint create", "endpoint set",
+		"identity provider create", "identity provider set", "project create",
+		"project set", "service create", "service set", "service provider create",
+		"service provider set", "user create", "user set":
+		cmd.Flags().Bool("enable", false, "enable resource")
+		cmd.Flags().Bool("disable", false, "disable resource")
+	}
+	switch path {
+	case "domain create", "group create", "project create", "role create", "user create":
+		cmd.Flags().Bool("or-show", false, "return existing resource")
+	}
+	switch path {
+	case "domain set", "endpoint group set", "group set", "project set", "role set", "service create", "service set", "user set":
+		cmd.Flags().String("name", "", "new name")
+	}
+	switch path {
+	case "group create", "group delete", "group set", "group show", "identity provider create",
+		"project create", "project delete", "project set", "role create", "role set",
+		"user create", "user delete", "user set":
+		cmd.Flags().String("domain", "", "domain")
+	}
+	switch path {
+	case "credential create", "credential set", "ec2 credentials create", "endpoint add project",
+		"endpoint group add project", "endpoint group list", "endpoint group remove project",
+		"endpoint remove project", "limit create", "project create", "trust create",
+		"user create", "user set":
+		cmd.Flags().String("project", "", "project")
+		cmd.Flags().String("project-domain", "", "project domain")
+	}
+	switch path {
+	case "endpoint group list":
+		cmd.Flags().String("endpointgroup", "", "endpoint group")
+		cmd.Flags().String("domain", "", "project domain")
+	case "endpoint group create":
+		cmd.Flags().String("filters", "", "filters file")
+	case "endpoint group set":
+		cmd.Flags().String("filters", "", "filters file")
+	case "endpoint create", "endpoint set":
+		cmd.Flags().String("service", "", "service")
+		cmd.Flags().String("interface", "", "interface")
+		cmd.Flags().String("region", "", "region")
+		cmd.Flags().String("url", "", "endpoint URL")
+	case "federation protocol create", "federation protocol delete", "federation protocol set":
+		cmd.Flags().String("identity-provider", "", "identity provider")
+		cmd.Flags().String("mapping", "", "mapping")
+	case "identity provider create", "identity provider set":
+		cmd.Flags().StringArray("remote-id", nil, "remote ID")
+		cmd.Flags().String("remote-id-file", "", "remote ID file")
+		cmd.Flags().Int("authorization-ttl", 0, "authorization TTL")
+	case "implied role create", "implied role delete":
+		cmd.Flags().String("role-domain", "", "role domain")
+		cmd.Flags().String("implied-role-domain", "", "implied role domain")
+	case "limit create":
+		cmd.Flags().String("service", "", "service")
+		cmd.Flags().String("region", "", "region")
+		cmd.Flags().Int("resource-limit", 0, "resource limit")
+	case "limit set":
+		cmd.Flags().Int("resource-limit", 0, "resource limit")
+	case "registered limit create", "registered limit set":
+		cmd.Flags().String("service", "", "service")
+		cmd.Flags().String("region", "", "region")
+		cmd.Flags().Int("default-limit", 0, "default limit")
+		cmd.Flags().String("resource-name", "", "resource name")
+	case "mapping create", "mapping set", "policy set":
+		cmd.Flags().String("rules", "", "rules file")
+	case "service set":
+		cmd.Flags().String("type", "", "type")
+	case "credential set":
+		cmd.Flags().String("type", "", "type")
+		cmd.Flags().String("data", "", "credential data")
+	case "project create":
+		cmd.Flags().String("parent", "", "parent project")
+		cmd.Flags().StringArray("tag", nil, "tag")
+	case "project set":
+		cmd.Flags().StringArray("tag", nil, "tag")
+	case "region create", "region set":
+		cmd.Flags().String("parent-region", "", "parent region")
+	case "request token authorize":
+		cmd.Flags().StringArray("role", nil, "role")
+		cmd.Flags().String("request-key", "", "request token")
+	case "trust create":
+		cmd.Flags().StringArray("role", nil, "role")
+		cmd.Flags().String("trustor-domain", "", "trustor domain")
+		cmd.Flags().String("trustee-domain", "", "trustee domain")
+		cmd.Flags().Bool("impersonate", false, "impersonate")
+		cmd.Flags().String("expiration", "", "expiration")
+	case "application credential create":
+		cmd.Flags().StringArray("role", nil, "role")
+		cmd.Flags().String("secret", "", "secret")
+		cmd.Flags().String("expiration", "", "expiration")
+		cmd.Flags().Bool("unrestricted", false, "unrestricted")
+	case "request token create":
+		cmd.Flags().String("consumer-key", "", "consumer key")
+		cmd.Flags().String("consumer-secret", "", "consumer secret")
+		cmd.Flags().String("project", "", "project")
+		cmd.Flags().String("domain", "", "project domain")
+	case "access token create":
+		cmd.Flags().String("consumer-key", "", "consumer key")
+		cmd.Flags().String("consumer-secret", "", "consumer secret")
+		cmd.Flags().String("request-key", "", "request token")
+		cmd.Flags().String("request-secret", "", "request token secret")
+		cmd.Flags().String("verifier", "", "verifier")
+	case "role add", "role remove":
+		cmd.Flags().String("system", "", "system")
+		cmd.Flags().String("domain", "", "domain")
+		cmd.Flags().String("project", "", "project")
+		cmd.Flags().String("user", "", "user")
+		cmd.Flags().String("group", "", "group")
+		cmd.Flags().String("group-domain", "", "group domain")
+		cmd.Flags().String("project-domain", "", "project domain")
+		cmd.Flags().String("user-domain", "", "user domain")
+		cmd.Flags().String("role-domain", "", "role domain")
+		cmd.Flags().Bool("inherited", false, "inherited role")
+	case "role create", "role set":
+		cmd.Flags().Bool("immutable", false, "immutable role")
+	case "service provider create", "service provider set":
+		cmd.Flags().String("auth-url", "", "auth URL")
+		cmd.Flags().String("service-provider-url", "", "service provider URL")
+	case "user password set":
+		cmd.Flags().String("password", "", "password")
+		cmd.Flags().String("original-password", "", "original password")
+	case "user create", "user set":
+		cmd.Flags().String("password", "", "password")
+		cmd.Flags().String("email", "", "email")
+	}
+}
+
 func addTagFilterFlags(cmd *cobra.Command) {
 	cmd.Flags().String("tags", "", "filter by all tags")
 	cmd.Flags().String("any-tags", "", "filter by any tags")
@@ -1827,6 +2021,42 @@ func isIdentityReadCommand(path string) bool {
 		"service provider list", "service provider show",
 		"trust list", "trust show",
 		"user list", "user show":
+		return true
+	default:
+		return false
+	}
+}
+
+func isIdentityWriteCommand(path string) bool {
+	switch path {
+	case "access rule delete",
+		"access token create",
+		"application credential create", "application credential delete",
+		"consumer create", "consumer delete", "consumer list", "consumer set", "consumer show",
+		"credential create", "credential delete", "credential set",
+		"domain create", "domain delete", "domain set",
+		"ec2 credentials create", "ec2 credentials delete",
+		"endpoint add project", "endpoint create", "endpoint delete",
+		"endpoint group add project", "endpoint group create", "endpoint group delete", "endpoint group list",
+		"endpoint group remove project", "endpoint group set", "endpoint group show",
+		"endpoint remove project", "endpoint set",
+		"federation domain list", "federation project list",
+		"federation protocol create", "federation protocol delete", "federation protocol set",
+		"group add user", "group contains user", "group create", "group delete", "group remove user", "group set",
+		"identity provider create", "identity provider delete", "identity provider set",
+		"implied role create", "implied role delete",
+		"limit create", "limit delete", "limit set",
+		"mapping create", "mapping delete", "mapping set",
+		"policy create", "policy delete", "policy set",
+		"project create", "project delete", "project set",
+		"region create", "region delete", "region set",
+		"registered limit create", "registered limit delete", "registered limit set",
+		"request token authorize", "request token create",
+		"role add", "role create", "role delete", "role remove", "role set",
+		"service create", "service delete", "service provider create", "service provider delete", "service provider set", "service set",
+		"token revoke",
+		"trust create", "trust delete",
+		"user create", "user delete", "user password set", "user set":
 		return true
 	default:
 		return false

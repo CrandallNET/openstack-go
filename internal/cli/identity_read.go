@@ -40,10 +40,18 @@ func runIdentityRead(path string, stdout io.Writer, opts *Options) commandHandle
 		}
 
 		switch path {
+		case "access rule delete":
+			return identityAccessRuleDelete(cmd.Context(), opts, client, args)
 		case "access rule list":
 			return identityAccessRuleList(cmd.Context(), stdout, opts, client)
 		case "access rule show":
 			return identityAccessRuleShow(cmd.Context(), stdout, opts, client, args)
+		case "access token create":
+			return identityAccessTokenCreate(cmd.Context(), stdout, opts, client)
+		case "application credential create":
+			return identityApplicationCredentialCreate(cmd.Context(), stdout, opts, client, args)
+		case "application credential delete":
+			return identityApplicationCredentialDelete(cmd.Context(), opts, client, args)
 		case "application credential list":
 			return identityApplicationCredentialList(cmd.Context(), stdout, opts, client)
 		case "application credential show":
@@ -52,80 +60,238 @@ func runIdentityRead(path string, stdout io.Writer, opts *Options) commandHandle
 			return identityCatalogList(cmd.Context(), stdout, opts, client)
 		case "catalog show":
 			return identityCatalogShow(cmd.Context(), stdout, opts, client, args)
+		case "consumer create":
+			return identityConsumerCreate(cmd.Context(), stdout, opts, client)
+		case "consumer delete":
+			return identityConsumerDelete(cmd.Context(), client, args)
+		case "consumer list":
+			return identityConsumerList(cmd.Context(), stdout, opts, client)
+		case "consumer set":
+			return identityConsumerSet(cmd.Context(), opts, client, args)
+		case "consumer show":
+			return identityConsumerShow(cmd.Context(), stdout, opts, client, args)
+		case "credential create":
+			return identityCredentialCreate(cmd.Context(), stdout, opts, client, args)
+		case "credential delete":
+			return identityCredentialDelete(cmd.Context(), client, args)
 		case "credential list":
 			return identityCredentialList(cmd.Context(), stdout, opts, client)
+		case "credential set":
+			return identityCredentialSet(cmd.Context(), opts, client, args)
 		case "credential show":
 			return identityCredentialShow(cmd.Context(), stdout, opts, client, args)
+		case "domain create":
+			return identityDomainCreate(cmd.Context(), stdout, opts, client, args)
+		case "domain delete":
+			return identityDomainDelete(cmd.Context(), client, args)
 		case "domain list":
 			return identityDomainList(cmd.Context(), stdout, opts, client)
+		case "domain set":
+			return identityDomainSet(cmd.Context(), opts, client, args)
 		case "domain show":
 			return identityDomainShow(cmd.Context(), stdout, opts, client, args)
+		case "ec2 credentials create":
+			return identityEC2CredentialCreate(cmd.Context(), stdout, opts, client)
+		case "ec2 credentials delete":
+			return identityEC2CredentialDelete(cmd.Context(), opts, client, args)
 		case "ec2 credentials list":
 			return identityEC2CredentialList(cmd.Context(), stdout, opts, client)
 		case "ec2 credentials show":
 			return identityEC2CredentialShow(cmd.Context(), stdout, opts, client, args)
+		case "endpoint add project":
+			return identityEndpointAddProject(cmd.Context(), opts, client, args)
+		case "endpoint create":
+			return identityEndpointCreate(cmd.Context(), stdout, opts, client, args)
+		case "endpoint delete":
+			return identityEndpointDelete(cmd.Context(), client, args)
+		case "endpoint group add project":
+			return identityEndpointGroupProjectAssociation(cmd.Context(), opts, client, args, true)
+		case "endpoint group create":
+			return identityEndpointGroupCreate(cmd.Context(), stdout, opts, client, args)
+		case "endpoint group delete":
+			return identityEndpointGroupDelete(cmd.Context(), client, args)
+		case "endpoint group list":
+			return identityEndpointGroupList(cmd.Context(), stdout, opts, client)
+		case "endpoint group remove project":
+			return identityEndpointGroupProjectAssociation(cmd.Context(), opts, client, args, false)
+		case "endpoint group set":
+			return identityEndpointGroupSet(cmd.Context(), opts, client, args)
+		case "endpoint group show":
+			return identityEndpointGroupShow(cmd.Context(), stdout, opts, client, args)
 		case "endpoint list":
 			return identityEndpointList(cmd.Context(), stdout, opts, client)
+		case "endpoint remove project":
+			return identityEndpointRemoveProject(cmd.Context(), opts, client, args)
+		case "endpoint set":
+			return identityEndpointSet(cmd.Context(), opts, client, args)
 		case "endpoint show":
 			return identityEndpointShow(cmd.Context(), stdout, opts, client, args)
+		case "federation domain list":
+			return identityFederationDomainList(cmd.Context(), stdout, opts, client)
+		case "federation project list":
+			return identityFederationProjectList(cmd.Context(), stdout, opts, client)
+		case "federation protocol create":
+			return identityFederationProtocolCreate(cmd.Context(), stdout, opts, client, args)
+		case "federation protocol delete":
+			return identityFederationProtocolDelete(cmd.Context(), opts, client, args)
 		case "federation protocol list":
 			return identityFederationProtocolList(cmd.Context(), stdout, opts, client)
+		case "federation protocol set":
+			return identityFederationProtocolSet(cmd.Context(), opts, client, args)
 		case "federation protocol show":
 			return identityFederationProtocolShow(cmd.Context(), stdout, opts, client, args)
+		case "group add user":
+			return identityGroupAddUser(cmd.Context(), opts, client, args)
+		case "group contains user":
+			return identityGroupContainsUser(cmd.Context(), stdout, opts, client, args)
+		case "group create":
+			return identityGroupCreate(cmd.Context(), stdout, opts, client, args)
+		case "group delete":
+			return identityGroupDelete(cmd.Context(), opts, client, args)
 		case "group list":
 			return identityGroupList(cmd.Context(), stdout, opts, client)
+		case "group remove user":
+			return identityGroupRemoveUser(cmd.Context(), opts, client, args)
+		case "group set":
+			return identityGroupSet(cmd.Context(), opts, client, args)
 		case "group show":
 			return identityGroupShow(cmd.Context(), stdout, opts, client, args)
+		case "identity provider create":
+			return identityProviderCreate(cmd.Context(), stdout, opts, client, args)
+		case "identity provider delete":
+			return identityProviderDelete(cmd.Context(), client, args)
 		case "identity provider list":
 			return identityProviderList(cmd.Context(), stdout, opts, client)
+		case "identity provider set":
+			return identityProviderSet(cmd.Context(), opts, client, args)
 		case "identity provider show":
 			return identityProviderShow(cmd.Context(), stdout, opts, client, args)
+		case "implied role create":
+			return identityImpliedRoleCreate(cmd.Context(), stdout, opts, client, args)
+		case "implied role delete":
+			return identityImpliedRoleDelete(cmd.Context(), opts, client, args)
 		case "implied role list":
 			return identityImpliedRoleList(cmd.Context(), stdout, opts, client)
+		case "limit create":
+			return identityLimitCreate(cmd.Context(), stdout, opts, client, args)
+		case "limit delete":
+			return identityLimitDelete(cmd.Context(), client, args)
 		case "limit list":
 			return identityLimitList(cmd.Context(), stdout, opts, client)
+		case "limit set":
+			return identityLimitSet(cmd.Context(), opts, client, args)
 		case "limit show":
 			return identityLimitShow(cmd.Context(), stdout, opts, client, args)
+		case "mapping create":
+			return identityMappingCreate(cmd.Context(), stdout, opts, client, args)
+		case "mapping delete":
+			return identityMappingDelete(cmd.Context(), client, args)
 		case "mapping list":
 			return identityMappingList(cmd.Context(), stdout, opts, client)
+		case "mapping set":
+			return identityMappingSet(cmd.Context(), opts, client, args)
 		case "mapping show":
 			return identityMappingShow(cmd.Context(), stdout, opts, client, args)
+		case "policy create":
+			return identityPolicyCreate(cmd.Context(), stdout, opts, client, args)
+		case "policy delete":
+			return identityPolicyDelete(cmd.Context(), client, args)
 		case "policy list":
 			return identityPolicyList(cmd.Context(), stdout, opts, client)
+		case "policy set":
+			return identityPolicySet(cmd.Context(), opts, client, args)
 		case "policy show":
 			return identityPolicyShow(cmd.Context(), stdout, opts, client, args)
+		case "project create":
+			return identityProjectCreate(cmd.Context(), stdout, opts, client, args)
+		case "project delete":
+			return identityProjectDelete(cmd.Context(), opts, client, args)
 		case "project list":
 			return identityProjectList(cmd.Context(), stdout, opts, client)
+		case "project set":
+			return identityProjectSet(cmd.Context(), opts, client, args)
 		case "project show":
 			return identityProjectShow(cmd.Context(), stdout, opts, client, args)
+		case "region create":
+			return identityRegionCreate(cmd.Context(), stdout, opts, client, args)
+		case "region delete":
+			return identityRegionDelete(cmd.Context(), client, args)
 		case "region list":
 			return identityRegionList(cmd.Context(), stdout, opts, client)
+		case "region set":
+			return identityRegionSet(cmd.Context(), opts, client, args)
 		case "region show":
 			return identityRegionShow(cmd.Context(), stdout, opts, client, args)
+		case "registered limit create":
+			return identityRegisteredLimitCreate(cmd.Context(), stdout, opts, client, args)
+		case "registered limit delete":
+			return identityRegisteredLimitDelete(cmd.Context(), client, args)
 		case "registered limit list":
 			return identityRegisteredLimitList(cmd.Context(), stdout, opts, client)
+		case "registered limit set":
+			return identityRegisteredLimitSet(cmd.Context(), opts, client, args)
 		case "registered limit show":
 			return identityRegisteredLimitShow(cmd.Context(), stdout, opts, client, args)
+		case "request token authorize":
+			return identityRequestTokenAuthorize(cmd.Context(), stdout, opts, client)
+		case "request token create":
+			return identityRequestTokenCreate(cmd.Context(), stdout, opts, client)
+		case "role add":
+			return identityRoleAssignment(cmd.Context(), opts, client, args, true)
+		case "role create":
+			return identityRoleCreate(cmd.Context(), stdout, opts, client, args)
+		case "role delete":
+			return identityRoleDelete(cmd.Context(), opts, client, args)
+		case "role remove":
+			return identityRoleAssignment(cmd.Context(), opts, client, args, false)
 		case "role list":
 			return identityRoleList(cmd.Context(), stdout, opts, client)
 		case "role assignment list":
 			return identityRoleAssignmentList(cmd.Context(), stdout, opts, clients, client)
+		case "role set":
+			return identityRoleSet(cmd.Context(), opts, client, args)
 		case "role show":
 			return identityRoleShow(cmd.Context(), stdout, opts, client, args)
+		case "service create":
+			return identityServiceCreate(cmd.Context(), stdout, opts, client, args)
+		case "service delete":
+			return identityServiceDelete(cmd.Context(), client, args)
 		case "service list":
 			return identityServiceList(cmd.Context(), stdout, opts, client)
+		case "service provider create":
+			return identityServiceProviderCreate(cmd.Context(), stdout, opts, client, args)
+		case "service provider delete":
+			return identityServiceProviderDelete(cmd.Context(), client, args)
 		case "service provider list":
 			return identityServiceProviderList(cmd.Context(), stdout, opts, client)
+		case "service provider set":
+			return identityServiceProviderSet(cmd.Context(), opts, client, args)
 		case "service provider show":
 			return identityServiceProviderShow(cmd.Context(), stdout, opts, client, args)
+		case "service set":
+			return identityServiceSet(cmd.Context(), opts, client, args)
 		case "service show":
 			return identityServiceShow(cmd.Context(), stdout, opts, client, args)
+		case "token revoke":
+			return identityTokenRevoke(cmd.Context(), client, args)
+		case "trust create":
+			return identityTrustCreate(cmd.Context(), stdout, opts, client, args)
+		case "trust delete":
+			return identityTrustDelete(cmd.Context(), client, args)
 		case "trust list":
 			return identityTrustList(cmd.Context(), stdout, opts, client)
 		case "trust show":
 			return identityTrustShow(cmd.Context(), stdout, opts, client, args)
+		case "user create":
+			return identityUserCreate(cmd.Context(), stdout, opts, client, args)
+		case "user delete":
+			return identityUserDelete(cmd.Context(), opts, client, args)
 		case "user list":
 			return identityUserList(cmd.Context(), stdout, opts, client)
+		case "user password set":
+			return identityUserPasswordSet(cmd.Context(), opts, client)
+		case "user set":
+			return identityUserSet(cmd.Context(), opts, client, args)
 		case "user show":
 			return identityUserShow(cmd.Context(), stdout, opts, client, args)
 		default:

@@ -1933,3 +1933,22 @@ Sources consulted:
 * OpenStackSDK Network API proxy docs for local IP and local IP association methods: https://static.opendev.org/docs/openstacksdk/2025.2/user/proxies/network.html.
 * OpenStackSDK Tap Service and Tap Flow resource docs: https://docs.openstack.org/openstacksdk/2025.2/user/resources/network/v2/tap_service.html and https://docs.openstack.org/openstacksdk/2025.1/user/resources/network/v2/tap_flow.html.
 * Gophercloud Tap Mirror package docs, which confirmed typed coverage for tap mirrors but not the rest of the TaaS surface used here: https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/taas/tapmirrors.
+
+## 2026-05-08: Identity Command Coverage
+
+Decision: implement the remaining `openstack.identity.v3` command paths in the main Identity dispatcher, using typed Gophercloud packages for the standard Keystone v3 resources and narrow authenticated Keystone REST shims where the local Gophercloud v2.12.0 module does not expose a typed helper. The separate raw-REST command paths are registered through a new `openstack.commands.extras.keystone-extras` module so the project keeps SDK gap coverage visible in the plugin system.
+
+Work done: added Identity write/action handlers for application credentials, access rules, consumers, credentials, domains, EC2 credentials, endpoints, endpoint groups, federation accessible domains and projects, federation protocols, groups and membership, identity providers, implied roles, limits, mappings, policies, projects, regions, registered limits, request and access tokens, role assignments, services, service providers, token revoke, trusts, users, and password updates. The command registry now parses the command-local flags for these paths, `openstack command list --group openstack.identity.v3` no longer marks any Identity command as unimplemented, and `tools/matrix` marks the new command paths as implemented while preserving the note that parity and lifecycle validation remain open.
+
+Compatibility fixes found during validation: `federation project list -f json` initially included `Description` and used the wrong output order. The local Python OSC source for `ListAccessibleProjects` declares `ID`, `Domain ID`, `Enabled`, and `Name`, so the Go renderer was changed to match that shape. `consumer list` returned an empty list from the Go CLI on `cloud6`, but the Python oracle on this workstation failed before reaching Keystone with `To use 'consumers' oauthlib must be installed`; that is recorded as an oracle environment gap for OAuth consumer parity testing.
+
+Validation: `go test ./internal/cli ./internal/plugins/keystoneextras ./tools/matrix`, `go test ./...`, and `make build` passed. Safe live JSON smoke checks against `cloud6` matched the Python oracle for `endpoint group list`, `federation domain list`, and `federation project list` after the column fix. The full Identity write/action surface is still `implemented`, not `compatible`, until test-owned lifecycle fixtures and paired Python-vs-Go output parity are added.
+
+Sources consulted:
+
+* Local Python OSC Identity command sources under `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/identity/v3/`, especially `consumer.py`, `endpoint_group.py`, `federation_protocol.py`, `identity_provider.py`, `service_provider.py`, `role.py`, `token.py`, `trust.py`, and `unscoped_saml.py`.
+* Gophercloud Identity v3 package docs: https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/identity/v3.
+* Gophercloud application credential package docs: https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/identity/v3/applicationcredentials.
+* Gophercloud OAuth1 package docs: https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/identity/v3/oauth1.
+* Gophercloud roles and inherited roles package docs: https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/identity/v3/roles and https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/identity/v3/osinherit.
+* Gophercloud project endpoints package docs: https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/identity/v3/projectendpoints.
