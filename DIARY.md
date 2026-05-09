@@ -1432,7 +1432,7 @@ Sources consulted:
 
 * Gophercloud cloud config parser in `.cache/gomod/github.com/gophercloud/gophercloud/v2@v2.12.0/openstack/config/clouds`.
 * Gophercloud service catalog, images, flavors, networks, and volume type packages in the local module cache.
-* Local cloud safety decisions in `docs/openstack-cli-compatibility-plan.md`.
+* Local cloud safety decisions in `COMPATABILITY.md`.
 
 ## 2026-05-04: Lifecycle Test Scaffolding
 
@@ -1442,7 +1442,7 @@ Work done: added an internal lifecycle helper that generates `golang-osc-test-*`
 
 Sources consulted:
 
-* Local cloud safety decisions in `docs/openstack-cli-compatibility-plan.md`.
+* Local cloud safety decisions in `COMPATABILITY.md`.
 * Existing partial-failure helper in `internal/cli/compat_errors.go`.
 
 ## 2026-05-04: First Golden-Matched Rows
@@ -1486,7 +1486,7 @@ Work done: added `tools/lifecycle-smoke` and `make lifecycle-smoke CLOUD=name`. 
 Sources consulted:
 
 * Gophercloud v2.12.0 local module packages for Compute, Network, Block Storage API versions, common extensions, and Identity roles.
-* Local lifecycle safety decisions in `docs/openstack-cli-compatibility-plan.md`.
+* Local lifecycle safety decisions in `COMPATABILITY.md`.
 
 ## 2026-05-05: Server Command Expansion
 

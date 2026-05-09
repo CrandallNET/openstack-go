@@ -8,7 +8,7 @@ Do not make things up. Cite and link to sources for external facts, and say when
 
 ## Source Of Truth
 
-Use [docs/openstack-cli-compatibility-plan.md](docs/openstack-cli-compatibility-plan.md) as the active execution tracker. It should always show:
+Use [COMPATABILITY.md](COMPATABILITY.md) as the active execution tracker. It should always show:
 
 * what needs to be done,
 * dependency order,
@@ -19,7 +19,7 @@ Use [docs/openstack-cli-compatibility-plan.md](docs/openstack-cli-compatibility-
 * open questions, and
 * accepted decisions.
 
-Use [docs/openstack-cli-plan-diary.md](docs/openstack-cli-plan-diary.md) as the project history. It should record decisions, experiments, dependency choices, rejected alternatives, source links, observed behavior, and reasoning that may need to be reviewed later.
+Use [DIARY.md](DIARY.md) as the project history. It should record decisions, experiments, dependency choices, rejected alternatives, source links, observed behavior, and reasoning that may need to be reviewed later.
 
 ## Repository Context
 

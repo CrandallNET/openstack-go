@@ -113,7 +113,7 @@ Lifecycle tests create uniquely named resources, clean up resources they create,
 
 Contributor and agent workflow rules live in [AGENTS.md](AGENTS.md).
 
-The active compatibility plan is [docs/openstack-cli-compatibility-plan.md](docs/openstack-cli-compatibility-plan.md). The project diary is [docs/openstack-cli-plan-diary.md](docs/openstack-cli-plan-diary.md).
+The compatibility plan is [COMPATABILITY.md](COMPATABILITY.md). The project diary is [DIARY.md](DIARY.md).
 
 ## Command Matrix Status
 
