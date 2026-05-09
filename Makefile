@@ -7,7 +7,7 @@ GOMODCACHE ?= $(CURDIR)/.cache/gomod
 export GOCACHE
 export GOMODCACHE
 
-.DEFAULT_GOAL := help
+.DEFAULT_GOAL := build
 
 .PHONY: help
 help: ## Show available Make targets.
@@ -75,3 +75,7 @@ compat: catalog matrix ## Regenerate all compatibility artifacts.
 .PHONY: clean
 clean: ## Remove local build outputs and workspace-local Go caches.
 	$(RM) -r $(BIN_DIR) .cache
+
+.PHONY: mrproper
+mrproper: clean ## Remove local build outputs and workspace-local Go caches.
+	$(RM) -r .cache

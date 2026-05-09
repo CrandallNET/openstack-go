@@ -2017,3 +2017,23 @@ Decision: make command-state percentages generated data instead of a hand-comput
 Work done: updated `tools/matrix` and its tests, regenerated `compat/matrix.yaml`, and documented the current generated status table at the bottom of the user-facing README and in the active plan. Added a test that compares the README status table with the generated command catalog so stale percentages are caught by `go test ./tools/matrix`. The current generated state is 594 commands: `implemented` 277 commands, 46.63%; `golden-matched` 166 commands, 27.95%; `cloud-verified` 151 commands, 25.42%; and all other status values at 0 commands, 0.00%.
 
 Documentation cleanup: rewrote `README.md` as a user-facing overview focused on what the CLI is, how to build it, how to run it, how to use Pretty output, and where to find compatibility reports. Moved internal project context, oracle details, cloud-specific testing notes, compatibility artifact rules, and agent workflow guidance into `AGENTS.md`.
+
+## 2026-05-09: Default Make Target
+
+Decision: make the bare `make` workflow build the local CLI binary by default. The help target remains available as `make help`.
+
+Work done: changed the Makefile default goal from `help` to `build`.
+
+Sources consulted:
+
+* Local `Makefile`.
+
+## 2026-05-09: Make Cache Cleanup Target
+
+Decision: add an explicit Make target for a full local cleanup pass: everything `make clean` removes, plus an explicit workspace cache cleanup step.
+
+Work done: added `make mrproper`, which depends on `clean` and removes the repository `.cache` directory.
+
+Sources consulted:
+
+* Local `Makefile`.
