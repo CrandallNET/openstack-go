@@ -1166,6 +1166,24 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 				return err
 			}
 			return objectStoreAccountShow(cmd.Context(), stdout, opts, client)
+		case "object store account set":
+			client, err := clients.objectStorageV1()
+			if err != nil {
+				return err
+			}
+			return objectStoreAccountSet(cmd.Context(), opts, client)
+		case "object store account unset":
+			client, err := clients.objectStorageV1()
+			if err != nil {
+				return err
+			}
+			return objectStoreAccountUnset(cmd.Context(), opts, client)
+		case "container save":
+			client, err := clients.objectStorageV1()
+			if err != nil {
+				return err
+			}
+			return containerSave(cmd.Context(), stdout, client, args)
 		case "quota list":
 			return quotaList(cmd.Context(), stdout, opts, clients)
 		case "quota delete":

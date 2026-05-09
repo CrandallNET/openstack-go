@@ -114,16 +114,16 @@ func TestStubCommand(t *testing.T) {
 	}
 }
 
-func TestGeneratedStubCommandIgnoresCommandFlags(t *testing.T) {
-	stdout, stderr, err := executeForTest("container", "save", "--bogus")
+func TestNoGeneratedStubCommandsRemain(t *testing.T) {
+	stdout, stderr, err := executeForTest("command", "list", "-f", "json")
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 	if stderr != "" {
 		t.Fatalf("expected empty stderr, got %q", stderr)
 	}
-	if got, want := strings.TrimSpace(stdout), notImplementedExitCodeText; got != want {
-		t.Fatalf("stub output mismatch: got %q want %q", got, want)
+	if strings.Contains(stdout, notImplementedSuffix) {
+		t.Fatalf("command list still contains generated stubs:\n%s", stdout)
 	}
 }
 

@@ -1991,3 +1991,21 @@ Sources consulted:
 * Gophercloud Placement resource classes package docs: https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/placement/v1/resourceclasses.
 * Gophercloud Placement resource providers package docs: https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/placement/v1/resourceproviders.
 * Gophercloud Placement traits package docs: https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/placement/v1/traits.
+
+## 2026-05-09: Remaining Object Store Command Coverage
+
+Decision: implement the final pinned `openstack.object_store.v1` command stubs as core Object Store handlers because Gophercloud exposes Object Storage v1 accounts, containers, and objects packages that cover the required request paths. Preserve Python OSC's observed account metadata unset header shape by sending `X-Remove-Account-Meta-<key>: x` through a custom Gophercloud account update builder, because Gophercloud's convenience type uses a different removal value.
+
+Work done: added `container save`, `object store account set`, and `object store account unset`; registered their command-local flags; updated the command registry, matrix generator, and generated compatibility matrix; and fixed `object save` to create parent directories before writing downloaded object names. The command list now has no generated `(Not Implemented Yet)` rows for the pinned Python OSC 9.0.0 catalog.
+
+Compatibility fixes found during validation: the first mocked container-save test returned the same object page for every Swift marker, which caused Gophercloud pagination to loop until the test timeout. The mock now returns an empty page after the final marker, matching the real Swift pagination behavior exercised by the live `flex-dfw` check.
+
+Validation: unit tests cover `container save` downloading all objects, creating nested directories, and account metadata set/unset request headers. `go test ./...` passed. `go build -o bin/openstack ./cmd/openstack` exited successfully, with the sandbox-only Go stat-cache warning still printed because the sandbox cannot create `/Users/ken/go/pkg/mod/cache/download/github.com/crandallnet`. Live `flex-dfw` validation used a disposable `golang-osc-test-*` container, compared Python OSC and Go `container save` output directories with `diff -ru`, set and unset a unique account metadata key with both clients, verified the Go-set key appeared in `object store account show -f json`, and cleaned up the test container and metadata key.
+
+Sources consulted:
+
+* Local Python OSC Object Store account command source: `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/object/v1/account.py`.
+* Local Python OSC Object Store container command source: `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/object/v1/container.py`.
+* Local Python OSC Object Store API source: `/Users/ken/.local/share/uv/tools/python-openstackclient/lib/python3.12/site-packages/openstackclient/api/object_store_v1.py`.
+* Gophercloud Object Storage account package docs: https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/accounts.
+* Gophercloud Object Storage object package docs: https://pkg.go.dev/github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/objects.

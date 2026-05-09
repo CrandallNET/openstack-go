@@ -968,6 +968,7 @@ func coreReadPackages() map[string]string {
 		"container create":                       "github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/containers",
 		"container delete":                       "github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/containers; recursive object deletion via github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/objects",
 		"container list":                         "github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/containers",
+		"container save":                         "github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/objects",
 		"container set":                          "github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/containers",
 		"container show":                         "github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/containers",
 		"container unset":                        "github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/containers",
@@ -1069,7 +1070,9 @@ func coreReadPackages() map[string]string {
 		"object set":                             "github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/objects",
 		"object show":                            "github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/objects",
 		"object unset":                           "github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/objects",
+		"object store account set":               "github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/accounts",
 		"object store account show":              "github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/accounts",
+		"object store account unset":             "github.com/gophercloud/gophercloud/v2/openstack/objectstorage/v1/accounts",
 		"port create":                            "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/ports; standard tags and extension fields via gophercloud.ServiceClient",
 		"port delete":                            "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/ports",
 		"port list":                              "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/ports",
@@ -1466,6 +1469,7 @@ func coreCloudVerified() map[string]bool {
 		"container create":                       true,
 		"container delete":                       true,
 		"container list":                         true,
+		"container save":                         true,
 		"container set":                          true,
 		"container show":                         true,
 		"container unset":                        true,
@@ -1715,6 +1719,7 @@ func coreGoldenMatched() map[string]bool {
 		"compute service list":                           true,
 		"container create":                               true,
 		"container delete":                               true,
+		"container save":                                 true,
 		"container set":                                  true,
 		"container unset":                                true,
 		"flavor list":                                    true,
@@ -1760,6 +1765,8 @@ func coreGoldenMatched() map[string]bool {
 		"object save":                                    true,
 		"object set":                                     true,
 		"object unset":                                   true,
+		"object store account set":                       true,
+		"object store account unset":                     true,
 		"port create":                                    true,
 		"port delete":                                    true,
 		"port list":                                      true,
@@ -1860,6 +1867,7 @@ func writeParityEvidence(command string) (string, string) {
 	switch {
 	case command == "container create" ||
 		command == "container delete" ||
+		command == "container save" ||
 		command == "container set" ||
 		command == "container unset" ||
 		strings.HasPrefix(command, "object "):
@@ -1922,6 +1930,7 @@ func coreWriteCommands() map[string]bool {
 		"image add project":                              true,
 		"container create":                               true,
 		"container delete":                               true,
+		"container save":                                 true,
 		"container set":                                  true,
 		"container unset":                                true,
 		"object create":                                  true,
@@ -1929,6 +1938,8 @@ func coreWriteCommands() map[string]bool {
 		"object save":                                    true,
 		"object set":                                     true,
 		"object unset":                                   true,
+		"object store account set":                       true,
+		"object store account unset":                     true,
 		"image create":                                   true,
 		"image delete":                                   true,
 		"image import":                                   true,

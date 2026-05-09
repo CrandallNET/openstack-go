@@ -85,7 +85,7 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"consistency group snapshot create", "consistency group snapshot delete", "consistency group snapshot list", "consistency group snapshot show",
 		"console connection show",
 		"console log show", "console url show",
-		"container create", "container delete", "container list", "container set", "container show", "container unset",
+		"container create", "container delete", "container list", "container save", "container set", "container show", "container unset",
 		"extension list", "extension show",
 		"flavor create", "flavor delete", "flavor list", "flavor set", "flavor show", "flavor unset",
 		"floating ip create", "floating ip delete", "floating ip list", "floating ip pool list",
@@ -127,7 +127,7 @@ func newCommandRegistry(groups []osc.CommandGroup, stdout io.Writer, opts *Optio
 		"network subport list",
 		"network trunk create", "network trunk delete", "network trunk list", "network trunk set", "network trunk show", "network trunk unset",
 		"object create", "object delete", "object list", "object save", "object set", "object show", "object unset",
-		"object store account show",
+		"object store account set", "object store account show", "object store account unset",
 		"port create", "port delete", "port list", "port set", "port show", "port unset",
 		"project cleanup",
 		"quota delete", "quota list", "quota set", "quota show",
@@ -488,6 +488,10 @@ func addImplementedCommandFlags(cmd *cobra.Command, path string) {
 		cmd.Flags().StringArray("property", nil, "object property key=value")
 	case "object unset":
 		cmd.Flags().StringArray("property", nil, "object property key")
+	case "object store account set":
+		cmd.Flags().StringArray("property", nil, "account property key=value")
+	case "object store account unset":
+		cmd.Flags().StringArray("property", nil, "account property key")
 	case "port create":
 		cmd.Flags().StringArray("extra-property", nil, "additional property type=<type>,name=<name>,value=<value>")
 		cmd.Flags().String("network", "", "network")
@@ -2146,7 +2150,7 @@ func isCoreReadCommand(path string) bool {
 		"consistency group snapshot create", "consistency group snapshot delete", "consistency group snapshot list", "consistency group snapshot show",
 		"console connection show",
 		"console log show", "console url show",
-		"container create", "container delete", "container list", "container set", "container show", "container unset",
+		"container create", "container delete", "container list", "container save", "container set", "container show", "container unset",
 		"extension list", "extension show",
 		"flavor create", "flavor delete", "flavor list", "flavor set", "flavor show", "flavor unset",
 		"floating ip create", "floating ip delete", "floating ip list", "floating ip pool list",
@@ -2188,7 +2192,7 @@ func isCoreReadCommand(path string) bool {
 		"network subport list",
 		"network trunk create", "network trunk delete", "network trunk list", "network trunk set", "network trunk show", "network trunk unset",
 		"object create", "object delete", "object list", "object save", "object set", "object show", "object unset",
-		"object store account show",
+		"object store account set", "object store account show", "object store account unset",
 		"port create", "port delete", "port list", "port set", "port show", "port unset",
 		"project cleanup",
 		"quota delete", "quota list", "quota set", "quota show",

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -88,6 +89,30 @@ func containerDelete(ctx context.Context, opts *Options, client *gophercloud.Ser
 		}
 		if result := containers.Delete(ctx, client, container); result.Err != nil {
 			return result.Err
+		}
+	}
+	return nil
+}
+
+func containerSave(ctx context.Context, stdout io.Writer, client *gophercloud.ServiceClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("container save requires <container>")
+	}
+	container := args[0]
+	page, err := objects.List(client, container, objects.ListOpts{}).AllPages(ctx)
+	if err != nil {
+		return err
+	}
+	items, err := objects.ExtractInfo(page)
+	if err != nil {
+		return err
+	}
+	for _, item := range items {
+		if item.Name == "" {
+			continue
+		}
+		if err := saveObjectContent(ctx, stdout, client, container, item.Name, item.Name); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -295,20 +320,30 @@ func objectSave(ctx context.Context, stdout io.Writer, opts *Options, client *go
 	if len(args) < 2 {
 		return fmt.Errorf("object save requires <container> <object>")
 	}
-	result := objects.Download(ctx, client, args[0], args[1], nil)
-	content, err := result.ExtractContent()
-	if err != nil {
-		return err
-	}
 	destination := flagValue(opts, "file")
 	if destination == "" {
 		destination = args[1]
+	}
+	return saveObjectContent(ctx, stdout, client, args[0], args[1], destination)
+}
+
+func saveObjectContent(ctx context.Context, stdout io.Writer, client *gophercloud.ServiceClient, container string, objectName string, destination string) error {
+	result := objects.Download(ctx, client, container, objectName, nil)
+	content, err := result.ExtractContent()
+	if err != nil {
+		return err
 	}
 	if destination == "-" {
 		_, err := stdout.Write(content)
 		return err
 	}
-	return os.WriteFile(expandUserPath(destination), content, 0600)
+	destination = expandUserPath(destination)
+	if dir := filepath.Dir(destination); dir != "." && dir != "" {
+		if err := os.MkdirAll(dir, 0700); err != nil {
+			return err
+		}
+	}
+	return os.WriteFile(destination, content, 0600)
 }
 
 func objectSet(ctx context.Context, opts *Options, client *gophercloud.ServiceClient, args []string) error {
@@ -402,6 +437,44 @@ func objectStoreAccountShow(ctx context.Context, stdout io.Writer, opts *Options
 		{"quota_bytes", item.QuotaBytes},
 		{"metadata", metadata},
 	})
+}
+
+func objectStoreAccountSet(ctx context.Context, opts *Options, client *gophercloud.ServiceClient) error {
+	properties, err := objectProperties(opts)
+	if err != nil {
+		return err
+	}
+	if len(properties) == 0 {
+		return fmt.Errorf("object store account set requires --property")
+	}
+	if result := accounts.Update(ctx, client, accounts.UpdateOpts{Metadata: properties}); result.Err != nil {
+		return result.Err
+	}
+	return nil
+}
+
+func objectStoreAccountUnset(ctx context.Context, opts *Options, client *gophercloud.ServiceClient) error {
+	properties := flagValues(opts, "property")
+	if len(properties) == 0 {
+		return fmt.Errorf("object store account unset requires --property")
+	}
+	if result := accounts.Update(ctx, client, accountUnsetOpts(properties)); result.Err != nil {
+		return result.Err
+	}
+	return nil
+}
+
+type accountUnsetOpts []string
+
+func (opts accountUnsetOpts) ToAccountUpdateMap() (map[string]string, error) {
+	headers := make(map[string]string, len(opts))
+	for _, key := range opts {
+		if key == "" {
+			return nil, fmt.Errorf("invalid property %q, expected <key>", key)
+		}
+		headers["X-Remove-Account-Meta-"+key] = "x"
+	}
+	return headers, nil
 }
 
 func objectStorageAccountGet(ctx context.Context, client *gophercloud.ServiceClient) accounts.GetResult {
