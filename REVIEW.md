@@ -165,7 +165,7 @@ Only `fmt.Fprintln` is used for all output. The `--debug` flag exists in `Option
 ### High priority
 
 1. **Refactor `core_read.go` dispatch table** — ✅ Completed (2026-05-25). Switch replaced with `coreReadDispatch` map + `init()` registration. Remaining: physically move extracted handler functions into domain-specific files.
-2. **Split `root_test.go` into focused test files** — Separate output/rendering tests into dedicated files for `output.go`, `table.go`, `sort.go`.
+2. **Split `root_test.go` into focused test files** — ✅ Completed (2026-05-25). `root_test.go` split into `root_test.go` (822 lines, 36 tests), `output_test.go` (1,366 lines, 63 tests), `table_test.go` (41 lines, 2 tests), `compat_errors_test.go` (81 lines, 7 tests).
 3. **Reduce duplication in client resolution** — Extract a shared helper for resolving service clients.
 
 ### Medium priority

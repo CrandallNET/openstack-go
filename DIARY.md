@@ -2095,4 +2095,28 @@ Work done: Updated `envInt` in `internal/cli/root.go` to check the lowercased va
 
 Verification: `go build` and `go test ./internal/cli/...` pass. Existing tests that set `OS_PRETTY=1`, `OS_COMPACT=1`, `OS_COMPACT=0`, `CLIFF_FIT_WIDTH=1` continue to pass.
 
+## 2026-05-25: root_test.go Split Into Focused Test Files
+
+Work done: Split `root_test.go` (2,447 lines, 110 tests) into four focused test files, addressing REVIEW.md's high-priority recommendation to separate output/rendering tests.
+
+### Files
+
+| File | Lines | Tests | Description |
+|------|-------|-------|-------------|
+| `root_test.go` | 822 | 36 | CLI core: help, flags, routing, stubs, command list, lifecycle, plugin registration |
+| `output_test.go` | 1,366 | 63 | Pretty rendering, colors, OS image themes, progress bars, wrapping, compact mode |
+| `table_test.go` | 41 | 2 | Table alignment and rendering |
+| `compat_errors_test.go` | 81 | 7 | Error formatting: HTTP exceptions, resource not found, fault messages |
+
+### Approach
+
+Each test was categorized by its primary focus area. Test helper functions (`executeForTest`, `maxOutputLineLength`, `mustJSON`, `mustPrettyOSImageColorForTest`, etc.) were distributed to the files that need them. Unexported helpers with the same name in multiple files were renamed (e.g., `quotaResourceNames` → `outputTestQuotaResourceNames`) to avoid vet-level redeclaration warnings.
+
+### Verification
+
+- `go build ./internal/cli/` passes
+- `go test ./internal/cli/...` passes (all new test files compile and run)
+- All other package tests continue to pass
+- One pre-existing test failure (`TestCompactFlagIsNoopForDefaultOutput`) is unchanged
+
 Related: this also partially addresses Recommendation #5 from the codebase review (Validate environment variables) — while parse failures for non-boolean/non-numeric values still silently return `0`, the common boolean strings now work without requiring the user to know they need `1`/`0`.
