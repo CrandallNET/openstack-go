@@ -55,14 +55,16 @@ Every case follows identical boilerplate: resolve clients, check error, dispatch
 
 **Impact:** Hard to navigate, error-prone, unanalyzable. A missing case silently falls through to the implicit nil handler.
 
-**Recommendation:** Refactor into a map-based dispatch table or a command descriptor struct that encodes required service clients:
+**Resolution (2026-05-25):** Replaced the giant `switch path { ... }` with a `coreReadDispatch` map populated via `init()`. All 382 command handlers are registered through `registerCoreReadHandler()`, which wraps handler functions to resolve clients and map arguments. The generated `init()` handles edge cases: conditional client resolution (flavor create/set/unset), no-arg handlers (`floatingIPPoolList`), multiline lambda handlers (`serverMultiAction` for pause/resume/start/stop/suspend/unlock/unpause/unrescue), and handlers taking `*openStackClients` directly.
+
+**Remaining:** The `core_read.go` file grew slightly to ~23,262 lines due to the generated wrappers. The domain-specific extraction files (`compute_read.go`, `image_read.go`, `network_read.go`, `volume_read.go`) created earlier can be integrated in a follow-up to physically move extracted handler functions out of the monolithic file.
+
+**Recommendation:** Extract a helper that resolves a set of service clients once:
 
 ```go
-var coreHandlers = map[string]coreHandlerFunc{
-    "server list":     computeServerListHandler,
-    "server show":     computeServerShowHandler,
-    ...
-}
+func resolveClients(clients *openStackClients, needs struct {
+    compute, image, network, volume bool
+}) (*resolvedClients, error)
 ```
 
 ### 2. `registry.go` is ~2,302 lines of hardcoded string lists
@@ -125,7 +127,7 @@ Only `fmt.Fprintln` is used for all output. The `--debug` flag exists in `Option
 
 | File | Lines | Assessment |
 |------|-------|------------|
-| `core_read.go` | ~22,881 | Extremely large |
+| `core_read.go` | ~23,262 | Still large but refactored (dispatch map + wrappers) |
 | `registry.go` | ~2,302 | Very large |
 | `output.go` | ~1,800+ | Very large but well-organized |
 | `identity_read.go` | ~1,600 | Manageable but repetitive |
@@ -138,11 +140,31 @@ Only `fmt.Fprintln` is used for all output. The `--debug` flag exists in `Option
 
 ---
 
+## Accomplished Refactoring
+
+### 2026-05-25: core_read.go dispatch table refactoring
+
+**Change:** Replaced the 22,881-line `switch path { ... }` dispatch block in `runCoreRead()` with a `coreReadDispatch` map and `init()`-based registration.
+
+**Result:** All 382 command handlers are now registered via `registerCoreReadHandler(path, handler)`. The wiring correctly handles:
+- Single and multi-client resolution
+- Argument mapping (`cmd.Context()` → `ctx`, `cmd.ErrOrStderr()` → `stderr`, `cmd.InOrStdin()` → `os.Stdin`)
+- Conditional client resolution (flavor create/set/unset)
+- No-arg handlers (`floatingIPPoolList`)
+- Multiline lambda handlers (`serverMultiAction` for 8 server action commands)
+- Handlers taking `*openStackClients` directly (availability zones, quotas, usage, versions)
+
+**Verification:** `go build -o bin/openstack ./cmd/openstack` and `go test ./...` pass across all packages.
+
+**Status:** HIGH priority recommendation from this review has been completed.
+
+---
+
 ## Recommendations (Prioritized)
 
 ### High priority
 
-1. **Refactor `core_read.go` dispatch table** — Replace the 22,000-line switch with a data-driven dispatch mechanism. Single highest-impact change.
+1. **Refactor `core_read.go` dispatch table** — ✅ Completed (2026-05-25). Switch replaced with `coreReadDispatch` map + `init()` registration. Remaining: physically move extracted handler functions into domain-specific files.
 2. **Split `root_test.go` into focused test files** — Separate output/rendering tests into dedicated files for `output.go`, `table.go`, `sort.go`.
 3. **Reduce duplication in client resolution** — Extract a shared helper for resolving service clients.
 

@@ -2037,3 +2037,62 @@ Work done: added `make mrproper`, which depends on `clean` and removes the repos
 Sources consulted:
 
 * Local `Makefile`.
+
+## 2026-05-25: core_read.go Refactoring -- Replace Giant Switch With Dispatch Map
+
+Work done: refactored `internal/cli/core_read.go` (originally ~22,881 lines with a ~2,470-line `switch path { ... }` dispatch block) to replace the monolithic switch with a map-based dispatch populated via `init()`.
+
+### Approach
+
+The `runCoreRead()` function previously used a giant `switch path { ... }` to route 382 command paths to their handler functions. The refactoring:
+
+1. Added a package-level `coreReadDispatch map[string]coreReadHandler` to `core_read.go`.
+2. Added `registerCoreReadHandler(path string, h initHandler)` to populate the map in `init()`.
+3. Replaced the entire `switch` body with an `init()` function that calls `registerCoreReadHandler` for every case, generating handler wrappers that resolve clients and pass mapped arguments to the original handler functions.
+
+### Wiring challenges and solutions
+
+The original switch contained several patterns that required special handling:
+
+* **Client resolution**: Most cases resolved a single `client, err := clients.XxxV3()`. Some resolved multiple clients (e.g., `networkClient` + `identityClient` for address group operations). Some used `_` instead of `err` for optional clients (e.g., `imageClient, _ := clients.imageV2()`). All were parsed and generated correctly.
+
+* **Argument mapping**: The original handlers called handlers like `handler(cmd.Context(), stdout, opts, client, args)`. The generated wrappers mapped:
+  * `cmd.Context()` → `ctx`
+  * `cmd.ErrOrStderr()` → `stderr` (added `stderr io.Writer` parameter to the `initHandler` type)
+  * `cmd.InOrStdin()` → `os.Stdin`
+  * Client variable names preserved (e.g., `networkClient`, `identityClient`)
+
+* **Conditional client resolution**: `flavor create`, `flavor set`, and `flavor unset` conditionally resolve `identityClient` based on the `--project` flag (`if flagValue(opts, "project") != ""`). These were hard-coded in the generated wiring since the conditional pattern (`var identityClient *gophercloud.ServiceClient` + `identityClient, err = clients.identityV3()`) was not caught by the simple `clients.Xxx()` regex.
+
+* **No-arg handlers**: `floatingIPPoolList()` has no parameters at all (`return floatingIPPoolList()`). It was excluded from auto-extraction and added manually.
+
+* **Multiline lambda handlers**: `server pause`, `server resume`, `server start`, `server stop`, `server suspend`, `server unlock`, `server unpause`, and `server unrescue` use `serverMultiAction(cmd.Context(), client, args, func(ctx context.Context, client *gophercloud.ServiceClient, id string) error { return servers.Xxx(...) })`. The lambda body spans multiple lines and could not be represented as a single-line call. These 8 handlers were excluded from auto-extraction and added manually in the generated wiring.
+
+* **Handlers taking `clients` directly**: Several handlers (e.g., `availabilityZoneList`, `quotaList`, `usageList`) take the entire `*openStackClients` struct rather than individual service clients. These were identified by having no client resolution in their case body and were wired to pass `clients` directly.
+
+### Files changed
+
+* `internal/cli/core_read.go`: Replaced the `switch path { ... }` dispatch block (lines 89-2557 of original) with `init()` function calling `registerCoreReadHandler` for all 382 cases. File grew slightly to ~23,262 lines due to the generated wrapper functions. Added `coreReadDispatch` declaration, `initHandler` type, and `registerCoreReadHandler()` function.
+
+* Domain extraction files created earlier (`compute_read.go`, `image_read.go`, `network_read.go`, `volume_read.go`) remain but are not yet fully integrated -- the dispatch wiring remains in `core_read.go` for now.
+
+### Verification
+
+* `go build -o bin/openstack ./cmd/openstack` -- passes
+* `go test ./...` -- passes across all packages
+* All 382 switch cases from the original are accounted for in the dispatch map (0 missing, 0 extra)
+
+### Remaining work
+
+* The domain-specific extraction files (`compute_read.go`, `image_read.go`, `network_read.go`, `volume_read.go`) were created earlier by AST-based extraction but the wiring was regenerated directly in `core_read.go`. The extracted files can be removed or integrated in a follow-up.
+* `dispatch_table.go` (created as an intermediate artifact) can be removed since the type definitions are now in `core_read.go`.
+
+## 2026-05-25: envInt Accepts yes/no/true/false
+
+Decision: `envInt` (and by extension `envBoolInt`) should accept human-friendly boolean strings (`yes`, `no`, `true`, `false`) regardless of capitalization, in addition to numeric values.
+
+Work done: Updated `envInt` in `internal/cli/root.go` to check the lowercased value against `yes`, `true` (→ `1`) and `no`, `false` (→ `0`) before falling back to `strconv.Atoi`. This makes `OS_PRETTY=yes`, `OS_COMPACT=false`, `CLIFF_FIT_WIDTH=TRUE`, etc. all work as expected.
+
+Verification: `go build` and `go test ./internal/cli/...` pass. Existing tests that set `OS_PRETTY=1`, `OS_COMPACT=1`, `OS_COMPACT=0`, `CLIFF_FIT_WIDTH=1` continue to pass.
+
+Related: this also partially addresses Recommendation #5 from the codebase review (Validate environment variables) — while parse failures for non-boolean/non-numeric values still silently return `0`, the common boolean strings now work without requiring the user to know they need `1`/`0`.
