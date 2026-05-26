@@ -57,7 +57,9 @@ Every case follows identical boilerplate: resolve clients, check error, dispatch
 
 **Resolution (2026-05-25):** Replaced the giant `switch path { ... }` with a `coreReadDispatch` map populated via `init()`. All 382 command handlers are registered through `registerCoreReadHandler()`, which wraps handler functions to resolve clients and map arguments. The generated `init()` handles edge cases: conditional client resolution (flavor create/set/unset), no-arg handlers (`floatingIPPoolList`), multiline lambda handlers (`serverMultiAction` for pause/resume/start/stop/suspend/unlock/unpause/unrescue), and handlers taking `*openStackClients` directly.
 
-**Remaining:** The `core_read.go` file grew slightly to ~23,262 lines due to the generated wrappers. The domain-specific extraction files (`compute_read.go`, `image_read.go`, `network_read.go`, `volume_read.go`) created earlier can be integrated in a follow-up to physically move extracted handler functions out of the monolithic file.
+**Verification:** `go build -o bin/openstack ./cmd/openstack` and `go test ./...` pass. One pre-existing test failure (`TestCompactFlagIsNoopForDefaultOutput`) is unchanged.
+
+**Remaining:** The `core_read.go` file is ~23,282 lines. Domain-specific extraction files (`compute_read.go`, `image_read.go`, `network_read.go`, `volume_read.go`) can be integrated in a follow-up. A `resolveClients` helper to reduce duplicated client-resolution boilerplate across handler wrappers is planned.
 
 **Recommendation:** Extract a helper that resolves a set of service clients once:
 
@@ -127,7 +129,7 @@ Only `fmt.Fprintln` is used for all output. The `--debug` flag exists in `Option
 
 | File | Lines | Assessment |
 |------|-------|------------|
-| `core_read.go` | ~23,262 | Still large but refactored (dispatch map + wrappers) |
+| `core_read.go` | ~23,282 | Dispatch table + wrappers (refactored from giant switch) |
 | `registry.go` | ~2,302 | Very large |
 | `output.go` | ~1,800+ | Very large but well-organized |
 | `identity_read.go` | ~1,600 | Manageable but repetitive |
@@ -137,6 +139,48 @@ Only `fmt.Fprintln` is used for all output. The `--debug` flag exists in `Option
 | `compat_errors.go` | 107 | Good |
 
 **Impact:** Hard to maintain, review, and navigate files exceeding 1,000 lines.
+
+---
+
+## New Findings (2026-05-25)
+
+### 8. Duplicate cobra import in core_read.go
+
+`core_read.go:3` and `core_read.go:79` both import `"github.com/spf13/cobra"`. The top-level single-import line was left by auto-generated wiring insertion and caused a build failure until removed.
+
+**Impact:** Build breakage.
+
+**Resolution:** Removed the redundant `import "github.com/spf13/cobra"` on line 3. Only the import inside the `import (...)` block remains.
+
+### 9. Auto-generated wiring leaves fragile file boundaries
+
+The dispatch wiring generation inserted code at a computed position in `core_read.go`. The insertion point was at the end of the `runCoreRead` function body, just before the last top-level declarations. When regeneration is needed, the same line-deduplication and import-merge steps must be applied manually.
+
+**Impact:** Regenerating the wiring is error-prone if not scripted.
+
+**Recommendation:** Move the `coreReadDispatch` map and `registerCoreReadHandler()` function into a separate file (`dispatch_table.go`) and use a script that appends only the `init()` registrations to the end of `core_read.go`.
+
+### 10. `registerCoreReadHandler` discards `args` and `stderr`
+
+The wrapper inside `registerCoreReadHandler` always passes `nil` for the `args` and `stderr` parameters:
+
+```go
+coreReadDispatch[path] = func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients) error {
+    return h(ctx, stdout, opts, clients, nil, nil)
+}
+```
+
+**Impact:** Handlers that depend on `args` (parsed subcommand arguments) or `stderr` (diagnostic output) will not function correctly.
+
+**Recommendation:** Change the `coreReadHandler` signature to accept `args []string` and `stderr io.Writer`, and pass them through from the `runCoreRead` command handler. This would enable handlers that need raw CLI arguments or stderr output to work correctly.
+
+### 11. No compile-time guarantee that all cataloged commands are registered
+
+The `coreReadDispatch` map is populated at runtime via `init()`. There is no compile-time check that ensures every command in `compat/osc/9.0.0/commands.json` has a corresponding registration.
+
+**Impact:** A missing registration silently causes `core read command %q is not wired` at runtime, but the error message does not help identify whether the command was intentionally left unimplemented or was accidentally omitted.
+
+**Recommendation:** Add a build-time check (e.g., a `go generate` step or a test that compares registered keys against the catalog) to catch missing registrations early.
 
 ---
 
@@ -164,9 +208,9 @@ Only `fmt.Fprintln` is used for all output. The `--debug` flag exists in `Option
 
 ### High priority
 
-1. **Refactor `core_read.go` dispatch table** — ✅ Completed (2026-05-25). Switch replaced with `coreReadDispatch` map + `init()` registration. Remaining: physically move extracted handler functions into domain-specific files.
+1. **Refactor `core_read.go` dispatch table** — ✅ Completed (2026-05-25). Switch replaced with `coreReadDispatch` map + `init()` registration for 382 handlers. Remaining: physically move extracted handler functions into domain-specific files (`compute_read.go`, `image_read.go`, `network_read.go`, `volume_read.go`), and move `coreReadDispatch` + `registerCoreReadHandler` into a separate `dispatch_table.go`.
 2. **Split `root_test.go` into focused test files** — ✅ Completed (2026-05-25). `root_test.go` split into `root_test.go` (822 lines, 36 tests), `output_test.go` (1,366 lines, 63 tests), `table_test.go` (41 lines, 2 tests), `compat_errors_test.go` (81 lines, 7 tests).
-3. **Reduce duplication in client resolution** — Extract a shared helper for resolving service clients.
+3. **Reduce duplication in client resolution** — Extract a shared `resolveClients` helper. Also fix `registerCoreReadHandler` to pass `args` and `stderr` through to handlers instead of `nil`.
 
 ### Medium priority
 
@@ -174,6 +218,7 @@ Only `fmt.Fprintln` is used for all output. The `--debug` flag exists in `Option
 5. **Validate environment variables** — Warn or error on parse failures instead of silently ignoring.
 6. **Consolidate identity extras deduplication** — Ensure no command path is registered twice across the registry.
 7. **Add `staticcheck` and `go vet` CI gating** — Catch trivial bugs early at this scale.
+8. **Add build-time registration check** — Compare `coreReadDispatch` keys against `compat/osc/9.0.0/commands.json` to catch missing registrations.
 
 ### Low priority
 

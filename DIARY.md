@@ -2120,3 +2120,27 @@ Each test was categorized by its primary focus area. Test helper functions (`exe
 - One pre-existing test failure (`TestCompactFlagIsNoopForDefaultOutput`) is unchanged
 
 Related: this also partially addresses Recommendation #5 from the codebase review (Validate environment variables) — while parse failures for non-boolean/non-numeric values still silently return `0`, the common boolean strings now work without requiring the user to know they need `1`/`0`.
+
+## 2026-05-25: Core Read Dispatch Table Refactoring
+
+Decision: replace the ~22,881-line `switch path { ... }` dispatch block in `runCoreRead()` with a map-based dispatch table (`coreReadDispatch`) populated via `init()`-driven `registerCoreReadHandler()` calls.
+
+**Why:** The giant switch was hard to navigate, error-prone, and unanalyzable. Each case repeated identical boilerplate: resolve clients, check error, dispatch. Adding a missing case silently fell through to the implicit nil handler.
+
+**Approach:** Define a `coreReadDispatch` map and `registerCoreReadHandler(path, handler)` function. Generated `init()` calls register all 382 command handlers, mapping arguments (`cmd.Context()` → `ctx`, `cmd.ErrOrStderr()` → `stderr`, etc.) and handling edge cases:
+
+- Single and multi-client resolution
+- Conditional client resolution (flavor create/set/unset)
+- No-arg handlers (`floatingIPPoolList`)
+- Multiline lambda handlers (`serverMultiAction` for 8 server action commands: pause, resume, start, stop, suspend, unlock, unpause, unrescue)
+- Handlers taking `*openStackClients` directly (availability zones, quotas, usage, versions)
+
+**Result:** All 382 handlers are registered and dispatchable via the map. `go build -o bin/openstack ./cmd/openstack` and `go test ./...` pass. One pre-existing test failure (`TestCompactFlagIsNoopForDefaultOutput`) is unchanged.
+
+**Remaining work:**
+- Domain-specific extraction files (`compute_read.go`, `image_read.go`, `network_read.go`, `volume_read.go`) created earlier can be integrated to physically move extracted handler functions out of the monolithic `core_read.go` (~23,282 lines).
+- Extract a `resolveClients` helper to reduce duplicated client-resolution boilerplate across handler wrappers.
+- Audit `registry.go` (~2,302 lines) for duplicate command path registrations across identity and keystone extras.
+
+Related: completes High Priority Recommendation #1 from the codebase review (refactor `core_read.go` dispatch table).
+
