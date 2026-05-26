@@ -113,7 +113,7 @@ Lifecycle tests create uniquely named resources, clean up resources they create,
 
 Contributor and agent workflow rules live in [AGENTS.md](AGENTS.md).
 
-The compatibility plan is [COMPATABILITY.md](COMPATABILITY.md). The project diary is [DIARY.md](DIARY.md).
+The compatibility plan is [COMPATABILITY.md](COMPATABILITY.md). Project history, decisions, and code review findings are tracked via the MCP intelligence layer. DIARY.md and REVIEW.md are deprecated stubs.
 
 ## Command Matrix Status
 

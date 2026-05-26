@@ -4,7 +4,7 @@ Status: living plan and progress tracker, with an initial gap catalog, ordered w
 
 This plan targets a Go `openstack` CLI built on [Gophercloud](https://github.com/gophercloud/gophercloud) that can replace `python-openstackclient` command-for-command where coverage exists. The default behavior must match Python OpenStackClient, including command names, flag names, exit behavior, stdout/stderr behavior, and default output. The new enhanced human output is opt-in via `--format=pretty`, `--pretty`, or the Go-only `OS_PRETTY=1` environment default; the two flags are synonymous, and an explicit `--format` overrides the environment default.
 
-This document is the active execution tracker. It should show what needs to be done, the dependency order, current progress, and known blockers. Decisions, experiments, rejected alternatives, and research notes belong in the [DIARY.md](DIARY.md).
+This document is the active execution tracker. It should show what needs to be done, the dependency order, current progress, and known blockers. Decisions, experiments, rejected alternatives, and research notes are tracked via the MCP intelligence layer (`xerotier.intelligence.track-decision`, `xerotier.intelligence.decisions`, `xerotier.memory.save`). DIARY.md and REVIEW.md are deprecated stubs pointing to the MCP session.
 
 The current local oracle is `/Users/ken/.local/bin/openstack`, which reports `openstack 9.0.0`. The current online docs also expose a development command list for OpenStack Command Line Client `9.1.0.dev71`; that is useful for drift tracking but should not silently replace the pinned local oracle. PyPI lists `python-openstackclient 9.0.0` as released on February 17, 2026, so the first generated catalog should be pinned to `9.0.0`, with an explicit upgrade process for later versions.
 
@@ -124,7 +124,7 @@ Remaining gaps are no longer command stubs; they are validation gaps or cloud-fi
 
 ## Parser Decision
 
-Use [Cobra](https://pkg.go.dev/github.com/spf13/cobra) with [pflag](https://github.com/spf13/pflag) for command parsing and dispatch. The decision record, alternatives considered, and local parser experiments live in the [DIARY.md](DIARY.md).
+Use [Cobra](https://pkg.go.dev/github.com/spf13/cobra) with [pflag](https://github.com/spf13/pflag) for command parsing and dispatch. The decision record, alternatives considered, and local parser experiments are tracked via the MCP intelligence layer.
 
 This is a compatibility substrate, not a license to accept Cobra defaults. The project should generate a Cobra command tree from the pinned OSC catalog, attach root persistent flags for global options, attach command-local flags from generated command metadata, and keep command implementations independent of Cobra internals. Custom compatibility layers must own help text, completion output, error formatting, command sorting, suggestions, global option placement, and `openstack complete` behavior until Python-oracle tests prove the behavior matches.
 
@@ -134,7 +134,7 @@ Use Caddy's module system as the existing plugin framework for CLI plugin-scope 
 
 The CLI should define OpenStack-specific module namespaces, such as `openstack.commands.core`, `openstack.commands.plugins`, and `openstack.commands.extras`. Plugin packages should register command providers in those namespaces. The command registry generator should load registered modules, assert them to project-defined command-provider interfaces, and add their command metadata and handlers to the Cobra/pflag tree.
 
-Do not use Caddy's server/runtime behavior for OpenStack CLI execution. Use only the module registration and loading model unless a later decision explicitly expands the scope. The decision record and rejected alternatives are in the [DIARY.md](DIARY.md).
+Do not use Caddy's server/runtime behavior for OpenStack CLI execution. Use only the module registration and loading model unless a later decision explicitly expands the scope. The decision record and rejected alternatives are tracked via the MCP intelligence layer.
 
 ## Decision And Question Register
 
