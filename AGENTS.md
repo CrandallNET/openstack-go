@@ -19,7 +19,7 @@ Use [COMPATABILITY.md](COMPATABILITY.md) as the active execution tracker. It sho
 * open questions, and
 * accepted decisions.
 
-Use [DIARY.md](DIARY.md) as the project history. It should record decisions, experiments, dependency choices, rejected alternatives, source links, observed behavior, and reasoning that may need to be reviewed later.
+Use the MCP intelligence layer for project history, decisions, milestones, and memories. It persists decisions, experiments, dependency choices, rejected alternatives, source links, observed behavior, and reasoning via `xerotier.intelligence.track-decision`, `xerotier.intelligence.track-milestone`, `xerotier.intelligence.decisions`, `xerotier.intelligence.timeline`, `xerotier.intelligence.brief`, and `xerotier.memory.save`. Use [DIARY.md](DIARY.md) and [REVIEW.md](REVIEW.md) only as thin stubs with a link to the MCP session.
 
 ## Repository Context
 

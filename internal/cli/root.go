@@ -282,6 +282,13 @@ func envInt(name string) int {
 	if value == "" {
 		return 0
 	}
+	lower := strings.ToLower(value)
+	switch lower {
+	case "yes", "true":
+		return 1
+	case "no", "false":
+		return 0
+	}
 	parsed, err := strconv.Atoi(value)
 	if err != nil {
 		return 0

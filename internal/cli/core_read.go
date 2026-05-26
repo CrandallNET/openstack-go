@@ -85,2479 +85,11 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 			return err
 		}
 
-		switch path {
-		case "block storage cleanup":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return blockStorageCleanup(cmd.Context(), stdout, opts, client)
-		case "block storage cluster list":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return blockStorageClusterList(cmd.Context(), stdout, opts, client)
-		case "block storage cluster set":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return blockStorageClusterSet(cmd.Context(), stdout, opts, client, args)
-		case "block storage cluster show":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return blockStorageClusterShow(cmd.Context(), stdout, opts, client, args)
-		case "block storage log level list":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return blockStorageLogLevelList(cmd.Context(), stdout, opts, client)
-		case "block storage log level set":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return blockStorageLogLevelSet(cmd.Context(), opts, client, args)
-		case "block storage snapshot manageable list":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return blockStorageManageableList(cmd.Context(), stdout, opts, client, args, "snapshots")
-		case "block storage volume manageable list":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return blockStorageManageableList(cmd.Context(), stdout, opts, client, args, "volumes")
-		case "address group create":
-			networkClient, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			identityClient, err := clients.identityV3()
-			if err != nil {
-				return err
-			}
-			return addressGroupCreate(cmd.Context(), stdout, opts, networkClient, identityClient, args)
-		case "address group delete":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return addressGroupDelete(cmd.Context(), client, args)
-		case "address group list":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return addressGroupList(cmd.Context(), stdout, opts, client)
-		case "address group set":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return addressGroupSet(cmd.Context(), opts, client, args)
-		case "address group show":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return addressGroupShow(cmd.Context(), stdout, opts, client, args)
-		case "address group unset":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return addressGroupUnset(cmd.Context(), opts, client, args)
-		case "address scope create":
-			networkClient, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			identityClient, err := clients.identityV3()
-			if err != nil {
-				return err
-			}
-			return addressScopeCreate(cmd.Context(), stdout, opts, networkClient, identityClient, args)
-		case "address scope delete":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return addressScopeDelete(cmd.Context(), client, args)
-		case "address scope list":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return addressScopeList(cmd.Context(), stdout, opts, client)
-		case "address scope set":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return addressScopeSet(cmd.Context(), opts, client, args)
-		case "address scope show":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return addressScopeShow(cmd.Context(), stdout, opts, client, args)
-		case "aggregate add host":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return aggregateAddRemoveHost(cmd.Context(), stdout, opts, client, args, true)
-		case "aggregate cache image":
-			computeClient, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			imageClient, err := clients.imageV2()
-			if err != nil {
-				return err
-			}
-			return aggregateCacheImage(cmd.Context(), opts, computeClient, imageClient, args)
-		case "aggregate create":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return aggregateCreate(cmd.Context(), stdout, opts, client, args)
-		case "aggregate delete":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return aggregateDelete(cmd.Context(), client, args)
-		case "aggregate list":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return aggregateList(cmd.Context(), stdout, opts, client)
-		case "aggregate remove host":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return aggregateAddRemoveHost(cmd.Context(), stdout, opts, client, args, false)
-		case "aggregate set":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return aggregateSet(cmd.Context(), opts, client, args)
-		case "aggregate show":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return aggregateShow(cmd.Context(), stdout, opts, client, args)
-		case "aggregate unset":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return aggregateUnset(cmd.Context(), opts, client, args)
-		case "availability zone list":
-			return availabilityZoneList(cmd.Context(), stdout, opts, clients)
-		case "cached image clear":
-			client, err := clients.imageV2()
-			if err != nil {
-				return err
-			}
-			return cachedImageClear(cmd.Context(), opts, client)
-		case "cached image delete":
-			client, err := clients.imageV2()
-			if err != nil {
-				return err
-			}
-			return cachedImageDelete(cmd.Context(), cmd.ErrOrStderr(), opts, client, args)
-		case "cached image list":
-			client, err := clients.imageV2()
-			if err != nil {
-				return err
-			}
-			return cachedImageList(cmd.Context(), stdout, opts, client)
-		case "cached image queue":
-			client, err := clients.imageV2()
-			if err != nil {
-				return err
-			}
-			return cachedImageQueue(cmd.Context(), cmd.ErrOrStderr(), opts, client, args)
-		case "compute agent create":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return computeAgentCreate(cmd.Context(), stdout, opts, client, args)
-		case "compute agent delete":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return computeAgentDelete(cmd.Context(), client, args)
-		case "compute agent list":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return computeAgentList(cmd.Context(), stdout, opts, client)
-		case "compute agent set":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return computeAgentSet(cmd.Context(), opts, client, args)
-		case "compute service delete":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return computeServiceDelete(cmd.Context(), client, args)
-		case "compute service list":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return computeServiceList(cmd.Context(), stdout, opts, client)
-		case "compute service set":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return computeServiceSet(cmd.Context(), opts, client, args)
-		case "consistency group add volume":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return consistencyGroupAddRemoveVolume(cmd.Context(), opts, client, args, true)
-		case "consistency group create":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return consistencyGroupCreate(cmd.Context(), stdout, opts, client, args)
-		case "consistency group delete":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return consistencyGroupDelete(cmd.Context(), opts, client, args)
-		case "consistency group list":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return consistencyGroupList(cmd.Context(), stdout, opts, client)
-		case "consistency group remove volume":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return consistencyGroupAddRemoveVolume(cmd.Context(), opts, client, args, false)
-		case "consistency group set":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return consistencyGroupSet(cmd.Context(), opts, client, args)
-		case "consistency group show":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return consistencyGroupShow(cmd.Context(), stdout, opts, client, args)
-		case "consistency group snapshot create":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return consistencyGroupSnapshotCreate(cmd.Context(), stdout, opts, client, args)
-		case "consistency group snapshot delete":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return consistencyGroupSnapshotDelete(cmd.Context(), opts, client, args)
-		case "consistency group snapshot list":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return consistencyGroupSnapshotList(cmd.Context(), stdout, opts, client)
-		case "consistency group snapshot show":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return consistencyGroupSnapshotShow(cmd.Context(), stdout, opts, client, args)
-		case "console connection show":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return consoleConnectionShow(cmd.Context(), stdout, opts, client, args)
-		case "console log show":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return consoleLogShow(cmd.Context(), stdout, opts, client, args)
-		case "console url show":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return consoleURLShow(cmd.Context(), stdout, opts, client, args)
-		case "extension list":
-			return extensionList(cmd.Context(), stdout, opts, clients)
-		case "extension show":
-			return extensionShow(cmd.Context(), stdout, opts, clients, args)
-		case "project cleanup":
-			return projectCleanup(cmd.Context(), stdout, cmd.InOrStdin(), opts, clients)
-		case "flavor create":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			var identityClient *gophercloud.ServiceClient
-			if flagValue(opts, "project") != "" {
-				identityClient, err = clients.identityV3()
-				if err != nil {
-					return err
-				}
-			}
-			return computeFlavorCreate(cmd.Context(), stdout, opts, client, identityClient, args)
-		case "flavor delete":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return computeFlavorDelete(cmd.Context(), client, args)
-		case "flavor list":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return computeFlavorList(cmd.Context(), stdout, opts, client)
-		case "flavor set":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			var identityClient *gophercloud.ServiceClient
-			if flagValue(opts, "project") != "" {
-				identityClient, err = clients.identityV3()
-				if err != nil {
-					return err
-				}
-			}
-			return computeFlavorSet(cmd.Context(), opts, client, identityClient, args)
-		case "flavor show":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return computeFlavorShow(cmd.Context(), stdout, opts, client, args)
-		case "flavor unset":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			var identityClient *gophercloud.ServiceClient
-			if flagValue(opts, "project") != "" {
-				identityClient, err = clients.identityV3()
-				if err != nil {
-					return err
-				}
-			}
-			return computeFlavorUnset(cmd.Context(), opts, client, identityClient, args)
-		case "allocation candidate list":
-			client, err := clients.placementV1()
-			if err != nil {
-				return err
-			}
-			return allocationCandidateList(cmd.Context(), stdout, opts, client)
-		case "container list":
-			client, err := clients.objectStorageV1()
-			if err != nil {
-				return err
-			}
-			return containerList(cmd.Context(), stdout, opts, client)
-		case "container create":
-			client, err := clients.objectStorageV1()
-			if err != nil {
-				return err
-			}
-			return containerCreate(cmd.Context(), stdout, opts, client, args)
-		case "container delete":
-			client, err := clients.objectStorageV1()
-			if err != nil {
-				return err
-			}
-			return containerDelete(cmd.Context(), opts, client, args)
-		case "container set":
-			client, err := clients.objectStorageV1()
-			if err != nil {
-				return err
-			}
-			return containerSet(cmd.Context(), opts, client, args)
-		case "container show":
-			client, err := clients.objectStorageV1()
-			if err != nil {
-				return err
-			}
-			return containerShow(cmd.Context(), stdout, opts, client, args)
-		case "container unset":
-			client, err := clients.objectStorageV1()
-			if err != nil {
-				return err
-			}
-			return containerUnset(cmd.Context(), opts, client, args)
-		case "floating ip create":
-			networkClient, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			identityClient, err := clients.identityV3()
-			if err != nil {
-				return err
-			}
-			return floatingIPCreate(cmd.Context(), stdout, opts, networkClient, identityClient, args)
-		case "floating ip delete":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return floatingIPDelete(cmd.Context(), client, args)
-		case "floating ip list":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return floatingIPList(cmd.Context(), stdout, opts, client)
-		case "floating ip pool list":
-			return floatingIPPoolList()
-		case "floating ip port forwarding create":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return floatingIPPortForwardingCreate(cmd.Context(), stdout, opts, client, args)
-		case "floating ip port forwarding delete":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return floatingIPPortForwardingDelete(cmd.Context(), client, args)
-		case "floating ip port forwarding list":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return floatingIPPortForwardingList(cmd.Context(), stdout, opts, client, args)
-		case "floating ip port forwarding set":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return floatingIPPortForwardingSet(cmd.Context(), opts, client, args)
-		case "floating ip port forwarding show":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return floatingIPPortForwardingShow(cmd.Context(), stdout, opts, client, args)
-		case "floating ip set":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return floatingIPSet(cmd.Context(), opts, client, args)
-		case "floating ip show":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return floatingIPShow(cmd.Context(), stdout, opts, client, args)
-		case "floating ip unset":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return floatingIPUnset(cmd.Context(), opts, client, args)
-		case "host list":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			fmt.Fprintln(cmd.ErrOrStderr(), "API has been deprecated; consider using 'hypervisor list' instead.")
-			return hostList(cmd.Context(), stdout, opts, client)
-		case "host show":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			fmt.Fprintln(cmd.ErrOrStderr(), "API has been deprecated; consider using 'hypervisor show' instead.")
-			return hostShow(cmd.Context(), stdout, opts, client, args)
-		case "host set":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			fmt.Fprintln(cmd.ErrOrStderr(), "API has been deprecated; consider using 'compute service set' instead.")
-			return hostSet(cmd.Context(), opts, client, args)
-		case "ip availability list":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return ipAvailabilityList(cmd.Context(), stdout, opts, clients, client)
-		case "ip availability show":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return ipAvailabilityShow(cmd.Context(), stdout, opts, client, args)
-		case "image list":
-			client, err := clients.imageV2()
-			if err != nil {
-				return err
-			}
-			return imageList(cmd.Context(), stdout, opts, client)
-		case "image create":
-			imageClient, err := clients.imageV2()
-			if err != nil {
-				return err
-			}
-			identityClient, err := clients.identityV3()
-			if err != nil {
-				return err
-			}
-			volumeClient, err := clients.blockStorageV3()
-			if err != nil {
-				volumeClient = nil
-			}
-			return imageCreate(cmd.Context(), stdout, opts, imageClient, identityClient, volumeClient, args)
-		case "image delete":
-			client, err := clients.imageV2()
-			if err != nil {
-				return err
-			}
-			return imageDelete(cmd.Context(), cmd.ErrOrStderr(), opts, client, args)
-		case "image import":
-			client, err := clients.imageV2()
-			if err != nil {
-				return err
-			}
-			return imageImport(cmd.Context(), stdout, opts, client, args)
-		case "image member get":
-			client, err := clients.imageV2()
-			if err != nil {
-				return err
-			}
-			return imageMemberGet(cmd.Context(), stdout, opts, client, args)
-		case "image member list":
-			client, err := clients.imageV2()
-			if err != nil {
-				return err
-			}
-			return imageMemberList(cmd.Context(), stdout, opts, client, args)
-		case "image metadef namespace create":
-			client, err := clients.imageV2()
-			if err != nil {
-				return err
-			}
-			return imageMetadefNamespaceCreate(cmd.Context(), stdout, opts, client, args)
-		case "image metadef namespace delete":
-			client, err := clients.imageV2()
-			if err != nil {
-				return err
-			}
-			return imageMetadefNamespaceDelete(cmd.Context(), opts, client, args)
-		case "image metadef namespace list":
-			client, err := clients.imageV2()
-			if err != nil {
-				return err
-			}
-			return imageMetadefNamespaceList(cmd.Context(), stdout, opts, client)
-		case "image metadef namespace set":
-			client, err := clients.imageV2()
-			if err != nil {
-				return err
-			}
-			return imageMetadefNamespaceSet(cmd.Context(), opts, client, args)
-		case "image metadef namespace show":
-			client, err := clients.imageV2()
-			if err != nil {
-				return err
-			}
-			return imageMetadefNamespaceShow(cmd.Context(), stdout, opts, client, args)
-		case "image metadef object create":
-			client, err := clients.imageV2()
-			if err != nil {
-				return err
-			}
-			return imageMetadefObjectCreate(cmd.Context(), stdout, opts, client, args)
-		case "image metadef object delete":
-			client, err := clients.imageV2()
-			if err != nil {
-				return err
-			}
-			return imageMetadefObjectDelete(cmd.Context(), client, args)
-		case "image metadef object list":
-			client, err := clients.imageV2()
-			if err != nil {
-				return err
-			}
-			return imageMetadefObjectList(cmd.Context(), stdout, opts, client, args)
-		case "image metadef object property show":
-			client, err := clients.imageV2()
-			if err != nil {
-				return err
-			}
-			return imageMetadefObjectPropertyShow(cmd.Context(), stdout, opts, client, args)
-		case "image metadef object show":
-			client, err := clients.imageV2()
-			if err != nil {
-				return err
-			}
-			return imageMetadefObjectShow(cmd.Context(), stdout, opts, client, args)
-		case "image metadef object update":
-			client, err := clients.imageV2()
-			if err != nil {
-				return err
-			}
-			return imageMetadefObjectUpdate(cmd.Context(), opts, client, args)
-		case "image metadef property create":
-			client, err := clients.imageV2()
-			if err != nil {
-				return err
-			}
-			return imageMetadefPropertyCreate(cmd.Context(), stdout, opts, client, args)
-		case "image metadef property delete":
-			client, err := clients.imageV2()
-			if err != nil {
-				return err
-			}
-			return imageMetadefPropertyDelete(cmd.Context(), client, args)
-		case "image metadef property list":
-			client, err := clients.imageV2()
-			if err != nil {
-				return err
-			}
-			return imageMetadefPropertyList(cmd.Context(), stdout, opts, client, args)
-		case "image metadef property set":
-			client, err := clients.imageV2()
-			if err != nil {
-				return err
-			}
-			return imageMetadefPropertySet(cmd.Context(), opts, client, args)
-		case "image metadef property show":
-			client, err := clients.imageV2()
-			if err != nil {
-				return err
-			}
-			return imageMetadefPropertyShow(cmd.Context(), stdout, opts, client, args)
-		case "image metadef resource type association create":
-			client, err := clients.imageV2()
-			if err != nil {
-				return err
-			}
-			return imageMetadefResourceTypeAssociationCreate(cmd.Context(), stdout, opts, client, args)
-		case "image metadef resource type association delete":
-			client, err := clients.imageV2()
-			if err != nil {
-				return err
-			}
-			return imageMetadefResourceTypeAssociationDelete(cmd.Context(), opts, client, args)
-		case "image metadef resource type association list":
-			client, err := clients.imageV2()
-			if err != nil {
-				return err
-			}
-			return imageMetadefResourceTypeAssociationList(cmd.Context(), stdout, opts, client, args)
-		case "image metadef resource type list":
-			client, err := clients.imageV2()
-			if err != nil {
-				return err
-			}
-			return imageMetadefResourceTypeList(cmd.Context(), stdout, opts, client)
-		case "image import info":
-			client, err := clients.imageV2()
-			if err != nil {
-				return err
-			}
-			return imageImportInfo(cmd.Context(), stdout, opts, client)
-		case "image add project":
-			imageClient, err := clients.imageV2()
-			if err != nil {
-				return err
-			}
-			identityClient, err := clients.identityV3()
-			if err != nil {
-				return err
-			}
-			return imageAddProject(cmd.Context(), stdout, opts, imageClient, identityClient, args)
-		case "image remove project":
-			imageClient, err := clients.imageV2()
-			if err != nil {
-				return err
-			}
-			identityClient, err := clients.identityV3()
-			if err != nil {
-				return err
-			}
-			return imageRemoveProject(cmd.Context(), opts, imageClient, identityClient, args)
-		case "image save":
-			client, err := clients.imageV2()
-			if err != nil {
-				return err
-			}
-			return imageSave(cmd.Context(), stdout, opts, client, args)
-		case "image set":
-			imageClient, err := clients.imageV2()
-			if err != nil {
-				return err
-			}
-			identityClient, err := clients.identityV3()
-			if err != nil {
-				return err
-			}
-			return imageSet(cmd.Context(), opts, imageClient, identityClient, args)
-		case "image show":
-			client, err := clients.imageV2()
-			if err != nil {
-				return err
-			}
-			return imageShow(cmd.Context(), stdout, opts, client, args)
-		case "image stage":
-			client, err := clients.imageV2()
-			if err != nil {
-				return err
-			}
-			return imageStage(cmd.Context(), opts, client, args)
-		case "image unset":
-			client, err := clients.imageV2()
-			if err != nil {
-				return err
-			}
-			return imageUnset(cmd.Context(), cmd.ErrOrStderr(), opts, client, args)
-		case "image stores list":
-			client, err := clients.imageV2()
-			if err != nil {
-				return err
-			}
-			return imageStoresList(cmd.Context(), stdout, opts, client)
-		case "image task list":
-			client, err := clients.imageV2()
-			if err != nil {
-				return err
-			}
-			return imageTaskList(cmd.Context(), stdout, opts, client)
-		case "image task show":
-			client, err := clients.imageV2()
-			if err != nil {
-				return err
-			}
-			return imageTaskShow(cmd.Context(), stdout, opts, client, args)
-		case "network create":
-			networkClient, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			identityClient, err := clients.identityV3()
-			if err != nil {
-				return err
-			}
-			return networkCreate(cmd.Context(), stdout, opts, networkClient, identityClient, args)
-		case "network delete":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return networkDelete(cmd.Context(), client, args)
-		case "network list":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return networkList(cmd.Context(), stdout, opts, client)
-		case "network agent list":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return networkAgentList(cmd.Context(), stdout, opts, client)
-		case "network agent show":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return networkAgentShow(cmd.Context(), stdout, opts, client, args)
-		case "network service provider list":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return networkServiceProviderList(cmd.Context(), stdout, opts, client)
-		case "network qos policy list":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return networkQoSPolicyList(cmd.Context(), stdout, opts, client)
-		case "network qos policy create":
-			networkClient, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			identityClient, err := clients.identityV3()
-			if err != nil {
-				return err
-			}
-			return networkQoSPolicyCreate(cmd.Context(), stdout, opts, networkClient, identityClient, args)
-		case "network qos policy delete":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return networkQoSPolicyDelete(cmd.Context(), client, args)
-		case "network qos policy set":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return networkQoSPolicySet(cmd.Context(), opts, client, args)
-		case "network qos policy show":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return networkQoSPolicyShow(cmd.Context(), stdout, opts, client, args)
-		case "network qos rule create":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return networkQoSRuleCreate(cmd.Context(), stdout, opts, client, args)
-		case "network qos rule delete":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return networkQoSRuleDelete(cmd.Context(), client, args)
-		case "network qos rule list":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return networkQoSRuleList(cmd.Context(), stdout, opts, client, args)
-		case "network qos rule set":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return networkQoSRuleSet(cmd.Context(), opts, client, args)
-		case "network qos rule show":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return networkQoSRuleShow(cmd.Context(), stdout, opts, client, args)
-		case "network qos rule type list":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return networkQoSRuleTypeList(cmd.Context(), stdout, opts, client)
-		case "network qos rule type show":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return networkQoSRuleTypeShow(cmd.Context(), stdout, opts, client, args)
-		case "network rbac list":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return networkRBACList(cmd.Context(), stdout, opts, client)
-		case "network rbac create":
-			networkClient, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			identityClient, err := clients.identityV3()
-			if err != nil {
-				return err
-			}
-			return networkRBACCreate(cmd.Context(), stdout, opts, networkClient, identityClient, args)
-		case "network rbac delete":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return networkRBACDelete(cmd.Context(), client, args)
-		case "network rbac set":
-			networkClient, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			identityClient, err := clients.identityV3()
-			if err != nil {
-				return err
-			}
-			return networkRBACSet(cmd.Context(), opts, networkClient, identityClient, args)
-		case "network rbac show":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return networkRBACShow(cmd.Context(), stdout, opts, client, args)
-		case "network segment create":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return networkSegmentCreate(cmd.Context(), stdout, opts, client, args)
-		case "network segment delete":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return networkSegmentDelete(cmd.Context(), client, args)
-		case "network segment list":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return networkSegmentList(cmd.Context(), stdout, opts, client)
-		case "network segment set":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return networkSegmentSet(cmd.Context(), opts, client, args)
-		case "network segment show":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return networkSegmentShow(cmd.Context(), stdout, opts, client, args)
-		case "network set":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return networkSet(cmd.Context(), opts, client, args)
-		case "network show":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return networkShow(cmd.Context(), stdout, opts, client, args)
-		case "network unset":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return networkUnset(cmd.Context(), opts, client, args)
-		case "network subport list":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return networkSubportList(cmd.Context(), stdout, opts, client)
-		case "network trunk create":
-			networkClient, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			identityClient, err := clients.identityV3()
-			if err != nil {
-				return err
-			}
-			return networkTrunkCreate(cmd.Context(), stdout, opts, networkClient, identityClient, args)
-		case "network trunk delete":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return networkTrunkDelete(cmd.Context(), client, args)
-		case "network trunk list":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return networkTrunkList(cmd.Context(), stdout, opts, client)
-		case "network trunk set":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return networkTrunkSet(cmd.Context(), opts, client, args)
-		case "network trunk show":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return networkTrunkShow(cmd.Context(), stdout, opts, client, args)
-		case "network trunk unset":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return networkTrunkUnset(cmd.Context(), opts, client, args)
-		case "object list":
-			client, err := clients.objectStorageV1()
-			if err != nil {
-				return err
-			}
-			return objectList(cmd.Context(), stdout, opts, client, args)
-		case "object create":
-			client, err := clients.objectStorageV1()
-			if err != nil {
-				return err
-			}
-			return objectCreate(cmd.Context(), stdout, opts, client, args)
-		case "object delete":
-			client, err := clients.objectStorageV1()
-			if err != nil {
-				return err
-			}
-			return objectDelete(cmd.Context(), client, args)
-		case "object save":
-			client, err := clients.objectStorageV1()
-			if err != nil {
-				return err
-			}
-			return objectSave(cmd.Context(), stdout, opts, client, args)
-		case "object set":
-			client, err := clients.objectStorageV1()
-			if err != nil {
-				return err
-			}
-			return objectSet(cmd.Context(), opts, client, args)
-		case "object show":
-			client, err := clients.objectStorageV1()
-			if err != nil {
-				return err
-			}
-			return objectShow(cmd.Context(), stdout, opts, client, args)
-		case "object unset":
-			client, err := clients.objectStorageV1()
-			if err != nil {
-				return err
-			}
-			return objectUnset(cmd.Context(), opts, client, args)
-		case "object store account show":
-			client, err := clients.objectStorageV1()
-			if err != nil {
-				return err
-			}
-			return objectStoreAccountShow(cmd.Context(), stdout, opts, client)
-		case "object store account set":
-			client, err := clients.objectStorageV1()
-			if err != nil {
-				return err
-			}
-			return objectStoreAccountSet(cmd.Context(), opts, client)
-		case "object store account unset":
-			client, err := clients.objectStorageV1()
-			if err != nil {
-				return err
-			}
-			return objectStoreAccountUnset(cmd.Context(), opts, client)
-		case "container save":
-			client, err := clients.objectStorageV1()
-			if err != nil {
-				return err
-			}
-			return containerSave(cmd.Context(), stdout, client, args)
-		case "quota list":
-			return quotaList(cmd.Context(), stdout, opts, clients)
-		case "quota delete":
-			return quotaDelete(cmd.Context(), opts, clients, args)
-		case "quota set":
-			return quotaSet(cmd.Context(), opts, clients, args)
-		case "quota show":
-			return quotaShow(cmd.Context(), stdout, opts, clients, args)
-		case "keypair list":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return keypairList(cmd.Context(), stdout, opts, client)
-		case "keypair create":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return keypairCreate(cmd.Context(), stdout, opts, clients, client, args)
-		case "keypair delete":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return keypairDelete(cmd.Context(), opts, clients, client, args)
-		case "keypair show":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return keypairShow(cmd.Context(), stdout, opts, client, args)
-		case "hypervisor list":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return hypervisorList(cmd.Context(), stdout, opts, client)
-		case "hypervisor show":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return hypervisorShow(cmd.Context(), stdout, opts, client, args)
-		case "hypervisor stats show":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			fmt.Fprintln(cmd.ErrOrStderr(), "This command is deprecated.")
-			return hypervisorStatsShow(cmd.Context(), stdout, opts, client)
-		case "limits show":
-			return limitsShow(cmd.Context(), stdout, opts, clients)
-		case "port create":
-			networkClient, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			identityClient, err := clients.identityV3()
-			if err != nil {
-				return err
-			}
-			return portCreate(cmd.Context(), stdout, opts, networkClient, identityClient, args)
-		case "port delete":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return portDelete(cmd.Context(), client, args)
-		case "port list":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			computeClient, _ := clients.computeV2()
-			return portList(cmd.Context(), stdout, opts, client, computeClient)
-		case "port set":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return portSet(cmd.Context(), opts, client, args)
-		case "port show":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return portShow(cmd.Context(), stdout, opts, client, args)
-		case "port unset":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return portUnset(cmd.Context(), opts, client, args)
-		case "resource class list":
-			client, err := clients.placementV1()
-			if err != nil {
-				return err
-			}
-			return resourceClassList(cmd.Context(), stdout, opts, client)
-		case "resource class create":
-			client, err := clients.placementV1()
-			if err != nil {
-				return err
-			}
-			return resourceClassCreate(cmd.Context(), opts, client, args)
-		case "resource class delete":
-			client, err := clients.placementV1()
-			if err != nil {
-				return err
-			}
-			return resourceClassDelete(cmd.Context(), client, args)
-		case "resource class set":
-			client, err := clients.placementV1()
-			if err != nil {
-				return err
-			}
-			return resourceClassSet(cmd.Context(), client, args)
-		case "resource class show":
-			client, err := clients.placementV1()
-			if err != nil {
-				return err
-			}
-			return resourceClassShow(cmd.Context(), stdout, opts, client, args)
-		case "resource provider aggregate list":
-			client, err := clients.placementV1()
-			if err != nil {
-				return err
-			}
-			return resourceProviderAggregateList(cmd.Context(), stdout, opts, client, args)
-		case "resource provider aggregate set":
-			client, err := clients.placementV1()
-			if err != nil {
-				return err
-			}
-			return resourceProviderAggregateSet(cmd.Context(), stdout, opts, client, args)
-		case "resource provider allocation delete":
-			client, err := clients.placementV1()
-			if err != nil {
-				return err
-			}
-			return resourceProviderAllocationDelete(cmd.Context(), client, args)
-		case "resource provider allocation set":
-			client, err := clients.placementV1()
-			if err != nil {
-				return err
-			}
-			return resourceProviderAllocationSet(cmd.Context(), stdout, cmd.ErrOrStderr(), opts, client, args)
-		case "resource provider allocation show":
-			client, err := clients.placementV1()
-			if err != nil {
-				return err
-			}
-			return resourceProviderAllocationShow(cmd.Context(), stdout, opts, client, args)
-		case "resource provider allocation unset":
-			client, err := clients.placementV1()
-			if err != nil {
-				return err
-			}
-			return resourceProviderAllocationUnset(cmd.Context(), stdout, opts, client, args)
-		case "resource provider create":
-			client, err := clients.placementV1()
-			if err != nil {
-				return err
-			}
-			return resourceProviderCreate(cmd.Context(), stdout, opts, client, args)
-		case "resource provider delete":
-			client, err := clients.placementV1()
-			if err != nil {
-				return err
-			}
-			return resourceProviderDelete(cmd.Context(), client, args)
-		case "resource provider inventory class set":
-			client, err := clients.placementV1()
-			if err != nil {
-				return err
-			}
-			return resourceProviderInventoryClassSet(cmd.Context(), stdout, opts, client, args)
-		case "resource provider inventory delete":
-			client, err := clients.placementV1()
-			if err != nil {
-				return err
-			}
-			return resourceProviderInventoryDelete(cmd.Context(), opts, client, args)
-		case "resource provider inventory list":
-			client, err := clients.placementV1()
-			if err != nil {
-				return err
-			}
-			return resourceProviderInventoryList(cmd.Context(), stdout, opts, client, args)
-		case "resource provider inventory set":
-			client, err := clients.placementV1()
-			if err != nil {
-				return err
-			}
-			return resourceProviderInventorySet(cmd.Context(), stdout, opts, client, args)
-		case "resource provider inventory show":
-			client, err := clients.placementV1()
-			if err != nil {
-				return err
-			}
-			return resourceProviderInventoryShow(cmd.Context(), stdout, opts, client, args)
-		case "resource provider list":
-			client, err := clients.placementV1()
-			if err != nil {
-				return err
-			}
-			return resourceProviderList(cmd.Context(), stdout, opts, client)
-		case "resource provider set":
-			client, err := clients.placementV1()
-			if err != nil {
-				return err
-			}
-			return resourceProviderSet(cmd.Context(), stdout, opts, client, args)
-		case "resource provider show":
-			client, err := clients.placementV1()
-			if err != nil {
-				return err
-			}
-			return resourceProviderShow(cmd.Context(), stdout, opts, client, args)
-		case "resource provider trait delete":
-			client, err := clients.placementV1()
-			if err != nil {
-				return err
-			}
-			return resourceProviderTraitDelete(cmd.Context(), client, args)
-		case "resource provider trait list":
-			client, err := clients.placementV1()
-			if err != nil {
-				return err
-			}
-			return resourceProviderTraitList(cmd.Context(), stdout, opts, client, args)
-		case "resource provider trait set":
-			client, err := clients.placementV1()
-			if err != nil {
-				return err
-			}
-			return resourceProviderTraitSet(cmd.Context(), stdout, opts, client, args)
-		case "resource provider usage show":
-			client, err := clients.placementV1()
-			if err != nil {
-				return err
-			}
-			return resourceProviderUsageShow(cmd.Context(), stdout, opts, client, args)
-		case "resource usage show":
-			client, err := clients.placementV1()
-			if err != nil {
-				return err
-			}
-			return resourceUsageShow(cmd.Context(), stdout, opts, client, args)
-		case "router add port":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return routerAddPort(cmd.Context(), client, args)
-		case "router add gateway":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return routerAddGateway(cmd.Context(), stdout, opts, client, args)
-		case "router add route":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return routerAddRoute(cmd.Context(), stdout, opts, client, args)
-		case "router add subnet":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return routerAddSubnet(cmd.Context(), client, args)
-		case "router create":
-			networkClient, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			identityClient, err := clients.identityV3()
-			if err != nil {
-				return err
-			}
-			return routerCreate(cmd.Context(), stdout, opts, networkClient, identityClient, args)
-		case "router delete":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return routerDelete(cmd.Context(), client, args)
-		case "router list":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return routerList(cmd.Context(), stdout, opts, client)
-		case "router remove port":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return routerRemovePort(cmd.Context(), client, args)
-		case "router remove gateway":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return routerRemoveGateway(cmd.Context(), stdout, opts, client, args)
-		case "router remove route":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return routerRemoveRoute(cmd.Context(), stdout, opts, client, args)
-		case "router remove subnet":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return routerRemoveSubnet(cmd.Context(), client, args)
-		case "router set":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return routerSet(cmd.Context(), opts, client, args)
-		case "router show":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return routerShow(cmd.Context(), stdout, opts, client, args)
-		case "router unset":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return routerUnset(cmd.Context(), opts, client, args)
-		case "security group list":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return securityGroupList(cmd.Context(), stdout, opts, client)
-		case "security group create":
-			networkClient, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			identityClient, err := clients.identityV3()
-			if err != nil {
-				return err
-			}
-			return securityGroupCreate(cmd.Context(), stdout, opts, networkClient, identityClient, args)
-		case "security group delete":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return securityGroupDelete(cmd.Context(), client, args)
-		case "security group set":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return securityGroupSet(cmd.Context(), opts, client, args)
-		case "security group show":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return securityGroupShow(cmd.Context(), stdout, opts, client, args)
-		case "security group unset":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return securityGroupUnset(cmd.Context(), opts, client, args)
-		case "security group rule create":
-			networkClient, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			identityClient, err := clients.identityV3()
-			if err != nil {
-				return err
-			}
-			return securityGroupRuleCreate(cmd.Context(), stdout, opts, networkClient, identityClient, args)
-		case "security group rule delete":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return securityGroupRuleDelete(cmd.Context(), client, args)
-		case "security group rule list":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return securityGroupRuleList(cmd.Context(), stdout, opts, client, args)
-		case "security group rule show":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return securityGroupRuleShow(cmd.Context(), stdout, opts, client, args)
-		case "server add fixed ip":
-			computeClient, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			networkClient, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return serverAddFixedIP(cmd.Context(), stdout, opts, computeClient, networkClient, args)
-		case "server add floating ip":
-			computeClient, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			networkClient, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return serverAddFloatingIP(cmd.Context(), opts, computeClient, networkClient, args)
-		case "server add network":
-			computeClient, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			networkClient, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return serverAddNetwork(cmd.Context(), opts, computeClient, networkClient, args)
-		case "server add port":
-			computeClient, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			networkClient, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return serverAddPort(cmd.Context(), opts, computeClient, networkClient, args)
-		case "server add security group":
-			computeClient, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			networkClient, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return serverSecurityGroupAction(cmd.Context(), opts, computeClient, networkClient, args, "addSecurityGroup")
-		case "server add volume":
-			computeClient, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			volumeClient, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return serverAddVolume(cmd.Context(), stdout, opts, computeClient, volumeClient, args)
-		case "server backup create":
-			computeClient, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			imageClient, _ := clients.imageV2()
-			return serverBackupCreate(cmd.Context(), stdout, opts, computeClient, imageClient, args)
-		case "server create":
-			computeClient, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			imageClient, _ := clients.imageV2()
-			networkClient, _ := clients.networkV2()
-			volumeClient, _ := clients.blockStorageV3()
-			return serverCreate(cmd.Context(), stdout, opts, computeClient, imageClient, networkClient, volumeClient, args)
-		case "server delete":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return serverDelete(cmd.Context(), stdout, opts, client, args)
-		case "server dump create":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return serverSimpleRawAction(cmd.Context(), client, args, "trigger_crash_dump")
-		case "server evacuate":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return serverEvacuate(cmd.Context(), stdout, opts, client, args)
-		case "server image create":
-			computeClient, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			imageClient, _ := clients.imageV2()
-			return serverImageCreate(cmd.Context(), stdout, opts, computeClient, imageClient, args)
-		case "server list":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			imageClient, _ := clients.imageV2()
-			networkClient, _ := clients.networkV2()
-			return computeServerList(cmd.Context(), stdout, opts, client, imageClient, networkClient)
-		case "server lock":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return serverLock(cmd.Context(), opts, client, args)
-		case "server migrate":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return serverMigrate(cmd.Context(), stdout, opts, client, args)
-		case "server migrate confirm", "server migration confirm", "server resize confirm":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return serverSingleAction(cmd.Context(), client, args, func(ctx context.Context, client *gophercloud.ServiceClient, id string) error {
-				return servers.ConfirmResize(ctx, client, id).ExtractErr()
-			})
-		case "server migrate revert", "server migration revert", "server resize revert":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return serverSingleAction(cmd.Context(), client, args, func(ctx context.Context, client *gophercloud.ServiceClient, id string) error {
-				return servers.RevertResize(ctx, client, id).ExtractErr()
-			})
-		case "server migration abort":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return serverMigrationDeleteAction(cmd.Context(), client, args)
-		case "server migration force complete":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return serverMigrationForceComplete(cmd.Context(), client, args)
-		case "server show":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			networkClient, _ := clients.networkV2()
-			return computeServerShow(cmd.Context(), stdout, opts, client, networkClient, args)
-		case "server event list":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return serverEventList(cmd.Context(), stdout, opts, client, args)
-		case "server event show":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return serverEventShow(cmd.Context(), stdout, opts, client, args)
-		case "server group list":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			client, err = computeClientWithMaximumMicroversion(cmd.Context(), client, "2.64")
-			if err != nil {
-				return err
-			}
-			return serverGroupList(cmd.Context(), stdout, opts, client)
-		case "server group create":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			client, err = computeClientWithMaximumMicroversion(cmd.Context(), client, "2.64")
-			if err != nil {
-				return err
-			}
-			return serverGroupCreate(cmd.Context(), stdout, opts, client, args)
-		case "server group delete":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			client, err = computeClientWithMaximumMicroversion(cmd.Context(), client, "2.64")
-			if err != nil {
-				return err
-			}
-			return serverGroupDelete(cmd.Context(), client, args)
-		case "server group show":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			client, err = computeClientWithMaximumMicroversion(cmd.Context(), client, "2.64")
-			if err != nil {
-				return err
-			}
-			return serverGroupShow(cmd.Context(), stdout, opts, client, args)
-		case "server migration list":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return serverMigrationList(cmd.Context(), stdout, opts, clients, client)
-		case "server migration show":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return serverMigrationShow(cmd.Context(), stdout, opts, client, args)
-		case "server pause":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return serverMultiAction(cmd.Context(), client, args, func(ctx context.Context, client *gophercloud.ServiceClient, id string) error {
-				return servers.Pause(ctx, client, id).ExtractErr()
-			})
-		case "server reboot":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return serverReboot(cmd.Context(), stdout, opts, client, args)
-		case "server rebuild":
-			computeClient, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			imageClient, _ := clients.imageV2()
-			return serverRebuild(cmd.Context(), stdout, opts, computeClient, imageClient, args)
-		case "server remove fixed ip":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return serverRemoveFixedIP(cmd.Context(), client, args)
-		case "server remove floating ip":
-			computeClient, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			networkClient, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return serverRemoveFloatingIP(cmd.Context(), computeClient, networkClient, args)
-		case "server remove network":
-			computeClient, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			networkClient, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return serverRemoveNetwork(cmd.Context(), computeClient, networkClient, args)
-		case "server remove port":
-			computeClient, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			networkClient, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return serverRemovePort(cmd.Context(), computeClient, networkClient, args)
-		case "server remove security group":
-			computeClient, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			networkClient, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return serverSecurityGroupAction(cmd.Context(), opts, computeClient, networkClient, args, "removeSecurityGroup")
-		case "server remove volume":
-			computeClient, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			volumeClient, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return serverRemoveVolume(cmd.Context(), computeClient, volumeClient, args)
-		case "server rescue":
-			computeClient, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			imageClient, _ := clients.imageV2()
-			return serverRescue(cmd.Context(), stdout, opts, computeClient, imageClient, args)
-		case "server resize":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return serverResize(cmd.Context(), stdout, opts, client, args)
-		case "server restore":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return serverSimpleRawAction(cmd.Context(), client, args, "restore")
-		case "server resume":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return serverMultiAction(cmd.Context(), client, args, func(ctx context.Context, client *gophercloud.ServiceClient, id string) error {
-				return servers.Resume(ctx, client, id).ExtractErr()
-			})
-		case "server set":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return serverSet(cmd.Context(), opts, client, args)
-		case "server shelve":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return serverShelve(cmd.Context(), stdout, opts, client, args)
-		case "server start":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return serverMultiAction(cmd.Context(), client, args, func(ctx context.Context, client *gophercloud.ServiceClient, id string) error {
-				return servers.Start(ctx, client, id).ExtractErr()
-			})
-		case "server stop":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return serverMultiAction(cmd.Context(), client, args, func(ctx context.Context, client *gophercloud.ServiceClient, id string) error {
-				return servers.Stop(ctx, client, id).ExtractErr()
-			})
-		case "server suspend":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return serverMultiAction(cmd.Context(), client, args, func(ctx context.Context, client *gophercloud.ServiceClient, id string) error {
-				return servers.Suspend(ctx, client, id).ExtractErr()
-			})
-		case "server unlock":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return serverMultiAction(cmd.Context(), client, args, func(ctx context.Context, client *gophercloud.ServiceClient, id string) error {
-				return servers.Unlock(ctx, client, id).ExtractErr()
-			})
-		case "server unpause":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return serverMultiAction(cmd.Context(), client, args, func(ctx context.Context, client *gophercloud.ServiceClient, id string) error {
-				return servers.Unpause(ctx, client, id).ExtractErr()
-			})
-		case "server unrescue":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return serverMultiAction(cmd.Context(), client, args, func(ctx context.Context, client *gophercloud.ServiceClient, id string) error {
-				return servers.Unrescue(ctx, client, id).ExtractErr()
-			})
-		case "server unset":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return serverUnset(cmd.Context(), opts, client, args)
-		case "server unshelve":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return serverUnshelve(cmd.Context(), stdout, opts, client, args)
-		case "server volume list":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return serverVolumeList(cmd.Context(), stdout, opts, client, args)
-		case "server volume set", "server volume update":
-			computeClient, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			volumeClient, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return serverVolumeSet(cmd.Context(), opts, computeClient, volumeClient, args)
-		case "subnet create":
-			networkClient, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			identityClient, err := clients.identityV3()
-			if err != nil {
-				return err
-			}
-			return subnetCreate(cmd.Context(), stdout, opts, networkClient, identityClient, args)
-		case "subnet delete":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return subnetDelete(cmd.Context(), client, args)
-		case "subnet list":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return subnetList(cmd.Context(), stdout, opts, client)
-		case "subnet set":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return subnetSet(cmd.Context(), opts, client, args)
-		case "subnet pool create":
-			networkClient, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			identityClient, err := clients.identityV3()
-			if err != nil {
-				return err
-			}
-			return subnetPoolCreate(cmd.Context(), stdout, opts, networkClient, identityClient, args)
-		case "subnet pool delete":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return subnetPoolDelete(cmd.Context(), client, args)
-		case "subnet pool list":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return subnetPoolList(cmd.Context(), stdout, opts, client)
-		case "subnet pool set":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return subnetPoolSet(cmd.Context(), opts, client, args)
-		case "subnet pool show":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return subnetPoolShow(cmd.Context(), stdout, opts, client, args)
-		case "subnet pool unset":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return subnetPoolUnset(cmd.Context(), opts, client, args)
-		case "subnet show":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return subnetShow(cmd.Context(), stdout, opts, client, args)
-		case "subnet unset":
-			client, err := clients.networkV2()
-			if err != nil {
-				return err
-			}
-			return subnetUnset(cmd.Context(), opts, client, args)
-		case "trait list":
-			client, err := clients.placementV1()
-			if err != nil {
-				return err
-			}
-			return traitList(cmd.Context(), stdout, opts, client)
-		case "trait create":
-			client, err := clients.placementV1()
-			if err != nil {
-				return err
-			}
-			return traitCreate(cmd.Context(), client, args)
-		case "trait delete":
-			client, err := clients.placementV1()
-			if err != nil {
-				return err
-			}
-			return traitDelete(cmd.Context(), client, args)
-		case "trait show":
-			client, err := clients.placementV1()
-			if err != nil {
-				return err
-			}
-			return traitShow(cmd.Context(), stdout, opts, client, args)
-		case "volume list":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			computeClient, _ := clients.computeV2()
-			return volumeList(cmd.Context(), stdout, opts, client, computeClient)
-		case "volume create":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			imageClient, _ := clients.imageV2()
-			return volumeCreate(cmd.Context(), stdout, opts, client, imageClient, args)
-		case "volume delete":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeDelete(cmd.Context(), opts, client, args)
-		case "volume set":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeSet(cmd.Context(), opts, client, args)
-		case "volume unset":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeUnset(cmd.Context(), opts, client, args)
-		case "volume group list":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeGroupList(cmd.Context(), stdout, opts, client)
-		case "volume group create":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeGroupCreate(cmd.Context(), stdout, opts, client, args)
-		case "volume group delete":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeGroupDelete(cmd.Context(), opts, client, args)
-		case "volume group failover":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeGroupFailover(cmd.Context(), opts, client, args)
-		case "volume group set":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeGroupSet(cmd.Context(), stdout, opts, client, args)
-		case "volume group show":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeGroupShow(cmd.Context(), stdout, opts, client, args)
-		case "volume group snapshot list":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeGroupSnapshotList(cmd.Context(), stdout, opts, client)
-		case "volume group snapshot create":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeGroupSnapshotCreate(cmd.Context(), stdout, opts, client, args)
-		case "volume group snapshot delete":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeGroupSnapshotDelete(cmd.Context(), opts, client, args)
-		case "volume group snapshot show":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeGroupSnapshotShow(cmd.Context(), stdout, opts, client, args)
-		case "volume group type list":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeGroupTypeList(cmd.Context(), stdout, opts, client)
-		case "volume group type create":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeGroupTypeCreate(cmd.Context(), stdout, opts, client, args)
-		case "volume group type delete":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeGroupTypeDelete(cmd.Context(), opts, client, args)
-		case "volume group type set":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeGroupTypeSet(cmd.Context(), stdout, opts, client, args)
-		case "volume group type show":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeGroupTypeShow(cmd.Context(), stdout, opts, client, args)
-		case "volume host set":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeHostSet(cmd.Context(), opts, client, args)
-		case "volume message list":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeMessageList(cmd.Context(), stdout, opts, clients, client)
-		case "volume message delete":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeMessageDelete(cmd.Context(), client, args)
-		case "volume message show":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeMessageShow(cmd.Context(), stdout, opts, client, args)
-		case "volume show":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeShow(cmd.Context(), stdout, opts, client, args)
-		case "volume migrate":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeMigrate(cmd.Context(), opts, client, args)
-		case "volume revert":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeRevert(cmd.Context(), opts, client, args)
-		case "volume backend capability show":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeBackendCapabilityShow(cmd.Context(), stdout, opts, client, args)
-		case "volume backend pool list":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeBackendPoolList(cmd.Context(), stdout, opts, client)
-		case "volume attachment list":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeAttachmentList(cmd.Context(), stdout, opts, client)
-		case "volume attachment create":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			computeClient, _ := clients.computeV2()
-			return volumeAttachmentCreate(cmd.Context(), stdout, opts, client, computeClient, args)
-		case "volume attachment delete":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeAttachmentDelete(cmd.Context(), opts, client, args)
-		case "volume attachment set":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeAttachmentSet(cmd.Context(), stdout, opts, client, args)
-		case "volume attachment complete":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeAttachmentComplete(cmd.Context(), opts, client, args)
-		case "volume attachment show":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeAttachmentShow(cmd.Context(), stdout, opts, client, args)
-		case "volume backup list":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeBackupList(cmd.Context(), stdout, opts, client)
-		case "volume backup create":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeBackupCreate(cmd.Context(), stdout, opts, client, args)
-		case "volume backup delete":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeBackupDelete(cmd.Context(), opts, client, args)
-		case "volume backup restore":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeBackupRestore(cmd.Context(), stdout, opts, client, args)
-		case "volume backup set":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeBackupSet(cmd.Context(), opts, client, args)
-		case "volume backup unset":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeBackupUnset(cmd.Context(), opts, client, args)
-		case "volume backup record export":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeBackupRecordExport(cmd.Context(), stdout, opts, client, args)
-		case "volume backup record import":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeBackupRecordImport(cmd.Context(), stdout, opts, client, args)
-		case "volume backup show":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeBackupShow(cmd.Context(), stdout, opts, client, args)
-		case "volume service list":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeServiceList(cmd.Context(), stdout, opts, client)
-		case "volume service set":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeServiceSet(cmd.Context(), opts, client, args)
-		case "volume snapshot list":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeSnapshotList(cmd.Context(), stdout, opts, client)
-		case "volume snapshot create":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeSnapshotCreate(cmd.Context(), stdout, opts, client, args)
-		case "volume snapshot delete":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeSnapshotDelete(cmd.Context(), opts, client, args)
-		case "volume snapshot set":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeSnapshotSet(cmd.Context(), opts, client, args)
-		case "volume snapshot show":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeSnapshotShow(cmd.Context(), stdout, opts, client, args)
-		case "volume snapshot unset":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeSnapshotUnset(cmd.Context(), opts, client, args)
-		case "volume qos list":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeQoSList(cmd.Context(), stdout, opts, client)
-		case "volume qos create":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeQoSCreate(cmd.Context(), stdout, opts, client, args)
-		case "volume qos delete":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeQoSDelete(cmd.Context(), opts, client, args)
-		case "volume qos set":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeQoSSet(cmd.Context(), opts, client, args)
-		case "volume qos show":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeQoSShow(cmd.Context(), stdout, opts, client, args)
-		case "volume qos unset":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeQoSUnset(cmd.Context(), opts, client, args)
-		case "volume qos associate":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeQoSAssociate(cmd.Context(), opts, client, args)
-		case "volume qos disassociate":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeQoSDisassociate(cmd.Context(), opts, client, args)
-		case "volume summary":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeSummary(cmd.Context(), stdout, opts, client)
-		case "volume type list":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeTypeList(cmd.Context(), stdout, opts, client)
-		case "volume type create":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeTypeCreate(cmd.Context(), stdout, opts, clients, client, args)
-		case "volume type delete":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeTypeDelete(cmd.Context(), opts, client, args)
-		case "volume type set":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeTypeSet(cmd.Context(), opts, clients, client, args)
-		case "volume type show":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeTypeShow(cmd.Context(), stdout, opts, client, args)
-		case "volume type unset":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeTypeUnset(cmd.Context(), opts, clients, client, args)
-		case "volume transfer request list":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeTransferList(cmd.Context(), stdout, opts, client)
-		case "volume transfer request create":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeTransferCreate(cmd.Context(), stdout, opts, client, args)
-		case "volume transfer request delete":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeTransferDelete(cmd.Context(), opts, client, args)
-		case "volume transfer request accept":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeTransferAccept(cmd.Context(), stdout, opts, client, args)
-		case "volume transfer request show":
-			client, err := clients.blockStorageV3()
-			if err != nil {
-				return err
-			}
-			return volumeTransferShow(cmd.Context(), stdout, opts, client, args)
-		case "versions show":
-			return versionsShow(cmd.Context(), stdout, opts, clients)
-		case "usage list":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return usageList(cmd.Context(), stdout, opts, clients, client)
-		case "usage show":
-			client, err := clients.computeV2()
-			if err != nil {
-				return err
-			}
-			return usageShow(cmd.Context(), stdout, opts, clients, client)
-		default:
+		h, ok := coreReadDispatch[path]
+		if !ok {
 			return fmt.Errorf("core read command %q is not wired", path)
 		}
+		return h(cmd.Context(), stdout, opts, clients)
 	}
 }
 
@@ -19778,6 +17310,21 @@ func serverNetworksSummary(addresses map[string]any) string {
 
 type prettyNetworkAddresses map[string][]string
 
+// coreReadHandler is the handler signature for core read commands.
+type coreReadHandler func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients) error
+
+var coreReadDispatch = make(map[string]coreReadHandler)
+
+// registerCoreReadHandler registers a core read handler for the given path.
+type initHandler func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error
+
+func registerCoreReadHandler(path string, h initHandler) {
+	// Convert initHandler to coreReadHandler by dropping args and stderr
+	coreReadDispatch[path] = func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients) error {
+		return h(ctx, stdout, opts, clients, nil, nil)
+	}
+}
+
 const prettyPrimaryAddressMarker = "\u2022"
 
 func (addresses prettyNetworkAddresses) PrettyString() string {
@@ -22878,4 +20425,2858 @@ func compactStrings(values []string) []string {
 		}
 	}
 	return compacted
+}
+
+// Wire all core read handlers via init().
+// Generated from the switch statement in the original core_read.go.
+
+
+func init() {
+	registerCoreReadHandler("block storage cleanup", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return blockStorageCleanup(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("block storage cluster list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return blockStorageClusterList(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("block storage cluster set", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return blockStorageClusterSet(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("block storage cluster show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return blockStorageClusterShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("block storage log level list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return blockStorageLogLevelList(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("block storage log level set", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return blockStorageLogLevelSet(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("block storage snapshot manageable list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return blockStorageManageableList(ctx, stdout, opts, client, args, "snapshots")
+	})
+	registerCoreReadHandler("block storage volume manageable list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return blockStorageManageableList(ctx, stdout, opts, client, args, "volumes")
+	})
+	registerCoreReadHandler("address group create", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		networkClient, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		identityClient, err := clients.identityV3()
+		if err != nil {
+			return err
+		}
+		return addressGroupCreate(ctx, stdout, opts, networkClient, identityClient, args)
+	})
+	registerCoreReadHandler("address group delete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return addressGroupDelete(ctx, client, args)
+	})
+	registerCoreReadHandler("address group list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return addressGroupList(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("address group set", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return addressGroupSet(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("address group show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return addressGroupShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("address group unset", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return addressGroupUnset(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("address scope create", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		networkClient, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		identityClient, err := clients.identityV3()
+		if err != nil {
+			return err
+		}
+		return addressScopeCreate(ctx, stdout, opts, networkClient, identityClient, args)
+	})
+	registerCoreReadHandler("address scope delete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return addressScopeDelete(ctx, client, args)
+	})
+	registerCoreReadHandler("address scope list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return addressScopeList(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("address scope set", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return addressScopeSet(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("address scope show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return addressScopeShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("aggregate add host", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return aggregateAddRemoveHost(ctx, stdout, opts, client, args, true)
+	})
+	registerCoreReadHandler("aggregate cache image", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		computeClient, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		imageClient, err := clients.imageV2()
+		if err != nil {
+			return err
+		}
+		return aggregateCacheImage(ctx, opts, computeClient, imageClient, args)
+	})
+	registerCoreReadHandler("aggregate create", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return aggregateCreate(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("aggregate delete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return aggregateDelete(ctx, client, args)
+	})
+	registerCoreReadHandler("aggregate list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return aggregateList(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("aggregate remove host", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return aggregateAddRemoveHost(ctx, stdout, opts, client, args, false)
+	})
+	registerCoreReadHandler("aggregate set", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return aggregateSet(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("aggregate show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return aggregateShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("aggregate unset", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return aggregateUnset(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("availability zone list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		return availabilityZoneList(ctx, stdout, opts, clients)
+	})
+	registerCoreReadHandler("cached image clear", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.imageV2()
+		if err != nil {
+			return err
+		}
+		return cachedImageClear(ctx, opts, client)
+	})
+	registerCoreReadHandler("cached image delete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.imageV2()
+		if err != nil {
+			return err
+		}
+		return cachedImageDelete(ctx, stderr, opts, client, args)
+	})
+	registerCoreReadHandler("cached image list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.imageV2()
+		if err != nil {
+			return err
+		}
+		return cachedImageList(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("cached image queue", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.imageV2()
+		if err != nil {
+			return err
+		}
+		return cachedImageQueue(ctx, stderr, opts, client, args)
+	})
+	registerCoreReadHandler("compute agent create", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return computeAgentCreate(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("compute agent delete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return computeAgentDelete(ctx, client, args)
+	})
+	registerCoreReadHandler("compute agent list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return computeAgentList(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("compute agent set", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return computeAgentSet(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("compute service delete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return computeServiceDelete(ctx, client, args)
+	})
+	registerCoreReadHandler("compute service list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return computeServiceList(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("compute service set", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return computeServiceSet(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("consistency group add volume", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return consistencyGroupAddRemoveVolume(ctx, opts, client, args, true)
+	})
+	registerCoreReadHandler("consistency group create", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return consistencyGroupCreate(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("consistency group delete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return consistencyGroupDelete(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("consistency group list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return consistencyGroupList(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("consistency group remove volume", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return consistencyGroupAddRemoveVolume(ctx, opts, client, args, false)
+	})
+	registerCoreReadHandler("consistency group set", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return consistencyGroupSet(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("consistency group show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return consistencyGroupShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("consistency group snapshot create", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return consistencyGroupSnapshotCreate(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("consistency group snapshot delete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return consistencyGroupSnapshotDelete(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("consistency group snapshot list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return consistencyGroupSnapshotList(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("consistency group snapshot show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return consistencyGroupSnapshotShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("console connection show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return consoleConnectionShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("console log show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return consoleLogShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("console url show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return consoleURLShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("extension list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		return extensionList(ctx, stdout, opts, clients)
+	})
+	registerCoreReadHandler("extension show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		return extensionShow(ctx, stdout, opts, clients, args)
+	})
+	registerCoreReadHandler("project cleanup", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		return projectCleanup(ctx, stdout, os.Stdin, opts, clients)
+	})
+	registerCoreReadHandler("flavor create", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		var identityClient *gophercloud.ServiceClient
+		if flagValue(opts, "project") != "" {
+			identityClient, err = clients.identityV3()
+			if err != nil {
+				return err
+			}
+		}
+		return computeFlavorCreate(ctx, stdout, opts, client, identityClient, args)
+	})
+	registerCoreReadHandler("flavor delete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return computeFlavorDelete(ctx, client, args)
+	})
+	registerCoreReadHandler("flavor list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return computeFlavorList(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("flavor set", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		var identityClient *gophercloud.ServiceClient
+		if flagValue(opts, "project") != "" {
+			identityClient, err = clients.identityV3()
+			if err != nil {
+				return err
+			}
+		}
+		return computeFlavorSet(ctx, opts, client, identityClient, args)
+	})
+	registerCoreReadHandler("flavor show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return computeFlavorShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("flavor unset", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		var identityClient *gophercloud.ServiceClient
+		if flagValue(opts, "project") != "" {
+			identityClient, err = clients.identityV3()
+			if err != nil {
+				return err
+			}
+		}
+		return computeFlavorUnset(ctx, opts, client, identityClient, args)
+	})
+	registerCoreReadHandler("allocation candidate list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.placementV1()
+		if err != nil {
+			return err
+		}
+		return allocationCandidateList(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("container list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.objectStorageV1()
+		if err != nil {
+			return err
+		}
+		return containerList(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("container create", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.objectStorageV1()
+		if err != nil {
+			return err
+		}
+		return containerCreate(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("container delete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.objectStorageV1()
+		if err != nil {
+			return err
+		}
+		return containerDelete(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("container set", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.objectStorageV1()
+		if err != nil {
+			return err
+		}
+		return containerSet(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("container show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.objectStorageV1()
+		if err != nil {
+			return err
+		}
+		return containerShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("container unset", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.objectStorageV1()
+		if err != nil {
+			return err
+		}
+		return containerUnset(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("floating ip create", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		networkClient, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		identityClient, err := clients.identityV3()
+		if err != nil {
+			return err
+		}
+		return floatingIPCreate(ctx, stdout, opts, networkClient, identityClient, args)
+	})
+	registerCoreReadHandler("floating ip delete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return floatingIPDelete(ctx, client, args)
+	})
+	registerCoreReadHandler("floating ip list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return floatingIPList(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("floating ip port forwarding create", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return floatingIPPortForwardingCreate(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("floating ip port forwarding delete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return floatingIPPortForwardingDelete(ctx, client, args)
+	})
+	registerCoreReadHandler("floating ip port forwarding list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return floatingIPPortForwardingList(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("floating ip port forwarding set", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return floatingIPPortForwardingSet(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("floating ip port forwarding show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return floatingIPPortForwardingShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("floating ip set", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return floatingIPSet(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("floating ip show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return floatingIPShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("floating ip unset", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return floatingIPUnset(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("host list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return hostList(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("host show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return hostShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("host set", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return hostSet(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("ip availability list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return ipAvailabilityList(ctx, stdout, opts, clients, client)
+	})
+	registerCoreReadHandler("ip availability show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return ipAvailabilityShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("image list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.imageV2()
+		if err != nil {
+			return err
+		}
+		return imageList(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("image create", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		imageClient, err := clients.imageV2()
+		if err != nil {
+			return err
+		}
+		identityClient, err := clients.identityV3()
+		if err != nil {
+			return err
+		}
+		volumeClient, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return imageCreate(ctx, stdout, opts, imageClient, identityClient, volumeClient, args)
+	})
+	registerCoreReadHandler("image delete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.imageV2()
+		if err != nil {
+			return err
+		}
+		return imageDelete(ctx, stderr, opts, client, args)
+	})
+	registerCoreReadHandler("image import", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.imageV2()
+		if err != nil {
+			return err
+		}
+		return imageImport(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("image member get", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.imageV2()
+		if err != nil {
+			return err
+		}
+		return imageMemberGet(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("image member list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.imageV2()
+		if err != nil {
+			return err
+		}
+		return imageMemberList(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("image metadef namespace create", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.imageV2()
+		if err != nil {
+			return err
+		}
+		return imageMetadefNamespaceCreate(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("image metadef namespace delete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.imageV2()
+		if err != nil {
+			return err
+		}
+		return imageMetadefNamespaceDelete(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("image metadef namespace list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.imageV2()
+		if err != nil {
+			return err
+		}
+		return imageMetadefNamespaceList(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("image metadef namespace set", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.imageV2()
+		if err != nil {
+			return err
+		}
+		return imageMetadefNamespaceSet(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("image metadef namespace show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.imageV2()
+		if err != nil {
+			return err
+		}
+		return imageMetadefNamespaceShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("image metadef object create", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.imageV2()
+		if err != nil {
+			return err
+		}
+		return imageMetadefObjectCreate(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("image metadef object delete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.imageV2()
+		if err != nil {
+			return err
+		}
+		return imageMetadefObjectDelete(ctx, client, args)
+	})
+	registerCoreReadHandler("image metadef object list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.imageV2()
+		if err != nil {
+			return err
+		}
+		return imageMetadefObjectList(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("image metadef object property show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.imageV2()
+		if err != nil {
+			return err
+		}
+		return imageMetadefObjectPropertyShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("image metadef object show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.imageV2()
+		if err != nil {
+			return err
+		}
+		return imageMetadefObjectShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("image metadef object update", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.imageV2()
+		if err != nil {
+			return err
+		}
+		return imageMetadefObjectUpdate(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("image metadef property create", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.imageV2()
+		if err != nil {
+			return err
+		}
+		return imageMetadefPropertyCreate(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("image metadef property delete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.imageV2()
+		if err != nil {
+			return err
+		}
+		return imageMetadefPropertyDelete(ctx, client, args)
+	})
+	registerCoreReadHandler("image metadef property list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.imageV2()
+		if err != nil {
+			return err
+		}
+		return imageMetadefPropertyList(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("image metadef property set", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.imageV2()
+		if err != nil {
+			return err
+		}
+		return imageMetadefPropertySet(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("image metadef property show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.imageV2()
+		if err != nil {
+			return err
+		}
+		return imageMetadefPropertyShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("image metadef resource type association create", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.imageV2()
+		if err != nil {
+			return err
+		}
+		return imageMetadefResourceTypeAssociationCreate(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("image metadef resource type association delete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.imageV2()
+		if err != nil {
+			return err
+		}
+		return imageMetadefResourceTypeAssociationDelete(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("image metadef resource type association list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.imageV2()
+		if err != nil {
+			return err
+		}
+		return imageMetadefResourceTypeAssociationList(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("image metadef resource type list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.imageV2()
+		if err != nil {
+			return err
+		}
+		return imageMetadefResourceTypeList(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("image import info", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.imageV2()
+		if err != nil {
+			return err
+		}
+		return imageImportInfo(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("image add project", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		imageClient, err := clients.imageV2()
+		if err != nil {
+			return err
+		}
+		identityClient, err := clients.identityV3()
+		if err != nil {
+			return err
+		}
+		return imageAddProject(ctx, stdout, opts, imageClient, identityClient, args)
+	})
+	registerCoreReadHandler("image remove project", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		imageClient, err := clients.imageV2()
+		if err != nil {
+			return err
+		}
+		identityClient, err := clients.identityV3()
+		if err != nil {
+			return err
+		}
+		return imageRemoveProject(ctx, opts, imageClient, identityClient, args)
+	})
+	registerCoreReadHandler("image save", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.imageV2()
+		if err != nil {
+			return err
+		}
+		return imageSave(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("image set", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		imageClient, err := clients.imageV2()
+		if err != nil {
+			return err
+		}
+		identityClient, err := clients.identityV3()
+		if err != nil {
+			return err
+		}
+		return imageSet(ctx, opts, imageClient, identityClient, args)
+	})
+	registerCoreReadHandler("image show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.imageV2()
+		if err != nil {
+			return err
+		}
+		return imageShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("image stage", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.imageV2()
+		if err != nil {
+			return err
+		}
+		return imageStage(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("image unset", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.imageV2()
+		if err != nil {
+			return err
+		}
+		return imageUnset(ctx, stderr, opts, client, args)
+	})
+	registerCoreReadHandler("image stores list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.imageV2()
+		if err != nil {
+			return err
+		}
+		return imageStoresList(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("image task list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.imageV2()
+		if err != nil {
+			return err
+		}
+		return imageTaskList(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("image task show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.imageV2()
+		if err != nil {
+			return err
+		}
+		return imageTaskShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("network create", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		networkClient, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		identityClient, err := clients.identityV3()
+		if err != nil {
+			return err
+		}
+		return networkCreate(ctx, stdout, opts, networkClient, identityClient, args)
+	})
+	registerCoreReadHandler("network delete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return networkDelete(ctx, client, args)
+	})
+	registerCoreReadHandler("network list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return networkList(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("network agent list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return networkAgentList(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("network agent show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return networkAgentShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("network service provider list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return networkServiceProviderList(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("network qos policy list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return networkQoSPolicyList(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("network qos policy create", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		networkClient, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		identityClient, err := clients.identityV3()
+		if err != nil {
+			return err
+		}
+		return networkQoSPolicyCreate(ctx, stdout, opts, networkClient, identityClient, args)
+	})
+	registerCoreReadHandler("network qos policy delete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return networkQoSPolicyDelete(ctx, client, args)
+	})
+	registerCoreReadHandler("network qos policy set", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return networkQoSPolicySet(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("network qos policy show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return networkQoSPolicyShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("network qos rule create", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return networkQoSRuleCreate(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("network qos rule delete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return networkQoSRuleDelete(ctx, client, args)
+	})
+	registerCoreReadHandler("network qos rule list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return networkQoSRuleList(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("network qos rule set", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return networkQoSRuleSet(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("network qos rule show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return networkQoSRuleShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("network qos rule type list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return networkQoSRuleTypeList(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("network qos rule type show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return networkQoSRuleTypeShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("network rbac list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return networkRBACList(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("network rbac create", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		networkClient, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		identityClient, err := clients.identityV3()
+		if err != nil {
+			return err
+		}
+		return networkRBACCreate(ctx, stdout, opts, networkClient, identityClient, args)
+	})
+	registerCoreReadHandler("network rbac delete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return networkRBACDelete(ctx, client, args)
+	})
+	registerCoreReadHandler("network rbac set", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		networkClient, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		identityClient, err := clients.identityV3()
+		if err != nil {
+			return err
+		}
+		return networkRBACSet(ctx, opts, networkClient, identityClient, args)
+	})
+	registerCoreReadHandler("network rbac show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return networkRBACShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("network segment create", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return networkSegmentCreate(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("network segment delete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return networkSegmentDelete(ctx, client, args)
+	})
+	registerCoreReadHandler("network segment list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return networkSegmentList(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("network segment set", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return networkSegmentSet(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("network segment show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return networkSegmentShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("network set", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return networkSet(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("network show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return networkShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("network unset", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return networkUnset(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("network subport list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return networkSubportList(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("network trunk create", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		networkClient, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		identityClient, err := clients.identityV3()
+		if err != nil {
+			return err
+		}
+		return networkTrunkCreate(ctx, stdout, opts, networkClient, identityClient, args)
+	})
+	registerCoreReadHandler("network trunk delete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return networkTrunkDelete(ctx, client, args)
+	})
+	registerCoreReadHandler("network trunk list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return networkTrunkList(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("network trunk set", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return networkTrunkSet(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("network trunk show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return networkTrunkShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("network trunk unset", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return networkTrunkUnset(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("object list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.objectStorageV1()
+		if err != nil {
+			return err
+		}
+		return objectList(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("object create", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.objectStorageV1()
+		if err != nil {
+			return err
+		}
+		return objectCreate(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("object delete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.objectStorageV1()
+		if err != nil {
+			return err
+		}
+		return objectDelete(ctx, client, args)
+	})
+	registerCoreReadHandler("object save", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.objectStorageV1()
+		if err != nil {
+			return err
+		}
+		return objectSave(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("object set", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.objectStorageV1()
+		if err != nil {
+			return err
+		}
+		return objectSet(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("object show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.objectStorageV1()
+		if err != nil {
+			return err
+		}
+		return objectShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("object unset", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.objectStorageV1()
+		if err != nil {
+			return err
+		}
+		return objectUnset(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("object store account show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.objectStorageV1()
+		if err != nil {
+			return err
+		}
+		return objectStoreAccountShow(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("object store account set", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.objectStorageV1()
+		if err != nil {
+			return err
+		}
+		return objectStoreAccountSet(ctx, opts, client)
+	})
+	registerCoreReadHandler("object store account unset", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.objectStorageV1()
+		if err != nil {
+			return err
+		}
+		return objectStoreAccountUnset(ctx, opts, client)
+	})
+	registerCoreReadHandler("container save", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.objectStorageV1()
+		if err != nil {
+			return err
+		}
+		return containerSave(ctx, stdout, client, args)
+	})
+	registerCoreReadHandler("quota list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		return quotaList(ctx, stdout, opts, clients)
+	})
+	registerCoreReadHandler("quota delete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		return quotaDelete(ctx, opts, clients, args)
+	})
+	registerCoreReadHandler("quota set", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		return quotaSet(ctx, opts, clients, args)
+	})
+	registerCoreReadHandler("quota show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		return quotaShow(ctx, stdout, opts, clients, args)
+	})
+	registerCoreReadHandler("keypair list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return keypairList(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("keypair create", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return keypairCreate(ctx, stdout, opts, clients, client, args)
+	})
+	registerCoreReadHandler("keypair delete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return keypairDelete(ctx, opts, clients, client, args)
+	})
+	registerCoreReadHandler("keypair show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return keypairShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("hypervisor list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return hypervisorList(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("hypervisor show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return hypervisorShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("hypervisor stats show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return hypervisorStatsShow(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("limits show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		return limitsShow(ctx, stdout, opts, clients)
+	})
+	registerCoreReadHandler("port create", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		networkClient, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		identityClient, err := clients.identityV3()
+		if err != nil {
+			return err
+		}
+		return portCreate(ctx, stdout, opts, networkClient, identityClient, args)
+	})
+	registerCoreReadHandler("port delete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return portDelete(ctx, client, args)
+	})
+	registerCoreReadHandler("port list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		computeClient, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return portList(ctx, stdout, opts, client, computeClient)
+	})
+	registerCoreReadHandler("port set", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return portSet(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("port show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return portShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("port unset", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return portUnset(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("resource class list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.placementV1()
+		if err != nil {
+			return err
+		}
+		return resourceClassList(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("resource class create", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.placementV1()
+		if err != nil {
+			return err
+		}
+		return resourceClassCreate(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("resource class delete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.placementV1()
+		if err != nil {
+			return err
+		}
+		return resourceClassDelete(ctx, client, args)
+	})
+	registerCoreReadHandler("resource class set", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.placementV1()
+		if err != nil {
+			return err
+		}
+		return resourceClassSet(ctx, client, args)
+	})
+	registerCoreReadHandler("resource class show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.placementV1()
+		if err != nil {
+			return err
+		}
+		return resourceClassShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("resource provider aggregate list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.placementV1()
+		if err != nil {
+			return err
+		}
+		return resourceProviderAggregateList(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("resource provider aggregate set", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.placementV1()
+		if err != nil {
+			return err
+		}
+		return resourceProviderAggregateSet(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("resource provider allocation delete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.placementV1()
+		if err != nil {
+			return err
+		}
+		return resourceProviderAllocationDelete(ctx, client, args)
+	})
+	registerCoreReadHandler("resource provider allocation set", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.placementV1()
+		if err != nil {
+			return err
+		}
+		return resourceProviderAllocationSet(ctx, stdout, stderr, opts, client, args)
+	})
+	registerCoreReadHandler("resource provider allocation show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.placementV1()
+		if err != nil {
+			return err
+		}
+		return resourceProviderAllocationShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("resource provider allocation unset", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.placementV1()
+		if err != nil {
+			return err
+		}
+		return resourceProviderAllocationUnset(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("resource provider create", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.placementV1()
+		if err != nil {
+			return err
+		}
+		return resourceProviderCreate(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("resource provider delete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.placementV1()
+		if err != nil {
+			return err
+		}
+		return resourceProviderDelete(ctx, client, args)
+	})
+	registerCoreReadHandler("resource provider inventory class set", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.placementV1()
+		if err != nil {
+			return err
+		}
+		return resourceProviderInventoryClassSet(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("resource provider inventory delete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.placementV1()
+		if err != nil {
+			return err
+		}
+		return resourceProviderInventoryDelete(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("resource provider inventory list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.placementV1()
+		if err != nil {
+			return err
+		}
+		return resourceProviderInventoryList(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("resource provider inventory set", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.placementV1()
+		if err != nil {
+			return err
+		}
+		return resourceProviderInventorySet(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("resource provider inventory show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.placementV1()
+		if err != nil {
+			return err
+		}
+		return resourceProviderInventoryShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("resource provider list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.placementV1()
+		if err != nil {
+			return err
+		}
+		return resourceProviderList(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("resource provider set", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.placementV1()
+		if err != nil {
+			return err
+		}
+		return resourceProviderSet(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("resource provider show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.placementV1()
+		if err != nil {
+			return err
+		}
+		return resourceProviderShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("resource provider trait delete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.placementV1()
+		if err != nil {
+			return err
+		}
+		return resourceProviderTraitDelete(ctx, client, args)
+	})
+	registerCoreReadHandler("resource provider trait list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.placementV1()
+		if err != nil {
+			return err
+		}
+		return resourceProviderTraitList(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("resource provider trait set", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.placementV1()
+		if err != nil {
+			return err
+		}
+		return resourceProviderTraitSet(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("resource provider usage show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.placementV1()
+		if err != nil {
+			return err
+		}
+		return resourceProviderUsageShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("resource usage show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.placementV1()
+		if err != nil {
+			return err
+		}
+		return resourceUsageShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("router add port", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return routerAddPort(ctx, client, args)
+	})
+	registerCoreReadHandler("router add gateway", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return routerAddGateway(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("router add route", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return routerAddRoute(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("router add subnet", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return routerAddSubnet(ctx, client, args)
+	})
+	registerCoreReadHandler("router create", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		networkClient, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		identityClient, err := clients.identityV3()
+		if err != nil {
+			return err
+		}
+		return routerCreate(ctx, stdout, opts, networkClient, identityClient, args)
+	})
+	registerCoreReadHandler("router delete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return routerDelete(ctx, client, args)
+	})
+	registerCoreReadHandler("router list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return routerList(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("router remove port", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return routerRemovePort(ctx, client, args)
+	})
+	registerCoreReadHandler("router remove gateway", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return routerRemoveGateway(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("router remove route", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return routerRemoveRoute(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("router remove subnet", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return routerRemoveSubnet(ctx, client, args)
+	})
+	registerCoreReadHandler("router set", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return routerSet(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("router show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return routerShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("router unset", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return routerUnset(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("security group list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return securityGroupList(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("security group create", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		networkClient, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		identityClient, err := clients.identityV3()
+		if err != nil {
+			return err
+		}
+		return securityGroupCreate(ctx, stdout, opts, networkClient, identityClient, args)
+	})
+	registerCoreReadHandler("security group delete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return securityGroupDelete(ctx, client, args)
+	})
+	registerCoreReadHandler("security group set", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return securityGroupSet(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("security group show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return securityGroupShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("security group unset", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return securityGroupUnset(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("security group rule create", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		networkClient, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		identityClient, err := clients.identityV3()
+		if err != nil {
+			return err
+		}
+		return securityGroupRuleCreate(ctx, stdout, opts, networkClient, identityClient, args)
+	})
+	registerCoreReadHandler("security group rule delete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return securityGroupRuleDelete(ctx, client, args)
+	})
+	registerCoreReadHandler("security group rule list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return securityGroupRuleList(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("security group rule show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return securityGroupRuleShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("server add fixed ip", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		computeClient, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		networkClient, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return serverAddFixedIP(ctx, stdout, opts, computeClient, networkClient, args)
+	})
+	registerCoreReadHandler("server add floating ip", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		computeClient, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		networkClient, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return serverAddFloatingIP(ctx, opts, computeClient, networkClient, args)
+	})
+	registerCoreReadHandler("server add network", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		computeClient, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		networkClient, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return serverAddNetwork(ctx, opts, computeClient, networkClient, args)
+	})
+	registerCoreReadHandler("server add port", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		computeClient, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		networkClient, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return serverAddPort(ctx, opts, computeClient, networkClient, args)
+	})
+	registerCoreReadHandler("server add security group", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		computeClient, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		networkClient, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return serverSecurityGroupAction(ctx, opts, computeClient, networkClient, args, "addSecurityGroup")
+	})
+	registerCoreReadHandler("server add volume", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		computeClient, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		volumeClient, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return serverAddVolume(ctx, stdout, opts, computeClient, volumeClient, args)
+	})
+	registerCoreReadHandler("server backup create", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		computeClient, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		imageClient, err := clients.imageV2()
+		if err != nil {
+			return err
+		}
+		return serverBackupCreate(ctx, stdout, opts, computeClient, imageClient, args)
+	})
+	registerCoreReadHandler("server create", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		computeClient, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		imageClient, err := clients.imageV2()
+		if err != nil {
+			return err
+		}
+		networkClient, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		volumeClient, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return serverCreate(ctx, stdout, opts, computeClient, imageClient, networkClient, volumeClient, args)
+	})
+	registerCoreReadHandler("server delete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return serverDelete(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("server dump create", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return serverSimpleRawAction(ctx, client, args, "trigger_crash_dump")
+	})
+	registerCoreReadHandler("server evacuate", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return serverEvacuate(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("server image create", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		computeClient, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		imageClient, err := clients.imageV2()
+		if err != nil {
+			return err
+		}
+		return serverImageCreate(ctx, stdout, opts, computeClient, imageClient, args)
+	})
+	registerCoreReadHandler("server list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		imageClient, err := clients.imageV2()
+		if err != nil {
+			return err
+		}
+		networkClient, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return computeServerList(ctx, stdout, opts, client, imageClient, networkClient)
+	})
+	registerCoreReadHandler("server lock", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return serverLock(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("server migrate", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return serverMigrate(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("server migration abort", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return serverMigrationDeleteAction(ctx, client, args)
+	})
+	registerCoreReadHandler("server migration force complete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return serverMigrationForceComplete(ctx, client, args)
+	})
+	registerCoreReadHandler("server show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		networkClient, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return computeServerShow(ctx, stdout, opts, client, networkClient, args)
+	})
+	registerCoreReadHandler("server event list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return serverEventList(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("server event show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return serverEventShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("server group list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return serverGroupList(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("server group create", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return serverGroupCreate(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("server group delete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return serverGroupDelete(ctx, client, args)
+	})
+	registerCoreReadHandler("server group show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return serverGroupShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("server migration list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return serverMigrationList(ctx, stdout, opts, clients, client)
+	})
+	registerCoreReadHandler("server migration show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return serverMigrationShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("server reboot", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return serverReboot(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("server rebuild", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		computeClient, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		imageClient, err := clients.imageV2()
+		if err != nil {
+			return err
+		}
+		return serverRebuild(ctx, stdout, opts, computeClient, imageClient, args)
+	})
+	registerCoreReadHandler("server remove fixed ip", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return serverRemoveFixedIP(ctx, client, args)
+	})
+	registerCoreReadHandler("server remove floating ip", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		computeClient, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		networkClient, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return serverRemoveFloatingIP(ctx, computeClient, networkClient, args)
+	})
+	registerCoreReadHandler("server remove network", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		computeClient, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		networkClient, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return serverRemoveNetwork(ctx, computeClient, networkClient, args)
+	})
+	registerCoreReadHandler("server remove port", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		computeClient, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		networkClient, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return serverRemovePort(ctx, computeClient, networkClient, args)
+	})
+	registerCoreReadHandler("server remove security group", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		computeClient, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		networkClient, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return serverSecurityGroupAction(ctx, opts, computeClient, networkClient, args, "removeSecurityGroup")
+	})
+	registerCoreReadHandler("server remove volume", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		computeClient, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		volumeClient, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return serverRemoveVolume(ctx, computeClient, volumeClient, args)
+	})
+	registerCoreReadHandler("server rescue", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		computeClient, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		imageClient, err := clients.imageV2()
+		if err != nil {
+			return err
+		}
+		return serverRescue(ctx, stdout, opts, computeClient, imageClient, args)
+	})
+	registerCoreReadHandler("server resize", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return serverResize(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("server restore", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return serverSimpleRawAction(ctx, client, args, "restore")
+	})
+	registerCoreReadHandler("server set", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return serverSet(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("server shelve", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return serverShelve(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("server unset", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return serverUnset(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("server unshelve", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return serverUnshelve(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("server volume list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return serverVolumeList(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("subnet create", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		networkClient, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		identityClient, err := clients.identityV3()
+		if err != nil {
+			return err
+		}
+		return subnetCreate(ctx, stdout, opts, networkClient, identityClient, args)
+	})
+	registerCoreReadHandler("subnet delete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return subnetDelete(ctx, client, args)
+	})
+	registerCoreReadHandler("subnet list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return subnetList(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("subnet set", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return subnetSet(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("subnet pool create", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		networkClient, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		identityClient, err := clients.identityV3()
+		if err != nil {
+			return err
+		}
+		return subnetPoolCreate(ctx, stdout, opts, networkClient, identityClient, args)
+	})
+	registerCoreReadHandler("subnet pool delete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return subnetPoolDelete(ctx, client, args)
+	})
+	registerCoreReadHandler("subnet pool list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return subnetPoolList(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("subnet pool set", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return subnetPoolSet(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("subnet pool show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return subnetPoolShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("subnet pool unset", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return subnetPoolUnset(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("subnet show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return subnetShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("subnet unset", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.networkV2()
+		if err != nil {
+			return err
+		}
+		return subnetUnset(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("trait list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.placementV1()
+		if err != nil {
+			return err
+		}
+		return traitList(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("trait create", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.placementV1()
+		if err != nil {
+			return err
+		}
+		return traitCreate(ctx, client, args)
+	})
+	registerCoreReadHandler("trait delete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.placementV1()
+		if err != nil {
+			return err
+		}
+		return traitDelete(ctx, client, args)
+	})
+	registerCoreReadHandler("trait show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.placementV1()
+		if err != nil {
+			return err
+		}
+		return traitShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("volume list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		computeClient, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return volumeList(ctx, stdout, opts, client, computeClient)
+	})
+	registerCoreReadHandler("volume create", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		imageClient, err := clients.imageV2()
+		if err != nil {
+			return err
+		}
+		return volumeCreate(ctx, stdout, opts, client, imageClient, args)
+	})
+	registerCoreReadHandler("volume delete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeDelete(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("volume set", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeSet(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("volume unset", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeUnset(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("volume group list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeGroupList(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("volume group create", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeGroupCreate(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("volume group delete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeGroupDelete(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("volume group failover", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeGroupFailover(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("volume group set", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeGroupSet(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("volume group show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeGroupShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("volume group snapshot list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeGroupSnapshotList(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("volume group snapshot create", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeGroupSnapshotCreate(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("volume group snapshot delete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeGroupSnapshotDelete(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("volume group snapshot show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeGroupSnapshotShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("volume group type list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeGroupTypeList(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("volume group type create", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeGroupTypeCreate(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("volume group type delete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeGroupTypeDelete(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("volume group type set", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeGroupTypeSet(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("volume group type show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeGroupTypeShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("volume host set", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeHostSet(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("volume message list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeMessageList(ctx, stdout, opts, clients, client)
+	})
+	registerCoreReadHandler("volume message delete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeMessageDelete(ctx, client, args)
+	})
+	registerCoreReadHandler("volume message show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeMessageShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("volume show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("volume migrate", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeMigrate(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("volume revert", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeRevert(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("volume backend capability show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeBackendCapabilityShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("volume backend pool list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeBackendPoolList(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("volume attachment list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeAttachmentList(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("volume attachment create", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		computeClient, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return volumeAttachmentCreate(ctx, stdout, opts, client, computeClient, args)
+	})
+	registerCoreReadHandler("volume attachment delete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeAttachmentDelete(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("volume attachment set", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeAttachmentSet(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("volume attachment complete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeAttachmentComplete(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("volume attachment show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeAttachmentShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("volume backup list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeBackupList(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("volume backup create", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeBackupCreate(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("volume backup delete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeBackupDelete(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("volume backup restore", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeBackupRestore(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("volume backup set", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeBackupSet(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("volume backup unset", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeBackupUnset(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("volume backup record export", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeBackupRecordExport(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("volume backup record import", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeBackupRecordImport(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("volume backup show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeBackupShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("volume service list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeServiceList(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("volume service set", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeServiceSet(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("volume snapshot list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeSnapshotList(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("volume snapshot create", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeSnapshotCreate(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("volume snapshot delete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeSnapshotDelete(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("volume snapshot set", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeSnapshotSet(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("volume snapshot show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeSnapshotShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("volume snapshot unset", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeSnapshotUnset(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("volume qos list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeQoSList(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("volume qos create", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeQoSCreate(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("volume qos delete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeQoSDelete(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("volume qos set", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeQoSSet(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("volume qos show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeQoSShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("volume qos unset", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeQoSUnset(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("volume qos associate", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeQoSAssociate(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("volume qos disassociate", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeQoSDisassociate(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("volume summary", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeSummary(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("volume type list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeTypeList(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("volume type create", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeTypeCreate(ctx, stdout, opts, clients, client, args)
+	})
+	registerCoreReadHandler("volume type delete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeTypeDelete(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("volume type set", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeTypeSet(ctx, opts, clients, client, args)
+	})
+	registerCoreReadHandler("volume type show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeTypeShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("volume type unset", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeTypeUnset(ctx, opts, clients, client, args)
+	})
+	registerCoreReadHandler("volume transfer request list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeTransferList(ctx, stdout, opts, client)
+	})
+	registerCoreReadHandler("volume transfer request create", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeTransferCreate(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("volume transfer request delete", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeTransferDelete(ctx, opts, client, args)
+	})
+	registerCoreReadHandler("volume transfer request accept", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeTransferAccept(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("volume transfer request show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.blockStorageV3()
+		if err != nil {
+			return err
+		}
+		return volumeTransferShow(ctx, stdout, opts, client, args)
+	})
+	registerCoreReadHandler("versions show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		return versionsShow(ctx, stdout, opts, clients)
+	})
+	registerCoreReadHandler("usage list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return usageList(ctx, stdout, opts, clients, client)
+	})
+	registerCoreReadHandler("usage show", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return usageShow(ctx, stdout, opts, clients, client)
+	})
+	registerCoreReadHandler("server pause", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return serverMultiAction(ctx, client, args, func(ctx context.Context, client *gophercloud.ServiceClient, id string) error {
+			return servers.Pause(ctx, client, id).ExtractErr()
+		})
+	})
+	registerCoreReadHandler("server resume", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return serverMultiAction(ctx, client, args, func(ctx context.Context, client *gophercloud.ServiceClient, id string) error {
+			return servers.Resume(ctx, client, id).ExtractErr()
+		})
+	})
+	registerCoreReadHandler("server start", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return serverMultiAction(ctx, client, args, func(ctx context.Context, client *gophercloud.ServiceClient, id string) error {
+			return servers.Start(ctx, client, id).ExtractErr()
+		})
+	})
+	registerCoreReadHandler("server stop", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return serverMultiAction(ctx, client, args, func(ctx context.Context, client *gophercloud.ServiceClient, id string) error {
+			return servers.Stop(ctx, client, id).ExtractErr()
+		})
+	})
+	registerCoreReadHandler("server suspend", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return serverMultiAction(ctx, client, args, func(ctx context.Context, client *gophercloud.ServiceClient, id string) error {
+			return servers.Suspend(ctx, client, id).ExtractErr()
+		})
+	})
+	registerCoreReadHandler("server unlock", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return serverMultiAction(ctx, client, args, func(ctx context.Context, client *gophercloud.ServiceClient, id string) error {
+			return servers.Unlock(ctx, client, id).ExtractErr()
+		})
+	})
+	registerCoreReadHandler("server unpause", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return serverMultiAction(ctx, client, args, func(ctx context.Context, client *gophercloud.ServiceClient, id string) error {
+			return servers.Unpause(ctx, client, id).ExtractErr()
+		})
+	})
+	registerCoreReadHandler("server unrescue", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		client, err := clients.computeV2()
+		if err != nil {
+			return err
+		}
+		return serverMultiAction(ctx, client, args, func(ctx context.Context, client *gophercloud.ServiceClient, id string) error {
+			return servers.Unrescue(ctx, client, id).ExtractErr()
+		})
+	})
+	registerCoreReadHandler("floating ip pool list", func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		return floatingIPPoolList()
+	})
 }
