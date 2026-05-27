@@ -233,6 +233,28 @@ func TestCommandListPrettyUsesPrettyRenderer(t *testing.T) {
 		t.Fatalf("expected command list --pretty to avoid default table borders, got:\n%s", stdout)
 	}
 }
+
+func TestSelectedPrettyTheme(t *testing.T) {
+	theme, ok := selectedPrettyTheme(false, "pacman", "default")
+	if ok || theme != "" {
+		t.Fatalf("expected theme selection to be ignored when pretty is disabled")
+	}
+
+	theme, ok = selectedPrettyTheme(true, "", "")
+	if ok || theme != "" {
+		t.Fatalf("expected no theme selection when no flag/env is set")
+	}
+
+	theme, ok = selectedPrettyTheme(true, "", "pacman")
+	if !ok || theme != "pacman" {
+		t.Fatalf("expected OS_THEME to select pacman, got %q (ok=%v)", theme, ok)
+	}
+
+	theme, ok = selectedPrettyTheme(true, "default", "pacman")
+	if !ok || theme != "default" {
+		t.Fatalf("expected --theme to override OS_THEME, got %q (ok=%v)", theme, ok)
+	}
+}
 func TestCompleteUsesOracleSnapshot(t *testing.T) {
 	stdout, stderr, err := executeForTest("complete")
 	if err != nil {

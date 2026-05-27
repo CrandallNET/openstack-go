@@ -639,6 +639,7 @@ func serverSingleAction(ctx context.Context, client *gophercloud.ServiceClient, 
 }
 
 func serverDelete(ctx context.Context, stdout io.Writer, opts *Options, client *gophercloud.ServiceClient, args []string) error {
+	args = recoverPositionalFromWait(opts, args)
 	if len(args) < 1 {
 		return fmt.Errorf("server delete requires <server>")
 	}
@@ -1120,18 +1121,7 @@ func serverUnset(ctx context.Context, opts *Options, client *gophercloud.Service
 }
 
 func serverCreate(ctx context.Context, stdout io.Writer, opts *Options, computeClient *gophercloud.ServiceClient, imageClient *gophercloud.ServiceClient, networkClient *gophercloud.ServiceClient, volumeClient *gophercloud.ServiceClient, args []string) error {
-	// Compatibility fallback: some flag parsing paths may consume the token
-	// after --wait as the wait value (instead of a positional server name).
-	// Recover that token as <server-name> when present.
-	if len(args) < 1 {
-		if waitValue := flagValue(opts, "wait"); waitValue != "" && waitValue != "true" && waitValue != "false" {
-			args = []string{waitValue}
-			if opts.CommandFlags == nil {
-				opts.CommandFlags = map[string]string{}
-			}
-			opts.CommandFlags["wait"] = "true"
-		}
-	}
+	args = recoverPositionalFromWait(opts, args)
 	if len(args) < 1 {
 		return fmt.Errorf("server create requires <server-name>")
 	}
@@ -1240,6 +1230,23 @@ func serverCreate(ctx context.Context, stdout io.Writer, opts *Options, computeC
 		return renderShowOutput(stdout, opts, serverCreateRawFields(raw, serverNetworkLabelsForPretty(ctx, opts, networkClient)))
 	}
 	return renderServerShow(stdout, opts, created, nil)
+}
+
+// recoverPositionalFromWait handles compatibility with parser paths that
+// consume the token after --wait as the wait value instead of a positional arg.
+func recoverPositionalFromWait(opts *Options, args []string) []string {
+	if len(args) > 0 {
+		return args
+	}
+	waitValue := flagValue(opts, "wait")
+	if waitValue == "" || waitValue == "true" || waitValue == "false" {
+		return args
+	}
+	if opts.CommandFlags == nil {
+		opts.CommandFlags = map[string]string{}
+	}
+	opts.CommandFlags["wait"] = "true"
+	return []string{waitValue}
 }
 
 func serverImageCreate(ctx context.Context, stdout io.Writer, opts *Options, computeClient *gophercloud.ServiceClient, imageClient *gophercloud.ServiceClient, args []string) error {

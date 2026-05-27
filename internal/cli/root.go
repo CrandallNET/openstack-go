@@ -206,21 +206,11 @@ func NewRootCommand(stdout io.Writer, stderr io.Writer) *cobra.Command {
 		if cmd.Flags().Changed("no-compact") {
 			opts.Compact = false
 		}
-		if opts.Theme != "" {
-			switch opts.Theme {
-			case "pacman":
-				currentTheme = DefaultTheme()
-			default:
-				currentTheme = DefaultTheme()
-			}
-		}
-		if theme := os.Getenv("OS_THEME"); theme != "" {
-			switch theme {
-			case "pacman":
-				currentTheme = DefaultTheme()
-			default:
-				currentTheme = DefaultTheme()
-			}
+		// Theme selection is a pretty-output concern. Ignore theme flags/env
+		// unless pretty output is active.
+		currentTheme = DefaultTheme()
+		if selectedTheme, ok := selectedPrettyTheme(opts.Format == "pretty", opts.Theme, os.Getenv("OS_THEME")); ok {
+			currentTheme = ThemeByName(selectedTheme)
 		}
 		opts.CommandFlags = commandFlagValues(cmd)
 		opts.CommandFlagList = commandFlagLists(cmd)
@@ -237,7 +227,7 @@ func NewRootCommand(stdout io.Writer, stderr io.Writer) *cobra.Command {
 func addGlobalFlags(flags *pflag.FlagSet, opts *Options) {
 	flags.StringVarP(&opts.Format, "format", "f", defaultOutputFormat, "the output format")
 	flags.BoolVar(&opts.Pretty, "pretty", opts.Pretty, "use enhanced human-readable output")
-	flags.StringVar(&opts.Theme, "theme", "", "pretty theme (e.g. pacman)")
+	flags.StringVar(&opts.Theme, "theme", "", "pretty theme (e.g. default, pacman)")
 	flags.BoolVar(&opts.Compact, "compact", opts.Compact, "compact enhanced human-readable output")
 	flags.BoolVar(&opts.NoCompact, "no-compact", false, "disable compact enhanced human-readable output")
 	flags.BoolVar(&opts.Debug, "debug", false, "show tracebacks on errors")
@@ -316,6 +306,20 @@ func envInt(name string) int {
 
 func envBoolInt(name string) bool {
 	return envInt(name) != 0
+}
+
+func selectedPrettyTheme(prettyEnabled bool, flagTheme string, envTheme string) (string, bool) {
+	if !prettyEnabled {
+		return "", false
+	}
+	selectedTheme := strings.TrimSpace(envTheme)
+	if strings.TrimSpace(flagTheme) != "" {
+		selectedTheme = strings.TrimSpace(flagTheme)
+	}
+	if selectedTheme == "" {
+		return "", false
+	}
+	return selectedTheme, true
 }
 
 func parserFlagError(path string, err error) error {

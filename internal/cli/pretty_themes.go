@@ -36,8 +36,8 @@ func parseEmbeddedThemes(data []byte) (themeStore, error) {
 	if themes.SchemaVersion != 1 {
 		return themes, fmt.Errorf("unsupported schema_version %d", themes.SchemaVersion)
 	}
-	if _, ok := themes.Themes["pacman"]; !ok {
-		return themes, fmt.Errorf("themes must include at least \"pacman\"")
+	if _, ok := themes.Themes["default"]; !ok {
+		return themes, fmt.Errorf("themes must include at least \"default\"")
 	}
 	return themes, nil
 }
@@ -69,29 +69,38 @@ type themeColors struct {
 	EmptyState   string `json:"empty_state"`
 }
 
-// DefaultTheme returns the "pacman" theme loaded from colors/themes.json.
+// DefaultTheme returns the "default" theme loaded from colors/themes.json.
 func DefaultTheme() *Theme {
-	pacman := embeddedThemes.Themes["pacman"]
+	return ThemeByName("default")
+}
+
+// ThemeByName returns the named theme, falling back to "default" when unknown.
+func ThemeByName(name string) *Theme {
+	selection := "default"
+	if candidate := embeddedThemes.Themes[name]; candidate != nil {
+		selection = name
+	}
+	selected := embeddedThemes.Themes[selection]
 	return &Theme{
-		LabelColor:      pacman.Label,
-		UUIDColor:       pacman.UUID,
-		NameColor:       pacman.Name,
-		IPAddressColor:  pacman.IPAddress,
-		TimestampColor:  pacman.Timestamp,
-		NumberColor:     pacman.Number,
-		BooleanTrueColor:  pacman.BooleanTrue,
-		BooleanFalseColor: pacman.BooleanFalse,
-		WarningColor:    pacman.Warning,
-		ErrorColor:      pacman.Error,
-		DeviceColor:     pacman.Device,
-		FlavorColor:     pacman.Flavor,
-		ImageColor:      pacman.Image,
-		VolumeColor:     pacman.Volume,
-		NAColour:        pacman.NA,
-		CellTextColor:   pacman.CellText,
-		BorderColor:     pacman.Border,
-		HeaderColor:     pacman.Header,
-		EmptyStateColor: pacman.EmptyState,
+		LabelColor:        selected.Label,
+		UUIDColor:         selected.UUID,
+		NameColor:         selected.Name,
+		IPAddressColor:    selected.IPAddress,
+		TimestampColor:    selected.Timestamp,
+		NumberColor:       selected.Number,
+		BooleanTrueColor:  selected.BooleanTrue,
+		BooleanFalseColor: selected.BooleanFalse,
+		WarningColor:      selected.Warning,
+		ErrorColor:        selected.Error,
+		DeviceColor:       selected.Device,
+		FlavorColor:       selected.Flavor,
+		ImageColor:        selected.Image,
+		VolumeColor:       selected.Volume,
+		NAColour:          selected.NA,
+		CellTextColor:     selected.CellText,
+		BorderColor:       selected.Border,
+		HeaderColor:       selected.Header,
+		EmptyStateColor:   selected.EmptyState,
 	}
 }
 
