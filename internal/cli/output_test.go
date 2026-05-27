@@ -95,6 +95,9 @@ func outputTestQuotaResourceNames(rows []outputRow) []string {
 	return names
 }
 func TestCompactFlagIsNoopForDefaultOutput(t *testing.T) {
+	t.Setenv("OS_PRETTY", "")
+	t.Setenv("OS_COMPACT", "")
+
 	normal, stderr, err := executeForTest("command", "list", "--group", "openstack.cli")
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)

@@ -27,6 +27,16 @@ build: ## Build the drop-in openstack binary at bin/openstack.
 	@mkdir -p $(BIN_DIR)
 	$(GO) build -o $(BINARY) ./cmd/openstack
 
+.PHONY: clean
+clean: ## Remove built binaries and local build outputs.
+	rm -rf $(BIN_DIR)
+
+.PHONY: mrproper
+mrproper: clean ## Run clean and remove local Go caches.
+	$(GO) clean -cache
+	$(GO) clean -modcache
+	rm -rf $(GOCACHE) $(GOMODCACHE)
+
 .PHONY: test
 test: ## Run the full Go test suite.
 	$(GO) test ./...

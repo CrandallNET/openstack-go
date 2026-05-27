@@ -89,7 +89,7 @@ func runCoreRead(path string, stdout io.Writer, opts *Options) commandHandler {
 		if !ok {
 			return fmt.Errorf("core read command %q is not wired", path)
 		}
-		return h(cmd.Context(), stdout, opts, clients)
+		return h(cmd.Context(), stdout, opts, clients, args, cmd.ErrOrStderr())
 	}
 }
 
@@ -1120,6 +1120,18 @@ func serverUnset(ctx context.Context, opts *Options, client *gophercloud.Service
 }
 
 func serverCreate(ctx context.Context, stdout io.Writer, opts *Options, computeClient *gophercloud.ServiceClient, imageClient *gophercloud.ServiceClient, networkClient *gophercloud.ServiceClient, volumeClient *gophercloud.ServiceClient, args []string) error {
+	// Compatibility fallback: some flag parsing paths may consume the token
+	// after --wait as the wait value (instead of a positional server name).
+	// Recover that token as <server-name> when present.
+	if len(args) < 1 {
+		if waitValue := flagValue(opts, "wait"); waitValue != "" && waitValue != "true" && waitValue != "false" {
+			args = []string{waitValue}
+			if opts.CommandFlags == nil {
+				opts.CommandFlags = map[string]string{}
+			}
+			opts.CommandFlags["wait"] = "true"
+		}
+	}
 	if len(args) < 1 {
 		return fmt.Errorf("server create requires <server-name>")
 	}
@@ -17311,7 +17323,7 @@ func serverNetworksSummary(addresses map[string]any) string {
 type prettyNetworkAddresses map[string][]string
 
 // coreReadHandler is the handler signature for core read commands.
-type coreReadHandler func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients) error
+type coreReadHandler func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error
 
 var coreReadDispatch = make(map[string]coreReadHandler)
 
@@ -17319,9 +17331,8 @@ var coreReadDispatch = make(map[string]coreReadHandler)
 type initHandler func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error
 
 func registerCoreReadHandler(path string, h initHandler) {
-	// Convert initHandler to coreReadHandler by dropping args and stderr
-	coreReadDispatch[path] = func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients) error {
-		return h(ctx, stdout, opts, clients, nil, nil)
+	coreReadDispatch[path] = func(ctx context.Context, stdout io.Writer, opts *Options, clients *openStackClients, args []string, stderr io.Writer) error {
+		return h(ctx, stdout, opts, clients, args, stderr)
 	}
 }
 
@@ -22263,9 +22274,12 @@ func init() {
 		if err != nil {
 			return err
 		}
-		volumeClient, err := clients.blockStorageV3()
-		if err != nil {
-			return err
+		var volumeClient *gophercloud.ServiceClient
+		if flagValue(opts, "volume") != "" || flagValue(opts, "snapshot") != "" {
+			volumeClient, err = clients.blockStorageV3()
+			if err != nil {
+				return err
+			}
 		}
 		return serverCreate(ctx, stdout, opts, computeClient, imageClient, networkClient, volumeClient, args)
 	})
