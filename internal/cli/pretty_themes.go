@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 
 	"charm.land/lipgloss/v2"
 )
@@ -16,14 +17,14 @@ var prettyThemesJSON []byte
 var embeddedThemes = mustLoadEmbeddedThemes(prettyThemesJSON)
 
 func mustLoadEmbeddedThemes(data []byte) themeStore {
-	themes, err := parseEmbeddedThemes(data)
+	themes, err := parseThemeStore(data, true)
 	if err != nil {
 		panic(fmt.Sprintf("load embedded pretty themes: %v", err))
 	}
 	return themes
 }
 
-func parseEmbeddedThemes(data []byte) (themeStore, error) {
+func parseThemeStore(data []byte, requireDefault bool) (themeStore, error) {
 	var themes themeStore
 	decoder := json.NewDecoder(bytes.NewReader(data))
 	decoder.DisallowUnknownFields()
@@ -36,37 +37,44 @@ func parseEmbeddedThemes(data []byte) (themeStore, error) {
 	if themes.SchemaVersion != 1 {
 		return themes, fmt.Errorf("unsupported schema_version %d", themes.SchemaVersion)
 	}
-	if _, ok := themes.Themes["default"]; !ok {
-		return themes, fmt.Errorf("themes must include at least \"default\"")
+	if requireDefault {
+		if _, ok := themes.Themes["default"]; !ok {
+			return themes, fmt.Errorf("themes must include at least \"default\"")
+		}
 	}
 	return themes, nil
 }
 
+func parseEmbeddedThemes(data []byte) (themeStore, error) {
+	return parseThemeStore(data, true)
+}
+
 type themeStore struct {
-	SchemaVersion int                    `json:"schema_version"`
+	SchemaVersion int                     `json:"schema_version"`
 	Themes        map[string]*themeColors `json:"themes"`
 }
 
 type themeColors struct {
-	Label        string `json:"label"`
-	UUID         string `json:"uuid"`
-	Name         string `json:"name"`
-	IPAddress    string `json:"ip_address"`
-	Timestamp    string `json:"timestamp"`
-	Number       string `json:"number"`
-	BooleanTrue  string `json:"boolean_true"`
-	BooleanFalse string `json:"boolean_false"`
-	Warning      string `json:"warning"`
-	Error        string `json:"error"`
-	Device       string `json:"device"`
-	Flavor       string `json:"flavor"`
-	Image        string `json:"image"`
-	Volume       string `json:"volume"`
-	NA           string `json:"na"`
-	CellText     string `json:"cell_text"`
-	Border       string `json:"border"`
-	Header       string `json:"header"`
-	EmptyState   string `json:"empty_state"`
+	Label        string   `json:"label"`
+	UUID         string   `json:"uuid"`
+	Name         string   `json:"name"`
+	IPAddress    string   `json:"ip_address"`
+	Timestamp    string   `json:"timestamp"`
+	Number       string   `json:"number"`
+	BooleanTrue  string   `json:"boolean_true"`
+	BooleanFalse string   `json:"boolean_false"`
+	Warning      string   `json:"warning"`
+	Error        string   `json:"error"`
+	Device       string   `json:"device"`
+	Flavor       string   `json:"flavor"`
+	Image        string   `json:"image"`
+	Volume       string   `json:"volume"`
+	NA           string   `json:"na"`
+	CellText     string   `json:"cell_text"`
+	Border       string   `json:"border"`
+	Header       string   `json:"header"`
+	EmptyState   string   `json:"empty_state"`
+	ProgressBar  []string `json:"progress_bar"`
 }
 
 // DefaultTheme returns the "default" theme loaded from colors/themes.json.
@@ -101,55 +109,94 @@ func ThemeByName(name string) *Theme {
 		BorderColor:       selected.Border,
 		HeaderColor:       selected.Header,
 		EmptyStateColor:   selected.EmptyState,
+		ProgressBarColors: append([]string(nil), selected.ProgressBar...),
 	}
+}
+
+func loadThemeFromFile(path string, name string) (*Theme, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	store, err := parseThemeStore(data, false)
+	if err != nil {
+		return nil, err
+	}
+	selected, ok := store.Themes[name]
+	if !ok || selected == nil {
+		return nil, fmt.Errorf("theme %q not found", name)
+	}
+	return &Theme{
+		LabelColor:        selected.Label,
+		UUIDColor:         selected.UUID,
+		NameColor:         selected.Name,
+		IPAddressColor:    selected.IPAddress,
+		TimestampColor:    selected.Timestamp,
+		NumberColor:       selected.Number,
+		BooleanTrueColor:  selected.BooleanTrue,
+		BooleanFalseColor: selected.BooleanFalse,
+		WarningColor:      selected.Warning,
+		ErrorColor:        selected.Error,
+		DeviceColor:       selected.Device,
+		FlavorColor:       selected.Flavor,
+		ImageColor:        selected.Image,
+		VolumeColor:       selected.Volume,
+		NAColour:          selected.NA,
+		CellTextColor:     selected.CellText,
+		BorderColor:       selected.Border,
+		HeaderColor:       selected.Header,
+		EmptyStateColor:   selected.EmptyState,
+		ProgressBarColors: append([]string(nil), selected.ProgressBar...),
+	}, nil
 }
 
 // Theme holds a set of color definitions for the pretty renderer.
 // Each field maps a semantic role to an 8-bit terminal color code.
 type Theme struct {
 	// Semantic role colors for data cells.
-	LabelColor      string // Field labels (key names before the colon)
-	UUIDColor       string // UUIDs and ID-like hex fragments
-	NameColor       string // Resource names
-	IPAddressColor  string // IP addresses and hostnames
-	TimestampColor  string // Dates and times
-	NumberColor     string // Numeric flavor specs
+	LabelColor        string // Field labels (key names before the colon)
+	UUIDColor         string // UUIDs and ID-like hex fragments
+	NameColor         string // Resource names
+	IPAddressColor    string // IP addresses and hostnames
+	TimestampColor    string // Dates and times
+	NumberColor       string // Numeric flavor specs
 	BooleanTrueColor  string // Boolean True, healthy/active status
 	BooleanFalseColor string // Boolean False
-	WarningColor    string // Transitional statuses (BUILD, MIGRATING, CREATING, etc.)
-	ErrorColor      string // Error/dead statuses (ERROR, SHELVED, SHUTOFF, FAILED, etc.)
-	DeviceColor     string // Block device paths
-	FlavorColor     string // Flavor names
-	ImageColor      string // Generic image values (OS-specific use brand palette)
-	VolumeColor     string // Volume names
-	NAColour        string // Not-available placeholder ("N/A")
+	WarningColor      string // Transitional statuses (BUILD, MIGRATING, CREATING, etc.)
+	ErrorColor        string // Error/dead statuses (ERROR, SHELVED, SHUTOFF, FAILED, etc.)
+	DeviceColor       string // Block device paths
+	FlavorColor       string // Flavor names
+	ImageColor        string // Generic image values (OS-specific use brand palette)
+	VolumeColor       string // Volume names
+	NAColour          string // Not-available placeholder ("N/A")
 
 	// Table structural colors (lipgloss + bubble-table).
-	CellTextColor   string // Bubble-table cell text
-	BorderColor     string // Bubble-table border foreground
-	HeaderColor     string // Bubble-table header foreground
-	EmptyStateColor string // "No rows" empty state message
+	CellTextColor     string   // Bubble-table cell text
+	BorderColor       string   // Bubble-table border foreground
+	HeaderColor       string   // Bubble-table header foreground
+	EmptyStateColor   string   // "No rows" empty state message
+	ProgressBarColors []string // Wait/progress bar colors: [full] or [empty, full]
 }
 
 // BuildStyles returns a set of lipgloss styles derived from the theme.
 // Each style is pre-configured with the corresponding Foreground color.
 func (t *Theme) BuildStyles() prettyThemeStyles {
 	return prettyThemeStyles{
-		LabelStyle:       lipgloss.NewStyle().Foreground(lipgloss.Color(t.LabelColor)).Bold(true),
-		UUIDStyle:        lipgloss.NewStyle().Foreground(lipgloss.Color(t.UUIDColor)),
-		NameStyle:        lipgloss.NewStyle().Foreground(lipgloss.Color(t.NameColor)),
-		IPAddressStyle:   lipgloss.NewStyle().Foreground(lipgloss.Color(t.IPAddressColor)),
-		TimestampStyle:   lipgloss.NewStyle().Foreground(lipgloss.Color(t.TimestampColor)),
-		NumberStyle:      lipgloss.NewStyle().Foreground(lipgloss.Color(t.NumberColor)),
-		BooleanTrueStyle:   lipgloss.NewStyle().Foreground(lipgloss.Color(t.BooleanTrueColor)),
-		BooleanFalseStyle:  lipgloss.NewStyle().Foreground(lipgloss.Color(t.BooleanFalseColor)),
-		WarningStyle:     lipgloss.NewStyle().Foreground(lipgloss.Color(t.WarningColor)),
-		ErrorStyle:       lipgloss.NewStyle().Foreground(lipgloss.Color(t.ErrorColor)),
-		DeviceStyle:      lipgloss.NewStyle().Foreground(lipgloss.Color(t.DeviceColor)),
-		FlavorStyle:      lipgloss.NewStyle().Foreground(lipgloss.Color(t.FlavorColor)),
-		ImageStyle:       lipgloss.NewStyle().Foreground(lipgloss.Color(t.ImageColor)),
-		VolumeStyle:      lipgloss.NewStyle().Foreground(lipgloss.Color(t.VolumeColor)),
-		NAStyle:          lipgloss.NewStyle().Foreground(lipgloss.Color(t.NAColour)),
+		LabelStyle:        lipgloss.NewStyle().Foreground(lipgloss.Color(t.LabelColor)).Bold(true),
+		UUIDStyle:         lipgloss.NewStyle().Foreground(lipgloss.Color(t.UUIDColor)),
+		NameStyle:         lipgloss.NewStyle().Foreground(lipgloss.Color(t.NameColor)),
+		IPAddressStyle:    lipgloss.NewStyle().Foreground(lipgloss.Color(t.IPAddressColor)),
+		TimestampStyle:    lipgloss.NewStyle().Foreground(lipgloss.Color(t.TimestampColor)),
+		NumberStyle:       lipgloss.NewStyle().Foreground(lipgloss.Color(t.NumberColor)),
+		BooleanTrueStyle:  lipgloss.NewStyle().Foreground(lipgloss.Color(t.BooleanTrueColor)),
+		BooleanFalseStyle: lipgloss.NewStyle().Foreground(lipgloss.Color(t.BooleanFalseColor)),
+		WarningStyle:      lipgloss.NewStyle().Foreground(lipgloss.Color(t.WarningColor)),
+		ErrorStyle:        lipgloss.NewStyle().Foreground(lipgloss.Color(t.ErrorColor)),
+		DeviceStyle:       lipgloss.NewStyle().Foreground(lipgloss.Color(t.DeviceColor)),
+		FlavorStyle:       lipgloss.NewStyle().Foreground(lipgloss.Color(t.FlavorColor)),
+		ImageStyle:        lipgloss.NewStyle().Foreground(lipgloss.Color(t.ImageColor)),
+		VolumeStyle:       lipgloss.NewStyle().Foreground(lipgloss.Color(t.VolumeColor)),
+		NAStyle:           lipgloss.NewStyle().Foreground(lipgloss.Color(t.NAColour)),
 	}
 }
 
@@ -166,21 +213,21 @@ func (t *Theme) BuildBubbleTableStyle() bubbleStyle {
 
 // prettyThemeStyles holds pre-built lipgloss styles for semantic roles.
 type prettyThemeStyles struct {
-	LabelStyle       lipgloss.Style
-	UUIDStyle        lipgloss.Style
-	NameStyle        lipgloss.Style
-	IPAddressStyle   lipgloss.Style
-	TimestampStyle   lipgloss.Style
-	NumberStyle      lipgloss.Style
-	BooleanTrueStyle   lipgloss.Style
-	BooleanFalseStyle  lipgloss.Style
-	WarningStyle     lipgloss.Style
-	ErrorStyle       lipgloss.Style
-	DeviceStyle      lipgloss.Style
-	FlavorStyle      lipgloss.Style
-	ImageStyle       lipgloss.Style
-	VolumeStyle      lipgloss.Style
-	NAStyle          lipgloss.Style
+	LabelStyle        lipgloss.Style
+	UUIDStyle         lipgloss.Style
+	NameStyle         lipgloss.Style
+	IPAddressStyle    lipgloss.Style
+	TimestampStyle    lipgloss.Style
+	NumberStyle       lipgloss.Style
+	BooleanTrueStyle  lipgloss.Style
+	BooleanFalseStyle lipgloss.Style
+	WarningStyle      lipgloss.Style
+	ErrorStyle        lipgloss.Style
+	DeviceStyle       lipgloss.Style
+	FlavorStyle       lipgloss.Style
+	ImageStyle        lipgloss.Style
+	VolumeStyle       lipgloss.Style
+	NAStyle           lipgloss.Style
 }
 
 // bubbleStyle holds the structural colors used by bubble-table rendering.

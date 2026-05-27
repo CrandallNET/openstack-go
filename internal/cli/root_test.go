@@ -255,6 +255,238 @@ func TestSelectedPrettyTheme(t *testing.T) {
 		t.Fatalf("expected --theme to override OS_THEME, got %q (ok=%v)", theme, ok)
 	}
 }
+
+func TestResolveCloudsYAMLPath(t *testing.T) {
+	t.Run("os client config file takes precedence", func(t *testing.T) {
+		expected := "/tmp/custom/clouds.yaml"
+		t.Setenv("OS_CLIENT_CONFIG_FILE", expected)
+		got, err := resolveCloudsYAMLPath()
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		if got != expected {
+			t.Fatalf("expected %q, got %q", expected, got)
+		}
+	})
+
+	t.Run("cwd clouds yaml is selected first", func(t *testing.T) {
+		originalWD, err := os.Getwd()
+		if err != nil {
+			t.Fatalf("getwd: %v", err)
+		}
+		tmp := t.TempDir()
+		if err := os.WriteFile(filepath.Join(tmp, "clouds.yaml"), []byte("clouds: {}\n"), 0o600); err != nil {
+			t.Fatalf("write cwd clouds.yaml: %v", err)
+		}
+		t.Setenv("OS_CLIENT_CONFIG_FILE", "")
+		t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+		if err := os.Chdir(tmp); err != nil {
+			t.Fatalf("chdir: %v", err)
+		}
+		t.Cleanup(func() {
+			_ = os.Chdir(originalWD)
+		})
+
+		got, err := resolveCloudsYAMLPath()
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		want := filepath.Join(tmp, "clouds.yaml")
+		if filepath.Clean(got) != filepath.Clean(want) {
+			gotResolved, _ := filepath.EvalSymlinks(got)
+			wantResolved, _ := filepath.EvalSymlinks(want)
+			if filepath.Clean(gotResolved) != filepath.Clean(wantResolved) {
+				t.Fatalf("expected %q, got %q", want, got)
+			}
+		}
+	})
+
+	t.Run("xdg fallback is selected when cwd has no clouds", func(t *testing.T) {
+		originalWD, err := os.Getwd()
+		if err != nil {
+			t.Fatalf("getwd: %v", err)
+		}
+		tmpWD := t.TempDir()
+		tmpXDG := t.TempDir()
+		xdgClouds := filepath.Join(tmpXDG, "openstack", "clouds.yaml")
+		if err := os.MkdirAll(filepath.Dir(xdgClouds), 0o755); err != nil {
+			t.Fatalf("mkdir xdg: %v", err)
+		}
+		if err := os.WriteFile(xdgClouds, []byte("clouds: {}\n"), 0o600); err != nil {
+			t.Fatalf("write xdg clouds.yaml: %v", err)
+		}
+		t.Setenv("OS_CLIENT_CONFIG_FILE", "")
+		t.Setenv("XDG_CONFIG_HOME", tmpXDG)
+		if err := os.Chdir(tmpWD); err != nil {
+			t.Fatalf("chdir: %v", err)
+		}
+		t.Cleanup(func() {
+			_ = os.Chdir(originalWD)
+		})
+
+		got, err := resolveCloudsYAMLPath()
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		if got != xdgClouds {
+			t.Fatalf("expected %q, got %q", xdgClouds, got)
+		}
+	})
+}
+
+func TestUserThemeLoadsFromCloudsDirectory(t *testing.T) {
+	previousTheme := currentTheme
+	t.Cleanup(func() {
+		currentTheme = previousTheme
+	})
+	originalWD, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("getwd: %v", err)
+	}
+	tmp := t.TempDir()
+	themeJSON := `{
+  "schema_version": 1,
+  "themes": {
+    "user": {
+      "label": "#00ff00",
+      "uuid": "7",
+      "name": "7",
+      "ip_address": "7",
+      "timestamp": "7",
+      "number": "7",
+      "boolean_true": "7",
+      "boolean_false": "7",
+      "warning": "7",
+      "error": "7",
+      "device": "7",
+      "flavor": "7",
+      "image": "7",
+      "volume": "7",
+      "na": "7",
+      "cell_text": "7",
+      "border": "7",
+      "header": "7",
+      "empty_state": "7",
+      "progress_bar": ["7"]
+    }
+  }
+}`
+	if err := os.WriteFile(filepath.Join(tmp, "theme.json"), []byte(themeJSON), 0o600); err != nil {
+		t.Fatalf("write theme.json: %v", err)
+	}
+	if err := os.Chdir(tmp); err != nil {
+		t.Fatalf("chdir: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = os.Chdir(originalWD)
+	})
+	t.Setenv("OS_CLIENT_CONFIG_FILE", "")
+
+	cmd := NewRootCommand(io.Discard, io.Discard)
+	cmd.SetArgs([]string{"--pretty", "--theme", "user", "module", "list"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if currentTheme == nil || currentTheme.LabelColor != "#00ff00" {
+		t.Fatalf("expected user theme label color #00ff00, got %#v", currentTheme)
+	}
+}
+
+func TestUserThemeSearchSkipsInvalidAndUsesNextLocation(t *testing.T) {
+	previousTheme := currentTheme
+	t.Cleanup(func() {
+		currentTheme = previousTheme
+	})
+	originalWD, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("getwd: %v", err)
+	}
+	tmpWD := t.TempDir()
+	tmpXDG := t.TempDir()
+	if err := os.Chdir(tmpWD); err != nil {
+		t.Fatalf("chdir: %v", err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(originalWD) })
+	t.Setenv("OS_CLIENT_CONFIG_FILE", "")
+	t.Setenv("XDG_CONFIG_HOME", tmpXDG)
+
+	// First location (cwd) has invalid JSON and must be skipped.
+	if err := os.WriteFile(filepath.Join(tmpWD, "theme.json"), []byte("{invalid"), 0o600); err != nil {
+		t.Fatalf("write invalid theme.json: %v", err)
+	}
+	// Second location (XDG) has valid user theme and should be selected.
+	xdgThemeDir := filepath.Join(tmpXDG, "openstack")
+	if err := os.MkdirAll(xdgThemeDir, 0o755); err != nil {
+		t.Fatalf("mkdir xdg theme dir: %v", err)
+	}
+	valid := `{"schema_version":1,"themes":{"user":{"label":"#123456","uuid":"7","name":"7","ip_address":"7","timestamp":"7","number":"7","boolean_true":"7","boolean_false":"7","warning":"7","error":"7","device":"7","flavor":"7","image":"7","volume":"7","na":"7","cell_text":"7","border":"7","header":"7","empty_state":"7","progress_bar":["7"]}}}`
+	if err := os.WriteFile(filepath.Join(xdgThemeDir, "theme.json"), []byte(valid), 0o600); err != nil {
+		t.Fatalf("write valid xdg theme.json: %v", err)
+	}
+
+	cmd := NewRootCommand(io.Discard, io.Discard)
+	cmd.SetArgs([]string{"--pretty", "--theme", "user", "module", "list"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if currentTheme == nil || currentTheme.LabelColor != "#123456" {
+		t.Fatalf("expected xdg user theme label color #123456, got %#v", currentTheme)
+	}
+}
+
+func TestUserThemeMissingReturnsExpectedError(t *testing.T) {
+	originalWD, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("getwd: %v", err)
+	}
+	tmpWD := t.TempDir()
+	tmpXDG := t.TempDir()
+	if err := os.Chdir(tmpWD); err != nil {
+		t.Fatalf("chdir: %v", err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(originalWD) })
+	t.Setenv("OS_CLIENT_CONFIG_FILE", "")
+	t.Setenv("XDG_CONFIG_HOME", tmpXDG)
+
+	cmd := NewRootCommand(io.Discard, io.Discard)
+	cmd.SetArgs([]string{"--pretty", "--theme", "user", "module", "list"})
+	err = cmd.Execute()
+	if err == nil {
+		t.Fatalf("expected error when no user-defined theme exists")
+	}
+	if err.Error() != "No user-defined theme found" {
+		t.Fatalf("expected exact error %q, got %q", "No user-defined theme found", err.Error())
+	}
+}
+
+func TestUserThemeIgnoresNonUserThemes(t *testing.T) {
+	originalWD, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("getwd: %v", err)
+	}
+	tmpWD := t.TempDir()
+	if err := os.Chdir(tmpWD); err != nil {
+		t.Fatalf("chdir: %v", err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(originalWD) })
+	t.Setenv("OS_CLIENT_CONFIG_FILE", "")
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+
+	nonUser := `{"schema_version":1,"themes":{"default":{"label":"2","uuid":"2","name":"2","ip_address":"2","timestamp":"2","number":"2","boolean_true":"2","boolean_false":"2","warning":"2","error":"2","device":"2","flavor":"2","image":"2","volume":"2","na":"2","cell_text":"2","border":"2","header":"2","empty_state":"2","progress_bar":["2"]}}}`
+	if err := os.WriteFile(filepath.Join(tmpWD, "theme.json"), []byte(nonUser), 0o600); err != nil {
+		t.Fatalf("write non-user theme.json: %v", err)
+	}
+
+	cmd := NewRootCommand(io.Discard, io.Discard)
+	cmd.SetArgs([]string{"--pretty", "--theme", "user", "module", "list"})
+	err = cmd.Execute()
+	if err == nil {
+		t.Fatalf("expected error when only non-user themes are defined")
+	}
+	if err.Error() != "No user-defined theme found" {
+		t.Fatalf("expected exact error %q, got %q", "No user-defined theme found", err.Error())
+	}
+}
 func TestCompleteUsesOracleSnapshot(t *testing.T) {
 	stdout, stderr, err := executeForTest("complete")
 	if err != nil {

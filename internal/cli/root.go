@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -210,7 +211,15 @@ func NewRootCommand(stdout io.Writer, stderr io.Writer) *cobra.Command {
 		// unless pretty output is active.
 		currentTheme = DefaultTheme()
 		if selectedTheme, ok := selectedPrettyTheme(opts.Format == "pretty", opts.Theme, os.Getenv("OS_THEME")); ok {
-			currentTheme = ThemeByName(selectedTheme)
+			if selectedTheme == "user" {
+				theme, err := loadUserTheme()
+				if err != nil {
+					return err
+				}
+				currentTheme = theme
+			} else {
+				currentTheme = ThemeByName(selectedTheme)
+			}
 		}
 		opts.CommandFlags = commandFlagValues(cmd)
 		opts.CommandFlagList = commandFlagLists(cmd)
@@ -320,6 +329,87 @@ func selectedPrettyTheme(prettyEnabled bool, flagTheme string, envTheme string) 
 		return "", false
 	}
 	return selectedTheme, true
+}
+
+func loadUserTheme() (*Theme, error) {
+	for _, themePath := range resolveUserThemeCandidates() {
+		theme, err := loadThemeFromFile(themePath, "user")
+		if err == nil {
+			return theme, nil
+		}
+	}
+	return nil, fmt.Errorf("No user-defined theme found")
+}
+
+func resolveUserThemeCandidates() []string {
+	var dirs []string
+	if explicit := strings.TrimSpace(os.Getenv("OS_CLIENT_CONFIG_FILE")); explicit != "" {
+		dirs = append(dirs, filepath.Dir(explicit))
+	} else {
+		cwd, err := os.Getwd()
+		if err == nil && strings.TrimSpace(cwd) != "" {
+			dirs = append(dirs, cwd)
+		}
+		xdgConfig := strings.TrimSpace(os.Getenv("XDG_CONFIG_HOME"))
+		if xdgConfig == "" {
+			homeDir, err := os.UserHomeDir()
+			if err == nil {
+				xdgConfig = filepath.Join(homeDir, ".config")
+			}
+		}
+		if xdgConfig != "" {
+			dirs = append(dirs, filepath.Join(xdgConfig, "openstack"))
+		}
+		dirs = append(dirs, filepath.Join(string(filepath.Separator), "etc", "openstack"))
+	}
+	seen := map[string]struct{}{}
+	candidates := make([]string, 0, len(dirs))
+	for _, dir := range dirs {
+		if dir == "" {
+			continue
+		}
+		themePath := filepath.Join(dir, "theme.json")
+		key := filepath.Clean(themePath)
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		candidates = append(candidates, themePath)
+	}
+	return candidates
+}
+
+func resolveCloudsYAMLPath() (string, error) {
+	if explicit := strings.TrimSpace(os.Getenv("OS_CLIENT_CONFIG_FILE")); explicit != "" {
+		return explicit, nil
+	}
+	cwd, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("resolve current working directory: %w", err)
+	}
+	xdgConfig := strings.TrimSpace(os.Getenv("XDG_CONFIG_HOME"))
+	if xdgConfig == "" {
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			return "", fmt.Errorf("resolve user home directory: %w", err)
+		}
+		xdgConfig = filepath.Join(homeDir, ".config")
+	}
+	candidates := []string{
+		filepath.Join(cwd, "clouds.yaml"),
+		filepath.Join(xdgConfig, "openstack", "clouds.yaml"),
+		filepath.Join(string(filepath.Separator), "etc", "openstack", "clouds.yaml"),
+	}
+	for _, candidate := range candidates {
+		info, err := os.Stat(candidate)
+		if err != nil {
+			continue
+		}
+		if info.Mode().IsRegular() {
+			return candidate, nil
+		}
+	}
+	return "", fmt.Errorf("clouds.yaml not found in %v", candidates)
 }
 
 func parserFlagError(path string, err error) error {
