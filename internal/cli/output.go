@@ -572,6 +572,17 @@ func prettyProgressView(stdout io.Writer, opts *Options, percent float64) string
 	if !color {
 		model.FullColor = lipgloss.NoColor{}
 		model.EmptyColor = lipgloss.NoColor{}
+	} else {
+		switch len(currentTheme.ProgressBarColors) {
+		case 1:
+			model = progress.New(progress.WithWidth(width), progress.WithFillCharacters('█', ' '))
+			model.FullColor = lipgloss.Color(currentTheme.ProgressBarColors[0])
+			model.EmptyColor = lipgloss.NoColor{}
+		case 2:
+			model = progress.New(progress.WithWidth(width), progress.WithFillCharacters('█', '█'))
+			model.EmptyColor = lipgloss.Color(currentTheme.ProgressBarColors[0])
+			model.FullColor = lipgloss.Color(currentTheme.ProgressBarColors[1])
+		}
 	}
 	return model.ViewAs(percent)
 }

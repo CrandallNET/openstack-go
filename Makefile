@@ -87,9 +87,14 @@ colors: ## Display terminal color listings (ANSI16, ANSI256 grid, and/or hex lis
 allcolors: ## Display ANSI16, ANSI256 grid, and ANSI256+hex in one run.
 	@$(GO) run ./tools/colors --ansi --ascii --hex
 
+.PHONY: test/progress
+test/progress: ## Render a test progress bar. Use COLORS for palette nums, or COLOR1/COLOR2 for hex-safe input.
+	@PROGRESS_COLORS='$(if $(COLOR1),$(COLOR1) $(COLOR2),$(COLORS))' $(GO) run ./tools/progress
+
 .PHONY: build-tools
 build-tools: ## Build all CLI tools in the tools directory.
 	@mkdir -p $(BIN_DIR)
 	$(GO) build -o $(BIN_DIR)/os-test ./tools/os-test
 	$(GO) build -o $(BIN_DIR)/colors ./tools/colors
 	$(GO) build -o $(BIN_DIR)/allcolors ./tools/colors
+	$(GO) build -o $(BIN_DIR)/test-progress ./tools/progress

@@ -20,7 +20,11 @@
       "cell_text": "244",
       "border": "244",
       "header": "251",
-      "empty_state": "241"
+      "empty_state": "241",
+      "progress_bar": [
+        "238",
+        "#ED1844"
+      ]
     },
     "ascii": {
       "label": "15",
@@ -41,7 +45,10 @@
       "cell_text": "15",
       "border": "7",
       "header": "15",
-      "empty_state": "8"
+      "empty_state": "8",
+      "progress_bar": [
+        "7"
+      ]
     },
     "pacman": {
       "label": "15",
@@ -62,7 +69,10 @@
       "cell_text": "252",
       "border": "63",
       "header": "39",
-      "empty_state": "244"
+      "empty_state": "244",
+      "progress_bar": [
+        "7"
+      ]
     }
   }
 }

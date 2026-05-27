@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "themes": {
+    "user": {
+      "label": "67",
+      "uuid": "39",
+      "name": "13",
+      "ip_address": "114",
+      "timestamp": "117",
+      "number": "141",
+      "boolean_true": "82",
+      "boolean_false": "214",
+      "warning": "220",
+      "error": "203",
+      "device": "6",
+      "flavor": "223",
+      "image": "180",
+      "volume": "14",
+      "na": "7",
+      "cell_text": "7",
+      "border": "67",
+      "header": "67",
+      "empty_state": "8",
+      "progress_bar": [
+        "8",
+        "39"
+      ]
+    }
+  }
+}

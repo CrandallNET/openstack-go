@@ -21,6 +21,15 @@ func mustPrettyOSImageColorForTest(t *testing.T, name string) string {
 	}
 	return color
 }
+
+func useDefaultThemeForTest(t *testing.T) {
+	t.Helper()
+	previous := currentTheme
+	currentTheme = DefaultTheme()
+	t.Cleanup(func() {
+		currentTheme = previous
+	})
+}
 func stripANSI(output string) string {
 	var builder strings.Builder
 	for i := 0; i < len(output); {
@@ -328,8 +337,10 @@ func TestPrettyCompactRemovesTTYRowSeparators(t *testing.T) {
 	}
 }
 func TestPrettyDeviceLabelUsesDeviceColor(t *testing.T) {
+	useDefaultThemeForTest(t)
+	styles := currentTheme.BuildStyles()
 	colored := prettyColorizeByName("Attached to", "device: /dev/vda")
-	want := prettyLabelStyle.Render("device:") + prettyDeviceStyle.Render(" /dev/vda")
+	want := styles.LabelStyle.Render("device:") + styles.DeviceStyle.Render(" /dev/vda")
 	if colored != want {
 		t.Fatalf("expected device label value to use device color, got %q want %q", colored, want)
 	}
@@ -362,8 +373,10 @@ func TestPrettyFlagParses(t *testing.T) {
 	}
 }
 func TestPrettyGenericNameWithHostnameUsesNameColor(t *testing.T) {
+	useDefaultThemeForTest(t)
+	styles := currentTheme.BuildStyles()
 	colored := prettyColorizeByName("Name", "crandall.wedding")
-	want := prettyNameStyle.Render("crandall.wedding")
+	want := styles.NameStyle.Render("crandall.wedding")
 	if colored != want {
 		t.Fatalf("expected generic Name hostname-looking value to use name color, got %q want %q", colored, want)
 	}
@@ -376,8 +389,10 @@ func TestPrettyHostnamesUseIPColor(t *testing.T) {
 	}
 }
 func TestPrettyImageNAIsColored(t *testing.T) {
+	useDefaultThemeForTest(t)
+	styles := currentTheme.BuildStyles()
 	colored := prettyColorizeByName("Image", "N/A (booted from volume)")
-	want := prettyNAStyle.Render("N/A") + " (booted from volume)"
+	want := styles.NAStyle.Render("N/A") + " (booted from volume)"
 	if colored != want {
 		t.Fatalf("expected only image N/A token to be colored, got %q want %q", colored, want)
 	}
@@ -562,6 +577,8 @@ func TestPrettyOSImageColorsUseSpecificBrandMatches(t *testing.T) {
 	}
 }
 func TestPrettyPaletteColorsDomainValues(t *testing.T) {
+	useDefaultThemeForTest(t)
+	styles := currentTheme.BuildStyles()
 	cases := []struct {
 		name  string
 		value string
@@ -579,10 +596,10 @@ func TestPrettyPaletteColorsDomainValues(t *testing.T) {
 		{name: "Image ID", value: "da8beb8e-7301-49a3-b952-ebde206f9a0b", want: prettyColorizeUUID("da8beb8e-7301-49a3-b952-ebde206f9a0b")},
 		{name: "Flavor ID", value: "56e015e0-79f4-4962-82f0-8f8a1b2c771f", want: prettyColorizeUUID("56e015e0-79f4-4962-82f0-8f8a1b2c771f")},
 		{name: "Image", value: "rocky9", want: prettyStyleForColor(mustPrettyOSImageColorForTest(t, "Rocky Linux")).Render("rocky9")},
-		{name: "Flavor", value: "m1.small", want: prettyFlavorStyle.Render("m1.small")},
-		{name: "device", value: "/dev/vda", want: prettyDeviceStyle.Render("/dev/vda")},
-		{name: "created_at", value: "2026-05-04T19:10:59.000000", want: prettyTimestampStyle.Render("2026-05-04T19:10:59.000000")},
-		{name: "Status", value: "in-use", want: prettyBooleanTrueStyle.Render("in-use")},
+		{name: "Flavor", value: "m1.small", want: styles.FlavorStyle.Render("m1.small")},
+		{name: "device", value: "/dev/vda", want: styles.DeviceStyle.Render("/dev/vda")},
+		{name: "created_at", value: "2026-05-04T19:10:59.000000", want: styles.TimestampStyle.Render("2026-05-04T19:10:59.000000")},
+		{name: "Status", value: "in-use", want: styles.BooleanTrueStyle.Render("in-use")},
 	}
 	for _, tc := range cases {
 		if got := prettyColorizeByName(tc.name, tc.value); got != tc.want {
@@ -1130,8 +1147,10 @@ func TestPrettyVolumeListIDUsesGenericUUIDRole(t *testing.T) {
 	}
 }
 func TestPrettyVolumeListNameUsesGenericNameColor(t *testing.T) {
+	useDefaultThemeForTest(t)
+	styles := currentTheme.BuildStyles()
 	colorizer := prettyListCellColorizer([]string{"Name"})
-	want := prettyNameStyle.Render("Rocky10-Boot")
+	want := styles.NameStyle.Render("Rocky10-Boot")
 	if got := colorizer(0, 0, "Rocky10-Boot"); got != want {
 		t.Fatalf("expected volume list name to use the generic name color, got %q want %q", got, want)
 	}
@@ -1227,6 +1246,8 @@ func TestPrettyWrappedAttachedToIDUsesGenericUUIDStyle(t *testing.T) {
 	}
 }
 func TestPrettyWrappedImageNAContinuationStaysNeutral(t *testing.T) {
+	useDefaultThemeForTest(t)
+	styles := currentTheme.BuildStyles()
 	rows := prettyWrapRows(
 		[]table.Row{{"N/A (booted from volume)"}},
 		[]table.Column{{Title: "Image", Width: 8}},
@@ -1236,7 +1257,7 @@ func TestPrettyWrappedImageNAContinuationStaysNeutral(t *testing.T) {
 	if len(rows) != 4 {
 		t.Fatalf("expected wrapped N/A image value rows, got %#v", rows)
 	}
-	if !strings.Contains(rows[0][0], prettyNAStyle.Render("N/A")) {
+	if !strings.Contains(rows[0][0], styles.NAStyle.Render("N/A")) {
 		t.Fatalf("expected first wrapped image row to color N/A, got %#v", rows)
 	}
 	for index, row := range rows[1:] {
