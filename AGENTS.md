@@ -39,7 +39,7 @@ Use the top-level `Makefile` for common workflows. `make help` lists available t
 
 `tools/matrix` writes `compat/matrix.yaml`, `compat/test-matrix.yaml`, and `compat/test-clouds.yaml` by default. The generated `compat/matrix.yaml` file includes `status_summary` with counts and percentages for every matrix status, including zero-count states. Keep the status table at the bottom of `README.md` synchronized with regenerated matrix output when command statuses change.
 
-The Fancy OS image color rules are compiled from `internal/cli/pretty_os_colors.json`. Edit that file before building to change OS display names, colors, sample image names, match keywords, source URLs, the contrast-report background, or the minimum legibility guard.
+The Fancy OS image color rules are compiled from `internal/cli/colors/os_colors.json`. Edit that file before building to change OS display names, colors, sample image names, match keywords, source URLs, the contrast-report background, or the minimum legibility guard.
 
 The local `clouds.yaml` is available for live testing only. Normal CLI configuration discovery must follow the same XDG/config precedence described by the OpenStackClient configuration docs.
 

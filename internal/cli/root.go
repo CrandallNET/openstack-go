@@ -32,6 +32,7 @@ type Options struct {
 	Compact   bool
 	NoCompact bool
 	Debug     bool
+	Theme     string
 
 	MaxWidth   int
 	FitWidth   bool
@@ -205,6 +206,22 @@ func NewRootCommand(stdout io.Writer, stderr io.Writer) *cobra.Command {
 		if cmd.Flags().Changed("no-compact") {
 			opts.Compact = false
 		}
+		if opts.Theme != "" {
+			switch opts.Theme {
+			case "pacman":
+				currentTheme = DefaultTheme()
+			default:
+				currentTheme = DefaultTheme()
+			}
+		}
+		if theme := os.Getenv("OS_THEME"); theme != "" {
+			switch theme {
+			case "pacman":
+				currentTheme = DefaultTheme()
+			default:
+				currentTheme = DefaultTheme()
+			}
+		}
 		opts.CommandFlags = commandFlagValues(cmd)
 		opts.CommandFlagList = commandFlagLists(cmd)
 		return nil
@@ -220,6 +237,7 @@ func NewRootCommand(stdout io.Writer, stderr io.Writer) *cobra.Command {
 func addGlobalFlags(flags *pflag.FlagSet, opts *Options) {
 	flags.StringVarP(&opts.Format, "format", "f", defaultOutputFormat, "the output format")
 	flags.BoolVar(&opts.Pretty, "pretty", opts.Pretty, "use enhanced human-readable output")
+	flags.StringVar(&opts.Theme, "theme", "", "pretty theme (e.g. pacman)")
 	flags.BoolVar(&opts.Compact, "compact", opts.Compact, "compact enhanced human-readable output")
 	flags.BoolVar(&opts.NoCompact, "no-compact", false, "disable compact enhanced human-readable output")
 	flags.BoolVar(&opts.Debug, "debug", false, "show tracebacks on errors")

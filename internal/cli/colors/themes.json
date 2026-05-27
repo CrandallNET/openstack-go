@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "themes": {
+    "pacman": {
+      "label": "15",
+      "uuid": "75",
+      "name": "213",
+      "ip_address": "114",
+      "timestamp": "117",
+      "number": "141",
+      "boolean_true": "82",
+      "boolean_false": "214",
+      "warning": "220",
+      "error": "203",
+      "device": "81",
+      "flavor": "223",
+      "image": "130",
+      "volume": "93",
+      "na": "220",
+      "cell_text": "252",
+      "border": "63",
+      "header": "39",
+      "empty_state": "244"
+    }
+  }
+}

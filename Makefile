@@ -69,13 +69,17 @@ lifecycle: ## Run lifecycle tests; set CLOUD=name and optionally SUITE=name.
 os-test: ## Display supported Fancy operating-system image colors.
 	$(GO) run ./tools/os-test
 
-.PHONY: compat
-compat: catalog matrix ## Regenerate all compatibility artifacts.
+.PHONY: colors
+colors: ## Display terminal color listings (ANSI16, ANSI256 grid, and/or hex list).
+	@$(GO) run ./tools/colors
 
-.PHONY: clean
-clean: ## Remove local build outputs and workspace-local Go caches.
-	$(RM) -r $(BIN_DIR) .cache
+.PHONY: allcolors
+allcolors: ## Display ANSI16, ANSI256 grid, and ANSI256+hex in one run.
+	@$(GO) run ./tools/colors --ansi --ascii --hex
 
-.PHONY: mrproper
-mrproper: clean ## Remove local build outputs and workspace-local Go caches.
-	$(RM) -r .cache
+.PHONY: build-tools
+build-tools: ## Build all CLI tools in the tools directory.
+	@mkdir -p $(BIN_DIR)
+	$(GO) build -o $(BIN_DIR)/os-test ./tools/os-test
+	$(GO) build -o $(BIN_DIR)/colors ./tools/colors
+	$(GO) build -o $(BIN_DIR)/allcolors ./tools/colors

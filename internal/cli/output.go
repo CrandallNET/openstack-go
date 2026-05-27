@@ -107,21 +107,21 @@ type orderedJSONObject struct {
 }
 
 const (
-	prettyColorBooleanFalse = "214"
-	prettyColorBooleanTrue  = "82"
-	prettyColorDevice       = "81"
-	prettyColorError        = "203"
-	prettyColorFlavor       = "223"
-	prettyColorImage        = "130"
-	prettyColorIP           = "114"
-	prettyColorLabel        = "15"
-	prettyColorNA           = "220"
-	prettyColorName         = "213"
-	prettyColorNumber       = "141"
-	prettyColorTimestamp    = "117"
-	prettyColorUUID         = "75"
-	prettyColorVolume       = "93"
-	prettyColorWarning      = "220"
+	prettyColorBooleanFalse = "214"   // light orange / dark yellow
+	prettyColorBooleanTrue  = "82"    // medium green
+	prettyColorDevice       = "81"    // medium blue
+	prettyColorError        = "203"   // bright red
+	prettyColorFlavor       = "223"   // light magenta
+	prettyColorImage        = "130"   // medium brown / tan
+	prettyColorIP           = "114"   // bright green
+	prettyColorLabel        = "15"    // bright white (white on black)
+	prettyColorNA           = "220"   // light yellow
+	prettyColorName         = "213"   // light magenta / pink
+	prettyColorNumber       = "141"   // light cyan / turquoise
+	prettyColorTimestamp    = "117"   // light cyan / aqua
+	prettyColorUUID         = "75"    // medium purple
+	prettyColorVolume       = "93"    // light yellow
+	prettyColorWarning      = "220"   // light yellow (same as NA)
 )
 
 var (
@@ -147,6 +147,8 @@ var (
 	prettyVolumeStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorVolume))
 	prettyWarningStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color(prettyColorWarning))
 )
+
+var currentTheme = DefaultTheme()
 
 func (object orderedJSONObject) MarshalJSON() ([]byte, error) {
 	var buffer bytes.Buffer
@@ -270,7 +272,7 @@ func renderPrettyList(stdout io.Writer, opts *Options, columns []string, rows []
 		tableRows = append(tableRows, tableRow)
 		roles = append(roles, roleRow)
 	}
-	return renderPrettyTable(stdout, opts, columns, tableRows, prettyListCellColorizer(columns, roles), prettyListCellContext(columns, roles))
+	return renderPrettyTableWithTheme(stdout, opts, columns, tableRows, prettyListCellColorizer(columns, roles), prettyListCellContext(columns, roles), currentTheme)
 }
 
 func renderPrettyShow(stdout io.Writer, opts *Options, fields []outputField) error {
@@ -280,7 +282,7 @@ func renderPrettyShow(stdout io.Writer, opts *Options, fields []outputField) err
 		rows = append(rows, table.Row{field.Name, prettyCellValue(field.Value)})
 		roles = append(roles, prettySemanticRole(field.Value))
 	}
-	return renderPrettyTable(stdout, opts, []string{"Field", "Value"}, rows, prettyShowCellColorizer(fields, roles), prettyShowCellContext(fields, roles))
+	return renderPrettyTableWithTheme(stdout, opts, []string{"Field", "Value"}, rows, prettyShowCellColorizer(fields, roles), prettyShowCellContext(fields, roles), currentTheme)
 }
 
 func prettySemanticRole(value any) string {
@@ -292,6 +294,10 @@ func prettySemanticRole(value any) string {
 }
 
 func renderPrettyTable(stdout io.Writer, opts *Options, headers []string, rows []table.Row, colorizer prettyCellColorizer, context prettyCellContext) error {
+	return renderPrettyTableWithTheme(stdout, opts, headers, rows, colorizer, context, currentTheme)
+}
+
+func renderPrettyTableWithTheme(stdout io.Writer, opts *Options, headers []string, rows []table.Row, colorizer prettyCellColorizer, context prettyCellContext, theme *Theme) error {
 	if len(rows) == 0 {
 		return renderPrettyEmpty(stdout)
 	}
@@ -307,14 +313,15 @@ func renderPrettyTable(stdout io.Writer, opts *Options, headers []string, rows [
 		separation = prettyTableSeparateNone
 	}
 	wrappedRows, rowKinds := prettyWrapRowsWithKinds(rows, columns, colorizer, context, separation)
+	bs := theme.BuildBubbleTableStyle()
 	model := bubbletable.New(prettyBubbleTableColumns(columns)).
 		WithRows(prettyBubbleTableRows(wrappedRows, len(columns))).
 		WithBaseStyle(bubblelipgloss.NewStyle().
-			Foreground(bubblelipgloss.Color("252")).
-			BorderForeground(bubblelipgloss.Color("63")).
+			Foreground(bubblelipgloss.Color(bs.cellText)).
+			BorderForeground(bubblelipgloss.Color(bs.border)).
 			Align(bubblelipgloss.Left)).
 		HeaderStyle(bubblelipgloss.NewStyle().
-			Foreground(bubblelipgloss.Color("39")).
+			Foreground(bubblelipgloss.Color(bs.header)).
 			Bold(true).
 			Align(bubblelipgloss.Left)).
 		BorderRounded().
@@ -344,9 +351,10 @@ func renderPrettyBubblesTable(stdout io.Writer, columns []table.Column, rows []t
 
 	view := prettyAddHeaderSpacer(strings.TrimRight(model.View(), "\n"))
 	if color {
+		bs := currentTheme.BuildBubbleTableStyle()
 		view = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color("63")).
+			BorderForeground(lipgloss.Color(bs.border)).
 			Render(view)
 	}
 	_, err := fmt.Fprintln(stdout, view)
@@ -421,7 +429,7 @@ func prettyBubbleTableSeparatorLine(columns []table.Column) string {
 }
 
 func prettyBubbleTableBorderStyle() bubblelipgloss.Style {
-	return bubblelipgloss.NewStyle().Foreground(bubblelipgloss.Color("63"))
+	return bubblelipgloss.NewStyle().Foreground(bubblelipgloss.Color(currentTheme.BuildBubbleTableStyle().border))
 }
 
 func prettyBubbleTableColumnKey(index int) string {
@@ -798,12 +806,13 @@ func prettyTableStyles(color bool) table.Styles {
 			Selected: lipgloss.NewStyle(),
 		}
 	}
-	header := cell.Copy().Bold(true).Foreground(lipgloss.Color("39"))
+	bs := currentTheme.BuildBubbleTableStyle()
+	header := cell.Copy().Bold(true).Foreground(lipgloss.Color(bs.header))
 	selected := lipgloss.NewStyle()
 	return table.Styles{
 		Header:   header,
-		Cell:     cell.Foreground(lipgloss.Color("252")),
-		Selected: selected.Foreground(lipgloss.Color("252")),
+		Cell:     cell.Foreground(lipgloss.Color(bs.cellText)),
+		Selected: selected.Foreground(lipgloss.Color(bs.cellText)),
 	}
 }
 
@@ -862,7 +871,8 @@ func prettyShowCellColorizer(fields []outputField, roles ...[]string) prettyCell
 	}
 	return func(rowIndex int, columnIndex int, text string) string {
 		if columnIndex == 0 {
-			return prettyLabelStyle.Render(text)
+			s := currentTheme.BuildStyles()
+			return s.LabelStyle.Render(text)
 		}
 		if columnIndex == 1 && rowIndex < len(fieldRoles) && fieldRoles[rowIndex] != "" {
 			return prettyColorizeByName(fieldRoles[rowIndex], text)
@@ -912,6 +922,7 @@ func prettyColorizeByNormalizedName(normalized string, text string) string {
 	if strings.TrimSpace(text) == "" {
 		return text
 	}
+	s := currentTheme.BuildStyles()
 	if prettyIsIDLikeName(normalized) {
 		return prettyColorizeID(text)
 	}
@@ -921,7 +932,7 @@ func prettyColorizeByNormalizedName(normalized string, text string) string {
 		}
 	}
 	if prettyIsGenericNameField(normalized) {
-		return prettyNameStyle.Render(text)
+		return s.NameStyle.Render(text)
 	}
 	if prettyContainsTimestampToken(text) {
 		return prettyColorizeTokens(text)
@@ -930,13 +941,13 @@ func prettyColorizeByNormalizedName(normalized string, text string) string {
 	case prettyIsVolumeField(normalized):
 		return prettyColorizeVolume(text)
 	case prettyIsDeviceField(normalized):
-		return prettyDeviceStyle.Render(text)
+		return s.DeviceStyle.Render(text)
 	case prettyIsFlavorField(normalized):
-		return prettyFlavorStyle.Render(text)
+		return s.FlavorStyle.Render(text)
 	case prettyIsImageField(normalized):
 		return prettyColorizeImage(text)
 	case prettyIsFlavorComponentField(normalized):
-		return prettyNumberStyle.Render(prettyColorizeTokens(text))
+		return s.NumberStyle.Render(prettyColorizeTokens(text))
 	case prettyIsTimestampField(normalized):
 		return prettyColorizeTimestamp(text)
 	case prettyIsStatusField(normalized):
@@ -946,7 +957,7 @@ func prettyColorizeByNormalizedName(normalized string, text string) string {
 	case prettyContainsAddressToken(text):
 		return prettyColorizeTokens(text)
 	case prettyIsNameField(normalized):
-		return prettyNameStyle.Render(text)
+		return s.NameStyle.Render(text)
 	default:
 		return prettyColorizeTokens(text)
 	}
@@ -1102,9 +1113,9 @@ func prettyIsBooleanText(text string) bool {
 func prettyColorizeBoolean(text string) string {
 	switch strings.TrimSpace(text) {
 	case "True":
-		return prettyBooleanTrueStyle.Render(text)
+		return currentTheme.BuildStyles().BooleanTrueStyle.Render(text)
 	case "False":
-		return prettyBooleanFalseStyle.Render(text)
+		return currentTheme.BuildStyles().BooleanFalseStyle.Render(text)
 	default:
 		return text
 	}
@@ -1112,24 +1123,26 @@ func prettyColorizeBoolean(text string) string {
 
 func prettyColorizeStatus(text string) string {
 	trimmed := strings.NewReplacer("-", "_", " ", "_").Replace(strings.ToUpper(strings.TrimSpace(text)))
+	s := currentTheme.BuildStyles()
 	switch trimmed {
 	case "ACTIVE", "AVAILABLE", "ENABLED", "HEALTHY", "IN_USE", "ONLINE", "READY", "RUNNING", "UP":
-		return prettyBooleanTrueStyle.Render(text)
+		return s.BooleanTrueStyle.Render(text)
 	case "ATTACHING", "BACKING_UP", "BUILD", "CREATING", "DELETING", "DETACHING", "DOWNLOADING", "EXTENDING", "MAINTENANCE", "MIGRATING", "PAUSING", "PENDING", "POWERING_OFF", "POWERING_ON", "REBOOT", "REBUILD", "REBUILDING", "REBUILD_SPAWNING", "RESCUING", "RESERVED", "RESIZE", "RESIZE_FINISH", "RESIZE_MIGRATED", "RESIZE_MIGRATING", "RESIZE_PREP", "RESIZING", "RESUMING", "RESTORING_BACKUP", "RETYPE", "SAVING", "SHELVING", "SHELVING_IMAGE_PENDING_UPLOAD", "SHELVING_IMAGE_UPLOADING", "SHELVING_OFFLOADING", "SNAPSHOTTING", "SUSPENDING", "UNPAUSING", "UNRESCUING", "UNSHELVING", "UPLOADING", "VERIFY_RESIZE":
-		return prettyWarningStyle.Render(text)
+		return s.WarningStyle.Render(text)
 	case "DELETED", "DISABLED", "DOWN", "ERROR", "ERROR_DELETING", "ERROR_EXTENDING", "ERROR_RESTORING", "ERROR_REVERTING", "FAILED", "FAULT", "KILLED", "PAUSED", "RESCUE", "RESCUED", "SHELVED", "SHELVED_OFFLOADED", "SHUTOFF", "SUSPENDED":
-		return prettyErrorStyle.Render(text)
+		return s.ErrorStyle.Render(text)
 	default:
 		return prettyColorizeTokens(text)
 	}
 }
 
 func prettyColorizeTimestamp(text string) string {
+	s := currentTheme.BuildStyles()
 	if !prettyTimestampPattern.MatchString(text) {
-		return prettyTimestampStyle.Render(text)
+		return s.TimestampStyle.Render(text)
 	}
 	return prettyTimestampPattern.ReplaceAllStringFunc(text, func(candidate string) string {
-		return prettyTimestampStyle.Render(candidate)
+		return s.TimestampStyle.Render(candidate)
 	})
 }
 
@@ -1141,20 +1154,21 @@ func prettyColorizeTokens(text string) string {
 }
 
 func prettyColorizeBareTokens(text string) string {
+	s := currentTheme.BuildStyles()
 	text = prettyTimestampPattern.ReplaceAllStringFunc(text, func(candidate string) string {
-		return prettyTimestampStyle.Render(candidate)
+		return s.TimestampStyle.Render(candidate)
 	})
 	text = prettyHostnamePattern.ReplaceAllStringFunc(text, func(candidate string) string {
 		if !prettyValidHostnameToken(candidate) {
 			return candidate
 		}
-		return prettyIPStyle.Render(candidate)
+		return s.IPAddressStyle.Render(candidate)
 	})
 	text = prettyIPCandidatePattern.ReplaceAllStringFunc(text, func(candidate string) string {
 		if !prettyValidIPToken(candidate) {
 			return candidate
 		}
-		return prettyIPStyle.Render(candidate)
+		return s.IPAddressStyle.Render(candidate)
 	})
 	text = prettyUUIDPattern.ReplaceAllStringFunc(text, func(candidate string) string {
 		return prettyColorizeUUID(candidate)
@@ -1168,7 +1182,8 @@ func prettyColorizeLabeledText(text string, colorizeValue func(string) string) s
 		return colorizeValue(text)
 	}
 	labelName := strings.TrimSuffix(strings.TrimSpace(label), ":")
-	return prefix + prettyLabelStyle.Render(label) + prettyColorizeByNormalizedName(normalizeColumnName(labelName), value)
+	s := currentTheme.BuildStyles()
+	return prefix + s.LabelStyle.Render(label) + prettyColorizeByNormalizedName(normalizeColumnName(labelName), value)
 }
 
 func prettyColorizeLabeledTextWithContext(text string, parentName string) string {
@@ -1178,7 +1193,8 @@ func prettyColorizeLabeledTextWithContext(text string, parentName string) string
 	}
 	labelName := strings.TrimSuffix(strings.TrimSpace(label), ":")
 	normalizedLabel := prettyContextualLabelName(parentName, normalizeColumnName(labelName))
-	return prefix + prettyLabelStyle.Render(label) + prettyColorizeByNormalizedName(normalizedLabel, value)
+	s := currentTheme.BuildStyles()
+	return prefix + s.LabelStyle.Render(label) + prettyColorizeByNormalizedName(normalizedLabel, value)
 }
 
 func prettyContextualLabelName(parentName string, labelName string) string {
@@ -1360,13 +1376,14 @@ func prettySplitLabelPrefix(text string) (string, string, string, bool) {
 }
 
 func prettyColorizeImage(text string) string {
+	s := currentTheme.BuildStyles()
 	if strings.Contains(text, "N/A") {
-		return strings.ReplaceAll(prettyColorizeTokens(text), "N/A", prettyNAStyle.Render("N/A"))
+		return strings.ReplaceAll(prettyColorizeTokens(text), "N/A", s.NAStyle.Render("N/A"))
 	}
 	if style, ok := prettyOSImageStyleForText(text); ok {
 		return prettyColorizeResourceText(text, style)
 	}
-	return prettyColorizeResourceText(text, prettyImageStyle)
+	return prettyColorizeResourceText(text, s.ImageStyle)
 }
 
 func prettyColorizeUUID(uuid string) string {
@@ -1382,7 +1399,8 @@ func prettyColorizeUUIDWithStyle(uuid string, style lipgloss.Style) string {
 }
 
 func prettyColorizeVolume(text string) string {
-	return prettyColorizeResourceText(text, prettyVolumeStyle)
+	s := currentTheme.BuildStyles()
+	return prettyColorizeResourceText(text, s.VolumeStyle)
 }
 
 func prettyColorizeResourceText(text string, style lipgloss.Style) string {

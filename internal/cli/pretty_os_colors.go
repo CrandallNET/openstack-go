@@ -39,7 +39,7 @@ type prettyOSImageColorPalette struct {
 	Definitions        []prettyOSImageColorDefinition `json:"definitions"`
 }
 
-//go:embed pretty_os_colors.json
+//go:embed colors/os_colors.json
 var prettyOSImageColorsJSON []byte
 
 var prettyOSImageColorPaletteData = mustLoadPrettyOSImageColorPalette(prettyOSImageColorsJSON)
