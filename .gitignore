@@ -14,3 +14,6 @@ dist/
 test-output/
 artifacts/
 compat/lifecycle-diagnostics/
+
+# OpenCode config
+opencode.json
