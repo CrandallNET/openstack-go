@@ -10,12 +10,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/crandallnet/golang-osc/compat/osc"
-	_ "github.com/crandallnet/golang-osc/internal/plugins/cinderextras"
-	_ "github.com/crandallnet/golang-osc/internal/plugins/keystoneextras"
-	_ "github.com/crandallnet/golang-osc/internal/plugins/local"
-	_ "github.com/crandallnet/golang-osc/internal/plugins/neutronextras"
-	_ "github.com/crandallnet/golang-osc/internal/plugins/novaextras"
+	"github.com/crandallnet/openstack-go/compat/osc"
+	_ "github.com/crandallnet/openstack-go/internal/plugins/cinderextras"
+	_ "github.com/crandallnet/openstack-go/internal/plugins/keystoneextras"
+	_ "github.com/crandallnet/openstack-go/internal/plugins/local"
+	_ "github.com/crandallnet/openstack-go/internal/plugins/neutronextras"
+	_ "github.com/crandallnet/openstack-go/internal/plugins/novaextras"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )

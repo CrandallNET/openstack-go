@@ -1,4 +1,4 @@
-module github.com/crandallnet/golang-osc
+module github.com/crandallnet/openstack-go
 
 go 1.26
 

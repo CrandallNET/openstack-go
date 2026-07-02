@@ -3,7 +3,7 @@ package local
 import (
 	"testing"
 
-	"github.com/crandallnet/golang-osc/internal/cliplugin"
+	"github.com/crandallnet/openstack-go/internal/cliplugin"
 )
 
 func TestLocalModuleIsRegistered(t *testing.T) {

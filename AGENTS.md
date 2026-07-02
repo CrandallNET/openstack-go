@@ -23,7 +23,7 @@ Use the MCP intelligence layer for project history, decisions, milestones, and m
 
 ## Repository Context
 
-The intended Go module path is `github.com/crandallnet/golang-osc`. Keep that module path even when the local checkout or git remote is a staging location.
+The intended Go module path is `github.com/crandallnet/openstack-go`. Keep that module path even when the local checkout or git remote is a staging location.
 
 Keep `README.md` user-facing. Build, usage, compatibility-summary, and project-documentation pointers belong there. Internal directives, cloud-specific context, oracle paths, compatibility artifact rules, and agent workflow belong in this file or the active plan/diary instead.
 

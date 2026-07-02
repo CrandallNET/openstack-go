@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/crandallnet/golang-osc/compat/osc"
+	"github.com/crandallnet/openstack-go/compat/osc"
 )
 
 func executeForTest(args ...string) (string, string, error) {

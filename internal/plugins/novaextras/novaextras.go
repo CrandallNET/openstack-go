@@ -2,7 +2,7 @@ package novaextras
 
 import (
 	"github.com/caddyserver/caddy/v2"
-	"github.com/crandallnet/golang-osc/internal/cliplugin"
+	"github.com/crandallnet/openstack-go/internal/cliplugin"
 )
 
 func init() {

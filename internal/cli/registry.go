@@ -6,8 +6,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/crandallnet/golang-osc/compat/osc"
-	"github.com/crandallnet/golang-osc/internal/cliplugin"
+	"github.com/crandallnet/openstack-go/compat/osc"
+	"github.com/crandallnet/openstack-go/internal/cliplugin"
 	"github.com/spf13/cobra"
 )
 

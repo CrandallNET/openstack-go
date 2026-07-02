@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"charm.land/bubbles/v2/table"
-	"github.com/crandallnet/golang-osc/compat/osc"
+	"github.com/crandallnet/openstack-go/compat/osc"
 	"github.com/spf13/cobra"
 )
 

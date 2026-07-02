@@ -3,7 +3,7 @@ package neutronextras
 import (
 	"testing"
 
-	"github.com/crandallnet/golang-osc/internal/cliplugin"
+	"github.com/crandallnet/openstack-go/internal/cliplugin"
 )
 
 func TestModuleRegisters(t *testing.T) {

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/crandallnet/golang-osc/internal/cli"
+	"github.com/crandallnet/openstack-go/internal/cli"
 )
 
 func main() {

@@ -3,7 +3,7 @@ package cli
 import (
 	"testing"
 
-	"github.com/crandallnet/golang-osc/compat/osc"
+	"github.com/crandallnet/openstack-go/compat/osc"
 )
 
 func TestCommandListPrettyRowsGroupByRootCommand(t *testing.T) {

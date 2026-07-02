@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/crandallnet/golang-osc/internal/cli"
+	"github.com/crandallnet/openstack-go/internal/cli"
 	"golang.org/x/crypto/ssh"
 )
 
