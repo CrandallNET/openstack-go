@@ -294,9 +294,17 @@ func (r *commandRegistry) addCommand(root *cobra.Command, path string) {
 
 		if i == len(parts)-1 {
 			r.configureLeaf(child, fullPath)
+		} else {
+			r.configureIntermediate(child, fullPath)
 		}
 		parent = child
 	}
+}
+
+func (r *commandRegistry) configureIntermediate(cmd *cobra.Command, path string) {
+	cmd.SetHelpFunc(func(command *cobra.Command, args []string) {
+		r.writeHelp(command, path)
+	})
 }
 
 func (r *commandRegistry) configureLeaf(cmd *cobra.Command, path string) {
@@ -305,14 +313,7 @@ func (r *commandRegistry) configureLeaf(cmd *cobra.Command, path string) {
 		return parserFlagError(path, err)
 	})
 	cmd.SetHelpFunc(func(command *cobra.Command, args []string) {
-		if help, ok, err := osc.Help(path); err == nil && ok {
-			fmt.Fprint(r.stdout, help)
-			if path == "server ssh" {
-				fmt.Fprint(r.stdout, serverSSHPassThroughHelp())
-			}
-			return
-		}
-		_ = command.Parent().Help()
+		r.writeHelp(command, path)
 	})
 
 	if handler, ok := r.implemented[path]; ok {
@@ -2257,6 +2258,39 @@ func usesSharedCoreListFlags(path string) bool {
 	default:
 		return false
 	}
+}
+
+func (r *commandRegistry) writeHelp(cmd *cobra.Command, path string) {
+	parts := strings.Fields(path)
+	for len(parts) > 0 {
+		help, ok, err := osc.Help(strings.Join(parts, " "))
+		if err == nil && ok {
+			_, _ = fmt.Fprint(r.stdout, help)
+			if path == "server ssh" {
+				fmt.Fprint(r.stdout, serverSSHPassThroughHelp())
+			}
+			return
+		}
+		parts = parts[:len(parts)-1]
+	}
+	prefix := path + " "
+	var matching []string
+	for _, group := range r.groups {
+		for _, cmd := range group.Commands {
+			if strings.HasPrefix(cmd, prefix) {
+				matching = append(matching, cmd)
+			}
+		}
+	}
+	if len(matching) > 0 {
+		sort.Strings(matching)
+		_, _ = fmt.Fprintf(r.stdout, "Command %q matches:\n", path)
+		for _, c := range matching {
+			_, _ = fmt.Fprintf(r.stdout, "  %s\n", c)
+		}
+		return
+	}
+	_ = cmd.Parent().Help()
 }
 
 func findChild(parent *cobra.Command, name string) *cobra.Command {
